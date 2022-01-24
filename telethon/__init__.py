@@ -1,14 +1,11 @@
-from .client.telegramclient import TelegramClient
-from .network import connection
-from .tl import types, functions, custom
-from .tl.custom import Button
-from .tl import patched as _  # import for its side-effects
-from . import version, events, utils, errors
+# Note: the import order matters
+from ._misc import helpers as _  # no dependencies
+from . import _tl  # no dependencies
+from ._misc import utils as _  # depends on helpers and _tl
+from ._misc import hints as _  # depends on types/custom
+from ._client.account import ignore_takeout
+
+from ._client.telegramclient import TelegramClient
+from . import version, events, errors, enums
 
 __version__ = version.__version__
-
-__all__ = [
-    'TelegramClient', 'Button',
-    'types', 'functions', 'custom', 'errors',
-    'events', 'utils', 'connection'
-]

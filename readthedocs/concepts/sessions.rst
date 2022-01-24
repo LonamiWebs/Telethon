@@ -73,10 +73,10 @@ You can import these ``from telethon.sessions``. For example, using the
 
 .. code-block:: python
 
-    from telethon.sync import TelegramClient
+    from telethon import TelegramClient
     from telethon.sessions import StringSession
 
-    with TelegramClient(StringSession(string), api_id, api_hash) as client:
+    async with TelegramClient(StringSession(string), api_id, api_hash) as client:
         ...  # use the client
 
         # Save the string session as a string; you should decide how
@@ -129,10 +129,10 @@ The easiest way to generate a string session is as follows:
 
 .. code-block:: python
 
-    from telethon.sync import TelegramClient
+    from telethon import TelegramClient
     from telethon.sessions import StringSession
 
-    with TelegramClient(StringSession(), api_id, api_hash) as client:
+    async with TelegramClient(StringSession(), api_id, api_hash) as client:
         print(client.session.save())
 
 
@@ -156,8 +156,8 @@ you can save it in a variable directly:
 .. code-block:: python
 
     string = '1aaNk8EX-YRfwoRsebUkugFvht6DUPi_Q25UOCzOAqzc...'
-    with TelegramClient(StringSession(string), api_id, api_hash) as client:
-        client.loop.run_until_complete(client.send_message('me', 'Hi'))
+    async with TelegramClient(StringSession(string), api_id, api_hash).start() as client:
+        await client.send_message('me', 'Hi')
 
 
 These strings are really convenient for using in places like Heroku since

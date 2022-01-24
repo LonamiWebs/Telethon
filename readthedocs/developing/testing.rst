@@ -71,7 +71,7 @@ version incompatabilities.
 
 Tox environments are declared in the ``tox.ini`` file. The default
 environments, declared at the top, can be simply run with ``tox``. The option
-``tox -e py36,flake`` can be used to request specific environments to be run.
+``tox -e py37,flake`` can be used to request specific environments to be run.
 
 Brief Introduction to Pytest-cov
 ================================

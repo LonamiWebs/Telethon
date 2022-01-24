@@ -13,6 +13,14 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+
+Complete overhaul of the library (v2.0)
+=======================================
+
+(inc and link all of migration guide)
+properly-typed enums for filters and actions
+
+
 Rushed release to fix login (v1.24)
 ===================================
 

@@ -1,13 +1,13 @@
 import pytest
 
-from telethon.tl import types, functions
+from telethon import _tl
 
 
 def test_nested_invalid_serialization():
     large_long = 2**62
-    request = functions.account.SetPrivacyRequest(
-        key=types.InputPrivacyKeyChatInvite(),
-        rules=[types.InputPrivacyValueDisallowUsers(users=[large_long])]
+    request = _tl.fn.account.SetPrivacy(
+        key=_tl.InputPrivacyKeyChatInvite(),
+        rules=[_tl.InputPrivacyValueDisallowUsers(users=[large_long])]
     )
     with pytest.raises(TypeError):
         bytes(request)

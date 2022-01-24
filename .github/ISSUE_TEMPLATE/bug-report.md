@@ -14,7 +14,7 @@ assignees: ''
 
 **Code that causes the issue**
 ```python
-from telethon.sync import TelegramClient
+from telethon import TelegramClient
 ...
 
 ```

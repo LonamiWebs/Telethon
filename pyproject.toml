@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py35,py36,py37,py38
+envlist = py37,py38
 
 # run with tox -e py
 [testenv]

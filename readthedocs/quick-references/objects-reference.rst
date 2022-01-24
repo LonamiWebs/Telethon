@@ -155,33 +155,6 @@ its name, bot-API style file ID, etc.
     sticker_set
 
 
-Conversation
-============
-
-The `Conversation <telethon.tl.custom.conversation.Conversation>` object
-is returned by the `client.conversation()
-<telethon.client.dialogs.DialogMethods.conversation>` method to easily
-send and receive responses like a normal conversation.
-
-It bases `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`.
-
-.. currentmodule:: telethon.tl.custom.conversation.Conversation
-
-.. autosummary::
-    :nosignatures:
-
-    send_message
-    send_file
-    mark_read
-    get_response
-    get_reply
-    get_edit
-    wait_read
-    wait_event
-    cancel
-    cancel_all
-
-
 AdminLogEvent
 =============
 

@@ -32,7 +32,7 @@ AUTO_CASTS = {
 }
 
 NAMED_AUTO_CASTS = {
-    ('chat_id', 'int'): 'await client.get_peer_id({}, add_mark=False)'
+    ('chat_id', 'int'): 'await client.get_peer_id({})'
 }
 
 # Secret chats have a chat_id which may be negative.
@@ -52,7 +52,7 @@ BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
 
 
 def _write_modules(
-        out_dir, depth, kind, namespace_tlobjects, type_constructors):
+        out_dir, in_mod, kind, namespace_tlobjects, type_constructors, layer, all_tlobjects):
     # namespace_tlobjects: {'namespace', [TLObject]}
     out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
@@ -60,10 +60,11 @@ def _write_modules(
         with file.open('w') as f, SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
-            builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
-            if kind != 'TLObject':
-                builder.writeln(
-                    'from {}.tl.tlobject import {}', '.' * depth, kind)
+            if kind == 'TLObject':
+                builder.writeln('from .._misc.tlobject import TLObject, TLRequest')
+                builder.writeln('from . import fn')
+            else:
+                builder.writeln('from ..._misc.tlobject import TLObject, TLRequest')
 
             builder.writeln('from typing import Optional, List, '
                             'Union, TYPE_CHECKING')
@@ -124,7 +125,11 @@ def _write_modules(
                     if not name or name in primitives:
                         continue
 
-                    import_space = '{}.tl.types'.format('.' * depth)
+                    if kind == 'TLObject':
+                        import_space = '.'
+                    else:
+                        import_space = '..'
+
                     if '.' in name:
                         namespace = name.split('.')[0]
                         name = name.split('.')[1]
@@ -158,6 +163,9 @@ def _write_modules(
             for line in type_defs:
                 builder.writeln(line)
 
+            if not ns and kind == 'TLObject':
+                _write_all_tlobjects(all_tlobjects, layer, builder)
+
 
 def _write_source_code(tlobject, kind, builder, type_constructors):
     """
@@ -170,7 +178,6 @@ def _write_source_code(tlobject, kind, builder, type_constructors):
     """
     _write_class_init(tlobject, kind, type_constructors, builder)
     _write_resolve(tlobject, builder)
-    _write_to_dict(tlobject, builder)
     _write_to_bytes(tlobject, builder)
     _write_from_reader(tlobject, builder)
     _write_read_result(tlobject, builder)
@@ -180,6 +187,15 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
     builder.writeln()
     builder.writeln()
     builder.writeln('class {}({}):', tlobject.class_name, kind)
+
+    # Define slots to help reduce the size of the objects a little bit.
+    # It's also good for knowing what fields an object has.
+    builder.write('__slots__ = (')
+    sep = ''
+    for arg in tlobject.real_args:
+        builder.write('{}{!r},', sep, arg.name)
+        sep = ' '
+    builder.writeln(')')
 
     # Class-level variable to store its Telegram's constructor ID
     builder.writeln('CONSTRUCTOR_ID = {:#x}', tlobject.id)
@@ -282,42 +298,6 @@ def _write_resolve(tlobject, builder):
             if arg.is_flag:
                 builder.end_block()
         builder.end_block()
-
-
-def _write_to_dict(tlobject, builder):
-    builder.writeln('def to_dict(self):')
-    builder.writeln('return {')
-    builder.current_indent += 1
-
-    builder.write("'_': '{}'", tlobject.class_name)
-    for arg in tlobject.real_args:
-        builder.writeln(',')
-        builder.write("'{}': ", arg.name)
-        if arg.type in BASE_TYPES:
-            if arg.is_vector:
-                builder.write('[] if self.{0} is None else self.{0}[:]',
-                              arg.name)
-            else:
-                builder.write('self.{}', arg.name)
-        else:
-            if arg.is_vector:
-                builder.write(
-                    '[] if self.{0} is None else [x.to_dict() '
-                    'if isinstance(x, TLObject) else x for x in self.{0}]',
-                    arg.name
-                )
-            else:
-                builder.write(
-                    'self.{0}.to_dict() '
-                    'if isinstance(self.{0}, TLObject) else self.{0}',
-                    arg.name
-                )
-
-    builder.writeln()
-    builder.current_indent -= 1
-    builder.writeln("}")
-
-    builder.end_block()
 
 
 def _write_to_bytes(tlobject, builder):
@@ -653,12 +633,6 @@ def _write_arg_read_code(builder, arg, tlobject, name):
 
 
 def _write_all_tlobjects(tlobjects, layer, builder):
-    builder.writeln(AUTO_GEN_NOTICE)
-    builder.writeln()
-
-    builder.writeln('from . import types, functions')
-    builder.writeln()
-
     # Create a constant variable to indicate which layer this is
     builder.writeln('LAYER = {}', layer)
     builder.writeln()
@@ -670,18 +644,19 @@ def _write_all_tlobjects(tlobjects, layer, builder):
     # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
     for tlobject in tlobjects:
         builder.write('{:#010x}: ', tlobject.id)
-        builder.write('functions' if tlobject.is_function else 'types')
+        if tlobject.is_function:
+            builder.write('fn.')
 
         if tlobject.namespace:
-            builder.write('.{}', tlobject.namespace)
+            builder.write('{}.', tlobject.namespace)
 
-        builder.writeln('.{},', tlobject.class_name)
+        builder.writeln('{},', tlobject.class_name)
 
     builder.current_indent -= 1
     builder.writeln('}')
 
 
-def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
+def generate_tlobjects(tlobjects, layer, input_mod, output_dir):
     # Group everything by {namespace: [tlobjects]} to generate __init__.py
     namespace_functions = defaultdict(list)
     namespace_types = defaultdict(list)
@@ -695,15 +670,10 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
 
-    _write_modules(output_dir / 'functions', import_depth, 'TLRequest',
-                   namespace_functions, type_constructors)
-    _write_modules(output_dir / 'types', import_depth, 'TLObject',
-                   namespace_types, type_constructors)
-
-    filename = output_dir / 'alltlobjects.py'
-    with filename.open('w') as file:
-        with SourceBuilder(file) as builder:
-            _write_all_tlobjects(tlobjects, layer, builder)
+    _write_modules(output_dir, input_mod, 'TLObject',
+                   namespace_types, type_constructors, layer, tlobjects)
+    _write_modules(output_dir / 'fn', input_mod + '.fn', 'TLRequest',
+                   namespace_functions, type_constructors, layer, tlobjects)
 
 
 def clean_tlobjects(output_dir):
@@ -711,7 +681,3 @@ def clean_tlobjects(output_dir):
         d = output_dir / d
         if d.is_dir():
             shutil.rmtree(str(d))
-
-    tl = output_dir / 'alltlobjects.py'
-    if tl.is_file():
-        tl.unlink()
