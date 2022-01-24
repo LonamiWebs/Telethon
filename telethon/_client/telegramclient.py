@@ -2664,6 +2664,7 @@ class TelegramClient:
             request_retries: int = 4,
             flood_sleep_threshold: int = 60,
             # Update handling.
+            catch_up: bool = False,
             receive_updates: bool = True,
             max_queued_updates: int = 100,
     ):
