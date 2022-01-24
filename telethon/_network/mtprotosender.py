@@ -2,6 +2,7 @@ import asyncio
 import collections
 import struct
 import logging
+import random
 
 from . import authenticator
 from .._misc.messagepacker import MessagePacker
@@ -22,6 +23,7 @@ from .. import _tl
 
 
 UPDATE_BUFFER_FULL_WARN_DELAY = 15 * 60
+PING_DELAY = 60
 
 
 class MTProtoSender:
@@ -51,6 +53,7 @@ class MTProtoSender:
         self._updates_queue = updates_queue
         self._connect_lock = asyncio.Lock()
         self._ping = None
+        self._next_ping = None
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -123,6 +126,7 @@ class MTProtoSender:
             self._connection = connection
             await self._connect()
             self._user_connected = True
+            self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
             return True
 
     def is_connected(self):
@@ -403,15 +407,15 @@ class MTProtoSender:
             self._reconnecting = True
             asyncio.create_task(self._reconnect(error))
 
-    def _keepalive_ping(self, rnd_id):
+    def _trigger_keepalive_ping(self):
         """
         Send a keep-alive ping. If a pong for the last ping was not received
         yet, this means we're probably not connected.
         """
-        # TODO this is ugly, update loop shouldn't worry about this, sender should
         if self._ping is None:
-            self._ping = rnd_id
-            self.send(_tl.fn.Ping(rnd_id))
+            self._ping = random.randrange(-2**63, 2**63)
+            self.send(_tl.fn.Ping(self._ping))
+            self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
         else:
             self._start_reconnect(None)
 
@@ -435,7 +439,11 @@ class MTProtoSender:
             # TODO Wait for the connection send queue to be empty?
             # This means that while it's not empty we can wait for
             # more messages to be added to the send queue.
-            batch, data = await self._send_queue.get()
+            try:
+                batch, data = await asyncio.wait_for(self._send_queue.get(), self._next_ping - asyncio.get_running_loop().time())
+            except asyncio.TimeoutError:
+                self._trigger_keepalive_ping()
+                continue
 
             if not data:
                 continue
