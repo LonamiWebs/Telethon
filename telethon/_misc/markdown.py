@@ -19,6 +19,7 @@ DELIMITERS = {
     _tl.MessageEntityCode: ('`', '`'),
     _tl.MessageEntityItalic: ('_', '_'),
     _tl.MessageEntityStrike: ('~~', '~~'),
+    _tl.MessageEntitySpoiler: ('||', '||'),
     _tl.MessageEntityUnderline: ('# ', ''),
 }
 

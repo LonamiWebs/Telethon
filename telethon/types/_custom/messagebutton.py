@@ -71,6 +71,10 @@ class MessageButton:
         If it's an inline :tl:`KeyboardButtonCallback` with text and data,
         it will be "clicked" and the :tl:`BotCallbackAnswer` returned.
 
+        If it's an inline :tl:`KeyboardButtonUserProfile` button, the
+        `client.get_entity` will be called and the resulting :tl:User will be
+        returned.
+
         If it's an inline :tl:`KeyboardButtonSwitchInline` button, the
         :tl:`StartBot` will be invoked and the resulting updates
         returned.
@@ -107,6 +111,8 @@ class MessageButton:
                 return await self._client(req)
             except BotResponseTimeoutError:
                 return None
+        elif isinstance(self.button, _tl.KeyboardButtonUserProfile):
+            return await self._client.get_entity(self.button.user_id)
         elif isinstance(self.button, _tl.KeyboardButtonSwitchInline):
             return await self._client(_tl.fn.messages.StartBot(
                 bot=self._bot, peer=self._chat, start_param=self.button.query
