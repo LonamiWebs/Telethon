@@ -249,9 +249,9 @@ class MTProtoSender:
             break  # all steps done, break retry loop
         else:
             if not connected:
-                raise ConnectionError('Connection to Telegram failed {} time(s)'.format(self._retries))
+                raise ConnectionError('Connection to Telegram failed {} time(s)'.format(1 + self._retries))
 
-            e = ConnectionError('auth_key generation failed {} time(s)'.format(self._retries))
+            e = ConnectionError('auth_key generation failed {} time(s)'.format(1 + self._retries))
             await self._disconnect(error=e)
             raise e
 
@@ -349,12 +349,11 @@ class MTProtoSender:
         # Start with a clean state (and thus session ID) to avoid old msgs
         self._state.reset()
 
-        retries = self._retries if self._auto_reconnect else 0
+        retry_range = helpers.retry_range(self._retries) if self._auto_reconnect else range(0)
 
         attempt = 0
         ok = True
-        # We're already "retrying" to connect, so we don't want to force retries
-        for attempt in helpers.retry_range(retries, force_retry=False):
+        for attempt in retry_range:
             try:
                 await self._connect()
             except (IOError, asyncio.TimeoutError) as e:
