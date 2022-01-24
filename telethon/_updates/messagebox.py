@@ -118,7 +118,7 @@ class MessageBox:
 
     # Additional fields beyond PTS needed by `ENTRY_ACCOUNT`.
     date: int = 1
-    seq: int = 0
+    seq: int = NO_SEQ
 
     # Holds the entry with the closest deadline (optimization to avoid recalculating the minimum deadline).
     next_deadline: object = None  # entry
@@ -146,11 +146,14 @@ class MessageBox:
         Create a [`MessageBox`] from a previously known update state.
         """
         deadline = next_updates_deadline()
-        self.map = {
-            ENTRY_ACCOUNT: State(pts=session_state.pts, deadline=deadline),
-            ENTRY_SECRET: State(pts=session_state.qts, deadline=deadline),
-            **{s.channel_id: State(pts=s.pts, deadline=deadline) for s in channel_states}
-        }
+
+        self.map.clear()
+        if session_state.pts != NO_SEQ:
+            self.map[ENTRY_ACCOUNT] = State(pts=session_state.pts, deadline=deadline)
+        if session_state.qts != NO_SEQ:
+            self.map[ENTRY_SECRET] = State(pts=session_state.qts, deadline=deadline)
+        self.map.update((s.channel_id, State(pts=s.pts, deadline=deadline)) for s in channel_states)
+
         self.date = session_state.date
         self.seq = session_state.seq
         self.next_deadline = ENTRY_ACCOUNT
@@ -162,8 +165,8 @@ class MessageBox:
         This should be used for persisting the state.
         """
         return dict(
-            pts=self.map[ENTRY_ACCOUNT].pts if ENTRY_ACCOUNT in self.map else 0,
-            qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else 0,
+            pts=self.map[ENTRY_ACCOUNT].pts if ENTRY_ACCOUNT in self.map else NO_SEQ,
+            qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
             date=self.date,
             seq=self.seq,
         ), {id: state.pts for id, state in self.map.items() if isinstance(id, int)}
@@ -172,7 +175,7 @@ class MessageBox:
         """
         Return true if the message box is empty and has no state yet.
         """
-        return ENTRY_ACCOUNT not in self.map or self.map[ENTRY_ACCOUNT] == NO_SEQ
+        return ENTRY_ACCOUNT not in self.map
 
     def check_deadlines(self):
         """
@@ -245,8 +248,17 @@ class MessageBox:
     # updates will be fetched.
     def set_state(self, state):
         deadline = next_updates_deadline()
-        self.map[ENTRY_ACCOUNT] = State(pts=state.pts, deadline=deadline)
-        self.map[ENTRY_SECRET] = State(pts=state.qts, deadline=deadline)
+
+        if state.pts != NO_SEQ:
+            self.map[ENTRY_ACCOUNT] = State(pts=state.pts, deadline=deadline)
+        else:
+            self.map.pop(ENTRY_ACCOUNT, None)
+
+        if state.qts != NO_SEQ:
+            self.map[ENTRY_SECRET] = State(pts=state.qts, deadline=deadline)
+        else:
+            self.map.pop(ENTRY_SECRET, None)
+
         self.date = state.date
         self.seq = state.seq
 
