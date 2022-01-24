@@ -137,7 +137,7 @@ class InlineQuery(EventBuilder):
             Returns a new `InlineBuilder
             <telethon.tl.custom.inlinebuilder.InlineBuilder>` instance.
             """
-            return custom.InlineBuilder(self._client)
+            return _custom.InlineBuilder(self._client)
 
         async def answer(
                 self, results=None, cache_time=0, *,

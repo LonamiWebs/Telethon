@@ -170,7 +170,7 @@ class Button:
         )
 
     @staticmethod
-    def mention(text, input_entity):
+    def mention(text, input_entity=None):
         """
         Creates a new inline button linked to the profile of user.
 

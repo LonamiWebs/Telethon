@@ -577,9 +577,6 @@ async def edit_permissions(
         ))
 
     user = await self.get_input_entity(user)
-    ty = helpers._entity_type(user)
-    if ty != helpers._EntityType.USER:
-        raise ValueError('You must pass a user entity')
 
     if isinstance(user, _tl.InputPeerSelf):
         raise ValueError('You cannot restrict yourself')
@@ -630,7 +627,7 @@ async def get_permissions(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         user: 'hints.EntityLike' = None
-) -> 'typing.Optional[custom.ParticipantPermissions]':
+) -> 'typing.Optional[_custom.ParticipantPermissions]':
     entity = await self.get_entity(entity)
 
     if not user:
@@ -639,8 +636,7 @@ async def get_permissions(
 
     entity = await self.get_input_entity(entity)
     user = await self.get_input_entity(user)
-    if helpers._entity_type(user) != helpers._EntityType.USER:
-        raise ValueError('You must pass a user entity')
+
     if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
         participant = await self(_tl.fn.channels.GetParticipant(
             entity,
