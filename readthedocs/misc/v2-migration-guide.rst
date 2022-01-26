@@ -775,3 +775,5 @@ raise_last_call_error is now the default rather than ValueError
 self-produced updates like getmessage now also trigger a handler
 
 input_peer removed from get_me; input peers should remain mostly an impl detail
+
+raw api types and fns are now immutable. this can enable optimizations in the future.

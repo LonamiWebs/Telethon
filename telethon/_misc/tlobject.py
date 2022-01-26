@@ -155,4 +155,4 @@ class TLRequest(TLObject):
         return reader.tgread_object()
 
     async def resolve(self, client, utils):
-        pass
+        return self

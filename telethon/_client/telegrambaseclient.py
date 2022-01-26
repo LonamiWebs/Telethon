@@ -8,6 +8,7 @@ import time
 import typing
 import ipaddress
 import dataclasses
+import functools
 
 from .. import version, __name__ as __base_name__, _tl
 from .._crypto import rsa
@@ -182,7 +183,8 @@ def init(
         default_device_model = system.machine
     default_system_version = re.sub(r'-.+','',system.release)
 
-    self._init_request = _tl.fn.InitConnection(
+    self._init_request = functools.partial(
+        _tl.fn.InitConnection,
         api_id=self._api_id,
         device_model=device_model or default_device_model or 'Unknown',
         system_version=system_version or default_system_version or '1.0',
@@ -190,8 +192,6 @@ def init(
         lang_code=lang_code,
         system_lang_code=system_lang_code,
         lang_pack='',  # "langPacks are for official apps only"
-        query=None,
-        proxy=None
     )
 
     self._sender = MTProtoSender(
@@ -272,10 +272,8 @@ async def connect(self: 'TelegramClient') -> None:
     # Need to send invokeWithLayer for things to work out.
     # Make the most out of this opportunity by also refreshing our state.
     # During the v1 to v2 migration, this also correctly sets the IPv* columns.
-    self._init_request.query = _tl.fn.help.GetConfig()
-
     config = await self._sender.send(_tl.fn.InvokeWithLayer(
-        _tl.LAYER, self._init_request
+        _tl.LAYER, self._init_request(query=_tl.fn.help.GetConfig())
     ))
 
     for dc in config.dc_options:
@@ -318,7 +316,6 @@ async def disconnect(self: 'TelegramClient'):
 def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
     init_proxy = None
 
-    self._init_request.proxy = init_proxy
     self._proxy = proxy
 
     # While `await client.connect()` passes new proxy on each new call,
@@ -408,8 +405,9 @@ async def _create_exported_sender(self: 'TelegramClient', dc_id):
     ))
     self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
     auth = await self(_tl.fn.auth.ExportAuthorization(dc_id))
-    self._init_request.query = _tl.fn.auth.ImportAuthorization(id=auth.id, bytes=auth.bytes)
-    req = _tl.fn.InvokeWithLayer(_tl.LAYER, self._init_request)
+    req = _tl.fn.InvokeWithLayer(_tl.LAYER, self._init_request(
+        query=_tl.fn.auth.ImportAuthorization(id=auth.id, bytes=auth.bytes)
+    ))
     await sender.send(req)
     return sender
 

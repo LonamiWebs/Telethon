@@ -35,10 +35,11 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
     if flood_sleep_threshold is None:
         flood_sleep_threshold = self.flood_sleep_threshold
     requests = (request if utils.is_list_like(request) else (request,))
+    new_requests = []
     for r in requests:
         if not isinstance(r, _tl.TLRequest):
             raise _NOT_A_REQUEST()
-        await r.resolve(self, utils)
+        r = await r.resolve(self, utils)
 
         # Avoid making the request if it's already in a flood wait
         if r.CONSTRUCTOR_ID in self._flood_waited_requests:
@@ -58,6 +59,9 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
 
         if self._no_updates:
             r = _tl.fn.InvokeWithoutUpdates(r)
+
+        new_requests.append(r)
+    request = new_requests if utils.is_list_like(request) else new_requests[0]
 
     request_index = 0
     last_error = None
