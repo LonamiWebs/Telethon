@@ -777,3 +777,5 @@ self-produced updates like getmessage now also trigger a handler
 input_peer removed from get_me; input peers should remain mostly an impl detail
 
 raw api types and fns are now immutable. this can enable optimizations in the future.
+
+upload_file has been removed from the public methods. it's a low-level method users should not need to use.

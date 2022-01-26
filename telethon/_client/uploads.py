@@ -235,6 +235,80 @@ async def upload_file(
         key: bytes = None,
         iv: bytes = None,
         progress_callback: 'hints.ProgressCallback' = None) -> '_tl.TypeInputFile':
+    """
+    Uploads a file to Telegram's servers, without sending it.
+
+    .. note::
+
+        Generally, you want to use `send_file` instead.
+
+    This method returns a handle (an instance of :tl:`InputFile` or
+    :tl:`InputFileBig`, as required) which can be later used before
+    it expires (they are usable during less than a day).
+
+    Uploading a file will simply return a "handle" to the file stored
+    remotely in the Telegram servers, which can be later used on. This
+    will **not** upload the file to your own chat or any chat at all.
+
+    Arguments
+        file (`str` | `bytes` | `file`):
+            The path of the file, byte array, or stream that will be sent.
+            Note that if a byte array or a stream is given, a filename
+            or its type won't be inferred, and it will be sent as an
+            "unnamed application/octet-stream".
+
+        part_size_kb (`int`, optional):
+            Chunk size when uploading files. The larger, the less
+            requests will be made (up to 512KB maximum).
+
+        file_size (`int`, optional):
+            The size of the file to be uploaded, which will be determined
+            automatically if not specified.
+
+            If the file size can't be determined beforehand, the entire
+            file will be read in-memory to find out how large it is.
+
+        file_name (`str`, optional):
+            The file name which will be used on the resulting InputFile.
+            If not specified, the name will be taken from the ``file``
+            and if this is not a `str`, it will be ``"unnamed"``.
+
+        use_cache (`type`, optional):
+            This parameter currently does nothing, but is kept for
+            backward-compatibility (and it may get its use back in
+            the future).
+
+        key ('bytes', optional):
+            In case of an encrypted upload (secret chats) a key is supplied
+
+        iv ('bytes', optional):
+            In case of an encrypted upload (secret chats) an iv is supplied
+
+        progress_callback (`callable`, optional):
+            A callback function accepting two parameters:
+            ``(sent bytes, total)``.
+
+    Returns
+        :tl:`InputFileBig` if the file size is larger than 10MB,
+        `InputSizedFile <telethon.tl._custom.inputsizedfile.InputSizedFile>`
+        (subclass of :tl:`InputFile`) otherwise.
+
+    Example
+        .. code-block:: python
+
+            # Photos as photo and document
+            file = await client.upload_file('photo.jpg')
+            await client.send_file(chat, file)                       # sends as photo
+            await client.send_file(chat, file, force_document=True)  # sends as document
+
+            file.name = 'not a photo.jpg'
+            await client.send_file(chat, file, force_document=True)  # document, new name
+
+            # As song or as voice note
+            file = await client.upload_file('song.ogg')
+            await client.send_file(chat, file)                   # sends as song
+            await client.send_file(chat, file, voice_note=True)  # sends as voice note
+    """
     if isinstance(file, (_tl.InputFile, _tl.InputFileBig)):
         return file  # Already uploaded
 

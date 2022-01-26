@@ -37,7 +37,7 @@ KNOWN_NAMED_EXAMPLES = {
     ('lang_code', 'string'): "'en'",
     ('chat_id', 'int'): '478614198',
     ('client_id', 'long'): 'random.randrange(-2**63, 2**63)',
-    ('video', 'InputFile'): "client.upload_file('/path/to/file.mp4')",
+    ('video', 'InputFile'): "client._upload_file('/path/to/file.mp4')",
 }
 
 KNOWN_TYPED_EXAMPLES = {
@@ -50,8 +50,8 @@ KNOWN_TYPED_EXAMPLES = {
     'double': '7.13',
     'Bool': 'False',
     'true': 'True',
-    'InputChatPhoto': "client.upload_file('/path/to/photo.jpg')",
-    'InputFile': "client.upload_file('/path/to/file.jpg')",
+    'InputChatPhoto': "client._upload_file('/path/to/photo.jpg')",
+    'InputFile': "client._upload_file('/path/to/file.jpg')",
     'InputPeer': "'username'"
 }
 

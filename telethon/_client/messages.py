@@ -476,10 +476,10 @@ async def send_message(
 
         # TODO album
         if message._file._should_upload_thumb():
-            message._file._set_uploaded_thumb(await self.upload_file(message._file._thumb))
+            message._file._set_uploaded_thumb(await self._upload_file(message._file._thumb))
 
         if message._file._should_upload_file():
-            message._file._set_uploaded_file(await self.upload_file(message._file._file))
+            message._file._set_uploaded_file(await self._upload_file(message._file._file))
 
         request = _tl.fn.messages.SendMedia(
             entity, message._file._media, reply_to_msg_id=reply_to, message=message._text,
