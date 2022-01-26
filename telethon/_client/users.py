@@ -126,11 +126,10 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
     raise last_error
 
 
-async def get_me(self: 'TelegramClient', input_peer: bool = False) \
+async def get_me(self: 'TelegramClient') \
         -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
     try:
-        me = (await self(_tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
-        return utils.get_input_peer(me, allow_self=False) if input_peer else me
+        return (await self(_tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
     except UnauthorizedError:
         return None
 
@@ -296,7 +295,7 @@ async def get_peer_id(
         peer = await self.get_input_entity(peer)
 
     if isinstance(peer, _tl.InputPeerSelf):
-        peer = await self.get_me(input_peer=True)
+        peer = _tl.PeerUser(self._session_state.user_id)
 
     return utils.get_peer_id(peer)
 

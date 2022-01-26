@@ -3274,18 +3274,12 @@ class TelegramClient:
         """
 
     @forward_call(users.get_me)
-    async def get_me(self: 'TelegramClient', input_peer: bool = False) \
-            -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
+    async def get_me(self: 'TelegramClient') \
+            -> '_tl.User':
         """
         Gets "me", the current :tl:`User` who is logged in.
 
         If the user has not logged in yet, this method returns `None`.
-
-        Arguments
-            input_peer (`bool`, optional):
-                Whether to return the :tl:`InputPeerUser` version or the normal
-                :tl:`User`. This can be useful if you just need to know the ID
-                of yourself.
 
         Returns
             Your own :tl:`User`.
@@ -3433,9 +3427,6 @@ class TelegramClient:
         Returns
             :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`
             or :tl:`InputPeerSelf` if the parameter is ``'me'`` or ``'self'``.
-
-            If you need to get the ID of yourself, you should use
-            `get_me` with ``input_peer=True``) instead.
 
         Example
             .. code-block:: python

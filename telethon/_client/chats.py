@@ -648,7 +648,7 @@ async def get_permissions(
             entity
         ))
         if isinstance(user, _tl.InputPeerSelf):
-            user = await self.get_me(input_peer=True)
+            user = _tl.PeerUser(self._session_state.user_id)
         for participant in chat.full_chat.participants.participants:
             if participant.user_id == user.user_id:
                 return _custom.ParticipantPermissions(participant, True)

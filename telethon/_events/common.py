@@ -25,7 +25,7 @@ async def _into_id_set(client, chats):
         else:
             chat = await client.get_input_entity(chat)
             if isinstance(chat, _tl.InputPeerSelf):
-                chat = await client.get_me(input_peer=True)
+                chat = _tl.PeerUser(self._session_state.user_id)
             result.add(utils.get_peer_id(chat))
 
     return result
