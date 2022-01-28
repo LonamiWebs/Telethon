@@ -227,13 +227,18 @@ async def _dispatch(self, update):
                     except Exception:
                         name = getattr(handler.callback, '__name__', repr(handler.callback))
                         self._log[__name__].exception('Unhandled exception on %s (this is likely a bug in your code)', name)
-                break
-            except NotResolved as e:
+            except NotResolved as nr:
                 try:
-                    await unresolved.resolve()
-                except Exception:
+                    await nr.unresolved.resolve()
+                    continue
+                except Exception as e:
                     # we cannot really do much about this; it might be a temporary network issue
-                    warnings.warn(f'failed to resolve filter, handler will be skipped: {e.unresolved!r}')
-                    break
+                    warnings.warn(f'failed to resolve filter, handler will be skipped: {e}: {nr.unresolved!r}')
+            except Exception as e:
+                # invalid filter (e.g. types when types were not used as input)
+                warnings.warn(f'invalid filter applied, handler will be skipped: {e}: {e.filter!r}')
+
+            # we only want to continue on unresolved filter (to check if there are more unresolved)
+            break
 
     self._dispatching_update_handlers = False
