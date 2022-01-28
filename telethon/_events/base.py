@@ -1,6 +1,8 @@
 import abc
 import functools
 
+from .filters import Filter
+
 
 class StopPropagation(Exception):
     """
@@ -48,7 +50,7 @@ class EventBuilder(abc.ABC):
 class EventHandler:
     __slots__ = ('_event', '_callback', '_priority', '_filter')
 
-    def __init__(self, event, callback, priority, filter):
+    def __init__(self, event: EventBuilder, callback: callable, priority: int, filter: Filter):
         self._event = event
         self._callback = callback
         self._priority = priority
