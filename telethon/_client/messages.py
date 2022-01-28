@@ -743,7 +743,7 @@ async def send_reaction(
     self: 'TelegramClient',
     entity: 'hints.EntityLike',
     message: 'hints.MessageIDLike',
-    reaction: str = None
+    reaction: typing.Optional[str] = None
 ):
     message = utils.get_message_id(message) or 0
     if not reaction:
