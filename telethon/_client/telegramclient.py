@@ -2791,15 +2791,24 @@ class TelegramClient:
         """
 
     @forward_call(updates.on)
-    def on(self: 'TelegramClient', event: EventBuilder):
+    def on(self: 'TelegramClient', *events, priority=0, **filters):
         """
         Decorator used to `add_event_handler` more conveniently.
 
+        This decorator should be above other decorators which modify the function.
 
         Arguments
-            event (`_EventBuilder` | `type`):
-                The event builder class or instance to be used,
-                for instance ``events.NewMessage``.
+            event (`type` | `tuple`):
+                The event type(s) you wish to receive, for instance ``events.NewMessage``.
+                This may also be raw update types.
+                The same handler is registered multiple times, one per type.
+
+            priority (`int`):
+                The event priority. Events with higher priority are dispatched first.
+                The order between events with the same priority is arbitrary.
+
+            filters (any):
+                Filters passed to `make_filter`.
 
         Example
             .. code-block:: python
@@ -2808,7 +2817,12 @@ class TelegramClient:
                 client = TelegramClient(...)
 
                 # Here we use client.on
-                @client.on(events.NewMessage)
+                @client.on(events.NewMessage, priority=100)
+                async def handler(event):
+                    ...
+
+                # Both new incoming messages and incoming edits
+                @client.on(events.NewMessage, events.MessageEdited, incoming=True)
                 async def handler(event):
                     ...
         """
@@ -2816,8 +2830,11 @@ class TelegramClient:
     @forward_call(updates.add_event_handler)
     def add_event_handler(
             self: 'TelegramClient',
-            callback: updates.Callback,
-            event: EventBuilder = None):
+            callback: updates.Callback = None,
+            event: EventBuilder = None,
+            priority=0,
+            **filters
+    ):
         """
         Registers a new event handler callback.
 
@@ -2827,17 +2844,29 @@ class TelegramClient:
             callback (`callable`):
                 The callable function accepting one parameter to be used.
 
-                Note that if you have used `telethon.events.register` in
-                the callback, ``event`` will be ignored, and instead the
-                events you previously registered will be used.
+                If `None`, the method can be used as a decorator. Note that the handler function
+                will be replaced with the `EventHandler` instance in this case, but it will still
+                be callable.
 
             event (`_EventBuilder` | `type`, optional):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
 
-                If left unspecified, `telethon.events.raw.Raw` (the
-                :tl:`Update` objects with no further processing) will
-                be passed instead.
+                If left unspecified, it will be inferred from the type hint
+                used in the handler, or be `telethon.events.raw.Raw` (the
+                :tl:`Update` objects with no further processing) if there is
+                none. Note that the type hint must be the desired type. It
+                cannot be a string, an union, or anything more complex.
+
+            priority (`int`):
+                The event priority. Events with higher priority are dispatched first.
+                The order between events with the same priority is arbitrary.
+
+            filters (any):
+                Filters passed to `make_filter`.
+
+        Returns
+            An `EventHandler` instance, which can be used
 
         Example
             .. code-block:: python
@@ -2845,22 +2874,47 @@ class TelegramClient:
                 from telethon import TelegramClient, events
                 client = TelegramClient(...)
 
+                # Adding a handler, the "boring" way
                 async def handler(event):
                     ...
 
-                client.add_event_handler(handler, events.NewMessage)
+                client.add_event_handler(handler, events.NewMessage, priority=50)
+
+                # Automatic type
+                async def handler(event: events.MessageEdited)
+                    ...
+
+                client.add_event_handler(handler, outgoing=False)
+
+                # Streamlined adding
+                @client.add_event_handler
+                async def handler(event: events.MessageDeleted):
+                    ...
         """
 
     @forward_call(updates.remove_event_handler)
     def remove_event_handler(
             self: 'TelegramClient',
-            callback: updates.Callback,
-            event: EventBuilder = None) -> int:
+            callback: updates.Callback = None,
+            event: EventBuilder = None,
+            priority=None,
+    ) -> int:
         """
         Inverse operation of `add_event_handler()`.
 
         If no event is given, all events for this callback are removed.
-        Returns how many callbacks were removed.
+        Returns a list in arbitrary order with all removed `EventHandler` instances.
+
+        Arguments
+            callback (`callable`):
+                The callable function accepting one parameter to be used.
+                If passed an `EventHandler` instance, both `event` and `priority` are ignored.
+
+            event (`_EventBuilder` | `type`, optional):
+                The event builder class or instance to be used when searching.
+
+            priority (`int`):
+                The event priority to be used when searching.
 
         Example
             .. code-block:: python
@@ -2876,6 +2930,12 @@ class TelegramClient:
 
                 # "handler" will stop receiving anything
                 client.remove_event_handler(handler)
+
+                # Remove all handlers with priority 50
+                client.remove_event_handler(priority=50)
+
+                # Remove all deleted-message handlers
+                client.remove_event_handler(event=events.MessageDeleted)
         """
 
     @forward_call(updates.list_event_handlers)
@@ -2885,7 +2945,7 @@ class TelegramClient:
         Lists all registered event handlers.
 
         Returns
-            A list of pairs consisting of ``(callback, event)``.
+            A list of all registered `EventHandler` in arbitrary order.
 
         Example
             .. code-block:: python
@@ -2895,8 +2955,8 @@ class TelegramClient:
                     '''Greets someone'''
                     await event.reply('Hi')
 
-                for callback, event in client.list_event_handlers():
-                    print(id(callback), type(event))
+                for handler in client.list_event_handlers():
+                    print(id(handler.callback), handler.event)
         """
 
     @forward_call(updates.catch_up)

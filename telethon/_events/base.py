@@ -1,4 +1,5 @@
 import abc
+import functools
 
 
 class StopPropagation(Exception):
@@ -41,3 +42,23 @@ class EventBuilder(abc.ABC):
         `self_id` should be the current user's ID, since it is required
         for some events which lack this information but still need it.
         """
+
+
+@functools.total_ordering
+class EventHandler:
+    __slots__ = ('_event', '_callback', '_priority', '_filter')
+
+    def __init__(self, event, callback, priority, filter):
+        self._event = event
+        self._callback = callback
+        self._priority = priority
+        self._filter = filter
+
+    def __eq__(self, other):
+        return self is other
+
+    def __lt__(self, other):
+        return self._priority < other._priority
+
+    def __call__(self, *args, **kwargs):
+        return self._callback(*args, **kwargs)

@@ -148,6 +148,7 @@ def init(
     self._no_updates = not receive_updates
     self._updates_queue = asyncio.Queue(maxsize=max_queued_updates)
     self._updates_handle = None
+    self._update_handlers = []  # sorted list
     self._message_box = MessageBox()
     self._entity_cache = EntityCache()  # required for proper update handling (to know when to getDifference)
 

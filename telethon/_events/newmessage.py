@@ -6,7 +6,7 @@ from .. import _tl
 from ..types import _custom
 
 
-class NewMessageEvent(EventBuilder, Message):
+class NewMessage(EventBuilder, _custom.Message):
     """
     Represents the event of a new message. This event can be treated
     to all effects as a `Message <telethon.tl.custom.message.Message>`,

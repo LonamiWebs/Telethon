@@ -32,7 +32,7 @@ def _requires_status(function):
     return wrapped
 
 
-class UserUpdateEvent(EventBuilder, _custom.chatgetter.ChatGetter, _custom.sendergetter.SenderGetter):
+class UserUpdate(EventBuilder, _custom.chatgetter.ChatGetter, _custom.sendergetter.SenderGetter):
     """
     Occurs whenever a user goes online, starts typing, etc.
 

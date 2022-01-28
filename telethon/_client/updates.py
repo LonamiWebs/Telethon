@@ -7,12 +7,15 @@ import time
 import traceback
 import typing
 import logging
+import inspect
+import bisect
+import warnings
 from collections import deque
 
 from ..errors._rpcbase import RpcError
-from .._events.base import EventBuilder
 from .._events.raw import Raw
-from .._events.base import StopPropagation, _get_handlers
+from .._events.base import StopPropagation, EventBuilder, EventHandler
+from .._events.filters import make_filter
 from .._misc import utils
 from .. import _tl
 
@@ -33,51 +36,96 @@ async def run_until_disconnected(self: 'TelegramClient'):
     await self(_tl.fn.updates.GetState())
     await self._sender.wait_disconnected()
 
-def on(self: 'TelegramClient', event: EventBuilder):
+def on(self: 'TelegramClient', *events, priority=0, **filters):
     def decorator(f):
-        self.add_event_handler(f, event)
+        for event in events:
+            self.add_event_handler(f, event, priority=priority, **filters)
         return f
 
     return decorator
 
 def add_event_handler(
         self: 'TelegramClient',
-        callback: Callback,
-        event: EventBuilder = None):
-    builders = _get_handlers(callback)
-    if builders is not None:
-        for event in builders:
-            self._event_builders.append((event, callback))
-        return
+        callback=None,
+        event=None,
+        priority=0,
+        **filters
+):
+    if callback is None:
+        return functools.partial(add_event_handler, self, event=event, priority=priority, **filters)
 
-    if isinstance(event, type):
-        event = event()
-    elif not event:
-        event = Raw()
+    if event is None:
+        for param in inspect.signature(callback).parameters.values():
+            if not issubclass(param.annotation, EventBuilder):
+                raise TypeError(f'unrecognized event handler type: {param.annotation!r}')
+            event = param.annotation
+            break  # only check the first parameter
 
-    self._event_builders.append((event, callback))
+    if event is None:
+        event = Raw
+
+    handler = EventHandler(event, callback, priority, make_filter(**filters))
+    bisect.insort(self._update_handlers, handler)
+    return handler
 
 def remove_event_handler(
         self: 'TelegramClient',
-        callback: Callback,
-        event: EventBuilder = None) -> int:
-    found = 0
-    if event and not isinstance(event, type):
-        event = type(event)
+        callback,
+        event,
+        priority,
+):
+    if callback is None and event is None and priority is None:
+        raise ValueError('must specify at least one of callback, event or priority')
 
-    i = len(self._event_builders)
-    while i:
-        i -= 1
-        ev, cb = self._event_builders[i]
-        if cb == callback and (not event or isinstance(ev, event)):
-            del self._event_builders[i]
-            found += 1
+    if not self._update_handlers:
+        return []  # won't be removing anything (some code paths rely on non-empty lists)
 
-    return found
+    if isinstance(callback, EventHandler):
+        if event is not None or priority is not None:
+            warnings.warn('event and priority are ignored when removing EventHandler instances')
+
+        index = bisect.bisect_left(self._update_handlers, callback)
+        try:
+            if self._update_handlers[index] == callback:
+                return [self._update_handlers.pop(index)]
+        except IndexError:
+            pass
+        return []
+
+    if priority is not None:
+        # can binary-search (using a dummy EventHandler)
+        index = bisect.bisect_right(self._update_handlers, EventHandler(None, None, priority, None))
+        try:
+            while self._update_handlers[index].priority == priority:
+                index += 1
+        except IndexError:
+            pass
+
+        removed = []
+        while index > 0 and self._update_handlers[index - 1].priority == priority:
+            index -= 1
+            if callback is not None and self._update_handlers[index].callback != callback:
+                continue
+            if event is not None and self._update_handlers[index].event != event:
+                continue
+            removed.append(self._update_handlers.pop(index))
+
+        return removed
+
+    # slow-path, remove all matching
+    removed = []
+    for index, handler in reversed(enumerate(self._update_handlers)):
+        if callback is not None and handler.callback != callback:
+            continue
+        if event is not None and handler.event != event:
+            continue
+        removed.append(self._update_handlers.pop(index))
+
+    return removed
 
 def list_event_handlers(self: 'TelegramClient')\
         -> 'typing.Sequence[typing.Tuple[Callback, EventBuilder]]':
-    return [(callback, event) for event, callback in self._event_builders]
+    return self._update_handlers[:]
 
 async def catch_up(self: 'TelegramClient'):
     # The update loop is probably blocked on either timeout or an update to arrive.

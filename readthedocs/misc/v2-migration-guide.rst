@@ -788,3 +788,4 @@ it's now
 this also means filters are unified, although not all have an effect on all events. from_users renamed to senders. messageread inbox is gone in favor of outgoing/incoming.
 events.register, unregister, is_handler and list are gone. now you can typehint instead.
 def handler(event: events.NewMessage)
+client.on, add, and remove have changed parameters/retval
