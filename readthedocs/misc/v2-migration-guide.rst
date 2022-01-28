@@ -779,3 +779,12 @@ input_peer removed from get_me; input peers should remain mostly an impl detail
 raw api types and fns are now immutable. this can enable optimizations in the future.
 
 upload_file has been removed from the public methods. it's a low-level method users should not need to use.
+
+events have changed. rather than differentiating between "event builder" and "event instance", instead there is only the instance, and you register the class.
+where you had
+@client.on(events.NewMessage(chats=...))
+it's now
+@client.on(events.NewMessage, chats=...)
+this also means filters are unified, although not all have an effect on all events. from_users renamed to senders. messageread inbox is gone in favor of outgoing/incoming.
+events.register, unregister, is_handler and list are gone. now you can typehint instead.
+def handler(event: events.NewMessage)

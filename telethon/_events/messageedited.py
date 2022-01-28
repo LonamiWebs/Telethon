@@ -1,10 +1,8 @@
-from .common import name_inner_event
-from .newmessage import NewMessage
+from .base import EventBuilder
 from .. import _tl
 
 
-@name_inner_event
-class MessageEdited(NewMessage):
+class MessageEdited(EventBuilder):
     """
     Occurs whenever a message is edited. Just like `NewMessage
     <telethon.events.newmessage.NewMessage>`, you should treat
@@ -43,10 +41,7 @@ class MessageEdited(NewMessage):
                 print('Message', event.id, 'changed at', event.date)
     """
     @classmethod
-    def build(cls, update, others=None, self_id=None, *todo, **todo2):
+    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
         if isinstance(update, (_tl.UpdateEditMessage,
                                _tl.UpdateEditChannelMessage)):
             return cls.Event(update.message)
-
-    class Event(NewMessage.Event):
-        pass  # Required if we want a different name for it

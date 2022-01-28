@@ -10,7 +10,7 @@ from . import (
 )
 from .. import version, _tl
 from ..types import _custom
-from .._events.common import EventBuilder, EventCommon
+from .._events.base import EventBuilder
 from .._misc import enums
 
 

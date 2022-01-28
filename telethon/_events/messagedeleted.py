@@ -1,9 +1,9 @@
-from .common import EventBuilder, EventCommon, name_inner_event
+from .base import EventBuilder
 from .. import _tl
+from ..types import _custom
 
 
-@name_inner_event
-class MessageDeleted(EventBuilder):
+class MessageDeleted(EventBuilder, _custom.chatgetter.ChatGetter):
     """
     Occurs whenever a message is deleted. Note that this event isn't 100%
     reliable, since Telegram doesn't always notify the clients that a message
@@ -35,8 +35,13 @@ class MessageDeleted(EventBuilder):
                 for msg_id in event.deleted_ids:
                     print('Message', msg_id, 'was deleted in', event.chat_id)
     """
+    def __init__(self, deleted_ids, peer):
+        _custom.chatgetter.ChatGetter.__init__(self, chat_peer=peer)
+        self.deleted_id = None if not deleted_ids else deleted_ids[0]
+        self.deleted_ids = deleted_ids
+
     @classmethod
-    def build(cls, update, others=None, self_id=None, *todo, **todo2):
+    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
         if isinstance(update, _tl.UpdateDeleteMessages):
             return cls.Event(
                 deleted_ids=update.messages,
@@ -47,11 +52,3 @@ class MessageDeleted(EventBuilder):
                 deleted_ids=update.messages,
                 peer=_tl.PeerChannel(update.channel_id)
             )
-
-    class Event(EventCommon):
-        def __init__(self, deleted_ids, peer):
-            super().__init__(
-                chat_peer=peer, msg_id=(deleted_ids or [0])[0]
-            )
-            self.deleted_id = None if not deleted_ids else deleted_ids[0]
-            self.deleted_ids = deleted_ids
