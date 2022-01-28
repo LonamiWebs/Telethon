@@ -245,7 +245,7 @@ class SQLiteSession(Session):
         try:
             c.executemany(
                 'insert or replace into entity values (?,?,?)',
-                [(e.id, e.access_hash, e.ty.value) for e in entities]
+                [(e.id, e.access_hash, e.ty) for e in entities]
             )
         finally:
             c.close()
