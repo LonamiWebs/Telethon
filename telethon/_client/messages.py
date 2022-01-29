@@ -764,9 +764,11 @@ async def send_reaction(
     )
     result = await self(request)
     for update in result.updates:
-        if isinstance(update, _tl.UpdateMessageReactions):
-            return update.reactions
-    return reaction
+        if (
+            isinstance(update, _tl.UpdateMessageReactions) or
+            isinstance(update, _tl.UpdateEditMessage)
+        ):
+            return update.reactions  
 
 async def set_quick_reaction(
     self: 'TelegramClient',
