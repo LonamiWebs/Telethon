@@ -54,7 +54,7 @@ METHODS_IN = GENERATOR_DIR / 'data/methods.csv'
 # Which raw API methods are covered by *friendly* methods in the client?
 FRIENDLY_IN = GENERATOR_DIR / 'data/friendly.csv'
 
-TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
+TLOBJECT_IN_TLS = [Path(x) for x in sorted(GENERATOR_DIR.glob('data/*.tl'))]
 TLOBJECT_OUT = LIBRARY_DIR / '_tl'
 TLOBJECT_MOD = 'telethon._tl'
 
