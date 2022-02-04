@@ -194,7 +194,7 @@ def pretty_print(obj, indent=None, max_depth=float('inf')):
     if max_depth < 0:
         return '...'
 
-    to_d = getattr(obj, '_to_dict', None) or getattr(obj, 'to_dict', None)
+    to_d = getattr(obj, 'to_dict', None)
     if callable(to_d):
         obj = to_d()
 
