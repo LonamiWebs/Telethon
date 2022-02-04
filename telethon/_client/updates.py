@@ -15,7 +15,7 @@ from collections import deque
 from ..errors._rpcbase import RpcError
 from .._events.raw import Raw
 from .._events.base import StopPropagation, EventBuilder, EventHandler
-from .._events.filters import make_filter
+from .._events.filters import make_filter, NotResolved
 from .._misc import utils
 from .. import _tl
 
