@@ -4,6 +4,7 @@ import typing
 
 from .._misc import helpers, utils
 from ..types import _custom
+from ..types._custom.inputmessage import InputMessage
 from .. import _tl
 
 if typing.TYPE_CHECKING:
@@ -29,7 +30,7 @@ async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
     Returns a (parsed message, entities) tuple depending on ``parse_mode``.
     """
     if parse_mode == ():
-        parse_mode = self._parse_mode
+        parse_mode = InputMessage._default_parse_mode
     else:
         parse_mode = utils.sanitize_parse_mode(parse_mode)
 

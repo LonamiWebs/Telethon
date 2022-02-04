@@ -489,7 +489,8 @@ class Message(ChatGetter, SenderGetter):
         * A string equal to ``'md'`` or ``'markdown`` for parsing with commonmark,
           ``'htm'`` or ``'html'`` for parsing HTML.
         * A ``callable``, which accepts a ``str`` as input and returns a tuple of
-          ``(parsed str, formatting entities)``.
+          ``(parsed str, formatting entities)``. Obtaining formatted text from a message in
+          this setting is not supported and will instead return the plain text.
         * A ``tuple`` of two ``callable``. The first must accept a ``str`` as input and return
           a tuple of ``(parsed str, list of formatting entities)``. The second must accept two
           parameters, a parsed ``str`` and a ``list`` of formatting entities, and must return
@@ -497,25 +498,7 @@ class Message(ChatGetter, SenderGetter):
 
         If it's not one of these values or types, the method fails accordingly.
         """
-        if isinstance(mode, str):
-            mode = mode.lower()
-            if mode in ('md', 'markdown'):
-                mode = (_misc.markdown.parse, _misc.markdown.unparse)
-            elif mode in ('htm', 'html'):
-                mode = (_misc.html.parse, _misc.html.unparse)
-            else:
-                raise ValueError(f'mode must be one of md, markdown, htm or html, but was {mode!r}')
-        elif callable(mode):
-            mode = (mode, lambda t, e: t)
-        elif isinstance(mode, tuple):
-            if len(mode) == 2 and callable(mode[0]) and callable(mode[1]):
-                mode = mode
-            else:
-                raise ValueError(f'mode must be a tuple of exactly two callables')
-        else:
-            raise TypeError(f'mode must be either a str, callable or tuple, but was {mode!r}')
-
-        InputMessage._default_parse_mode = mode
+        InputMessage._default_parse_mode = utils.sanitize_parse_mode(mode)
 
     @classmethod
     def set_default_link_preview(cls, enabled):
@@ -545,22 +528,11 @@ class Message(ChatGetter, SenderGetter):
         The message text, formatted using the client's default
         parse mode. Will be `None` for :tl:`MessageService`.
         """
-        if self._text is None and self._client:
-            if not self._client.parse_mode:
-                self._text = self.message
-            else:
-                self._text = self._client.parse_mode.unparse(
-                    self.message, self.entities)
-
-        return self._text
+        return InputMessage._default_parse_mode[1](self.message, self.entities)
 
     @text.setter
     def text(self, value):
-        self._text = value
-        if self._client and self._client.parse_mode:
-            self.message, self.entities = self._client.parse_mode.parse(value)
-        else:
-            self.message, self.entities = value, []
+        self.message, self.entities = InputMessage._default_parse_mode[0](value)
 
     @property
     def raw_text(self):

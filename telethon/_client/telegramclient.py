@@ -2196,7 +2196,8 @@ class TelegramClient:
                 await client.send_message('me', 'Hello **world**!')
 
                 # Default to another parse mode
-                client.parse_mode = 'html'
+                from telethon.types import Message
+                Message.set_default_parse_mode('html')
 
                 await client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
                 await client.send_message('me', 'An <a href="https://example.com">URL</a>')
@@ -2204,8 +2205,8 @@ class TelegramClient:
                 await client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
 
                 # Explicit parse mode
-                # No parse mode by default
-                client.parse_mode = None
+                # No parse mode by default (import Message first)
+                Message.set_default_parse_mode(None)
 
                 # ...but here I want markdown
                 await client.send_message('me', 'Hello, **world**!', parse_mode='md')

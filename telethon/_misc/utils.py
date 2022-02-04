@@ -748,37 +748,26 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     return list(attr_dict.values()), mime_type
 
 
-def sanitize_parse_mode(mode):
-    """
-    Converts the given parse mode into an object with
-    ``parse`` and ``unparse`` callable properties.
-    """
-    if not mode:
-        return None
-
-    if callable(mode):
-        class CustomMode:
-            @staticmethod
-            def unparse(text, entities):
-                raise NotImplementedError
-
-        CustomMode.parse = mode
-        return CustomMode
-    elif (all(hasattr(mode, x) for x in ('parse', 'unparse'))
-          and all(callable(x) for x in (mode.parse, mode.unparse))):
-        return mode
+def sanitize_parse_mode(mode, *, _nop_parse=lambda t: (t, []), _nop_unparse=lambda t, e: t):
+    if mode is None:
+        mode = (_nop_parse, _nop_unparse)
     elif isinstance(mode, str):
-        try:
-            return {
-                'md': markdown,
-                'markdown': markdown,
-                'htm': html,
-                'html': html
-            }[mode.lower()]
-        except KeyError:
-            raise ValueError('Unknown parse mode {}'.format(mode))
+        mode = mode.lower()
+        if mode in ('md', 'markdown'):
+            mode = (markdown.parse, markdown.unparse)
+        elif mode in ('htm', 'html'):
+            mode = (html.parse, html.unparse)
+        else:
+            raise ValueError(f'mode must be one of md, markdown, htm or html, but was {mode!r}')
+    elif callable(mode):
+        mode = (mode, _nop_unparse)
+    elif isinstance(mode, tuple):
+        if not (len(mode) == 2 and callable(mode[0]) and callable(mode[1])):
+            raise ValueError(f'mode must be a tuple of exactly two callables')
     else:
-        raise TypeError('Invalid parse mode type {}'.format(mode))
+        raise TypeError(f'mode must be either a str, callable or tuple, but was {mode!r}')
+
+    return mode
 
 
 def get_input_location(location):

@@ -284,11 +284,7 @@ async def sign_up(
             pass  # code is correct and was used, now need to sign in
 
     if self._tos and self._tos.text:
-        if self.parse_mode:
-            t = self.parse_mode.unparse(self._tos.text, self._tos.entities)
-        else:
-            t = self._tos.text
-        sys.stderr.write("{}\n".format(t))
+        sys.stderr.write("{}\n".format(self._tos.text))
         sys.stderr.flush()
 
     phone, phone_code_hash = \
