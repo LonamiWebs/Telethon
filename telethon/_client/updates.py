@@ -216,7 +216,8 @@ async def _dispatch(self, update):
     for handler in self._update_handlers:
         event = event_cache.get(handler._event)
         if not event:
-            event_cache[handler._event] = event = handler._event._build(update)
+            event_cache[handler._event] = event = handler._event._build(
+                update, [], self._session_state.user_id, {}, self)
 
         while True:
             # filters can be modified at any time, and there can be any amount of them which are not yet resolved

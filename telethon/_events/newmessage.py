@@ -109,4 +109,4 @@ class NewMessage(EventBuilder, _custom.Message):
         else:
             return
 
-        return cls.Event(_custom.Message._new(client, msg, entities, None))
+        return cls._new(client, msg, entities, None)
