@@ -673,7 +673,8 @@ async def mark_read(
         entity: 'hints.EntityLike',
         message: 'hints.MessageIDLike' = None,
         *,
-        clear_mentions: bool = False) -> bool:
+        clear_mentions: bool = False,
+        clear_reactions: bool = False) -> bool:
     if not message:
         max_id = 0
     elif isinstance(message, int):
@@ -684,6 +685,9 @@ async def mark_read(
     entity = await self.get_input_entity(entity)
     if clear_mentions:
         await self(_tl.fn.messages.ReadMentions(entity))
+
+    if clear_reactions:
+        await self(_tl.fn.messages.ReadReactions(entity))
 
     if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
         return await self(_tl.fn.channels.ReadHistory(
