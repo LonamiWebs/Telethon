@@ -225,8 +225,11 @@ async def _dispatch(self, update):
                 if handler._filter(event):
                     try:
                         await handler._callback(event)
+                    except StopPropagation:
+                        self._dispatching_update_handlers = False
+                        return
                     except Exception:
-                        name = getattr(handler.callback, '__name__', repr(handler.callback))
+                        name = getattr(handler._callback, '__name__', repr(handler._callback))
                         self._log[__name__].exception('Unhandled exception on %s (this is likely a bug in your code)', name)
             except NotResolved as nr:
                 try:
