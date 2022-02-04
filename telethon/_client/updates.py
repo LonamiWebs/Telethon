@@ -56,7 +56,7 @@ def add_event_handler(
 
     if event is None:
         for param in inspect.signature(callback).parameters.values():
-            event = param.annotation
+            event = None if param.annotation is inspect.Signature.empty else param.annotation
             break  # only check the first parameter
 
     if event is None:
