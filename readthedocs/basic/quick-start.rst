@@ -32,7 +32,7 @@ use these if possible.
             print(me.phone)
 
             # You can print all the dialogs/conversations that you are part of:
-            async for dialog in client.iter_dialogs():
+            async for dialog in client.get_dialogs():
                 print(dialog.name, 'has ID', dialog.id)
 
             # You can send messages to yourself...
@@ -62,7 +62,7 @@ use these if possible.
             await client.send_file('me', '/home/me/Pictures/holidays.jpg')
 
             # You can print the message history of any chat:
-            async for message in client.iter_messages('me'):
+            async for message in client.get_messages('me'):
                 print(message.id, message.text)
 
                 # You can download media from messages, too!

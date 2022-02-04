@@ -140,7 +140,7 @@ class _MessagesIter(requestiter.RequestIter):
             # trigger `RPC_CALL_FAIL` which is "internal issues"...
             if not isinstance(filter, _tl.InputMessagesFilterEmpty) \
                     and offset_date and not search and not offset_id:
-                async for m in self.client.iter_messages(
+                async for m in self.client.get_messages(
                         self.entity, 1, offset_date=offset_date):
                     self.request.offset_id = m.id + 1
         else:

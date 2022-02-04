@@ -190,7 +190,7 @@ class TelegramClient:
             .. code-block:: python
 
                 async with client.takeout():
-                    async for message in client.iter_messages(chat, wait_time=0):
+                    async for message in client.get_messages(chat, wait_time=0):
                         ...  # Do something with the message
         """
 
@@ -214,8 +214,8 @@ class TelegramClient:
         flood limits. This is useful if you want to export the data from
         conversations or mass-download media, since the rate limits will
         be lower. Only some requests will be affected, and you will need
-        to adjust the `wait_time` of methods like `client.iter_messages
-        <telethon.client.messages.MessageMethods.iter_messages>`.
+        to adjust the `wait_time` of methods like `client.get_messages
+        <telethon.client.messages.MessageMethods.get_messages>`.
 
         By default, all parameters are `None`, and you need to enable those
         you plan to use by setting them to either `True` or `False`.
@@ -272,7 +272,7 @@ class TelegramClient:
 
                     await client.get_messages('me')  # wrapped through takeout (less limits)
 
-                    async for message in client.iter_messages(chat, wait_time=0):
+                    async for message in client.get_messages(chat, wait_time=0):
                         ...  # Do something with the message
 
                     await client.end_takeout(success=True)
@@ -751,16 +751,16 @@ class TelegramClient:
             .. code-block:: python
 
                 # Show all user IDs in a chat
-                async for user in client.iter_participants(chat):
+                async for user in client.get_participants(chat):
                     print(user.id)
 
                 # Search by name
-                async for user in client.iter_participants(chat, search='name'):
+                async for user in client.get_participants(chat, search='name'):
                     print(user.username)
 
                 # Filter by admins
                 from telethon.tl.types import ChannelParticipantsAdmins
-                async for user in client.iter_participants(chat, filter=ChannelParticipantsAdmins):
+                async for user in client.get_participants(chat, filter=ChannelParticipantsAdmins):
                     print(user.first_name)
 
                 # Get a list of 0 people but print the total amount of participants in the chat
@@ -892,7 +892,7 @@ class TelegramClient:
         Example
             .. code-block:: python
 
-                async for event in client.iter_admin_log(channel):
+                async for event in client.get_admin_log(channel):
                     if event.changed_title:
                         print('The title changed from', event.old, 'to', event.new)
 
@@ -943,7 +943,7 @@ class TelegramClient:
             .. code-block:: python
 
                 # Download all the profile photos of some user
-                async for photo in client.iter_profile_photos(user):
+                async for photo in client.get_profile_photos(user):
                     await client.download_media(photo)
 
                 # Get all the photos of a channel and download the oldest one
@@ -1456,7 +1456,7 @@ class TelegramClient:
             .. code-block:: python
 
                 # Print all dialog IDs and the title, nicely formatted
-                async for dialog in client.iter_dialogs():
+                async for dialog in client.get_dialogs():
                     print('{:>14}: {}'.format(dialog.id, dialog.title))
 
                 # Get all open conversation, print the title of the first
@@ -1502,7 +1502,7 @@ class TelegramClient:
                     await draft.delete()
 
                 # Getting the drafts with 'bot1' and 'bot2'
-                async for draft in client.iter_drafts(['bot1', 'bot2']):
+                async for draft in client.get_drafts(['bot1', 'bot2']):
                     print(draft.text)
 
                 # Get the draft in your chat
@@ -1998,28 +1998,28 @@ class TelegramClient:
             .. code-block:: python
 
                 # From most-recent to oldest
-                async for message in client.iter_messages(chat):
+                async for message in client.get_messages(chat):
                     print(message.id, message.text)
 
                 # From oldest to most-recent
-                async for message in client.iter_messages(chat, reverse=True):
+                async for message in client.get_messages(chat, reverse=True):
                     print(message.id, message.text)
 
                 # Filter by sender, and limit to 10
-                async for message in client.iter_messages(chat, 10, from_user='me'):
+                async for message in client.get_messages(chat, 10, from_user='me'):
                     print(message.text)
 
                 # Server-side search with fuzzy text
-                async for message in client.iter_messages(chat, search='hello'):
+                async for message in client.get_messages(chat, search='hello'):
                     print(message.id)
 
                 # Filter by message type:
                 from telethon.tl.types import InputMessagesFilterPhotos
-                async for message in client.iter_messages(chat, filter=InputMessagesFilterPhotos):
+                async for message in client.get_messages(chat, filter=InputMessagesFilterPhotos):
                     print(message.photo)
 
                 # Getting comments from a post in a channel:
-                async for message in client.iter_messages(channel, reply_to=123):
+                async for message in client.get_messages(channel, reply_to=123):
                     print(message.chat.title, message.text)
 
                 # Get 0 photos and print the total to show how many photos there are
@@ -3337,12 +3337,12 @@ class TelegramClient:
                 print(utils.get_display_name(me))
 
                 chat = await client.get_input_entity('username')
-                async for message in client.iter_messages(chat):
+                async for message in client.get_messages(chat):
                     ...
 
                 # Note that you could have used the username directly, but it's
                 # good to use get_input_entity if you will reuse it a lot.
-                async for message in client.iter_messages('username'):
+                async for message in client.get_messages('username'):
                     ...
 
                 # Note that for this to work the phone number must be in your contacts

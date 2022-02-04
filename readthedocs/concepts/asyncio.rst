@@ -75,7 +75,7 @@ loops or use ``async with``:
         async with client:
             # ^ this is an asynchronous with block
 
-            async for message in client.iter_messages(chat):
+            async for message in client.get_messages(chat):
                 # ^ this is a for loop over an asynchronous generator
 
                 print(message.sender.username)

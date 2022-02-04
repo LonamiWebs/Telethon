@@ -119,7 +119,7 @@ async def root():
         # They are logged in, show them some messages from their first dialog
         dialog = (await client.get_dialogs())[0]
         result = '<h1>{}</h1>'.format(dialog.title)
-        async for m in client.iter_messages(dialog, 10):
+        async for m in client.get_messages(dialog, 10):
             result += await(format_message(m))
 
         return await render_template_string(BASE_TEMPLATE, content=result)

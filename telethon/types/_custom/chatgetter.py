@@ -75,7 +75,7 @@ class ChatGetter(abc.ABC):
             try:
                 # The chat may be recent, look in dialogs
                 target = self.chat_id
-                async for d in self._client.iter_dialogs(100):
+                async for d in self._client.get_dialogs(100):
                     if d.id == target:
                         self._chat = d.entity
                         self._input_chat = d.input_entity
