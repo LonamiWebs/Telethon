@@ -55,6 +55,10 @@ class Dialog:
             How many mentions are currently unread in this dialog. Note that
             this value won't update when new messages arrive.
 
+        unread_reactions_count (`int`):
+            How many reactions are currently unread in this dialog. Note that
+            this value won't update when new messages arrive.
+
         draft (`Draft <telethon.tl.custom.draft.Draft>`):
             The draft object in this dialog. It will not be `None`,
             so you can call ``draft.set_message(...)``.
@@ -86,6 +90,7 @@ class Dialog:
 
         self.unread_count = dialog.unread_count
         self.unread_mentions_count = dialog.unread_mentions_count
+        self.unread_reactions_count = dialog.unread_reactions_count
 
         self.draft = Draft(client, self.entity, self.dialog.draft)
 
