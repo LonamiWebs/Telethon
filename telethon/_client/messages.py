@@ -743,7 +743,8 @@ async def send_reaction(
     self: 'TelegramClient',
     entity: 'hints.EntityLike',
     message: 'hints.MessageIDLike',
-    reaction: typing.Optional[str] = None
+    reaction: typing.Optional[str] = None,
+    big: bool = False
 ):
     message = utils.get_message_id(message) or 0
     if not reaction:
@@ -758,6 +759,7 @@ async def send_reaction(
             )
         ).value.value
     request = _tl.fn.messages.SendReaction(
+        big=big,
         peer=entity,
         msg_id=message,
         reaction=reaction
