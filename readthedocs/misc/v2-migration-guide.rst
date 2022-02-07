@@ -75,6 +75,66 @@ removed. This implies:
 // TODO provide standalone alternative for this?
 
 
+Overhaul of events and updates
+------------------------------
+
+Updates produced by the client are now also processed by your event handlers.
+Before, if you had some code listening for new outgoing messages, only messages you sent with
+another client, such as from Telegram Desktop, would be processed. Now, if your own code uses
+``client.send_message``, you will also receive the new message event. Be careful, as this can
+easily lead to "loops" (a new outgoing message can trigger ``client.send_message``, which
+triggers a new outgoing message and the cycle repeats)!
+
+There are no longer "event builders" and "event" types. Now there are only events, and you
+register the type of events you want, not an instance. Because of this, the way filters are
+specified have also changed:
+
+.. code-block:: python
+
+    # OLD
+    @client.on(events.NewMessage(chats=...))
+    async def handler(event):
+        pass
+
+    # NEW
+    @client.on(events.NewMessage, chats=...)
+    async def handler(event): # ^^         ^
+        pass
+
+This also means filters are unified, although not all filters have an effect on all events types.
+Type hinting is now done through ``events.NewMessage`` and not ``events.NewMessage.Event``.
+
+The filter rework also enables more features. For example, you can now mutate a ``chats`` filter
+to add or remove a chat that needs to be received by a handler, rather than having to remove and
+re-add the event handler.
+
+The ``from_users`` filter has been renamed to ``senders``.
+
+The ``inbox`` filter for ``events.MessageRead`` has been removed, in favour of ``outgoing`` and
+``incoming``.
+
+``events.register``, ``events.unregister`` and ``events.is_handler`` have been removed. There is
+no longer anything special about methods which are handlers, and they are no longer monkey-patched.
+Because pre-defining the event type to handle without a client was useful, you can now instead use
+the following syntax:
+
+.. code-block:: python
+
+    # OLD
+    @events.register(events.NewMessage)
+    async def handler(event):
+        pass
+
+    # NEW
+    async def handler(event: events.NewMessage):
+        pass  #       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+As a bonus, you only need to type-hint once, and both your IDE and Telethon will understand what
+you meant. This is similar to Python's ``@dataclass`` which uses type hints.
+
+// TODO document filter creation and usage, showcase how to mutate them
+
+
 Complete overhaul of session files
 ----------------------------------
 
@@ -292,8 +352,8 @@ results into a list:
 // TODO does the download really need to be special? get download is kind of weird though
 
 
-Raw API has been renamed and is now considered private
-------------------------------------------------------
+Raw API has been renamed and is now immutable and considered private
+--------------------------------------------------------------------
 
 The subpackage holding the raw API methods has been renamed from ``tl`` to ``_tl`` in order to
 signal that these are prone to change across minor version bumps (the ``y`` in version ``x.y.z``).
@@ -305,6 +365,10 @@ change on layer upgrades across minor version bumps).
 The ``Request`` suffix has been removed from the classes inside ``tl.functions``.
 
 The ``tl.types`` is now simply ``_tl``, and the ``tl.functions`` is now ``_tl.fn``.
+
+Both the raw API types and functions are now immutable. This can enable optimizations in the
+future, such as greatly reducing the number of intermediate objects created (something worth
+doing for deeply-nested objects).
 
 Some examples:
 
@@ -375,7 +439,7 @@ The following modules have been moved inside ``_misc``:
 * ``helpers.py``
 * ``hints.py``
 * ``password.py``
-* ``requestiter.py`
+* ``requestiter.py``
 * ``statecache.py``
 * ``utils.py``
 
@@ -411,6 +475,33 @@ the session ever was invalid. If you want the old behaviour, you now need to be 
 
 Note that you do not need to ``await`` the call to ``.start()`` if you are going to use the result
 in a context-manager (but it's okay if you put the ``await``).
+
+
+Changes to sending messages and files
+-------------------------------------
+
+When sending messages or files, there is no longer a parse mode. Instead, the ``markdown`` or
+``html`` parameters can be used instead of the (plaintext) ``message``.
+
+.. code-block:: python
+
+    await client.send_message(chat, 'Default formatting (_markdown_)')
+    await client.send_message(chat, html='Force <em>HTML</em> formatting')
+    await client.send_message(chat, markdown='Force **Markdown** formatting')
+
+These 3 parameters are exclusive with each other (you can only use one). The goal here is to make
+it consistent with the custom ``Message`` class, which also offers ``.markdown`` and ``.html``
+properties to obtain the correctly-formatted text, regardless of the default parse mode, and to
+get rid of some implicit behaviour. It's also more convenient to set just one parameter than two
+(the message and the parse mode separatedly).
+
+Although the goal is to reduce raw API exposure, ``formatting_entities`` stays, because it's the
+only feasible way to manually specify them.
+
+When sending files, you can no longer pass a list of attributes. This was a common workaround to
+set video size, audio duration, and so on. Now, proper parameters are available. The goal is to
+hide raw API as much as possible (which lets the library hide future breaking changes as much as
+possible). One can still use raw API if really needed.
 
 
 Several methods have been removed from the client
@@ -458,8 +549,42 @@ The following ``utils`` methods no longer exist or have been made private:
 // TODO provide the new clean utils
 
 
-Changes on how to configure filters for certain client methods
---------------------------------------------------------------
+Changes to many friendly methods in the client
+----------------------------------------------
+
+Some of the parameters used to initialize the ``TelegramClient`` have been renamed to be clearer:
+
+* ``timeout`` is now ``connect_timeout``.
+* ``connection_retries`` is now ``connect_retries``.
+* ``retry_delay`` is now ``connect_retry_delay``.
+* ``raise_last_call_error`` has been removed and is now the default. This means you won't get a
+  ``ValueError`` if an API call fails multiple times, but rather the original error.
+* ``connection`` to change the connection mode has been removed for the time being.
+* ``sequential_updates`` has been removed for the time being.
+
+// TODO document new parameters too
+
+``client.send_code_request`` no longer has ``force_sms`` (it was broken and was never reliable).
+
+``client.send_read_acknowledge`` is now ``client.mark_read``, consistent with the method of
+``Message``, being shorter and less awkward to type. The method now only supports a single
+message, not a list (the list was a lie, because all messages up to the one with the highest
+ID were marked as read, meaning one could not leave unread gaps). ``max_id`` is now removed,
+since it has the same meaning as the message to mark as read. The method no longer can clear
+mentions without marking the chat as read, but this should not be an issue in practice.
+
+Every ``client.action`` can now be directly ``await``-ed, not just ``'cancel'``.
+
+``client.forward_messages`` now requires a list to be specified. The intention is to make it clear
+that the method forwards message\ **s** and to reduce the number of strange allowed values, which
+needlessly complicate the code. If you still need to forward a single message, manually construct
+a list with ``[message]`` or use ``Message.forward_to``.
+
+``client.delete_messages`` now requires a list to be specified, with the same rationale as forward.
+
+``client.get_me`` no longer has an ``input_peer`` parameter. The goal is to hide raw API as much
+as possible. Input peers are mostly an implementation detail the library needs to deal with
+Telegram's API.
 
 Before, ``client.iter_participants`` (and ``get_participants``) would expect a type or instance
 of the raw Telegram definition as a ``filter``. Now, this ``filter`` expects a string.
@@ -472,6 +597,20 @@ The supported values are:
 * ``'contact'``
 
 If you prefer to avoid hardcoding strings, you may use ``telethon.enums.Participant``.
+
+The size selector for ``client.download_profile_photo`` and ``client.download_media` is now using
+an enumeration:
+
+```
+from telethon import enums
+
+await client.download_profile_photo(user, thumb=enums.Size.ORIGINAL)
+```
+
+This new selection mode is also smart enough to pick the "next best" size if the specified one
+is not available. The parameter is known as ``thumb`` and not ``size`` because documents don't
+have a "size", they have thumbnails of different size. For profile photos, the thumbnail size is
+also used.
 
 // TODO maintain support for the old way of doing it?
 // TODO now that there's a custom filter, filter client-side for small chats?
@@ -621,6 +760,18 @@ your handlers much more easily.
 // TODO provide standalone alternative for this?
 
 
+Certain client properties and methods are now private or no longer exist
+------------------------------------------------------------------------
+
+The ``client.loop`` property has been removed. ``asyncio`` has been moving towards implicit loops,
+so this is the next step. Async methods can be launched with the much simpler ``asyncio.run`` (as
+opposed to the old ``client.loop.run_until_complete``).
+
+The ``client.upload_file`` method has been removed. It's a low-level method users should not need
+to use. Its only purpose could have been to implement a cache of sorts, but this is something the
+library needs to do, not the users.
+
+
 Deleting messages now returns a more useful value
 -------------------------------------------------
 
@@ -729,63 +880,6 @@ Now the URL is returned. You can still use ``webbrowser.open`` to get the old be
 
 ---
 
-you can no longer pass an attributes list because the constructor is now nice.
-use raw api if you really need it.
-goal is to hide raw api from high level api. sorry.
-
-no parsemode. use the correct parameter. it's more convenient than setting two.
-
-formatting_entities stays because otherwise it's the only feasible way to manually specify it.
-
 todo update send_message and send_file docs (well review all functions)
 
 album overhaul. use a list of Message instead.
-
-size selector for download_profile_photo and download_media is now different
-
-still thumb because otherwise documents are weird.
-
-keep support for explicit size instance?
-
-renamed send_read_acknowledge. add send_read_acknowledge as alias for mark_read?
-
-force sms removed as it was broken anyway and not very reliable
-
-you can now await client.action for a one-off any action not just cancel
-
-fwd msg and delete msg now mandate a list rather than a single int or msg
-(since there's msg.delete and msg.forward_to this should be no issue).
-they are meant to work on lists.
-
-also mark read only supports single now. a list would just be max anyway.
-removed max id since it's not really of much use.
-
-client loop has been removed. embrace implicit loop as asyncio does now
-
-renamed some client params, and made other privates
-    timeout -> connect_timeout
-    connection_retries -> connect_retries
-    retry_delay -> connect_retry_delay
-
-sequential_updates is gone
-connection type is gone
-
-raise_last_call_error is now the default rather than ValueError
-
-self-produced updates like getmessage now also trigger a handler
-
-input_peer removed from get_me; input peers should remain mostly an impl detail
-
-raw api types and fns are now immutable. this can enable optimizations in the future.
-
-upload_file has been removed from the public methods. it's a low-level method users should not need to use.
-
-events have changed. rather than differentiating between "event builder" and "event instance", instead there is only the instance, and you register the class.
-where you had
-@client.on(events.NewMessage(chats=...))
-it's now
-@client.on(events.NewMessage, chats=...)
-this also means filters are unified, although not all have an effect on all events. from_users renamed to senders. messageread inbox is gone in favor of outgoing/incoming.
-events.register, unregister, is_handler and list are gone. now you can typehint instead.
-def handler(event: events.NewMessage)
-client.on, add, and remove have changed parameters/retval
