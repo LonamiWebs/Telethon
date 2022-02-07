@@ -22,7 +22,7 @@ def _fwd(field, doc):
         return getattr(self._message, field, None)
 
     def fset(self, value):
-        setattr(self._message, field, value)
+        object.__setattr__(self._message, field, value)
 
     return property(fget, fset, None, doc)
 
