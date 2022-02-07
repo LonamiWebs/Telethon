@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import itertools
 import typing
+import dataclasses
 
 from .. import errors, _tl
 from .._misc import helpers, utils, requestiter, hints
@@ -49,7 +50,7 @@ class _DialogsIter(requestiter.RequestIter):
         self.ignore_migrated = ignore_migrated
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, _MAX_CHUNK_SIZE)
+        self.request = dataclasses.replace(self.request, limit=min(self.left, _MAX_CHUNK_SIZE))
         r = await self.client(self.request)
 
         self.total = getattr(r, 'count', len(r.dialogs))
@@ -103,10 +104,13 @@ class _DialogsIter(requestiter.RequestIter):
             for d in reversed(r.dialogs)
         )), None)
 
-        self.request.exclude_pinned = True
-        self.request.offset_id = last_message.id if last_message else 0
-        self.request.offset_date = last_message.date if last_message else None
-        self.request.offset_peer = self.buffer[-1].input_entity
+        self.request = dataclasses.replace(
+            self.request,
+            exclude_pinned=True,
+            offset_id=last_message.id if last_message else 0,
+            offset_date=last_message.date if last_message else None,
+            offset_peer=self.buffer[-1].input_entity,
+        )
 
 
 class _DraftsIter(requestiter.RequestIter):

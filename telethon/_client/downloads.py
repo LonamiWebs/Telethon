@@ -5,6 +5,7 @@ import pathlib
 import typing
 import inspect
 import asyncio
+import dataclasses
 
 from .._crypto import AES
 from .._misc import utils, helpers, requestiter, tlobject, hints, enums
@@ -55,7 +56,7 @@ class _DirectDownloadIter(requestiter.RequestIter):
             self.left = len(self.buffer)
             await self.close()
         else:
-            self.request.offset += self._stride
+            self.request = dataclasses.replace(self.request, offset=self.request.offset + self._stride)
 
     async def _request(self):
         try:
@@ -102,7 +103,7 @@ class _DirectDownloadIter(requestiter.RequestIter):
             if document.id != self.request.location.id:
                 raise
 
-            self.request.location.file_reference = document.file_reference
+            self.request.location = dataclasses.replace(self.request.location, file_reference=document.file_reference)
             return await self._request()
 
     async def close(self):
@@ -134,18 +135,18 @@ class _GenericDownloadIter(_DirectDownloadIter):
         before = self.request.offset
 
         # 1.2. We have to fetch from a valid offset, so remove that bad part
-        self.request.offset -= bad
+        self.request = dataclasses.replace(self.request, offset=self.request.offset - bad)
 
         done = False
         while not done and len(data) - bad < self._chunk_size:
             cur = await self._request()
-            self.request.offset += self.request.limit
+            self.request = dataclasses.replace(self.request, offset=self.request.offset - self.request.limit)
 
             data += cur
             done = len(cur) < self.request.limit
 
         # 1.3 Restore our last desired offset
-        self.request.offset = before
+        self.request = dataclasses.replace(self.request, offset=before)
 
         # 2. Fill the buffer with the data we have
         # 2.1. Slicing `bytes` is expensive, yield `memoryview` instead
@@ -157,7 +158,7 @@ class _GenericDownloadIter(_DirectDownloadIter):
             self.buffer.append(mem[i:i + self._chunk_size])
 
             # 2.3. We will yield this offset, so move to the next one
-            self.request.offset += self._stride
+            self.request = dataclasses.replace(self.request, offset=self.request.offset + self._stride)
 
         # 2.4. If we are in the last chunk, we will return the last partial data
         if done:
@@ -172,7 +173,7 @@ class _GenericDownloadIter(_DirectDownloadIter):
             # 3. Be careful with the offsets. Re-fetching a bit of data
             #    is fine, since it greatly simplifies things.
             # TODO Try to not re-fetch data
-            self.request.offset -= self._stride
+            self.request = dataclasses.replace(self.request, offset=self.request.offset - self._stride)
 
 
 async def download_profile_photo(

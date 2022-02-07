@@ -87,7 +87,7 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
 
         elif isinstance(update, (
                 _tl.UpdateNewChannelMessage, _tl.UpdateNewMessage)):
-            update.message = _custom.Message._new(self, update.message, entities, input_chat)
+            message = _custom.Message._new(self, update.message, entities, input_chat)
 
             # Pinning a message with `updatePinnedMessage` seems to
             # always produce a service message we can't map so return
@@ -97,20 +97,20 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
             #
             # TODO this method is getting messier and messier as time goes on
             if hasattr(request, 'random_id') or utils.is_list_like(request):
-                id_to_message[update.message.id] = update.message
+                id_to_message[message.id] = message
             else:
-                return update.message
+                return message
 
         elif (isinstance(update, _tl.UpdateEditMessage)
                 and helpers._entity_type(request.peer) != helpers._EntityType.CHANNEL):
-            update.message = _custom.Message._new(self, update.message, entities, input_chat)
+            message = _custom.Message._new(self, update.message, entities, input_chat)
 
             # Live locations use `sendMedia` but Telegram responds with
             # `updateEditMessage`, which means we won't have `id` field.
             if hasattr(request, 'random_id'):
-                id_to_message[update.message.id] = update.message
-            elif request.id == update.message.id:
-                return update.message
+                id_to_message[message.id] = message
+            elif request.id == message.id:
+                return message
 
         elif (isinstance(update, _tl.UpdateEditChannelMessage)
                 and utils.get_peer_id(request.peer) ==

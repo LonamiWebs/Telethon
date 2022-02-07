@@ -3,6 +3,7 @@ import datetime
 import itertools
 import time
 import typing
+import dataclasses
 
 from ..errors._custom import MultiError
 from ..errors._rpcbase import RpcError, ServerError, FloodError, InvalidDcError, UnauthorizedError
@@ -370,8 +371,7 @@ async def _get_input_dialog(self: 'TelegramClient', dialog):
     """
     try:
         if dialog.SUBCLASS_OF_ID == 0xa21c9795:  # crc32(b'InputDialogPeer')
-            dialog.peer = await self.get_input_entity(dialog.peer)
-            return dialog
+            return dataclasses.replace(dialog, peer=await self.get_input_entity(dialog.peer))
         elif dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
             return _tl.InputDialogPeer(dialog)
     except AttributeError:
@@ -388,7 +388,7 @@ async def _get_input_notify(self: 'TelegramClient', notify):
     try:
         if notify.SUBCLASS_OF_ID == 0x58981615:
             if isinstance(notify, _tl.InputNotifyPeer):
-                notify.peer = await self.get_input_entity(notify.peer)
+                return dataclasses.replace(notify, peer=await self.get_input_entity(notify.peer))
             return notify
     except AttributeError:
         pass

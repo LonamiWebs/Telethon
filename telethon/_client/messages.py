@@ -3,6 +3,7 @@ import itertools
 import time
 import typing
 import warnings
+import dataclasses
 
 from .._misc import helpers, utils, requestiter, hints
 from ..types import _custom
@@ -142,7 +143,7 @@ class _MessagesIter(requestiter.RequestIter):
                     and offset_date and not search and not offset_id:
                 async for m in self.client.get_messages(
                         self.entity, 1, offset_date=offset_date):
-                    self.request.offset_id = m.id + 1
+                    self.request = dataclasses.replace(self.request, offset_id=m.id + 1)
         else:
             self.request = _tl.fn.messages.GetHistory(
                 peer=self.entity,
@@ -178,10 +179,10 @@ class _MessagesIter(requestiter.RequestIter):
         self.last_id = 0 if self.reverse else float('inf')
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, _MAX_CHUNK_SIZE)
+        self.request = dataclasses.replace(self.request, limit=min(self.left, _MAX_CHUNK_SIZE))
         if self.reverse and self.request.limit != _MAX_CHUNK_SIZE:
             # Remember that we need -limit when going in reverse
-            self.request.add_offset = self.add_offset - self.request.limit
+            self.request = dataclasses.replace(self.request, add_offset=self.add_offset - self.request.limit)
 
         r = await self.client(self.request)
         self.total = getattr(r, 'count', len(r.messages))
@@ -241,28 +242,28 @@ class _MessagesIter(requestiter.RequestIter):
         """
         After making the request, update its offset with the last message.
         """
-        self.request.offset_id = last_message.id
+        self.request = dataclasses.replace(self.request, offset_id=last_message.id)
         if self.reverse:
             # We want to skip the one we already have
-            self.request.offset_id += 1
+            self.request = dataclasses.replace(self.request, offset_id=self.request.offset_id + 1)
 
         if isinstance(self.request, _tl.fn.messages.Search):
             # Unlike getHistory and searchGlobal that use *offset* date,
             # this is *max* date. This means that doing a search in reverse
             # will break it. Since it's not really needed once we're going
             # (only for the first request), it's safe to just clear it off.
-            self.request.max_date = None
+            self.request = dataclasses.replace(self.request, max_date=None)
         else:
             # getHistory, searchGlobal and getReplies call it offset_date
-            self.request.offset_date = last_message.date
+            self.request = dataclasses.replace(self.request, offset_date=last_message.date)
 
         if isinstance(self.request, _tl.fn.messages.SearchGlobal):
             if last_message.input_chat:
-                self.request.offset_peer = last_message.input_chat
+                self.request = dataclasses.replace(self.request, offset_peer=last_message.input_chat)
             else:
-                self.request.offset_peer = _tl.InputPeerEmpty()
+                self.request = dataclasses.replace(self.request, offset_peer=_tl.InputPeerEmpty())
 
-            self.request.offset_rate = getattr(response, 'next_rate', 0)
+            self.request = dataclasses.replace(self.request, offset_rate=getattr(response, 'next_rate', 0))
 
 
 class _IDsIter(requestiter.RequestIter):

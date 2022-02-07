@@ -3,6 +3,7 @@ import inspect
 import itertools
 import string
 import typing
+import dataclasses
 
 from .. import errors, _tl
 from .._misc import helpers, utils, requestiter, tlobject, enums, hints
@@ -19,11 +20,9 @@ _MAX_PROFILE_PHOTO_CHUNK_SIZE = 100
 class _ChatAction:
     def __init__(self, client, chat, action, *, delay, auto_cancel):
         self._client = client
-        self._chat = chat
-        self._action = action
         self._delay = delay
         self._auto_cancel = auto_cancel
-        self._request = None
+        self._request = _tl.fn.messages.SetTyping(chat, action)
         self._task = None
         self._running = False
 
@@ -31,14 +30,7 @@ class _ChatAction:
         return self._once().__await__()
 
     async def __aenter__(self):
-        self._chat = await self._client.get_input_entity(self._chat)
-
-        # Since `self._action` is passed by reference we can avoid
-        # recreating the request all the time and still modify
-        # `self._action.progress` directly in `progress`.
-        self._request = _tl.fn.messages.SetTyping(
-            self._chat, self._action)
-
+        self._request = dataclasses.replace(self._request, peer=await self._client.get_input_entity(self._request.peer))
         self._running = True
         self._task = asyncio.create_task(self._update())
         return self
@@ -55,7 +47,7 @@ class _ChatAction:
             self._task = None
 
     async def _once(self):
-        self._chat = await self._client.get_input_entity(self._chat)
+        self._request = dataclasses.replace(self._request, peer=await self._client.get_input_entity(self._request.peer))
         await self._client(_tl.fn.messages.SetTyping(self._chat, self._action))
 
     async def _update(self):
@@ -93,8 +85,11 @@ class _ChatAction:
         }[enums.Action(action)]
 
     def progress(self, current, total):
-        if hasattr(self._action, 'progress'):
-            self._action.progress = 100 * round(current / total)
+        if hasattr(self._request.action, 'progress'):
+            self._request = dataclasses.replace(
+                self._request,
+                action=dataclasses.replace(self._request.action, progress=100 * round(current / total))
+            )
 
 
 class _ParticipantsIter(requestiter.RequestIter):
@@ -190,8 +185,8 @@ class _ParticipantsIter(requestiter.RequestIter):
         # Most people won't care about getting exactly 12,345
         # members so it doesn't really matter not to be 100%
         # precise with being out of the offset/limit here.
-        self.request.limit = min(
-            self.limit - self.request.offset, _MAX_PARTICIPANTS_CHUNK_SIZE)
+        self.request = dataclasses.replace(self.request, limit=min(
+            self.limit - self.request.offset, _MAX_PARTICIPANTS_CHUNK_SIZE))
 
         if self.request.offset > self.limit:
             return True
@@ -199,7 +194,7 @@ class _ParticipantsIter(requestiter.RequestIter):
         participants = await self.client(self.request)
         self.total = participants.count
 
-        self.request.offset += len(participants.participants)
+        self.request = dataclasses.replace(self.request, offset=self.request.offset + len(participants.participants))
         users = {user.id: user for user in participants.users}
         for participant in participants.participants:
             if isinstance(participant, _tl.ChannelParticipantBanned):
@@ -253,20 +248,20 @@ class _AdminLogIter(requestiter.RequestIter):
         )
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, _MAX_ADMIN_LOG_CHUNK_SIZE)
+        self.request = dataclasses.replace(self.request, limit=min(self.left, _MAX_ADMIN_LOG_CHUNK_SIZE))
         r = await self.client(self.request)
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(r.users, r.chats)}
 
-        self.request.max_id = min((e.id for e in r.events), default=0)
+        self.request = dataclasses.replace(self.request, max_id=min((e.id for e in r.events), default=0))
         for ev in r.events:
             if isinstance(ev.action,
                           _tl.ChannelAdminLogEventActionEditMessage):
-                ev.action.prev_message = _custom.Message._new(
-                    self.client, ev.action.prev_message, entities, self.entity)
-
-                ev.action.new_message = _custom.Message._new(
-                    self.client, ev.action.new_message, entities, self.entity)
+                ev = dataclasses.replace(ev, action=dataclasses.replace(
+                    ev.action,
+                    prev_message=_custom.Message._new(self.client, ev.action.prev_message, entities, self.entity),
+                    new_message=_custom.Message._new(self.client, ev.action.new_message, entities, self.entity)
+                ))
 
             elif isinstance(ev.action,
                             _tl.ChannelAdminLogEventActionDeleteMessage):
@@ -308,7 +303,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
             )
 
         if self.limit == 0:
-            self.request.limit = 1
+            self.request = dataclasses.replace(self.request, limit=1)
             result = await self.client(self.request)
             if isinstance(result, _tl.photos.Photos):
                 self.total = len(result.photos)
@@ -319,7 +314,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
                 self.total = getattr(result, 'count', None)
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, _MAX_PROFILE_PHOTO_CHUNK_SIZE)
+        self.request = dataclasses.replace(self.request, limit=min(self.left, _MAX_PROFILE_PHOTO_CHUNK_SIZE))
         result = await self.client(self.request)
 
         if isinstance(result, _tl.photos.Photos):
@@ -338,7 +333,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
             if len(self.buffer) < self.request.limit:
                 self.left = len(self.buffer)
             else:
-                self.request.offset += len(result.photos)
+                self.request = dataclasses.replace(self.request, offset=self.request.offset + len(result.photos))
         else:
             # Some broadcast channels have a photo that this request doesn't
             # retrieve for whatever random reason the Telegram server feels.
@@ -368,8 +363,11 @@ class _ProfilePhotoIter(requestiter.RequestIter):
             if len(result.messages) < self.request.limit:
                 self.left = len(self.buffer)
             elif result.messages:
-                self.request.add_offset = 0
-                self.request.offset_id = result.messages[-1].id
+                self.request = dataclasses.replace(
+                    self.request,
+                    add_offset=0,
+                    offset_id=result.messages[-1].id
+                )
 
 
 def get_participants(
