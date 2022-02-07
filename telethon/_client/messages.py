@@ -4,6 +4,7 @@ import time
 import typing
 import warnings
 import dataclasses
+import os
 
 from .._misc import helpers, utils, requestiter, hints
 from ..types import _custom
@@ -486,7 +487,8 @@ async def send_message(
             entity, message._file._media, reply_to_msg_id=reply_to, message=message._text,
             entities=message._fmt_entities, reply_markup=message._reply_markup, silent=message._silent,
             schedule_date=schedule, clear_draft=clear_draft,
-            background=background, noforwards=noforwards, send_as=send_as
+            background=background, noforwards=noforwards, send_as=send_as,
+            random_id=int.from_bytes(os.urandom(8), 'big', signed=True),
         )
     else:
         request = _tl.fn.messages.SendMessage(
@@ -501,7 +503,8 @@ async def send_message(
             reply_markup=_custom.button.build_reply_markup(buttons),
             schedule_date=schedule,
             noforwards=noforwards,
-            send_as=send_as
+            send_as=send_as,
+            random_id=int.from_bytes(os.urandom(8), 'big', signed=True),
         )
 
     result = await self(request)
@@ -574,7 +577,8 @@ async def forward_messages(
             with_my_score=with_my_score,
             schedule_date=schedule,
             noforwards=noforwards,
-            send_as=send_as
+            send_as=send_as,
+            random_id=[int.from_bytes(os.urandom(8), 'big', signed=True) for _ in chunk],
         )
         result = await self(req)
         sent.extend(self._get_response_message(req, result, entity))

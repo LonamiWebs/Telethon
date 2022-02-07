@@ -115,7 +115,8 @@ class MessageButton:
             return await self._client.get_entity(self.button.user_id)
         elif isinstance(self.button, _tl.KeyboardButtonSwitchInline):
             return await self._client(_tl.fn.messages.StartBot(
-                bot=self._bot, peer=self._chat, start_param=self.button.query
+                bot=self._bot, peer=self._chat, start_param=self.button.query,
+                random_id=int.from_bytes(os.urandom(8), 'big', signed=True),
             ))
         elif isinstance(self.button, _tl.KeyboardButtonUrl):
             return self.button.url

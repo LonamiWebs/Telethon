@@ -1,5 +1,6 @@
 from ... import _tl
 from ..._misc import utils
+import os
 
 
 class InlineResult:
@@ -162,7 +163,8 @@ class InlineResult:
             clear_draft=clear_draft,
             hide_via=hide_via,
             reply_to_msg_id=reply_id,
-            send_as=send_as
+            send_as=send_as,
+            random_id=int.from_bytes(os.urandom(8), 'big', signed=True),
         )
         return self._client._get_response_message(
             req, await self._client(req), entity)
