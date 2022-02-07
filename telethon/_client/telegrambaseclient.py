@@ -141,6 +141,7 @@ def init(
     self._connect_timeout = connect_timeout
     self.flood_sleep_threshold = flood_sleep_threshold
     self._flood_waited_requests = {}  # prevent calls that would floodwait entirely
+    self._phone_code_hash = {}  # used during login to prevent exposing the hash to end users
 
     # Update handling.
     self._catch_up = catch_up
