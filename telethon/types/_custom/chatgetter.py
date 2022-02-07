@@ -80,7 +80,7 @@ class ChatGetter(abc.ABC):
                         self._chat = d.entity
                         self._input_chat = d.input_entity
                         break
-            except errors.RPCError:
+            except errors.RpcError:
                 pass
 
         return self._input_chat

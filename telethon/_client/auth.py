@@ -368,7 +368,7 @@ async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None)
 async def log_out(self: 'TelegramClient') -> bool:
     try:
         await self(_tl.fn.auth.LogOut())
-    except errors.RPCError:
+    except errors.RpcError:
         return False
 
     await self.disconnect()

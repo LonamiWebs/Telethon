@@ -143,5 +143,5 @@ ServerError = _mk_error_type(code=500, doc="""
 # Witnessed as -503 for "Timeout"
 BotTimeout = TimedOutError = _mk_error_type(code=503, doc="""
     Clicking the inline buttons of bots that never (or take to long to)
-    call ``answerCallbackQuery`` will result in this "special" RPCError.
+    call ``answerCallbackQuery`` will result in this "special" RpcError.
 """)
