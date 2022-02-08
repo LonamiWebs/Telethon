@@ -105,12 +105,74 @@ class Entity:
     """
     Stores the information needed to use a certain user, chat or channel with the API.
 
-    * ty: 8-bit number indicating the type of the entity.
+    * ty: 8-bit number indicating the type of the entity (of type `EntityType`).
     * id: 64-bit number uniquely identifying the entity among those of the same type.
-    * access_hash: 64-bit number needed to use this entity with the API.
+    * hash: 64-bit signed number needed to use this entity with the API.
+
+    The string representation of this class is considered to be stable, for as long as
+    Telegram doesn't need to add more fields to the entities. It can also be converted
+    to bytes with ``bytes(entity)``, for a more compact representation.
     """
-    __slots__ = ('ty', 'id', 'access_hash')
+    __slots__ = ('ty', 'id', 'hash')
 
     ty: EntityType
     id: int
-    access_hash: int
+    hash: int
+
+    @property
+    def is_user(self):
+        """
+        ``True`` if the entity is either a user or a bot.
+        """
+        return self.ty in (EntityType.USER, EntityType.BOT)
+
+    @property
+    def is_group(self):
+        """
+        ``True`` if the entity is a small group chat or `megagroup`_.
+
+        .. _megagroup: https://telegram.org/blog/supergroups5k
+        """
+        return self.ty in (EntityType.GROUP, EntityType.MEGAGROUP)
+
+    @property
+    def is_channel(self):
+        """
+        ``True`` if the entity is a broadcast channel or `broadcast group`_.
+
+        .. _broadcast group: https://telegram.org/blog/autodelete-inv2#groups-with-unlimited-members
+        """
+        return self.ty in (EntityType.CHANNEL, EntityType.GIGAGROUP)
+
+    @classmethod
+    def from_str(cls, string: str):
+        """
+        Convert the string into an `Entity`.
+        """
+        try:
+            ty, id, hash = string.split('.')
+            ty, id, hash = ord(ty), int(id), int(hash)
+        except AttributeError:
+            raise TypeError(f'expected str, got {string!r}') from None
+        except (TypeError, ValueError):
+            raise ValueError(f'malformed entity str (must be T.id.hash), got {string!r}') from None
+
+        return cls(EntityType(ty), id, hash)
+
+    @classmethod
+    def from_bytes(cls, blob):
+        """
+        Convert the bytes into an `Entity`.
+        """
+        try:
+            ty, id, hash = struct.unpack('<Bqq', blob)
+        except struct.error:
+            raise ValueError(f'malformed entity data, got {string!r}') from None
+
+        return cls(EntityType(ty), id, hash)
+
+    def __str__(self):
+        return f'{chr(self.ty)}.{self.id}.{self.hash}'
+
+    def __bytes__(self):
+        return struct.pack('<Bqq', self.ty, self.id, self.hash)

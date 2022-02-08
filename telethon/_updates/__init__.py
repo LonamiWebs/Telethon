@@ -1,2 +1,2 @@
-from .entitycache import EntityCache, PackedChat
+from .entitycache import EntityCache
 from .messagebox import MessageBox

@@ -64,15 +64,15 @@ class Session(ABC):
         Get the `Entity` with matching ``ty`` and ``id``.
 
         The following groups of ``ty`` should be treated to be equivalent, that is, for a given
-        ``ty`` and ``id``, if the ``ty`` is in a given group, a matching ``access_hash`` with
-        that ``id`` from within any ``ty`` in that group should be returned.
+        ``ty`` and ``id``, if the ``ty`` is in a given group, a matching ``hash`` with that ``id``
+        from within any ``ty`` in that group should be returned.
 
         * `EntityType.USER` and `EntityType.BOT`.
         * `EntityType.GROUP`.
         * `EntityType.CHANNEL`, `EntityType.MEGAGROUP` and `EntityType.GIGAGROUP`.
 
         For example, if a ``ty`` representing a bot is stored but the asking ``ty`` is a user,
-        the corresponding ``access_hash`` should still be returned.
+        the corresponding ``hash`` should still be returned.
 
         You may use ``EntityType.canonical`` to find out the canonical type.
 

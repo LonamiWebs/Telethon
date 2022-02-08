@@ -34,12 +34,12 @@ class MemorySession(Session):
         return list(self.channel_states.values())
 
     async def insert_entities(self, entities: List[Entity]):
-        self.entities.update((e.id, (e.ty, e.access_hash)) for e in entities)
+        self.entities.update((e.id, (e.ty, e.hash)) for e in entities)
 
     async def get_entity(self, ty: Optional[int], id: int) -> Optional[Entity]:
         try:
-            ty, access_hash = self.entities[id]
-            return Entity(ty, id, access_hash)
+            ty, hash = self.entities[id]
+            return Entity(ty, id, hash)
         except KeyError:
             return None
 

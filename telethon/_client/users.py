@@ -241,11 +241,11 @@ async def get_input_entity(
         entity = await self._session.get_entity(None, peer_id)
         if entity:
             if entity.ty in (Entity.USER, Entity.BOT):
-                return _tl.InputPeerUser(entity.id, entity.access_hash)
+                return _tl.InputPeerUser(entity.id, entity.hash)
             elif entity.ty in (Entity.GROUP):
                 return _tl.InputPeerChat(peer.chat_id)
             elif entity.ty in (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP):
-                return _tl.InputPeerChannel(entity.id, entity.access_hash)
+                return _tl.InputPeerChannel(entity.id, entity.hash)
 
     # Only network left to try
     if isinstance(peer, str):

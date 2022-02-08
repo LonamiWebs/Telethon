@@ -530,7 +530,7 @@ class MessageBox:
 
         return _tl.fn.updates.GetChannelDifference(
             force=False,
-            channel=packed.try_to_input_channel(),
+            channel=_tl.InputChannel(packed.id, packed.hash),
             filter=_tl.ChannelMessagesFilterEmpty(),
             pts=state.pts,
             limit=BOT_CHANNEL_DIFF_LIMIT if chat_hashes.self_bot else USER_CHANNEL_DIFF_LIMIT

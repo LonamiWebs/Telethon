@@ -127,7 +127,7 @@ class SQLiteSession(Session):
                 limit 1
             ''')
             c.execute('''
-                insert into entity (id, access_hash, ty)
+                insert into entity (id, hash, ty)
                 select
                     case
                         when id < -1000000000000 then -(id + 1000000000000)
@@ -173,7 +173,7 @@ class SQLiteSession(Session):
             )''',
             '''entity (
                 id integer primary key,
-                access_hash integer not null,
+                hash integer not null,
                 ty integer not null
             )''',
         )
@@ -245,13 +245,13 @@ class SQLiteSession(Session):
         try:
             c.executemany(
                 'insert or replace into entity values (?,?,?)',
-                [(e.id, e.access_hash, e.ty) for e in entities]
+                [(e.id, e.hash, e.ty) for e in entities]
             )
         finally:
             c.close()
 
     async def get_entity(self, ty: Optional[int], id: int) -> Optional[Entity]:
-        row = self._execute('select ty, id, access_hash from entity where id = ?', id)
+        row = self._execute('select ty, id, hash from entity where id = ?', id)
         return Entity(*row) if row else None
 
     async def save(self):
