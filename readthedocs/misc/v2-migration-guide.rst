@@ -639,12 +639,6 @@ The message sender no longer is the channel when no sender is provided by Telegr
 to patch this value for channels to be the same as the chat, but now it will be faithful to
 Telegram's value.
 
-In order to avoid breaking more code than strictly necessary, ``.raw_text`` will remain a synonym
-of ``.message``, and ``.text`` will still be the text formatted through the ``client.parse_mode``.
-However, you're encouraged to change uses of ``.raw_text`` with ``.message``, and ``.text`` with
-either ``.md_text`` or ``.html_text`` as needed. This is because both ``.text`` and ``.raw_text``
-may disappear in future versions, and their behaviour is not immediately obvious.
-
 // TODO actually provide the things mentioned here
 
 

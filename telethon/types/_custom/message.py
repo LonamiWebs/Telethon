@@ -9,7 +9,7 @@ from .file import File
 from .inputfile import InputFile
 from .inputmessage import InputMessage
 from .button import build_reply_markup
-from ..._misc import utils, helpers, tlobject
+from ..._misc import utils, helpers, tlobject, markdown, html
 from ... import _tl, _misc
 
 
@@ -435,7 +435,6 @@ class Message(ChatGetter, SenderGetter):
         self._message = message
 
         # Convenient storage for custom functions
-        self._text = None
         self._file = None
         self._reply_message = None
         self._buttons = None
@@ -533,8 +532,8 @@ class Message(ChatGetter, SenderGetter):
     @property
     def text(self):
         """
-        The message text, formatted using the client's default
-        parse mode. Will be `None` for :tl:`MessageService`.
+        The message text, formatted using the default parse mode.
+        Will be `None` for :tl:`MessageService`.
         """
         return InputMessage._default_parse_mode[1](self.message, self.entities)
 
@@ -545,11 +544,9 @@ class Message(ChatGetter, SenderGetter):
     @property
     def raw_text(self):
         """
-        The raw message text, ignoring any formatting.
-        Will be `None` for :tl:`MessageService`.
+        The plain message text, ignoring any formatting. Will be `None` for :tl:`MessageService`.
 
-        Setting a value to this field will erase the
-        `entities`, unlike changing the `message` member.
+        Setting a value to this field will erase the `entities`, unlike changing the `message` member.
         """
         return self.message
 
@@ -557,7 +554,28 @@ class Message(ChatGetter, SenderGetter):
     def raw_text(self, value):
         self.message = value
         self.entities = []
-        self._text = None
+
+    @property
+    def markdown(self):
+        """
+        The message text, formatted using markdown. Will be `None` for :tl:`MessageService`.
+        """
+        return markdown.unparse(self.message, self.entities)
+
+    @markdown.setter
+    def markdown(self, value):
+        self.message, self.entities = markdown.parse(value)
+
+    @property
+    def html(self):
+        """
+        The message text, formatted using HTML. Will be `None` for :tl:`MessageService`.
+        """
+        return html.unparse(self.message, self.entities)
+
+    @html.setter
+    def html(self, value):
+        self.message, self.entities = html.parse(value)
 
     @property
     def is_reply(self):
