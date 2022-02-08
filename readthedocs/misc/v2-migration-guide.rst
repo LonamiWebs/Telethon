@@ -771,6 +771,12 @@ The ``client.upload_file`` method has been removed. It's a low-level method user
 to use. Its only purpose could have been to implement a cache of sorts, but this is something the
 library needs to do, not the users.
 
+The methods to deal with folders have been removed. The goal is to find and offer a better
+interface to deal with both folders and archived chats in the future if there is demand for it.
+This includes the removal of ``client.edit_folder``, ``Dialog.archive``, ``Dialog.archived``, and
+the ``archived`` parameter of ``client.get_dialogs``. The ``folder`` parameter remains as it's
+unlikely to change.
+
 
 Deleting messages now returns a more useful value
 -------------------------------------------------

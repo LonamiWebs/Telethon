@@ -103,7 +103,6 @@ Dialogs
 
     iter_dialogs
     get_dialogs
-    edit_folder
     iter_drafts
     get_drafts
     delete_dialog

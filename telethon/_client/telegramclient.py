@@ -1390,7 +1390,6 @@ class TelegramClient:
             ignore_pinned: bool = False,
             ignore_migrated: bool = False,
             folder: int = None,
-            archived: bool = None
     ) -> dialogs._DialogsIter:
         """
         Iterator over the dialogs (open conversations/subscribed channels).
@@ -1445,10 +1444,6 @@ class TelegramClient:
                 By default Telegram assigns the folder ID ``1`` to
                 archived chats, so you should use that if you need
                 to fetch the archived dialogs.
-
-            archived (`bool`, optional):
-                Alias for `folder`. If unspecified, all will be returned,
-                `False` implies ``folder=0`` and `True` implies ``folder=1``.
         Yields
             Instances of `Dialog <telethon.tl._custom.dialog.Dialog>`.
 
@@ -1469,11 +1464,9 @@ class TelegramClient:
 
                 # Getting only non-archived dialogs (both equivalent)
                 non_archived = await client.get_dialogs(folder=0, limit=None)
-                non_archived = await client.get_dialogs(archived=False, limit=None)
 
                 # Getting only archived dialogs (both equivalent)
                 archived = await client.get_dialogs(folder=1, limit=None)
-                archived = await client.get_dialogs(archived=True, limit=None)
         """
 
     @forward_call(dialogs.get_drafts)
@@ -1508,65 +1501,6 @@ class TelegramClient:
                 # Get the draft in your chat
                 draft = await client.get_drafts('me')
                 print(draft.text)
-        """
-
-    @forward_call(dialogs.edit_folder)
-    async def edit_folder(
-            self: 'TelegramClient',
-            entity: 'hints.EntitiesLike' = None,
-            folder: typing.Union[int, typing.Sequence[int]] = None,
-            *,
-            unpack=None
-    ) -> _tl.Updates:
-        """
-        Edits the folder used by one or more dialogs to archive them.
-
-        Arguments
-            entity (entities):
-                The entity or list of entities to move to the desired
-                archive folder.
-
-            folder (`int`):
-                The folder to which the dialog should be archived to.
-
-                If you want to "archive" a dialog, use ``folder=1``.
-
-                If you want to "un-archive" it, use ``folder=0``.
-
-                You may also pass a list with the same length as
-                `entities` if you want to control where each entity
-                will go.
-
-            unpack (`int`, optional):
-                If you want to unpack an archived folder, set this
-                parameter to the folder number that you want to
-                delete.
-
-                When you unpack a folder, all the dialogs inside are
-                moved to the folder number 0.
-
-                You can only use this parameter if the other two
-                are not set.
-
-        Returns
-            The :tl:`Updates` object that the request produces.
-
-        Example
-            .. code-block:: python
-
-                # Archiving the first 5 dialogs
-                dialogs = await client.get_dialogs(5)
-                await client.edit_folder(dialogs, 1)
-
-                # Un-archiving the third dialog (archiving to folder 0)
-                await client.edit_folder(dialog[2], 0)
-
-                # Moving the first dialog to folder 0 and the second to 1
-                dialogs = await client.get_dialogs(2)
-                await client.edit_folder(dialogs, [0, 1])
-
-                # Un-archiving all dialogs
-                await client.edit_folder(unpack=1)
         """
 
     @forward_call(dialogs.delete_dialog)

@@ -150,11 +150,7 @@ def get_dialogs(
         ignore_pinned: bool = False,
         ignore_migrated: bool = False,
         folder: int = None,
-        archived: bool = None
 ) -> _DialogsIter:
-    if archived is not None:
-        folder = 1 if archived else 0
-
     return _DialogsIter(
         self,
         limit,
@@ -179,39 +175,6 @@ def get_drafts(
 
     return _DraftsIter(self, limit, entities=entity)
 
-
-async def edit_folder(
-        self: 'TelegramClient',
-        entity: 'hints.EntitiesLike' = None,
-        folder: typing.Union[int, typing.Sequence[int]] = None,
-        *,
-        unpack=None
-) -> _tl.Updates:
-    if (entity is None) == (unpack is None):
-        raise ValueError('You can only set either entities or unpack, not both')
-
-    if unpack is not None:
-        return await self(_tl.fn.folders.DeleteFolder(
-            folder_id=unpack
-        ))
-
-    if not utils.is_list_like(entity):
-        entities = [await self.get_input_entity(entity)]
-    else:
-        entities = await asyncio.gather(
-            *(self.get_input_entity(x) for x in entity))
-
-    if folder is None:
-        raise ValueError('You must specify a folder')
-    elif not utils.is_list_like(folder):
-        folder = [folder] * len(entities)
-    elif len(entities) != len(folder):
-        raise ValueError('Number of folders does not match number of entities')
-
-    return await self(_tl.fn.folders.EditPeerFolders([
-        _tl.InputFolderPeer(x, folder_id=y)
-        for x, y in zip(entities, folder)
-    ]))
 
 async def delete_dialog(
         self: 'TelegramClient',
