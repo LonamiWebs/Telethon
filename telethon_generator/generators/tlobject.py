@@ -259,7 +259,7 @@ def _write_resolve(tlobject, builder):
             or ((arg.name, arg.type) in NAMED_AUTO_CASTS and tlobject.fullname not in NAMED_BLACKLIST))
         for arg in tlobject.real_args
     ):
-        builder.writeln('async def resolve(self, client, utils):')
+        builder.writeln('async def _resolve(self, client, utils):')
         builder.writeln('r = {}')  # hold replacements
 
         for arg in tlobject.real_args:
@@ -352,7 +352,7 @@ def _write_to_bytes(tlobject, builder):
 
 def _write_from_reader(tlobject, builder):
     builder.writeln('@classmethod')
-    builder.writeln('def from_reader(cls, reader):')
+    builder.writeln('def _from_reader(cls, reader):')
     for arg in tlobject.args:
         _write_arg_read_code(builder, arg, tlobject, name='_' + arg.name)
 
@@ -382,7 +382,7 @@ def _write_read_result(tlobject, builder):
 
     builder.end_block()
     builder.writeln('@staticmethod')
-    builder.writeln('def read_result(reader):')
+    builder.writeln('def _read_result(reader):')
     builder.writeln('reader.read_int()  # Vector ID')
     builder.writeln('return [reader.read_{}() '
                     'for _ in range(reader.read_int())]', m.group(1))
@@ -487,7 +487,7 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
         builder.write("struct.pack('<d', {})", name)
 
     elif 'string' == arg.type:
-        builder.write('self.serialize_bytes({})', name)
+        builder.write('self._serialize_bytes({})', name)
 
     elif 'Bool' == arg.type:
         # 0x997275b5 if boolean else 0xbc799737
@@ -497,10 +497,10 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
         pass  # These are actually NOT written! Only used for flags
 
     elif 'bytes' == arg.type:
-        builder.write('self.serialize_bytes({})', name)
+        builder.write('self._serialize_bytes({})', name)
 
     elif 'date' == arg.type:  # Custom format
-        builder.write('self.serialize_datetime({})', name)
+        builder.write('self._serialize_datetime({})', name)
 
     else:
         # Else it may be a custom type
@@ -628,7 +628,7 @@ def _write_arg_read_code(builder, arg, tlobject, name):
             # and we don't have information about such thing in the
             # method we just ignore that case.
             builder.writeln('from {} import {}', ns, class_name)
-            builder.writeln('{} = {}.from_reader(reader)',
+            builder.writeln('{} = {}._from_reader(reader)',
                             name, class_name)
 
     # End vector and flag blocks if required (if we opened them before)

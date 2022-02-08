@@ -40,7 +40,7 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
     for r in requests:
         if not isinstance(r, _tl.TLRequest):
             raise _NOT_A_REQUEST()
-        r = await r.resolve(self, utils)
+        r = await r._resolve(self, utils)
 
         # Avoid making the request if it's already in a flood wait
         if r.CONSTRUCTOR_ID in self._flood_waited_requests:

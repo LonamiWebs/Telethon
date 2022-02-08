@@ -33,7 +33,7 @@ class MessageContainer(TLObject):
         }
 
     @classmethod
-    def from_reader(cls, reader):
+    def _from_reader(cls, reader):
         # This assumes that .read_* calls are done in the order they appear
         messages = []
         for _ in range(reader.read_int()):

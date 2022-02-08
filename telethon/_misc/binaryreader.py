@@ -139,7 +139,7 @@ class BinaryReader:
                 self.set_position(pos)
                 raise error
 
-        return clazz.from_reader(self)
+        return clazz._from_reader(self)
 
     def tgread_vector(self):
         """Reads a vector (a list) of Telegram objects."""

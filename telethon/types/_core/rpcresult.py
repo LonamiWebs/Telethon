@@ -12,13 +12,13 @@ class RpcResult(TLObject):
         self.error = error
 
     @classmethod
-    def from_reader(cls, reader):
+    def _from_reader(cls, reader):
         msg_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
         if inner_code == _tl.RpcError.CONSTRUCTOR_ID:
-            return RpcResult(msg_id, None, _tl.RpcError.from_reader(reader))
+            return RpcResult(msg_id, None, _tl.RpcError._from_reader(reader))
         if inner_code == GzipPacked.CONSTRUCTOR_ID:
-            return RpcResult(msg_id, GzipPacked.from_reader(reader).data, None)
+            return RpcResult(msg_id, GzipPacked._from_reader(reader).data, None)
 
         reader.seek(-4)
         # This reader.read() will read more than necessary, but it's okay.

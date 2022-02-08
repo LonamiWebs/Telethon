@@ -41,8 +41,8 @@ def _compute_fingerprint(key):
     :param key: the Crypto.RSA key.
     :return: its 8-bytes-long fingerprint.
     """
-    n = tlobject.TLObject.serialize_bytes(get_byte_array(key.n))
-    e = tlobject.TLObject.serialize_bytes(get_byte_array(key.e))
+    n = tlobject.TLObject._serialize_bytes(get_byte_array(key.n))
+    e = tlobject.TLObject._serialize_bytes(get_byte_array(key.e))
     # Telegram uses the last 8 bytes as the fingerprint
     return struct.unpack('<q', sha1(n + e).digest()[-8:])[0]
 

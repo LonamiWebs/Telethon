@@ -26,7 +26,7 @@ class GzipPacked(tlobject.TLObject):
 
     def __bytes__(self):
         return struct.pack('<I', GzipPacked.CONSTRUCTOR_ID) + \
-               tlobject.TLObject.serialize_bytes(gzip.compress(self.data))
+               tlobject.TLObject._serialize_bytes(gzip.compress(self.data))
 
     @staticmethod
     def read(reader):
@@ -35,7 +35,7 @@ class GzipPacked(tlobject.TLObject):
         return gzip.decompress(reader.tgread_bytes())
 
     @classmethod
-    def from_reader(cls, reader):
+    def _from_reader(cls, reader):
         return GzipPacked(gzip.decompress(reader.tgread_bytes()))
 
     def to_dict(self):

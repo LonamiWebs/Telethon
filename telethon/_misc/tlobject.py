@@ -38,7 +38,7 @@ class TLObject:
     SUBCLASS_OF_ID = None
 
     @staticmethod
-    def serialize_bytes(data):
+    def _serialize_bytes(data):
         """Write bytes by using Telegram guidelines"""
         if not isinstance(data, bytes):
             if isinstance(data, str):
@@ -73,7 +73,7 @@ class TLObject:
         return b''.join(r)
 
     @staticmethod
-    def serialize_datetime(dt):
+    def _serialize_datetime(dt):
         if not dt and not isinstance(dt, timedelta):
             return b'\0\0\0\0'
 
@@ -133,7 +133,7 @@ class TLObject:
             # provided) it will try to access `._bytes()`, which will fail
             # with `AttributeError`. This occurs in fact because the type
             # was wrong, so raise the correct error type.
-            raise TypeError('a TLObject was expected but found something else')
+            raise TypeError(f'a TLObject was expected but found {self!r}')
 
     # Custom objects will call `(...)._bytes()` and not `bytes(...)` so that
     # if the wrong type is used (e.g. `int`) we won't try allocating a huge
@@ -142,7 +142,7 @@ class TLObject:
         raise NotImplementedError
 
     @classmethod
-    def from_reader(cls, reader):
+    def _from_reader(cls, reader):
         raise NotImplementedError
 
 
@@ -151,8 +151,8 @@ class TLRequest(TLObject):
     Represents a content-related `TLObject` (a request that can be sent).
     """
     @staticmethod
-    def read_result(reader):
+    def _read_result(reader):
         return reader.tgread_object()
 
-    async def resolve(self, client, utils):
+    async def _resolve(self, client, utils):
         return self
