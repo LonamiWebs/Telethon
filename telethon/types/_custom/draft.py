@@ -161,15 +161,10 @@ class Draft:
         return await self.set_message(text='')
 
     def to_dict(self):
-        try:
-            entity = self.entity
-        except RpcError as e:
-            entity = e
-
         return {
             '_': 'Draft',
             'text': self.text,
-            'entity': entity,
+            'entity': self.entity,
             'date': self.date,
             'link_preview': self.link_preview,
             'reply_to_msg_id': self.reply_to_msg_id
