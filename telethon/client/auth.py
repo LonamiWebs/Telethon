@@ -484,7 +484,8 @@ class AuthMethods:
             self: 'TelegramClient',
             phone: str,
             *,
-            force_sms: bool = False) -> 'types.auth.SentCode':
+            force_sms: bool = False,
+            _retry_count: int = 0) -> 'types.auth.SentCode':
         """
         Sends the Telegram code needed to login to the given phone number.
 
@@ -514,7 +515,10 @@ class AuthMethods:
                 result = await self(functions.auth.SendCodeRequest(
                     phone, self.api_id, self.api_hash, types.CodeSettings()))
             except errors.AuthRestartError:
-                return await self.send_code_request(phone, force_sms=force_sms)
+                if _retry_count > 2:
+                    raise
+                return await self.send_code_request(
+                    phone, force_sms=force_sms, _retry_count=_retry_count+1)
 
             # If we already sent a SMS, do not resend the code (hash may be empty)
             if isinstance(result.type, types.auth.SentCodeTypeSms):
@@ -529,8 +533,18 @@ class AuthMethods:
         self._phone = phone
 
         if force_sms:
-            result = await self(
-                functions.auth.ResendCodeRequest(phone, phone_hash))
+            try:
+                result = await self(
+                    functions.auth.ResendCodeRequest(phone, phone_hash))
+            except errors.PhoneCodeExpiredError:
+                if _retry_count > 2:
+                    raise
+                self._phone_code_hash.pop(phone, None)
+                self._log[__name__].info(
+                    "Phone code expired in ResendCodeRequest, requesting a new code"
+                )
+                return await self.send_code_request(
+                    phone, force_sms=False, _retry_count=_retry_count+1)
 
             self._phone_code_hash[phone] = result.phone_code_hash
 
