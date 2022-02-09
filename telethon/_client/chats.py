@@ -484,8 +484,6 @@ async def edit_admin(
     entity = await self.get_input_entity(entity)
     user = await self.get_input_entity(user)
     ty = helpers._entity_type(user)
-    if ty != helpers._EntityType.USER:
-        raise ValueError('You must pass a user entity')
 
     perm_names = (
         'change_info', 'post_messages', 'edit_messages', 'delete_messages',
@@ -549,8 +547,6 @@ async def edit_permissions(
         pin_messages: bool = True) -> _tl.Updates:
     entity = await self.get_input_entity(entity)
     ty = helpers._entity_type(entity)
-    if ty != helpers._EntityType.CHANNEL:
-        raise ValueError('You must pass either a channel or a supergroup')
 
     rights = _tl.ChatBannedRights(
         until_date=until_date,
@@ -592,8 +588,6 @@ async def kick_participant(
 ):
     entity = await self.get_input_entity(entity)
     user = await self.get_input_entity(user)
-    if helpers._entity_type(user) != helpers._EntityType.USER:
-        raise ValueError('You must pass a user entity')
 
     ty = helpers._entity_type(entity)
     if ty == helpers._EntityType.CHAT:
@@ -660,8 +654,6 @@ async def get_stats(
         message: 'typing.Union[int, _tl.Message]' = None,
 ):
     entity = await self.get_input_entity(entity)
-    if helpers._entity_type(entity) != helpers._EntityType.CHANNEL:
-        raise TypeError('You must pass a channel entity')
 
     message = utils.get_message_id(message)
     if message is not None:

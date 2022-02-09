@@ -157,7 +157,7 @@ def init(
     if not api_id or not api_hash:
         raise ValueError(
             "Your API ID or Hash cannot be empty or None. "
-            "Refer to telethon.rtfd.io for more information.")
+            "Refer to docs.telethon.dev for more information.")
 
     if local_addr is not None:
         if use_ipv6 is False and ':' in local_addr:
