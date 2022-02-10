@@ -57,7 +57,9 @@ CALL_PEER_INVALID,400,The provided call peer object is invalid
 CALL_PROTOCOL_FLAGS_INVALID,400,Call protocol flags invalid
 CDN_METHOD_INVALID,400,This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods
 CHANNELS_ADMIN_PUBLIC_TOO_MUCH,400,"You're admin of too many public channels, make some channels private to change the username of this channel"
+CHANNELS_ADMIN_LOCATED_TOO_MUCH,400,
 CHANNELS_TOO_MUCH,400,You have joined too many channels/supergroups
+CHANNEL_ADD_INVALID,400,
 CHANNEL_BANNED,400,The channel is banned
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
 CHANNEL_PRIVATE,400,The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it
@@ -345,12 +347,15 @@ SRP_ID_INVALID,400,
 START_PARAM_EMPTY,400,The start parameter is empty
 START_PARAM_INVALID,400,Start parameter invalid
 STATS_MIGRATE_0,303,The channel statistics must be fetched from DC {dc}
+STICKERPACK_STICKERS_TOO_MUCH,400,
 STICKERSET_INVALID,400,The provided sticker set is invalid
 STICKERSET_OWNER_ANONYMOUS,406,This sticker set can't be used as the group's official stickers because it was created by one of its anonymous admins
 STICKERS_EMPTY,400,No sticker provided
+STICKERS_TOO_MUCH,400,
 STICKER_DOCUMENT_INVALID,400,"The sticker file was invalid (this file has failed Telegram internal checks, make sure to use the correct format and comply with https://core.telegram.org/animated_stickers)"
 STICKER_EMOJI_INVALID,400,Sticker emoji invalid
 STICKER_FILE_INVALID,400,Sticker file invalid
+STICKER_GIF_DIMENSIONS,400,
 STICKER_ID_INVALID,400,The provided sticker ID is invalid
 STICKER_INVALID,400,The provided sticker is invalid
 STICKER_PNG_DIMENSIONS,400,Sticker png dimensions invalid
@@ -359,6 +364,8 @@ STICKER_TGS_NODOC,400,
 STICKER_TGS_NOTGS,400,Stickers must be a tgs file but the used file was not a tgs
 STICKER_THUMB_PNG_NOPNG,400,Stickerset thumb must be a png file but the used file was not png
 STICKER_THUMB_TGS_NOTGS,400,Stickerset thumb must be a tgs file but the used file was not tgs
+STICKER_VIDEO_NOWEBM,400,
+STICKER_VIDEO_BIG,400,
 STORAGE_CHECK_FAILED,500,Server storage check failed
 STORE_INVALID_SCALAR_TYPE,500,
 TAKEOUT_INIT_DELAY_0,420,A wait of {seconds} seconds is required before being able to initiate the takeout
