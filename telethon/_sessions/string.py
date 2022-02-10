@@ -48,7 +48,7 @@ class StringSession(MemorySession):
                 takeout_id=0
             )
             if ip_len == 4:
-                ipv4 = int.from_bytes(ip, 'big', False)
+                ipv4 = int.from_bytes(ip, 'big',  signed=False)
                 ipv6 = None
             else:
                 ipv4 = None
