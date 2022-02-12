@@ -131,26 +131,11 @@ class CallbackQuery(EventBuilder, _custom.chatgetter.ChatGetter, _custom.senderg
             return self._message
 
         try:
-            chat = await self.get_input_chat() if self.is_channel else None
-            self._message = await self._client.get_messages(
-                chat, ids=self._message_id)
+            self._message = await self._client.get_messages(self.chat, ids=self._message_id)
         except ValueError:
             return
 
         return self._message
-
-    async def _refetch_sender(self):
-        self._sender = self._entities.get(self.sender_id)
-        if not self._sender:
-            return
-
-        self._input_sender = utils.get_input_peer(self._chat)
-        if not getattr(self._input_sender, 'access_hash', True):
-            # getattr with True to handle the InputPeerSelf() case
-            m = await self.get_message()
-            if m:
-                self._sender = m._sender
-                self._input_sender = m._input_sender
 
     async def answer(
             self, message=None, cache_time=0, *, url=None, alert=False):

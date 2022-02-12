@@ -104,10 +104,6 @@ class UserUpdate(EventBuilder, _custom.chatgetter.ChatGetter, _custom.sendergett
         """Alias for `input_sender <telethon.tl.custom.sendergetter.SenderGetter.input_sender>`."""
         return self.input_sender
 
-    async def get_input_user(self):
-        """Alias for `get_input_sender <telethon.tl.custom.sendergetter.SenderGetter.get_input_sender>`."""
-        return await self.get_input_sender()
-
     @property
     def user_id(self):
         """Alias for `sender_id <telethon.tl.custom.sendergetter.SenderGetter.sender_id>`."""

@@ -866,7 +866,7 @@ class Message(ChatGetter, SenderGetter):
         """
         # If the client wasn't set we can't emulate the behaviour correctly,
         # so as a best-effort simply return the chat peer.
-        if not self.out and self.is_private:
+        if not self.out and self.chat.is_user:
             return _tl.PeerUser(self._client._session_state.user_id)
 
         return self.peer_id
@@ -928,7 +928,7 @@ class Message(ChatGetter, SenderGetter):
             # Bots cannot access other bots' messages by their ID.
             # However they can access them through replies...
             self._reply_message = await self._client.get_messages(
-                await self.get_input_chat() if self.is_channel else None,
+                self.chat,
                 ids=_tl.InputMessageReplyTo(self.id)
             )
             if not self._reply_message:
@@ -937,7 +937,7 @@ class Message(ChatGetter, SenderGetter):
                 # If that's the case, give it a second chance accessing
                 # directly by its ID.
                 self._reply_message = await self._client.get_messages(
-                    self._input_chat if self.is_channel else None,
+                    self.chat,
                     ids=self.reply_to.reply_to_msg_id
                 )
 
@@ -1286,8 +1286,7 @@ class Message(ChatGetter, SenderGetter):
         along with their input versions.
         """
         try:
-            chat = await self.get_input_chat() if self.is_channel else None
-            msg = await self._client.get_messages(chat, ids=self.id)
+            msg = await self._client.get_messages(self.chat, ids=self.id)
         except ValueError:
             return  # We may not have the input chat/get message failed
         if not msg:
@@ -1301,9 +1300,6 @@ class Message(ChatGetter, SenderGetter):
         self._via_input_bot = msg._via_input_bot
         self._forward = msg._forward
         self._action_entities = msg._action_entities
-
-    async def _refetch_sender(self):
-        await self._reload_message()
 
     def _set_buttons(self, chat, bot):
         """

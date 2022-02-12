@@ -136,7 +136,7 @@ class Entity:
         return self.ty in (EntityType.GROUP, EntityType.MEGAGROUP)
 
     @property
-    def is_channel(self):
+    def is_broadcast(self):
         """
         ``True`` if the entity is a broadcast channel or `broadcast group`_.
 

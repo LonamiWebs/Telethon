@@ -371,7 +371,7 @@ class InteractiveTelegramClient(TelegramClient):
         # with events. Since they are methods, you know they may make an API
         # call, which can be expensive.
         chat = await event.get_chat()
-        if event.is_group:
+        if chat.is_group:
             if event.out:
                 sprint('>> sent "{}" to chat {}'.format(
                     event.text, get_display_name(chat)
