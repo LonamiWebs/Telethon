@@ -598,14 +598,14 @@ The supported values are:
 
 If you prefer to avoid hardcoding strings, you may use ``telethon.enums.Participant``.
 
-The size selector for ``client.download_profile_photo`` and ``client.download_media` is now using
+The size selector for ``client.download_profile_photo`` and ``client.download_media`` is now using
 an enumeration:
 
-```
-from telethon import enums
+.. code-block:: python
 
-await client.download_profile_photo(user, thumb=enums.Size.ORIGINAL)
-```
+    from telethon import enums
+
+    await client.download_profile_photo(user, thumb=enums.Size.ORIGINAL)
 
 This new selection mode is also smart enough to pick the "next best" size if the specified one
 is not available. The parameter is known as ``thumb`` and not ``size`` because documents don't
@@ -639,7 +639,100 @@ The message sender no longer is the channel when no sender is provided by Telegr
 to patch this value for channels to be the same as the chat, but now it will be faithful to
 Telegram's value.
 
-// TODO actually provide the things mentioned here
+
+Overhaul of users and chats are no longer raw API types
+-------------------------------------------------------
+
+Users and chats are no longer raw API types. The goal is to reduce the amount of raw API exposed
+to the user, and to provide less confusing naming. This also means that **the sender and chat of
+messages and events is now a different type**. If you were using `isinstance` to check the types,
+you will need to update that code. However, if you were accessing things like the ``first_name``
+or ``username``, you will be fine.
+
+Raw API is not affected by this change. When using it, the raw :tl:`User`, :tl:`Chat` and
+:tl:`Channel` are still returned.
+
+For friendly methods and events, There are now two main entity types, `User` and `Chat`.
+`User`\ s are active entities which can send messages and interact with eachother. There is an
+account controlling them. `Chat`\ s are passive entities where multiple users can join and
+interact with each other. This includes small groups, supergroups, and broadcast channels.
+
+``event.get_sender``, ``event.sender``, ``event.get_chat``, and ``event.chat`` (as well as
+the same methods on ``message`` and elsewhere) now return this new type. The ``sender`` and
+``chat`` is **now always returned** (where it makes sense, so no sender in channel messages),
+even if Telegram did not include information about it in the update. This means you can use
+send messages to ``event.chat`` without worrying if Telegram included this information or not,
+or even access ``event.chat.id``. This was often a papercut. However, if you need other
+information like the title, you might still need to use ``await event.get_chat()``, which is
+used to signify an API call might be necessary.
+
+``event.get_input_sender``, ``event.input_sender``, ``message.get_input_sender`` and
+``message.input_sender`` (among other variations) have been removed. Instead, a new ``compact``
+method has been added to the new `User` and `Chat` types, which can be used to obtain a compact
+representation of the sender. The "input" terminology is confusing for end-users, as it's mostly
+an implementation detail of friendly methods. Because the return type would've been different
+had these methods been kept, one would have had to review code using them regardless.
+
+What this means is that, if you now want a compact way to store a user or chat for later use,
+you should use ``compact``:
+
+.. code-block:: python
+
+    compacted_user = message.sender.compact()
+    # store compacted_user in a database or elsewhere for later use
+
+Public methods accept this type as input parameters. This means you can send messages to a
+compacted user or chat, for example.
+
+``event.is_private``, ``event.is_group`` and ``event.is_channel`` have **been removed** (among
+other variations, such as in ``message``). It didn't make much sense to ask "is this event a
+group", and there is no such thing as "group messages" currently either. Instead, it's sensible
+to ask if the sender of a message is a group, or the chat of an event is a channel. New properties
+have been added to both the `User` and `Chat` classes:
+
+* ``.is_user`` will always be `True` for `User` and `False` for `Chat`.
+* ``.is_group`` will be `False` for `User` and be `True` for small group chats and supergroups.
+* ``.is_broadcast`` will be `False` for `User` and `True` for broadcast channels and broadcast groups.
+
+Because the properties exist both in `User` and `Chat`, you do not need use `isinstance` to check
+if a sender is a channel or if a chat is a user.
+
+Some fields of the new `User` type differ from the naming or value type of its raw API counterpart:
+
+* ``user.restriction_reason`` has been renamed to ``restriction_reasons`` (with a trailing **s**)
+  and now always returns a list.
+* ``user.bot_chat_history`` has been renamed to ``user.bot_info.chat_history_access``.
+* ``user.bot_nochats`` has been renamed to ``user.bot_info.private_only``.
+* ``user.bot_inline_geo`` has been renamed to ``user.bot_info.inline_geo``.
+* ``user.bot_info_version`` has been renamed to ``user.bot_info.version``.
+* ``user.bot_inline_placeholder`` has been renamed to ``user.bot_info.inline_placeholder``.
+
+The new ``user.bot_info`` field will be `None` for non-bots. The goal is to unify where this
+information is found and reduce clutter in the main ``user`` type.
+
+Some fields of the new `Chat` type differ from the naming or value type of its raw API counterpart:
+
+* ``chat.date`` is currently not available. It's either the chat creation or join date, but due
+  to this inconsistency, it's not included to allow for a better solution in the future.
+* ``chat.has_link`` is currently not available, to allow for a better alternative in the future.
+* ``chat.has_geo`` is currently not available, to allow for a better alternative in the future.
+* ``chat.call_active`` is currently not available, until it's decided what to do about calls.
+* ``chat.call_not_empty`` is currently not available, until it's decided what to do about calls.
+* ``chat.version`` was removed. It's an implementation detail.
+* ``chat.min`` was removed. It's an implementation detail.
+* ``chat.deactivated`` was removed. It's redundant with ``chat.migrated_to``.
+* ``chat.forbidden`` has been added as a replacement for ``isinstance(chat, (ChatForbidden, ChannelForbidden))``.
+* ``chat.forbidden_until`` has been added as a replacement for ``until_date`` in forbidden chats.
+* ``chat.restriction_reason`` has been renamed to ``restriction_reasons`` (with a trailing **s**)
+  and now always returns a list.
+* ``chat.migrated_to`` no longer returns a raw type, and instead returns this new `Chat` type.
+
+If you have a need for these, please step in, and explain your use case, so we can work together
+to implement a proper design.
+
+Both the new `User` and `Chat` types offer a ``fetch`` method, which can be used to refetch the
+instance with fresh information, including the full information about the user (such as the user's
+biography or a chat's about description).
 
 
 Using a flat list to define buttons will now create rows and not columns
@@ -662,9 +755,9 @@ If you still want the old behaviour, wrap the list inside another list:
 
     bot.send_message(chat, message, buttons=[[
         #                                   +
-        Button.inline('top'),
-        Button.inline('middle'),
-        Button.inline('bottom'),
+        Button.inline('left'),
+        Button.inline('center'),
+        Button.inline('right'),
     ]])
     #+
 
