@@ -1,5 +1,6 @@
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
+from dataclasses import dataclass
 import mimetypes
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
@@ -65,6 +66,14 @@ class BotInfo:
 
     def __init__(self, user):
         self._user = user
+
+
+@dataclass(frozen=True)
+class _TinyUser:
+    __slots__ = ('id', 'access_hash')
+
+    id: int
+    access_hash: int
 
 
 class User:
@@ -161,9 +170,16 @@ class User:
     @classmethod
     def _new(cls, client, user):
         self = cls.__new__(cls)
-
         self._client = client
-        self._user = user
+
+        if isinstance(user, Entity):
+            if not user.is_user:
+                raise TypeError('Tried to construct User with non-user Entity')
+
+            self._user = _TinyUser(user.id, user.hash)
+        else:
+            self._user = user
+
         self._full = None
         raise RuntimeError('self._i_need_to_include_participant_info')
 

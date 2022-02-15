@@ -62,33 +62,35 @@ class UserUpdate(EventBuilder, _custom.chatgetter.ChatGetter, _custom.sendergett
                 if event.uploading:
                     await client.send_message(event.user_id, 'What are you sending?')
     """
-    def __init__(self, peer, *, status=None, chat_peer=None, typing=None):
-        _custom.chatgetter.ChatGetter.__init__(self, chat_peer or peer)
-        _custom.sendergetter.SenderGetter.__init__(self, utils.get_peer_id(peer))
+    @classmethod
+    def _build(cls, client, update, entities):
+        chat_peer = None
+        status = None
+        if isinstance(update, _tl.UpdateUserStatus):
+            peer = _tl.PeerUser(update.user_id)
+            status = update.status
+            typing = None
+        elif isinstance(update, _tl.UpdateChannelUserTyping):
+            peer = update.from_id
+            chat_peer = _tl.PeerChannel(update.channel_id)
+            typing = update.action
+        elif isinstance(update, _tl.UpdateChatUserTyping):
+            peer = update.from_id
+            chat_peer = _tl.PeerChat(update.chat_id)
+            typing = update.action
+        elif isinstance(update, _tl.UpdateUserTyping):
+            peer = update.user_id
+            typing = update.action
+        else:
+            return None
 
+        self = cls.__new__(cls)
+        self._client = client
+        self._sender = entities.get(peer)
+        self._chat = entities.get(chat_peer or peer)
         self.status = status
         self.action = typing
-
-    @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
-        if isinstance(update, _tl.UpdateUserStatus):
-            return UserUpdateEvent(_tl.PeerUser(update.user_id),
-                             status=update.status)
-        elif isinstance(update, _tl.UpdateChannelUserTyping):
-            return UserUpdateEvent(update.from_id,
-                             chat_peer=_tl.PeerChannel(update.channel_id),
-                             typing=update.action)
-        elif isinstance(update, _tl.UpdateChatUserTyping):
-            return UserUpdateEvent(update.from_id,
-                             chat_peer=_tl.PeerChat(update.chat_id),
-                             typing=update.action)
-        elif isinstance(update, _tl.UpdateUserTyping):
-            return UserUpdateEvent(update.user_id,
-                             typing=update.action)
-
-    def _set_client(self, client):
-        super()._set_client(client)
-        self._sender, self._input_sender = utils._get_entity_pair(self.sender_id, self._entities)
+        return self
 
     @property
     def user(self):

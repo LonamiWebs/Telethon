@@ -35,20 +35,18 @@ class MessageDeleted(EventBuilder, _custom.chatgetter.ChatGetter):
                 for msg_id in event.deleted_ids:
                     print('Message', msg_id, 'was deleted in', event.chat_id)
     """
-    def __init__(self, deleted_ids, peer):
-        _custom.chatgetter.ChatGetter.__init__(self, chat_peer=peer)
-        self.deleted_id = None if not deleted_ids else deleted_ids[0]
-        self.deleted_ids = deleted_ids
-
     @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
+    def _build(cls, client, update, entities):
         if isinstance(update, _tl.UpdateDeleteMessages):
-            return cls.Event(
-                deleted_ids=update.messages,
-                peer=None
-            )
+            peer = None
         elif isinstance(update, _tl.UpdateDeleteChannelMessages):
-            return cls.Event(
-                deleted_ids=update.messages,
-                peer=_tl.PeerChannel(update.channel_id)
-            )
+            peer = _tl.PeerChannel(update.channel_id)
+        else:
+            return None
+
+        self = cls.__new__(cls)
+        self._client = client
+        self._chat = entities.get(peer)
+        self.deleted_id = None if not update.messages else update.messages[0]
+        self.deleted_ids = update.messages
+        return self

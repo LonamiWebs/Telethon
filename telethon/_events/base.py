@@ -34,15 +34,12 @@ class StopPropagation(Exception):
 class EventBuilder(abc.ABC):
     @classmethod
     @abc.abstractmethod
-    def _build(cls, update, others, self_id, entities, client):
+    def _build(cls, client, update, entities):
         """
         Builds an event for the given update if possible, or returns None.
 
-        `others` are the rest of updates that came in the same container
-        as the current `update`.
-
-        `self_id` should be the current user's ID, since it is required
-        for some events which lack this information but still need it.
+        `entities` must have `get(Peer) -> User|Chat` and `self_id`,
+        which must be the current user's ID.
         """
 
 

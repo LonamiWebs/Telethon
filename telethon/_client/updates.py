@@ -170,7 +170,7 @@ async def _update_loop(self: 'TelegramClient'):
         updates_to_dispatch = deque()
         while self.is_connected():
             if updates_to_dispatch:
-                await _dispatch(self, updates_to_dispatch.popleft())
+                await _dispatch(self, *updates_to_dispatch.popleft())
                 continue
 
             get_diff = self._message_box.get_difference()
@@ -178,8 +178,7 @@ async def _update_loop(self: 'TelegramClient'):
                 self._log[__name__].info('Getting difference for account updates')
                 diff = await self(get_diff)
                 updates, users, chats = self._message_box.apply_difference(diff, self._entity_cache)
-                self._entity_cache.extend(users, chats)
-                updates_to_dispatch.extend(updates)
+                updates_to_dispatch.extend(_preprocess_updates(self, updates, users, chats))
                 continue
 
             get_diff = self._message_box.get_channel_difference(self._entity_cache)
@@ -187,8 +186,7 @@ async def _update_loop(self: 'TelegramClient'):
                 self._log[__name__].info('Getting difference for channel updates')
                 diff = await self(get_diff)
                 updates, users, chats = self._message_box.apply_channel_difference(get_diff, diff, self._entity_cache)
-                self._entity_cache.extend(users, chats)
-                updates_to_dispatch.extend(updates)
+                updates_to_dispatch.extend(_preprocess_updates(self, updates, users, chats))
                 continue
 
             deadline = self._message_box.check_deadlines()
@@ -203,46 +201,74 @@ async def _update_loop(self: 'TelegramClient'):
 
             processed = []
             users, chats = self._message_box.process_updates(updates, self._entity_cache, processed)
-            self._entity_cache.extend(users, chats)
-            updates_to_dispatch.extend(processed)
+            updates_to_dispatch.extend(_preprocess_updates(self, processed, users, chats))
     except Exception:
         self._log[__name__].exception('Fatal error handling updates (this is a bug in Telethon, please report it)')
 
 
-async def _dispatch(self, update):
+def _preprocess_updates(self, updates, users, chats):
+    self._entity_cache.extend(users, chats)
+    entities = Entities(self, users, chats)
+    return ((u, entities) for u in updates)
+
+
+class Entities:
+    def __init__(self, client, users, chats):
+        self.self_id = client._session_state.user_id
+        self._entities = {e.id: e for e in itertools.chain(
+            (User(client, u) for u in users),
+            (Chat(client, c) for u in chats),
+        )}
+
+    def get(self, client, peer):
+        if not peer:
+            return None
+
+        id = utils.get_peer_id(peer)
+        try:
+            return self._entities[id]
+        except KeyError:
+            entity = client._entity_cache.get(query.user_id)
+            if not entity:
+                raise RuntimeError('Update is missing a hash but did not trigger a gap')
+
+            self._entities[entity.id] = User(client, entity) if entity.is_user else Chat(client, entity)
+            return self._entities[entity.id]
+
+
+async def _dispatch(self, update, entities):
     self._dispatching_update_handlers = True
+    try:
+        event_cache = {}
+        for handler in self._update_handlers:
+            event, entities = event_cache.get(handler._event)
+            if not event:
+                # build can fail if we're missing an access hash; we want this to crash
+                event_cache[handler._event] = event = handler._event._build(self, update, entities)
 
-    event_cache = {}
-    for handler in self._update_handlers:
-        event = event_cache.get(handler._event)
-        if not event:
-            event_cache[handler._event] = event = handler._event._build(
-                update, [], self._session_state.user_id, {}, self)
-
-        while True:
-            # filters can be modified at any time, and there can be any amount of them which are not yet resolved
-            try:
-                if handler._filter(event):
-                    try:
-                        await handler._callback(event)
-                    except StopPropagation:
-                        self._dispatching_update_handlers = False
-                        return
-                    except Exception:
-                        name = getattr(handler._callback, '__name__', repr(handler._callback))
-                        self._log[__name__].exception('Unhandled exception on %s (this is likely a bug in your code)', name)
-            except NotResolved as nr:
+            while True:
+                # filters can be modified at any time, and there can be any amount of them which are not yet resolved
                 try:
-                    await nr.unresolved.resolve()
-                    continue
+                    if handler._filter(event):
+                        try:
+                            await handler._callback(event)
+                        except StopPropagation:
+                            return
+                        except Exception:
+                            name = getattr(handler._callback, '__name__', repr(handler._callback))
+                            self._log[__name__].exception('Unhandled exception on %s (this is likely a bug in your code)', name)
+                except NotResolved as nr:
+                    try:
+                        await nr.unresolved.resolve()
+                        continue
+                    except Exception as e:
+                        # we cannot really do much about this; it might be a temporary network issue
+                        warnings.warn(f'failed to resolve filter, handler will be skipped: {e}: {nr.unresolved!r}')
                 except Exception as e:
-                    # we cannot really do much about this; it might be a temporary network issue
-                    warnings.warn(f'failed to resolve filter, handler will be skipped: {e}: {nr.unresolved!r}')
-            except Exception as e:
-                # invalid filter (e.g. types when types were not used as input)
-                warnings.warn(f'invalid filter applied, handler will be skipped: {e}: {e.filter!r}')
+                    # invalid filter (e.g. types when types were not used as input)
+                    warnings.warn(f'invalid filter applied, handler will be skipped: {e}: {e.filter!r}')
 
-            # we only want to continue on unresolved filter (to check if there are more unresolved)
-            break
-
-    self._dispatching_update_handlers = False
+                # we only want to continue on unresolved filter (to check if there are more unresolved)
+                break
+    finally:
+        self._dispatching_update_handlers = False

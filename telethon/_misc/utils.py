@@ -578,20 +578,6 @@ def get_input_group_call(call):
         _raise_cast_fail(call, 'InputGroupCall')
 
 
-def _get_entity_pair(entity_id, entities,
-                     get_input_peer=get_input_peer):
-    """
-    Returns ``(entity, input_entity)`` for the given entity ID.
-    """
-    entity = entities.get(entity_id)
-    try:
-        input_entity = get_input_peer(entity)
-    except TypeError:
-        input_entity = None
-
-    return entity, input_entity
-
-
 def get_message_id(message):
     """Similar to :meth:`get_input_peer`, but for message IDs."""
     if message is None:
@@ -977,27 +963,13 @@ def get_peer(peer):
 
 def get_peer_id(peer):
     """
-    Extract the integer ID from the given peer.
+    Extract the integer ID from the given :tl:`Peer`.
     """
-    # First we assert it's a Peer TLObject, or early return for integers
-    if isinstance(peer, int):
-        return peer
-
-    # Tell the user to use their client to resolve InputPeerSelf if we got one
-    if isinstance(peer, _tl.InputPeerSelf):
-        _raise_cast_fail(peer, 'int (you might want to use client.get_peer_id)')
-
-    try:
-        peer = get_peer(peer)
-    except TypeError:
+    pid = getattr(peer, 'user_id', None) or getattr(peer, 'channel_id', None) or getattr(peer, 'chat_id', None)
+    if not isisintance(pid, int):
         _raise_cast_fail(peer, 'int')
 
-    if isinstance(peer, _tl.PeerUser):
-        return peer.user_id
-    elif isinstance(peer, _tl.PeerChat):
-        return peer.chat_id
-    else:  # if isinstance(peer, _tl.PeerChannel):
-        return peer.channel_id
+    return pid
 
 
 def _rle_decode(data):

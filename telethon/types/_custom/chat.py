@@ -1,5 +1,6 @@
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
+from dataclasses import dataclass
 import mimetypes
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
@@ -27,17 +28,21 @@ def _fwd(field, doc):
     return property(fget, fset, None, doc)
 
 
-class _InputChat:
-    """
-    Input channels and peer chats use a different name for "id" which breaks the property forwarding.
-
-    This class simply holds the two fields with proper names.
-    """
+@dataclass(frozen=True)
+class _TinyChat:
     __slots__ = ('id', 'access_hash')
 
-    def __init__(self, input):
-        self.id = getattr(input, 'channel_id', None) or input.chat_id
-        self.access_hash = getattr(input, 'access_hash', None)
+    id: int
+    access_hash: int
+
+
+@dataclass(frozen=True)
+class _TinyChannel:
+    __slots__ = ('id', 'access_hash', 'megagroup')
+
+    id: int
+    access_hash: int
+    megagroup: bool  # gigagroup is not present in channelForbidden but megagroup is
 
 
 class Chat:
@@ -159,7 +164,11 @@ class Chat:
         except AttributeError:
             migrated = None
 
-        return Chat(_InputChat(migrated), self._client) if migrated else None
+        if migrated is None:
+            return migrated
+
+        # Small chats don't migrate to other small chats, nor do they migrate to broadcast channels
+        return type(self)._new(self._client, _TinyChannel(migrated.channel_id, migrated.access_hash, True))
 
     def __init__(self):
         raise TypeError('You cannot create Chat instances by hand!')
@@ -168,7 +177,18 @@ class Chat:
     def _new(cls, client, chat):
         self = cls.__new__(cls)
         self._client = client
+
         self._chat = chat
+        if isinstance(cls, Entity):
+            if chat.is_user:
+                raise TypeError('Tried to construct Chat with non-chat Entity')
+            elif chat.ty == EntityType.GROUP:
+                self._chat = _TinyChat(chat.id)
+            else:
+                self._chat = _TinyChannel(chat.id, chat.hash, chat.is_group)
+        else:
+            self._chat = chat
+
         self._full = None
         return self
 
@@ -237,12 +257,12 @@ class Chat:
 
         .. _megagroup: https://telegram.org/blog/supergroups5k
         """
-        return True
+        return isinstance(self._chat, (_tl.Chat, _TinyChat, _tl.ChatForbidden, _tl.ChatEmpty)) or self._chat.megagroup
 
     @property
     def is_broadcast(self):
         """
-        Returns `True` if the chat is a broadcast channel  group chat or `broadcast group`_.
+        Returns `True` if the chat is a broadcast channel group chat or `broadcast group`_.
 
         This property also exists in `User`, where it returns `False`.
 
@@ -253,7 +273,7 @@ class Chat:
 
         .. _broadcast group: https://telegram.org/blog/autodelete-inv2#groups-with-unlimited-members
         """
-        return True
+        return not self.is_group
 
     @property
     def full_name(self):

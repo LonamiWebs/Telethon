@@ -107,7 +107,7 @@ class Album(EventBuilder, _custom.chatgetter.ChatGetter, _custom.sendergetter.Se
         _custom.sendergetter.SenderGetter.__init__(self, message.sender_id)
         self.messages = messages
 
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
+    def _build(cls, client, update, entities):
         if not others:
             return  # We only care about albums which come inside the same Updates
 
@@ -145,6 +145,12 @@ class Album(EventBuilder, _custom.chatgetter.ChatGetter, _custom.sendergetter.Se
                     and isinstance(u.message, _tl.Message)
                     and u.message.grouped_id == group)
             ])
+
+        self = cls.__new__(cls)
+        self._client = client
+        self._sender = entities.get(_tl.PeerUser(update.user_id))
+        self._chat = entities.get(_tl.PeerUser(update.user_id))
+        return self
 
     def _set_client(self, client):
         super()._set_client(client)

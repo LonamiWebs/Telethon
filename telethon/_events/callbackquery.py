@@ -69,29 +69,32 @@ class CallbackQuery(EventBuilder, _custom.chatgetter.ChatGetter, _custom.senderg
                     Button.inline('Nope', b'no')
                 ])
     """
-    def __init__(self, query, peer, msg_id):
-        _custom.chatgetter.ChatGetter.__init__(self, peer)
-        _custom.sendergetter.SenderGetter.__init__(self, query.user_id)
+    @classmethod
+    def _build(cls, client, update, entities):
+        query = update
+        if isinstance(update, _tl.UpdateBotCallbackQuery):
+            peer = update.peer
+            msg_id = update.msg_id
+        elif isinstance(update, _tl.UpdateInlineBotCallbackQuery):
+            # See https://github.com/LonamiWebs/Telethon/pull/1005
+            # The long message ID is actually just msg_id + peer_id
+            msg_id, pid = struct.unpack('<ii', struct.pack('<q', update.msg_id.id))
+            peer = _tl.PeerChannel(-pid) if pid < 0 else _tl.PeerUser(pid)
+        else:
+            return None
+
+        self = cls.__new__(cls)
+        self._client = client
+        self._sender = entities.get(_tl.PeerUser(query.user_id))
+        self._chat = entities.get(peer)
+
         self.query = query
         self.data_match = None
         self.pattern_match = None
         self._message = None
         self._answered = False
 
-    @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
-        if isinstance(update, _tl.UpdateBotCallbackQuery):
-            return cls.Event(update, update.peer, update.msg_id)
-        elif isinstance(update, _tl.UpdateInlineBotCallbackQuery):
-            # See https://github.com/LonamiWebs/Telethon/pull/1005
-            # The long message ID is actually just msg_id + peer_id
-            mid, pid = struct.unpack('<ii', struct.pack('<q', update.msg_id.id))
-            peer = _tl.PeerChannel(-pid) if pid < 0 else _tl.PeerUser(pid)
-            return cls.Event(update, peer, mid)
-
-    def _set_client(self, client):
-        super()._set_client(client)
-        self._sender, self._input_sender = utils._get_entity_pair(self.sender_id, self._entities)
+        return self
 
     @property
     def id(self):

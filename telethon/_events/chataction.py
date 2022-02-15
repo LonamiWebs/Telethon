@@ -72,18 +72,110 @@ class ChatAction(EventBuilder):
                     await event.reply('Welcome to the group!')
     """
 
-    def __init__(self, where, new_photo=None,
-                    added_by=None, kicked_by=None, created=None, from_approval=None,
-                    users=None, new_title=None, pin_ids=None, pin=None, new_score=None):
+    @classmethod
+    def _build(cls, client, update, entities):
+        where = None
+        new_photo = None
+        added_by = None
+        kicked_by = None
+        created = None
+        from_approval = None
+        users = None
+        new_title = None
+        pin_ids = None
+        pin = None
+        new_score = None
+
+        # Rely on specific pin updates for unpins, but otherwise ignore them
+        # for new pins (we'd rather handle the new service message with pin,
+        # so that we can act on that message').
+        if isinstance(update, _tl.UpdatePinnedChannelMessages) and not update.pinned:
+            where = _tl.PeerChannel(update.channel_id)
+            pin_ids = update.messages
+            pin = update.pinned
+
+        elif isinstance(update, _tl.UpdatePinnedMessages) and not update.pinned:
+            where = update.peer
+            pin_ids = update.messages
+            pin = update.pinned
+
+        elif isinstance(update, _tl.UpdateChatParticipantAdd):
+            where = _tl.PeerChat(update.chat_id)
+            added_by = update.inviter_id or True
+            users = update.user_id
+
+        elif isinstance(update, _tl.UpdateChatParticipantDelete):
+            where = _tl.PeerChat(update.chat_id)
+            kicked_by = True
+            users = update.user_id
+
+        # UpdateChannel is sent if we leave a channel, and the update._entities
+        # set by _process_update would let us make some guesses. However it's
+        # better not to rely on this. Rely only in MessageActionChatDeleteUser.
+
+        elif (isinstance(update, (
+                _tl.UpdateNewMessage, _tl.UpdateNewChannelMessage))
+              and isinstance(update.message, _tl.MessageService)):
+            msg = update.message
+            action = update.message.action
+            if isinstance(action, _tl.MessageActionChatJoinedByLink):
+                where = msg
+                added_by = True
+                users = msg.from_id
+            elif isinstance(action, _tl.MessageActionChatAddUser):
+                # If a user adds itself, it means they joined via the public chat username
+                added_by = ([msg.sender_id] == action.users) or msg.from_id
+                where = msg
+                added_by = added_by
+                users = action.users
+            elif isinstance(action, _tl.MessageActionChatJoinedByRequest):
+                # user joined from join request (after getting admin approval)
+                where = msg
+                from_approval = True
+                users = msg.from_id
+            elif isinstance(action, _tl.MessageActionChatDeleteUser):
+                where = msg
+                kicked_by = utils.get_peer_id(msg.from_id) if msg.from_id else True
+                users = action.user_id
+            elif isinstance(action, _tl.MessageActionChatCreate):
+                where = msg
+                users = action.users
+                created = True
+                new_title = action.title
+            elif isinstance(action, _tl.MessageActionChannelCreate):
+                where = msg
+                created = True
+                users = msg.from_id
+                new_title = action.title
+            elif isinstance(action, _tl.MessageActionChatEditTitle):
+                where = msg
+                users = msg.from_id
+                new_title = action.title
+            elif isinstance(action, _tl.MessageActionChatEditPhoto):
+                where = msg
+                users = msg.from_id
+                new_photo = action.photo
+            elif isinstance(action, _tl.MessageActionChatDeletePhoto):
+                where = msg
+                users = msg.from_id
+                new_photo = True
+            elif isinstance(action, _tl.MessageActionPinMessage) and msg.reply_to:
+                where = msg
+                pin_ids=[msg.reply_to_msg_id]
+            elif isinstance(action, _tl.MessageActionGameScore):
+                where = msg
+                new_score = action.score
+
+        self = cls.__new__(cls)
+        self._client = client
+
         if isinstance(where, _tl.MessageService):
             self.action_message = where
             where = where.peer_id
         else:
             self.action_message = None
 
-        # TODO needs some testing (can there be more than one id, and do they follow pin order?)
-        #      same in get_pinned_message
-        super().__init__(chat_peer=where, msg_id=pin_ids[0] if pin_ids else None)
+        self._chat = entities.get(where)
 
         self.new_pin = pin_ids is not None
         self._pin_ids = pin_ids
@@ -128,87 +220,7 @@ class ChatAction(EventBuilder):
         self.new_score = new_score
         self.unpin = not pin
 
-    @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
-        # Rely on specific pin updates for unpins, but otherwise ignore them
-        # for new pins (we'd rather handle the new service message with pin,
-        # so that we can act on that message').
-        if isinstance(update, _tl.UpdatePinnedChannelMessages) and not update.pinned:
-            return cls.Event(_tl.PeerChannel(update.channel_id),
-                             pin_ids=update.messages,
-                             pin=update.pinned)
-
-        elif isinstance(update, _tl.UpdatePinnedMessages) and not update.pinned:
-            return cls.Event(update.peer,
-                             pin_ids=update.messages,
-                             pin=update.pinned)
-
-        elif isinstance(update, _tl.UpdateChatParticipantAdd):
-            return cls.Event(_tl.PeerChat(update.chat_id),
-                             added_by=update.inviter_id or True,
-                             users=update.user_id)
-
-        elif isinstance(update, _tl.UpdateChatParticipantDelete):
-            return cls.Event(_tl.PeerChat(update.chat_id),
-                             kicked_by=True,
-                             users=update.user_id)
-
-        # UpdateChannel is sent if we leave a channel, and the update._entities
-        # set by _process_update would let us make some guesses. However it's
-        # better not to rely on this. Rely only in MessageActionChatDeleteUser.
-
-        elif (isinstance(update, (
-                _tl.UpdateNewMessage, _tl.UpdateNewChannelMessage))
-              and isinstance(update.message, _tl.MessageService)):
-            msg = update.message
-            action = update.message.action
-            if isinstance(action, _tl.MessageActionChatJoinedByLink):
-                return cls.Event(msg,
-                                 added_by=True,
-                                 users=msg.from_id)
-            elif isinstance(action, _tl.MessageActionChatAddUser):
-                # If a user adds itself, it means they joined via the public chat username
-                added_by = ([msg.sender_id] == action.users) or msg.from_id
-                return cls.Event(msg,
-                                 added_by=added_by,
-                                 users=action.users)
-            elif isinstance(action, _tl.MessageActionChatJoinedByRequest):
-                # user joined from join request (after getting admin approval)
-                return cls.Event(msg,
-                                 from_approval=True,
-                                 users=msg.from_id)
-            elif isinstance(action, _tl.MessageActionChatDeleteUser):
-                return cls.Event(msg,
-                                 kicked_by=utils.get_peer_id(msg.from_id) if msg.from_id else True,
-                                 users=action.user_id)
-            elif isinstance(action, _tl.MessageActionChatCreate):
-                return cls.Event(msg,
-                                 users=action.users,
-                                 created=True,
-                                 new_title=action.title)
-            elif isinstance(action, _tl.MessageActionChannelCreate):
-                return cls.Event(msg,
-                                 created=True,
-                                 users=msg.from_id,
-                                 new_title=action.title)
-            elif isinstance(action, _tl.MessageActionChatEditTitle):
-                return cls.Event(msg,
-                                 users=msg.from_id,
-                                 new_title=action.title)
-            elif isinstance(action, _tl.MessageActionChatEditPhoto):
-                return cls.Event(msg,
-                                 users=msg.from_id,
-                                 new_photo=action.photo)
-            elif isinstance(action, _tl.MessageActionChatDeletePhoto):
-                return cls.Event(msg,
-                                 users=msg.from_id,
-                                 new_photo=True)
-            elif isinstance(action, _tl.MessageActionPinMessage) and msg.reply_to:
-                return cls.Event(msg,
-                                 pin_ids=[msg.reply_to_msg_id])
-            elif isinstance(action, _tl.MessageActionGameScore):
-                return cls.Event(msg,
-                                 new_score=action.score)
+        return self
 
     async def respond(self, *args, **kwargs):
         """

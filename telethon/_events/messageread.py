@@ -45,24 +45,39 @@ class MessageRead(EventBuilder):
         super().__init__(peer, self.max_id)
 
     @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
+    def _build(cls, client, update, entities):
+        out = False
+        contents = False
+        message_ids = None
         if isinstance(update, _tl.UpdateReadHistoryInbox):
-            return cls.Event(update.peer, update.max_id, False)
+            peer = update.peer
+            max_id = update.max_id
+            out = False
         elif isinstance(update, _tl.UpdateReadHistoryOutbox):
-            return cls.Event(update.peer, update.max_id, True)
+            peer = update.peer
+            max_id = update.max_id
+            out = True
         elif isinstance(update, _tl.UpdateReadChannelInbox):
-            return cls.Event(_tl.PeerChannel(update.channel_id),
-                             update.max_id, False)
+            peer = _tl.PeerChannel(update.channel_id)
+            max_id = update.max_id
+            out = False
         elif isinstance(update, _tl.UpdateReadChannelOutbox):
-            return cls.Event(_tl.PeerChannel(update.channel_id),
-                             update.max_id, True)
+            peer = _tl.PeerChannel(update.channel_id)
+            max_id = update.max_id
+            out = True
         elif isinstance(update, _tl.UpdateReadMessagesContents):
-            return cls.Event(message_ids=update.messages,
-                             contents=True)
+            peer = None
+            message_ids = update.messages
+            contents = True
         elif isinstance(update, _tl.UpdateChannelReadMessagesContents):
-            return cls.Event(_tl.PeerChannel(update.channel_id),
-                             message_ids=update.messages,
-                             contents=True)
+            peer = _tl.PeerChannel(update.channel_id)
+            message_ids = update.messages
+            contents = True
+
+        self = cls.__new__(cls)
+        self._client = client
+        self._chat = entities.get(peer)
+        return self
 
     @property
     def inbox(self):

@@ -7,11 +7,9 @@ from ... import errors, _tl
 class ChatGetter(abc.ABC):
     """
     Helper base class that introduces the chat-related properties and methods.
-    """
-    def __init__(self, chat, client):
-        self._chat = chat
-        self._client = client
 
+    The parent class must set both ``_chat`` and ``_client``.
+    """
     @property
     def chat(self):
         """
@@ -60,7 +58,7 @@ class ChatGetter(abc.ABC):
                 # Here there's no need to fetch the chat - get_messages already did
                 print(message.chat.stringify())
         """
-        raise RuntimeError('TODO')
+        raise RuntimeError('TODO fetch if it is tiny')
 
     @property
     def chat_id(self):

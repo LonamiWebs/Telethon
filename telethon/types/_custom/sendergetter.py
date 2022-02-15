@@ -4,11 +4,9 @@ import abc
 class SenderGetter(abc.ABC):
     """
     Helper base class that introduces the sender-related properties and methods.
-    """
-    def __init__(self, sender, client):
-        self._sender = sender
-        self._client = client
 
+    The parent class must set both ``_sender`` and ``_client``.
+    """
     @property
     def sender(self):
         """
@@ -57,7 +55,7 @@ class SenderGetter(abc.ABC):
                 # Here there's no need to fetch the sender - get_messages already did
                 print(message.sender.stringify())
         """
-        raise RuntimeError('TODO')
+        raise RuntimeError('TODO fetch if it is tiny')
 
     @property
     def sender_id(self):

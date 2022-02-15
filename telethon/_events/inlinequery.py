@@ -40,21 +40,19 @@ class InlineQuery(EventBuilder, _custom.chatgetter.ChatGetter, _custom.senderget
                     builder.article('lowercase', text=event.text.lower()),
                 ])
     """
-    def __init__(self, query):
-        _custom.chatgetter.ChatGetter.__init__(self, _tl.PeerUser(query.user_id))
-        _custom.sendergetter.SenderGetter.__init__(self, query.user_id)
-        self.query = query
+    @classmethod
+    def _build(cls, client, update, entities):
+        if not isinstance(update, _tl.UpdateBotInlineQuery):
+            return None
+
+        self = cls.__new__(cls)
+        self._client = client
+        self._sender = entities.get(_tl.PeerUser(update.user_id))
+        self._chat = entities.get(_tl.PeerUser(update.user_id))
+        self.query = update
         self.pattern_match = None
         self._answered = False
-
-    @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
-        if isinstance(update, _tl.UpdateBotInlineQuery):
-            return cls.Event(update)
-
-    def _set_client(self, client):
-        super()._set_client(client)
-        self._sender, self._input_sender = utils._get_entity_pair(self.sender_id, self._entities)
+        return self
 
     @property
     def id(self):

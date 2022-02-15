@@ -57,16 +57,8 @@ class NewMessage(EventBuilder, _custom.Message):
                 await asyncio.sleep(5)
                 await client.delete_messages(event.chat_id, [event.id, m.id])
     """
-    def __init__(self, message):
-        self.__dict__['_init'] = False
-        super().__init__(chat_peer=message.peer_id,
-                            msg_id=message.id, broadcast=bool(message.post))
-
-        self.pattern_match = None
-        self.message = message
-
     @classmethod
-    def _build(cls, update, others, self_id, entities, client):
+    def _build(cls, client, update, entities):
         if isinstance(update,
                       (_tl.UpdateNewMessage, _tl.UpdateNewChannelMessage)):
             if not isinstance(update.message, _tl.Message):

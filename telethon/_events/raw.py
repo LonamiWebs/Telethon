@@ -19,5 +19,5 @@ class Raw(EventBuilder):
                 print(update.stringify())
     """
     @classmethod
-    def _build(cls, update, others=None, self_id=None, *todo, **todo2):
+    def _build(cls, client, update, entities):
         return update

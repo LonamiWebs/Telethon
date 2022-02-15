@@ -41,7 +41,7 @@ class MessageEdited(EventBuilder):
                 print('Message', event.id, 'changed at', event.date)
     """
     @classmethod
-    def _build(cls, update, others, self_id, entities, client):
+    def _build(cls, client, update, entities):
         if isinstance(update, (_tl.UpdateEditMessage,
                                _tl.UpdateEditChannelMessage)):
             return cls._new(client, update.message, entities, None)

@@ -428,10 +428,10 @@ class Message(ChatGetter, SenderGetter):
             if message.from_id is not None:
                 sender_id = utils.get_peer_id(message.from_id)
 
-        # Note that these calls would reset the client
-        ChatGetter.__init__(self, message.peer_id, broadcast=message.post)
-        SenderGetter.__init__(self, sender_id)
+        self = cls.__new__(cls)
         self._client = client
+        self._sender = entities.get(_tl.PeerUser(update.user_id))
+        self._chat = entities.get(_tl.PeerUser(update.user_id))
         self._message = message
 
         # Convenient storage for custom functions
