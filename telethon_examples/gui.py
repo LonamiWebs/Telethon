@@ -53,7 +53,7 @@ def callback(func):
     def wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
         if inspect.iscoroutine(result):
-            aio_loop.create_task(result)
+            asyncio.create_task(result)
 
     return wrapped
 
