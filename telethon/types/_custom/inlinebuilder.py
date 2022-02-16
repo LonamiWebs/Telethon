@@ -226,7 +226,7 @@ class InlineBuilder:
 
     # noinspection PyIncorrectDocstring
     async def document(
-            self, file, title=None, *, description=None, type=None,
+            self, file, title, *, description=None, type=None,
             mime_type=None, attributes=None, force_document=False,
             voice_note=False, video_note=False, use_cache=True, id=None,
             text=None, parse_mode=(), link_preview=True,
@@ -245,7 +245,7 @@ class InlineBuilder:
                 Same as ``file`` for `client.send_file()
                 <telethon.client.uploads.UploadMethods.send_file>`.
 
-            title (`str`, optional):
+            title (`str`):
                 The title to be shown for this result.
 
             description (`str`, optional):
