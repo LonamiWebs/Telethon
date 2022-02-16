@@ -2637,7 +2637,7 @@ class TelegramClient:
                     print('Failed to connect')
         """
 
-    @forward_call(telegrambaseclient.is_connected)
+    @property
     def is_connected(self: 'TelegramClient') -> bool:
         """
         Returns `True` if the user has connected.
@@ -2647,9 +2647,11 @@ class TelegramClient:
         Example
             .. code-block:: python
 
-                while client.is_connected():
+                # This is a silly example - run_until_disconnected is often better suited
+                while client.is_connected:
                     await asyncio.sleep(1)
         """
+        return telegrambaseclient.is_connected(self)
 
     @forward_call(telegrambaseclient.disconnect)
     def disconnect(self: 'TelegramClient'):

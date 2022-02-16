@@ -976,3 +976,5 @@ Now the URL is returned. You can still use ``webbrowser.open`` to get the old be
 todo update send_message and send_file docs (well review all functions)
 
 album overhaul. use a list of Message instead.
+
+is_connected is now a property (consistent with the rest of ``is_`` properties)

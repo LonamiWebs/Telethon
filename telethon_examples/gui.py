@@ -228,7 +228,7 @@ class App(tkinter.Tk):
         """
         Sends a message. Does nothing if the client is not connected.
         """
-        if not self.cl.is_connected():
+        if not self.cl.is_connected:
             return
 
         # The user needs to configure a chat where the message should be sent.

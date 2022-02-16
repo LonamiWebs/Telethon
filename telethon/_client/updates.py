@@ -168,7 +168,7 @@ async def catch_up(self: 'TelegramClient'):
 async def _update_loop(self: 'TelegramClient'):
     try:
         updates_to_dispatch = deque()
-        while self.is_connected():
+        while self.is_connected:
             if updates_to_dispatch:
                 await _dispatch(self, *updates_to_dispatch.popleft())
                 continue

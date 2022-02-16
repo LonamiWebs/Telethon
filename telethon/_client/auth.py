@@ -71,7 +71,7 @@ def start(
 async def _start(
         self: 'TelegramClient', phone, password, bot_token,
         code_callback, first_name, last_name, max_attempts):
-    if not self.is_connected():
+    if not self.is_connected:
         await self.connect()
 
     # Rather than using `is_user_authorized`, use `get_me`. While this is
