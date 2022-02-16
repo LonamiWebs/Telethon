@@ -504,7 +504,7 @@ class TelegramClient:
     @forward_call(auth.send_code_request)
     async def send_code_request(
             self: 'TelegramClient',
-            phone: str) -> '_tl.auth.SentCode':
+            phone: str) -> 'SentCode':
         """
         Sends the Telegram code needed to login to the given phone number.
 
@@ -513,14 +513,24 @@ class TelegramClient:
                 The phone to which the code will be sent.
 
         Returns
-            An instance of :tl:`SentCode`.
+            An instance of `SentCode`.
 
         Example
             .. code-block:: python
 
                 phone = '+34 123 123 123'
                 sent = await client.send_code_request(phone)
-                print(sent)
+                print(sent.type)
+
+                # Wait before resending sent.next_type, if any
+                if sent.next_type:
+                    await asyncio.sleep(sent.timeout or 0)
+                    resent = await client.send_code_request(phone)
+                    print(sent.type)
+
+                # Checking the code locally
+                code = input('Enter code: ')
+                print('Code looks OK:', resent.check(code))
         """
 
     @forward_call(auth.qr_login)

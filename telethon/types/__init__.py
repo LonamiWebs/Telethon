@@ -1,5 +1,7 @@
 from .._misc.tlobject import TLObject, TLRequest
 from ._custom import (
+    CodeType,
+    SentCode,
     AdminLogEvent,
     Draft,
     Dialog,

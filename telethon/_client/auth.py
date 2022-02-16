@@ -335,7 +335,7 @@ async def _replace_session_state(self, *, save=True, **changes):
 
 async def send_code_request(
         self: 'TelegramClient',
-        phone: str) -> '_tl.auth.SentCode':
+        phone: str) -> 'SentCode':
     result = None
     phone = utils.parse_phone(phone) or self._phone
     phone_hash = self._phone_code_hash.get(phone)
@@ -358,7 +358,7 @@ async def send_code_request(
 
     self._phone = phone
 
-    return result
+    return _custom.SentCode._new(result)
 
 async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QRLogin:
     qr_login = _custom.QRLogin(self, ignored_ids or [])
