@@ -444,12 +444,10 @@ class TelegramClient:
     @forward_call(auth.sign_up)
     async def sign_up(
             self: 'TelegramClient',
-            code: typing.Union[str, int],
             first_name: str,
             last_name: str = '',
             *,
-            phone: str = None,
-            phone_code_hash: str = None) -> '_tl.User':
+            code: typing.Union[str, int]) -> '_tl.User':
         """
         Signs up to Telegram as a new user account.
 
@@ -463,22 +461,14 @@ class TelegramClient:
         and https://core.telegram.org/api/terms.
 
         Arguments
-            code (`str` | `int`):
-                The code sent by Telegram
-
             first_name (`str`):
                 The first name to be used by the new account.
 
             last_name (`str`, optional)
                 Optional last name.
 
-            phone (`str` | `int`, optional):
-                The phone to sign up. This will be the last phone used by
-                default (you normally don't need to set this).
-
-            phone_code_hash (`str`, optional):
-                The hash returned by `send_code_request`. This can be left as
-                `None` to use the last hash known for the phone to be used.
+            code (`str` | `int`):
+                The code sent by Telegram
 
         Returns
             The new created :tl:`User`.
@@ -490,7 +480,7 @@ class TelegramClient:
                 await client.send_code_request(phone)
 
                 code = input('enter code: ')
-                await client.sign_up(code, first_name='Anna', last_name='Banana')
+                await client.sign_up('Anna', 'Banana', code=code)
         """
 
     @forward_call(auth.send_code_request)

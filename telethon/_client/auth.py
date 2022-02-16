@@ -233,17 +233,17 @@ async def sign_in(
 
     return await _update_session_state(self, result.user)
 
+
 async def sign_up(
         self: 'TelegramClient',
-        code: typing.Union[str, int],
         first_name: str,
         last_name: str = '',
         *,
-        phone: str = None,
-        phone_code_hash: str = None) -> '_tl.User':
-    me = await self.get_me()
-    if me:
-        return me
+        code: typing.Union[str, int]) -> '_tl.User':
+    if not self._phone_code_hash:
+        raise ValueError('Must call client.send_code_request before sign up')
+
+    phone, phone_code_hash = self._phone_code_hash
 
     # To prevent abuse, one has to try to sign in before signing up. This
     # is the current way in which Telegram validates the code to sign up.
@@ -259,17 +259,12 @@ async def sign_up(
                 code=code,
                 phone_code_hash=phone_code_hash,
             )
-        except errors.PhoneNumberUnoccupiedError:
+        except errors.SignUpRequired:
             pass  # code is correct and was used, now need to sign in
 
     if self._tos and self._tos.text:
         sys.stderr.write("{}\n".format(self._tos.text))
         sys.stderr.flush()
-
-    if not self._phone_code_hash:
-        raise ValueError('Must call client.send_code_request before sign up')
-
-    phone, phone_code_hash = self._phone_code_hash
 
     result = await self(_tl.fn.auth.SignUp(
         phone_number=phone,
@@ -279,8 +274,7 @@ async def sign_up(
     ))
 
     if self._tos:
-        await self(
-            _tl.fn.help.AcceptTermsOfService(self._tos.id))
+        await self(_tl.fn.help.AcceptTermsOfService(self._tos.id))
 
     return await _update_session_state(self, result.user)
 
