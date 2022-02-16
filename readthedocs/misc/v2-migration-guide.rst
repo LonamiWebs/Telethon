@@ -978,3 +978,7 @@ todo update send_message and send_file docs (well review all functions)
 album overhaul. use a list of Message instead.
 
 is_connected is now a property (consistent with the rest of ``is_`` properties)
+
+send_code_request now returns a custom type (reducing raw api).
+sign_in no longer has phone or phone_hash (these are impl details, and now it's less error prone). also mandatory code=. also no longer is a no-op if already logged in. different error for sign up required.
+send code / sign in now only expect a single phone. resend code with new phone is send code, not resend.

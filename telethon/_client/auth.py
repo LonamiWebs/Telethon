@@ -196,43 +196,22 @@ async def _start(
 
     return self
 
-def _parse_phone_and_hash(self, phone, phone_hash):
-    """
-    Helper method to both parse and validate phone and its hash.
-    """
-    phone = utils.parse_phone(phone) or self._phone
-    if not phone:
-        raise ValueError(
-            'Please make sure to call send_code_request first.'
-        )
-
-    phone_hash = phone_hash or self._phone_code_hash.get(phone, None)
-    if not phone_hash:
-        raise ValueError('You also need to provide a phone_code_hash.')
-
-    return phone, phone_hash
 
 async def sign_in(
         self: 'TelegramClient',
-        phone: str = None,
-        code: typing.Union[str, int] = None,
         *,
+        code: typing.Union[str, int] = None,
         password: str = None,
-        bot_token: str = None,
-        phone_code_hash: str = None) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
-    me = await self.get_me()
-    if me:
-        return me
+        bot_token: str = None,) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
+    if code:
+        if not self._phone_code_hash:
+            raise ValueError('Must call client.send_code_request before sign in')
 
-    if phone and code:
-        phone, phone_code_hash = \
-            _parse_phone_and_hash(self, phone, phone_code_hash)
+        phone, phone_code_hash = self._phone_code_hash
 
         # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
         # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-        request = _tl.fn.auth.SignIn(
-            phone, phone_code_hash, str(code)
-        )
+        request = _tl.fn.auth.SignIn(*self._phone_code_hash, str(code))
     elif password:
         pwd = await self(_tl.fn.account.GetPassword())
         request = _tl.fn.auth.CheckPassword(
@@ -244,13 +223,13 @@ async def sign_in(
             api_id=self._api_id, api_hash=self._api_hash
         )
     else:
-        raise ValueError('You must provide either phone and code, password, or bot_token.')
+        raise ValueError('You must provide code, password, or bot_token.')
 
     result = await self(request)
     if isinstance(result, _tl.auth.AuthorizationSignUpRequired):
-        # Emulate pre-layer 104 behaviour
+        # The method must return the User but we don't have it, so raise instead (matches pre-layer 104 behaviour)
         self._tos = result.terms_of_service
-        raise errors.PhoneNumberUnoccupiedError(request=request)
+        raise errors.SignUpRequired()
 
     return await _update_session_state(self, result.user)
 
@@ -287,8 +266,10 @@ async def sign_up(
         sys.stderr.write("{}\n".format(self._tos.text))
         sys.stderr.flush()
 
-    phone, phone_code_hash = \
-        _parse_phone_and_hash(self, phone, phone_code_hash)
+    if not self._phone_code_hash:
+        raise ValueError('Must call client.send_code_request before sign up')
+
+    phone, phone_code_hash = self._phone_code_hash
 
     result = await self(_tl.fn.auth.SignUp(
         phone_number=phone,
@@ -321,6 +302,7 @@ async def _update_session_state(self, user, save=True):
         seq=state.seq,
     )
 
+    self._phone_code_hash = None
     return user
 
 
@@ -336,15 +318,10 @@ async def _replace_session_state(self, *, save=True, **changes):
 async def send_code_request(
         self: 'TelegramClient',
         phone: str) -> 'SentCode':
-    result = None
-    phone = utils.parse_phone(phone) or self._phone
-    phone_hash = self._phone_code_hash.get(phone)
+    phone = utils.parse_phone(phone)
 
-    if phone_hash:
-        result = await self(
-            _tl.fn.auth.ResendCode(phone, phone_hash))
-
-        self._phone_code_hash[phone] = result.phone_code_hash
+    if self._phone_code_hash and phone == self._phone_code_hash[0]:
+        result = await self(_tl.fn.auth.ResendCode(*self._phone_code_hash))
     else:
         try:
             result = await self(_tl.fn.auth.SendCode(
@@ -353,12 +330,13 @@ async def send_code_request(
             return await self.send_code_request(phone)
 
         # phone_code_hash may be empty, if it is, do not save it (#1283)
-        if result.phone_code_hash:
-            self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
+        if not result.phone_code_hash:
+            # The hash is required to login, so this pretty much means send code failed
+            raise ValueError('Failed to send code')
 
-    self._phone = phone
-
+    self._phone_code_hash = (phone, result.phone_code_hash)
     return _custom.SentCode._new(result)
+
 
 async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QRLogin:
     qr_login = _custom.QRLogin(self, ignored_ids or [])

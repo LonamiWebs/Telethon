@@ -7,6 +7,7 @@ from ._custom import (
     CdnFileTamperedError,
     BadMessageError,
     MultiError,
+    SignUpRequired,
 )
 from ._rpcbase import (
     RpcError,

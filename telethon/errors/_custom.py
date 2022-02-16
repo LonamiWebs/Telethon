@@ -150,3 +150,9 @@ class MultiError(Exception):
         self.results = list(result)
         self.requests = list(requests)
         return self
+
+
+class SignUpRequired(Exception):
+    """
+    Occurs when trying to sign in with a phone number that doesn't have an account registered yet.
+    """

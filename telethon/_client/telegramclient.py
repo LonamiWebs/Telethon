@@ -395,12 +395,10 @@ class TelegramClient:
     @forward_call(auth.sign_in)
     async def sign_in(
             self: 'TelegramClient',
-            phone: str = None,
-            code: typing.Union[str, int] = None,
             *,
+            code: typing.Union[str, int] = None,
             password: str = None,
-            bot_token: str = None,
-            phone_code_hash: str = None) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
+            bot_token: str = None) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
         """
         Logs in to Telegram to an existing user or bot account.
 
@@ -411,16 +409,13 @@ class TelegramClient:
             In most cases, you should simply use `start()` and not this method.
 
         Arguments
-            phone (`str` | `int`):
-                The phone to send the code to if no code was provided,
-                or to override the phone that was previously used with
-                these requests.
-
             code (`str` | `int`):
-                The code that Telegram sent. Note that if you have sent this
-                code through the application itself it will immediately
-                expire. If you want to send the code, obfuscate it somehow.
-                If you're not doing any of this you can ignore this note.
+                The code that Telegram sent.
+
+                To login to a user account, you must use `client.send_code_request` first.
+
+                The code will expire immediately if you send it through the application itself
+                as a safety measure.
 
             password (`str`):
                 2FA password, should be used if a previous call raised
@@ -431,22 +426,19 @@ class TelegramClient:
                 This should be the hash the `@BotFather <https://t.me/BotFather>`_
                 gave you.
 
-            phone_code_hash (`str`, optional):
-                The hash returned by `send_code_request`. This can be left as
-                `None` to use the last hash known for the phone to be used.
+                You do not need to call `client.send_code_request` to login to a bot account.
 
         Returns
-            The signed in user, or the information about
-            :meth:`send_code_request`.
+            The signed in `User`, if the method did not fail.
 
         Example
             .. code-block:: python
 
                 phone = '+34 123 123 123'
-                await client.sign_in(phone)  # send code
+                await client.send_code_request(phone)  # send code
 
                 code = input('enter code: ')
-                await client.sign_in(phone, code)
+                await client.sign_in(code=code)
         """
 
     @forward_call(auth.sign_up)
