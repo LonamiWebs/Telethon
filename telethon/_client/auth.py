@@ -1,3 +1,4 @@
+import asyncio
 import getpass
 import inspect
 import os
@@ -235,7 +236,7 @@ async def sign_in(
 
     if isinstance(result, _tl.auth.AuthorizationSignUpRequired):
         # The method must return the User but we don't have it, so raise instead (matches pre-layer 104 behaviour)
-        self._tos = result.terms_of_service
+        self._tos = (result.terms_of_service, None)
         raise errors.SignUpRequired()
 
     return await _update_session_state(self, result.user)
@@ -258,15 +259,10 @@ async def sign_up(
     # because the user already tried to sign in.
     #
     # We're emulating pre-layer 104 behaviour so except the right error:
-    if not self._tos:
-        try:
-            return await self.sign_in(code=code)
-        except errors.SignUpRequired:
-            pass  # code is correct and was used, now need to sign in
-
-    if self._tos and self._tos.text:
-        sys.stderr.write("{}\n".format(self._tos.text))
-        sys.stderr.flush()
+    try:
+        return await self.sign_in(code=code)
+    except errors.SignUpRequired:
+        pass  # code is correct and was used, now need to sign in
 
     result = await self(_tl.fn.auth.SignUp(
         phone_number=phone,
@@ -275,10 +271,21 @@ async def sign_up(
         last_name=last_name
     ))
 
-    if self._tos:
-        await self(_tl.fn.help.AcceptTermsOfService(self._tos.id))
-
     return await _update_session_state(self, result.user)
+
+
+async def get_tos(self):
+    first_time = self._tos is None
+    no_tos = self._tos and self._tos[0] is None
+    tos_expired = self._tos and self._tos[1] is not None and asyncio.get_running_loop().time() >= self._tos[1]
+
+    if first_time or no_tos or tos_expired:
+        result = await self(_tl.fn.help.GetTermsOfServiceUpdate())
+        tos = getattr(result, 'terms_of_service', None)
+        self._tos = (tos, asyncio.get_running_loop().time() + result.expires)
+
+    # not stored in the client to prevent a cycle
+    return _custom.TermsOfService._new(self, *self._tos)
 
 
 async def _update_session_state(self, user, save=True):

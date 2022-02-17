@@ -17,4 +17,5 @@ from ._custom import (
     ParticipantPermissions,
     Chat,
     User,
+    TermsOfService,
 )

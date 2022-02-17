@@ -455,10 +455,15 @@ class TelegramClient:
 
         You must call `send_code_request` first.
 
-        **By using this method you're agreeing to Telegram's
-        Terms of Service. This is required and your account
-        will be banned otherwise.** See https://telegram.org/tos
-        and https://core.telegram.org/api/terms.
+        .. important::
+
+            When creating a new account, you must be sure to show the Terms of Service
+            to the user, and only after they approve, the code can accept the Terms of
+            Service. If not, they must be declined, in which case the account **will be
+            deleted**.
+
+            Make sure to use `client.get_tos` to fetch the Terms of Service, and to
+            use `tos.accept()` or `tos.decline()` after the user selects an option.
 
         Arguments
             first_name (`str`):
@@ -481,6 +486,16 @@ class TelegramClient:
 
                 code = input('enter code: ')
                 await client.sign_up('Anna', 'Banana', code=code)
+
+                # IMPORTANT: you MUST retrieve the Terms of Service and accept
+                # them, or Telegram has every right to delete the account.
+                tos = await client.get_tos()
+                print(tos.html)
+
+                if code('accept (y/n)?: ') == 'y':
+                    await tos.accept()
+                else:
+                    await tos.decline()  # deletes the account!
         """
 
     @forward_call(auth.send_code_request)
@@ -626,6 +641,42 @@ class TelegramClient:
 
                 # Removing the password
                 await client.edit_2fa(current_password='I_<3_Telethon')
+        """
+
+    @forward_call(auth.get_tos)
+    async def get_tos(self: 'TelegramClient') -> '_custom.TermsOfService':
+        """
+        Fetch `Telegram's Terms of Service`_, which every user must accept in order to use
+        Telegram, or they must otherwise `delete their account`_.
+
+        This method **must** be called after sign up, and **should** be called again
+        after it expires (at the risk of having the account terminated otherwise).
+
+        See the documentation of `TermsOfService` for more information.
+
+        The library cannot automate this process because the user must read the Terms of Service.
+        Automating its usage without reading the terms would be done at the developer's own risk.
+
+        Example
+            .. code-block:: python
+
+                # Fetch the ToS, forever (this could be a separate task, for example)
+                while True:
+                    tos = await client.get_tos()
+
+                    if tos:
+                        # There's an update or they must be accepted (you could show a popup)
+                        print(tos.html)
+                        if code('accept (y/n)?: ') == 'y':
+                            await tos.accept()
+                        else:
+                            await tos.decline()  # deletes the account!
+
+                    # after tos.timeout expires, the method should be called again!
+                    await asyncio.sleep(tos.timeout)
+
+        _Telegram's Terms of Service: https://telegram.org/tos
+        _delete their account: https://core.telegram.org/api/config#terms-of-service
         """
 
     async def __aenter__(self):

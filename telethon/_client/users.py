@@ -10,6 +10,7 @@ from ..errors._rpcbase import RpcError, ServerError, FloodError, InvalidDcError,
 from .._misc import helpers, utils, hints
 from .._sessions.types import Entity
 from .. import errors, _tl
+from ..types import _custom
 from .account import ignore_takeout
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
@@ -134,7 +135,7 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
 async def get_me(self: 'TelegramClient') \
         -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
     try:
-        return (await self(_tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
+        return _custom.User._new(self, (await self(_tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0])
     except UnauthorizedError:
         return None
 
