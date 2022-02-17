@@ -203,29 +203,36 @@ async def sign_in(
         code: typing.Union[str, int] = None,
         password: str = None,
         bot_token: str = None,) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
+    if code and bot_token:
+        raise ValueError('Can only provide one of code or bot_token, not both')
+
+    if not code and not bot_token and not password:
+        raise ValueError('You must provide code, password, or bot_token.')
+
     if code:
         if not self._phone_code_hash:
             raise ValueError('Must call client.send_code_request before sign in')
 
-        phone, phone_code_hash = self._phone_code_hash
-
         # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
         # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-        request = _tl.fn.auth.SignIn(*self._phone_code_hash, str(code))
-    elif password:
-        pwd = await self(_tl.fn.account.GetPassword())
-        request = _tl.fn.auth.CheckPassword(
-            pwd_mod.compute_check(pwd, password)
-        )
+        try:
+            result = await self(_tl.fn.auth.SignIn(*self._phone_code_hash, str(code)))
+            password = None  # user provided a password but it was not needed
+        except errors.SessionPasswordNeededError:
+            if not password:
+                raise
     elif bot_token:
-        request = _tl.fn.auth.ImportBotAuthorization(
+        result = await self(_tl.fn.auth.ImportBotAuthorization(
             flags=0, bot_auth_token=bot_token,
             api_id=self._api_id, api_hash=self._api_hash
-        )
-    else:
-        raise ValueError('You must provide code, password, or bot_token.')
+        ))
 
-    result = await self(request)
+    if password:
+        pwd = await self(_tl.fn.account.GetPassword())
+        result = await self(_tl.fn.auth.CheckPassword(
+            pwd_mod.compute_check(pwd, password)
+        ))
+
     if isinstance(result, _tl.auth.AuthorizationSignUpRequired):
         # The method must return the User but we don't have it, so raise instead (matches pre-layer 104 behaviour)
         self._tos = result.terms_of_service
