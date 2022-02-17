@@ -297,7 +297,7 @@ async def _update_session_state(self, user, save=True):
     )
 
     self._phone_code_hash = None
-    return user
+    return _custom.User._new(self, user)
 
 
 async def _replace_session_state(self, *, save=True, **changes):

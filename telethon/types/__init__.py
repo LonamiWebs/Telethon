@@ -15,4 +15,6 @@ from ._custom import (
     InlineResults,
     QRLogin,
     ParticipantPermissions,
+    Chat,
+    User,
 )
