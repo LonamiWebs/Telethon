@@ -313,9 +313,9 @@ class TelegramClient:
     @forward_call(auth.start)
     def start(
             self: 'TelegramClient',
+            *,
             phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
             password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
-            *,
             bot_token: str = None,
             code_callback: typing.Callable[[], typing.Union[str, int]] = None,
             first_name: str = 'New User',
