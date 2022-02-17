@@ -248,9 +248,8 @@ async def sign_up(
         *,
         code: typing.Union[str, int]) -> '_tl.User':
     if not self._phone_code_hash:
+        # This check is also present in sign_in but we do it here to customize the error message
         raise ValueError('Must call client.send_code_request before sign up')
-
-    phone, phone_code_hash = self._phone_code_hash
 
     # To prevent abuse, one has to try to sign in before signing up. This
     # is the current way in which Telegram validates the code to sign up.
@@ -261,11 +260,7 @@ async def sign_up(
     # We're emulating pre-layer 104 behaviour so except the right error:
     if not self._tos:
         try:
-            return await self.sign_in(
-                phone=phone,
-                code=code,
-                phone_code_hash=phone_code_hash,
-            )
+            return await self.sign_in(code=code)
         except errors.SignUpRequired:
             pass  # code is correct and was used, now need to sign in
 
