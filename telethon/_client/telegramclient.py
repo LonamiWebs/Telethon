@@ -289,7 +289,7 @@ class TelegramClient:
         return account.takeout_active(self)
 
     @forward_call(account.end_takeout)
-    async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
+    async def end_takeout(self: 'TelegramClient', *, success: bool) -> bool:
         """
         Finishes the current takeout session.
 

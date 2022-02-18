@@ -2,6 +2,7 @@ import functools
 import inspect
 import typing
 import dataclasses
+import asyncio
 from contextvars import ContextVar
 
 from .._misc import helpers, utils
@@ -22,7 +23,7 @@ class _Takeout:
         self._kwargs = kwargs
 
     async def __aenter__(self):
-        await self._client.begin_takeout(**kwargs)
+        await self._client.begin_takeout(**self._kwargs)
         return self._client
 
     async def __aexit__(self, exc_type, exc_value, traceback):
@@ -44,10 +45,10 @@ async def begin_takeout(
     files: bool = None,
     max_file_size: bool = None,
 ) -> 'TelegramClient':
-    if takeout_active():
+    if self.takeout_active:
         raise ValueError('a previous takeout session was already active')
 
-    await self._replace_session_state(takeout_id=(await client(
+    takeout = await self(_tl.fn.account.InitTakeoutSession(
         contacts=contacts,
         message_users=users,
         message_chats=chats,
@@ -55,15 +56,16 @@ async def begin_takeout(
         message_channels=channels,
         files=files,
         file_max_size=max_file_size
-    )).id)
+    ))
+    await self._replace_session_state(takeout_id=takeout.id)
 
 
 def takeout_active(self: 'TelegramClient') -> bool:
     return self._session_state.takeout_id is not None
 
 
-async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
-    if not takeout_active():
+async def end_takeout(self: 'TelegramClient', *, success: bool) -> bool:
+    if not self.takeout_active:
         raise ValueError('no previous takeout session was active')
 
     result = await self(_tl.fn.account.FinishTakeoutSession(success))
