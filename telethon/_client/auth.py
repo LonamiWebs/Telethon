@@ -6,6 +6,7 @@ import sys
 import typing
 import warnings
 import functools
+import time
 import dataclasses
 
 from .._misc import utils, helpers, password as pwd_mod
@@ -282,7 +283,7 @@ async def get_tos(self):
     if first_time or no_tos or tos_expired:
         result = await self(_tl.fn.help.GetTermsOfServiceUpdate())
         tos = getattr(result, 'terms_of_service', None)
-        self._tos = (tos, asyncio.get_running_loop().time() + result.expires)
+        self._tos = (tos, asyncio.get_running_loop().time() + result.expires.timestamp() - time.time())
 
     # not stored in the client to prevent a cycle
     return _custom.TermsOfService._new(self, *self._tos)
