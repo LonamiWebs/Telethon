@@ -171,10 +171,6 @@ class Button:
 
     @staticmethod
     def inline_mention(text, input_entity=None):
-        return mention(text, input_entity, True)
-
-    @staticmethod
-    def mention(text, input_entity=None, is_inline: bool=False):
         """
         Creates a new inline button linked to the profile of user.
 
@@ -197,14 +193,38 @@ class Button:
                     If you want to use different user, you must manually use
                     `client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`.
 
-             is_inline:
-                 whether to create inline / keyboard buttons
         """
-        if is_inline:
-            return _tl.InputKeyboardButtonUserProfile(
-                text,
-                utils.get_input_user(input_entity or _tl.InputUserSelf())
-            )
+        return _tl.InputKeyboardButtonUserProfile(
+            text,
+            utils.get_input_user(input_entity or _tl.InputUserSelf())
+        )
+        
+
+    @staticmethod
+    def mention(text, input_entity=None):
+        """
+        Creates a text mentioning the user.
+
+        This will only work in Telegram versions (only Telegram Desktop and Telegram X) released after December 7, 2021.
+        
+        Older clients will display unsupported message.
+
+        Args:
+            text:
+                Label text on the button
+
+            input_entity:
+                Input entity of :tl:User to use for profile button.
+                By default, this is the logged in user (itself), although
+                you may pass a different input peer.
+
+                .. note::
+
+                    For now, you cannot use ID or username for this argument.
+                    If you want to use different user, you must manually use
+                    `client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`.
+
+        """
         return types.KeyboardButtonUserProfile(
             text,
             (
