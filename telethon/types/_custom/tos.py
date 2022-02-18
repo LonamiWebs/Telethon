@@ -1,19 +1,8 @@
 import sys
+import asyncio
 
-from typing import Optional, List, TYPE_CHECKING
-from datetime import datetime
-from dataclasses import dataclass
-import mimetypes
-from .chatgetter import ChatGetter
-from .sendergetter import SenderGetter
-from .messagebutton import MessageButton
-from .forward import Forward
-from .file import File
-from .inputfile import InputFile
-from .inputmessage import InputMessage
-from .button import build_reply_markup
-from ..._misc import utils, helpers, tlobject, markdown, html
-from ... import _tl, _misc
+from ..._misc import markdown, html
+from ... import _tl
 
 
 _DEFAULT_TIMEOUT = 24 * 60 * 60
@@ -93,7 +82,7 @@ class TermsOfService:
             if tos.expired:
                 tos = await client.get_tos()
         """
-        return asyncio.get_running_loop() >= self._expiry
+        return asyncio.get_running_loop().time() >= self._expiry
 
     def __init__(self):
         raise TypeError('You cannot create TermsOfService instances by hand!')
