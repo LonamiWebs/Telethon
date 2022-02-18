@@ -156,5 +156,11 @@ class TermsOfService:
 
         await self._client(_tl.fn.account.DeleteAccount('Decline ToS update'))
 
+    def __str__(self):
+        return self.markdown or '(empty ToS)'
+
+    def __repr__(self):
+        return f'TermsOfService({self.markdown!r})'
+
     def __bool__(self):
         return self._tos is not None
