@@ -170,7 +170,11 @@ class Button:
         )
 
     @staticmethod
-    def mention(is_inline: bool, text, input_entity=None):
+    def inline_mention(text, input_entity=None):
+        return mention(text, input_entity, True)
+
+    @staticmethod
+    def mention(text, input_entity=None, is_inline: bool=False):
         """
         Creates a new inline button linked to the profile of user.
 
@@ -179,9 +183,6 @@ class Button:
         Older clients will display unsupported message.
 
         Args:
-            is_inline:
-                whether to create inline / keyboard buttons
-
             text:
                 Label text on the button
 
@@ -195,6 +196,9 @@ class Button:
                     For now, you cannot use ID or username for this argument.
                     If you want to use different user, you must manually use
                     `client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`.
+
+             is_inline:
+                 whether to create inline / keyboard buttons
         """
         if is_inline:
             return _tl.InputKeyboardButtonUserProfile(
@@ -433,3 +437,4 @@ def build_reply_markup(
     # elif is_normal:
     return _tl.ReplyKeyboardMarkup(
         rows, resize=resize, single_use=single_use, selective=selective)
+
