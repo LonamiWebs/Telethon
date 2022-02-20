@@ -39,7 +39,7 @@ class SQLiteSession(Session):
         self.save_entities = True
 
         if session_id:
-            self.filename = session_id
+            self.filename = os.fspath(session_id)
             if not self.filename.endswith(EXTENSION):
                 self.filename += EXTENSION
 
