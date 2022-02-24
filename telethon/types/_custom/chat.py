@@ -20,10 +20,10 @@ if TYPE_CHECKING:
 
 def _fwd(field, doc):
     def fget(self):
-        return getattr(self._message, field, None)
+        return getattr(self._chat, field, None)
 
     def fset(self, value):
-        object.__setattr__(self._message, field, value)
+        object.__setattr__(self._chat, field, value)
 
     return property(fget, fset, None, doc)
 
