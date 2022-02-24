@@ -2877,6 +2877,7 @@ class TelegramClient:
             self: 'TelegramClient',
             callback: updates.Callback = None,
             event: EventBuilder = None,
+            *,
             priority=None,
     ) -> int:
         """

@@ -97,9 +97,10 @@ def add_event_handler(
 
 def remove_event_handler(
         self: 'TelegramClient',
-        callback,
-        event,
-        priority,
+        callback=None,
+        event=None,
+        *,
+        priority=None,
 ):
     if callback is None and event is None and priority is None:
         raise ValueError('must specify at least one of callback, event or priority')
