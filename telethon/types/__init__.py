@@ -13,7 +13,7 @@ from ._custom import (
     InlineBuilder,
     InlineResult,
     InlineResults,
-    QRLogin,
+    QrLogin,
     ParticipantPermissions,
     Chat,
     User,

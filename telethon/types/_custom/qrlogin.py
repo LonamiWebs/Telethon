@@ -1,30 +1,75 @@
 import asyncio
 import base64
-import datetime
+import time
+import functools
 
 from ... import _tl
 from ..._events.raw import Raw
 
 
-class QRLogin:
+class QrLoginManager:
+    def __init__(self, client, ignored_ids):
+        self._client = client
+        self._request = _tl.fn.auth.ExportLoginToken(client._api_id, client._api_hash, ignored_ids or [])
+        self._event = None
+        self._handler = None
+        self._login = None
+
+    async def __aenter__(self):
+        self._event = asyncio.Event()
+        self._handler = self._client.add_event_handler(self._callback, Raw)
+
+        try:
+            qr = await self._client(self._request)
+        except:
+            self._cleanup()
+            raise
+
+        self._login = QrLogin._new(self._client, self._request, qr, self._event)
+        return self._login
+
+    async def __aexit__(self, *args):
+        try:
+            # The logic to complete the login is in wait so the user can retrieve the logged-in user
+            await self._login.wait(timeout=0)
+            # User logged-in in time
+        except asyncio.TimeoutError:
+            pass  # User did not login in time
+        finally:
+            self._cleanup()
+
+    async def _callback(self, update):
+        if isinstance(update, _tl.UpdateLoginToken):
+            self._event.set()
+
+    def _cleanup(self):
+        # Users technically could remove all raw handlers during the procedure but it's unlikely to happen
+        self._client.remove_event_handler(self._handler)
+        self._event = None
+        self._handler = None
+        self._login = None
+
+
+class QrLogin:
     """
     QR login information.
 
     Most of the time, you will present the `url` as a QR code to the user,
     and while it's being shown, call `wait`.
     """
-    def __init__(self, client, ignored_ids):
-        self._client = client
-        self._request = _tl.fn.auth.ExportLoginToken(
-            self._client.api_id, self._client.api_hash, ignored_ids)
-        self._resp = None
+    def __init__(self):
+        raise TypeError('You cannot create QrLogin instances by hand!')
 
-    async def recreate(self):
-        """
-        Generates a new token and URL for a new QR code, useful if the code
-        has expired before it was imported.
-        """
-        self._resp = await self._client(self._request)
+    @classmethod
+    def _new(cls, client, request, qr, event):
+        self = cls.__new__(cls)
+        self._client = client
+        self._request = request
+        self._qr = qr
+        self._expiry = asyncio.get_running_loop().time() + qr.expires.timestamp() - time.time()
+        self._event = event
+        self._user = None
+        return self
 
     @property
     def token(self) -> bytes:
@@ -35,7 +80,7 @@ class QRLogin:
         :tl:`auth.importLoginToken` to log the client that originally
         requested the QR login.
         """
-        return self._resp.token
+        return self._qr.token
 
     @property
     def url(self) -> str:
@@ -54,16 +99,30 @@ class QRLogin:
 
         The URL simply consists of `token` base64-encoded.
         """
-        return 'tg://login?token={}'.format(base64.urlsafe_b64encode(self._resp.token).decode('utf-8').rstrip('='))
+        return 'tg://login?token={}'.format(base64.urlsafe_b64encode(self._qr.token).decode('utf-8').rstrip('='))
 
     @property
-    def expires(self) -> datetime.datetime:
+    def timeout(self):
         """
-        The `datetime` at which the QR code will expire.
+        How many seconds are left before `client.qr_login` should be used again.
 
-        If you want to try again, you will need to call `recreate`.
+        This value is a positive floating point number, and is monotically decreasing.
+        The value will reach zero after enough seconds have elapsed. This lets you do some work
+        and call sleep on the value and still wait just long enough.
         """
-        return self._resp.expires
+        return max(0.0, self._expiry - asyncio.get_running_loop().time())
+
+    @property
+    def expired(self):
+        """
+        Returns `True` if this instance of the QR login has expired and should be re-created.
+
+        .. code-block:: python
+
+            if qr.expired:
+                qr = await client.qr_login()
+        """
+        return asyncio.get_running_loop().time() >= self._expiry
 
     async def wait(self, timeout: float = None):
         """
@@ -71,12 +130,11 @@ class QRLogin:
         either by scanning the QR, launching the URL directly, or calling the
         import method.
 
-        This method **must** be called before the QR code is scanned, and
-        must be executing while the QR code is being scanned. Otherwise, the
-        login will not complete.
-
         Will raise `asyncio.TimeoutError` if the login doesn't complete on
         time.
+
+        Note that the login can complete even if `wait` isn't used (if the
+        context-manager is kept alive for long enough and the users logs in).
 
         Arguments
             timeout (float):
@@ -85,26 +143,18 @@ class QRLogin:
                 what you want.
 
         Returns
-            On success, an instance of :tl:`User`. On failure it will raise.
+            On success, an instance of `User`. On failure it will raise.
         """
+        if self._user:
+            return self._user
+
         if timeout is None:
-            timeout = (self._resp.expires - datetime.datetime.now(tz=datetime.timezone.utc)).total_seconds()
+            timeout = self.timeout
 
-        event = asyncio.Event()
+        # Will raise timeout error if it doesn't complete quick enough,
+        # which we want to let propagate
+        await asyncio.wait_for(self._event.wait(), timeout=timeout)
 
-        async def handler(_update):
-            event.set()
-
-        self._client.add_event_handler(handler, Raw(_tl.UpdateLoginToken))
-
-        try:
-            # Will raise timeout error if it doesn't complete quick enough,
-            # which we want to let propagate
-            await asyncio.wait_for(event.wait(), timeout=timeout)
-        finally:
-            self._client.remove_event_handler(handler)
-
-        # We got here without it raising timeout error, so we can proceed
         resp = await self._client(self._request)
         if isinstance(resp, _tl.auth.LoginTokenMigrateTo):
             await self._client._switch_dc(resp.dc_id)
@@ -113,7 +163,7 @@ class QRLogin:
 
         if isinstance(resp, _tl.auth.LoginTokenSuccess):
             user = resp.authorization.user
-            self._client._on_login(user)
-            return user
+            self._user = self._client._update_session_state(user)
+            return self._user
 
-        raise TypeError('Login token response was unexpected: {}'.format(resp))
+        raise RuntimeError(f'Unexpected login token response: {resp}')

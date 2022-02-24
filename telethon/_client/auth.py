@@ -342,10 +342,9 @@ async def send_code_request(
     return _custom.SentCode._new(result)
 
 
-async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QRLogin:
-    qr_login = _custom.QRLogin(self, ignored_ids or [])
-    await qr_login.recreate()
-    return qr_login
+def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QrLogin:
+    return _custom.QrLoginManager(self, ignored_ids)
+
 
 async def log_out(self: 'TelegramClient') -> bool:
     try:

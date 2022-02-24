@@ -984,3 +984,4 @@ sign_in no longer has phone or phone_hash (these are impl details, and now it's 
 send code / sign in now only expect a single phone. resend code with new phone is send code, not resend.
 sign_up code is also now a kwarg. and no longer noop if already loggedin.
 start also mandates phone= or password= as kwarg.
+qrlogin expires has been replaced with timeout and expired for parity with tos and auth. the goal is to hide the error-prone system clock and instead use asyncio's clock. recreate was removed (just call qr_login again; parity with get_tos). class renamed to QrLogin. now must be used in a contextmgr to prevent misuse.

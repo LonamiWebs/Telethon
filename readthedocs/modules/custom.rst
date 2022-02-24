@@ -136,7 +136,7 @@ ParticipantPermissions
     :show-inheritance:
 
 
-QRLogin
+QrLogin
 =======
 
 .. automodule:: telethon.tl.custom.qrlogin
