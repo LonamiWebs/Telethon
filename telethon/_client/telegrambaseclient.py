@@ -132,7 +132,7 @@ def init(
 
     self._session = session
     # In-memory copy of the session's state to avoid a roundtrip as it contains commonly-accessed values.
-    self._session_state = None
+    self._session_state = _default_session_state()
 
     # Nice-to-have.
     self._request_retries = request_retries
@@ -219,22 +219,26 @@ def set_flood_sleep_threshold(self, value):
     self._flood_sleep_threshold = min(value or 0, 24 * 60 * 60)
 
 
+def _default_session_state():
+    return SessionState(
+        user_id=0,
+        dc_id=DEFAULT_DC_ID,
+        bot=False,
+        pts=0,
+        qts=0,
+        date=0,
+        seq=0,
+        takeout_id=None,
+    )
+
+
 async def connect(self: 'TelegramClient') -> None:
     all_dcs = {dc.id: dc for dc in await self._session.get_all_dc()}
     self._session_state = await self._session.get_state()
 
     if self._session_state is None:
         try_fetch_user = False
-        self._session_state = SessionState(
-            user_id=0,
-            dc_id=DEFAULT_DC_ID,
-            bot=False,
-            pts=0,
-            qts=0,
-            date=0,
-            seq=0,
-            takeout_id=None,
-        )
+        self._session_state = _default_session_state()
     else:
         try_fetch_user = self._session_state.user_id == 0
         if self._catch_up:
