@@ -321,6 +321,7 @@ phone.discardCall,user,CALL_ALREADY_ACCEPTED CALL_PEER_INVALID
 phone.discardGroupCallRequest,user,GROUPCALL_ALREADY_DISCARDED
 phone.editGroupCallParticipant,user,USER_VOLUME_INVALID
 phone.getCallConfig,user,
+phone.getGroupCallStreamChannels,user,GROUPCALL_INVALID
 phone.inviteToGroupCall,user,GROUPCALL_FORBIDDEN USER_ALREADY_INVITED INVITE_FORBIDDEN_WITH_JOINAS
 phone.joinGroupCall,user,GROUPCALL_ADD_PARTICIPANTS_FAILED GROUPCALL_SSRC_DUPLICATE_MUCH
 phone.joinGroupCallPresentation,user, PARTICIPANT_JOIN_MISSING
@@ -332,7 +333,7 @@ phone.toggleGroupCallSettings,user,GROUPCALL_NOT_MODIFIED
 photos.deletePhotos,user,
 photos.getUserPhotos,both,MAX_ID_INVALID USER_ID_INVALID
 photos.updateProfilePhoto,user,PHOTO_ID_INVALID
-photos.uploadProfilePhoto,user,ALBUM_PHOTOS_TOO_MANY FILE_PARTS_INVALID IMAGE_PROCESS_FAILED PHOTO_CROP_SIZE_SMALL PHOTO_EXT_INVALID VIDEO_FILE_INVALID
+photos.uploadProfilePhoto,user,ALBUM_PHOTOS_TOO_MANY FILE_PARTS_INVALID IMAGE_PROCESS_FAILED PHOTO_CROP_SIZE_SMALL PHOTO_EXT_INVALID PHOTO_FILE_MISSING VIDEO_FILE_INVALID
 ping,both,
 reqDHParams,both,
 reqPq,both,

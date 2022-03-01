@@ -160,6 +160,7 @@ GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs
 GROUPCALL_ADD_PARTICIPANTS_FAILED,500,
 GROUPCALL_ALREADY_DISCARDED,400,
 GROUPCALL_FORBIDDEN,403,
+GROUPCALL_INVALID,400,
 GROUPCALL_JOIN_MISSING,400,
 GROUPCALL_SSRC_DUPLICATE_MUCH,400,
 GROUPCALL_NOT_MODIFIED,400,
@@ -272,6 +273,7 @@ PHOTO_CONTENT_TYPE_INVALID,400,
 PHOTO_CONTENT_URL_EMPTY,400,The content from the URL used as a photo appears to be empty or has caused another HTTP error
 PHOTO_CROP_SIZE_SMALL,400,Photo is too small
 PHOTO_EXT_INVALID,400,The extension of the photo is invalid
+PHOTO_FILE_MISSING,400,
 PHOTO_ID_INVALID,400,Photo id is invalid
 PHOTO_INVALID,400,Photo invalid
 PHOTO_INVALID_DIMENSIONS,400,The photo dimensions are invalid (hint: `pip install pillow` for `send_file` to resize images)
