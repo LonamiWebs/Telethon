@@ -140,6 +140,7 @@ contacts.getTopPeers,user,TYPES_EMPTY
 contacts.importContacts,user,
 contacts.resetSaved,user,
 contacts.resetTopPeerRating,user,PEER_ID_INVALID
+contacts.resolvePhone,user,PHONE_NOT_OCCUPIED
 contacts.resolveUsername,both,AUTH_KEY_PERM_EMPTY SESSION_PASSWORD_NEEDED USERNAME_INVALID USERNAME_NOT_OCCUPIED
 contacts.search,user,QUERY_TOO_SHORT SEARCH_QUERY_EMPTY TIMEOUT
 contacts.toggleTopPeers,user,

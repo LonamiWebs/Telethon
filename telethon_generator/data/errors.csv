@@ -259,6 +259,7 @@ PHONE_CODE_EXPIRED,400,The confirmation code has expired
 PHONE_CODE_HASH_EMPTY,400,The phone code hash is missing
 PHONE_CODE_INVALID,400,The phone code entered was invalid
 PHONE_MIGRATE_0,303,The phone number a user is trying to use for authorization is associated with DC {new_dc}
+PHONE_NOT_OCCUPIED,400,
 PHONE_NUMBER_APP_SIGNUP_FORBIDDEN,400,You can't sign up using this app
 PHONE_NUMBER_BANNED,400,The used phone number has been banned from Telegram and cannot be used anymore. Maybe check https://www.telegram.org/faq_spam
 PHONE_NUMBER_FLOOD,400,You asked for the code too many times.
