@@ -148,10 +148,11 @@ def remove_event_handler(
 
     # slow-path, remove all matching
     removed = []
-    for index, handler in reversed(enumerate(self._update_handlers)):
-        if callback is not None and handler.callback != callback:
+    for index in reversed(range(len(self._update_handlers))):
+        handler = self._update_handlers[index]
+        if callback is not None and handler._callback != callback:
             continue
-        if event is not None and handler.event != event:
+        if event is not None and handler._event != event:
             continue
         removed.append(self._update_handlers.pop(index))
 
