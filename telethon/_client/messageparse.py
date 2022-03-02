@@ -30,15 +30,12 @@ async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
     Returns a (parsed message, entities) tuple depending on ``parse_mode``.
     """
     if parse_mode == ():
-        parse_mode = InputMessage._default_parse_mode
+        parse, _ = InputMessage._default_parse_mode
     else:
-        parse_mode = utils.sanitize_parse_mode(parse_mode)
-
-    if not parse_mode:
-        return message, []
+        parse, _ = utils.sanitize_parse_mode(parse_mode)
 
     original_message = message
-    message, msg_entities = parse_mode.parse(message)
+    message, msg_entities = parse(message)
     if original_message and not message and not msg_entities:
         raise ValueError("Failed to parse message")
 
