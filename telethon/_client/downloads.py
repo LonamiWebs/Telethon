@@ -178,7 +178,7 @@ class _GenericDownloadIter(_DirectDownloadIter):
 
 async def download_profile_photo(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        profile: 'hints.EntityLike',
         file: 'hints.FileLike' = None,
         *,
         thumb,
@@ -188,6 +188,7 @@ async def download_profile_photo(
     ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
     # ('InputPeer', 'InputUser', 'InputChannel')
     INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
+    entity = profile
     if not isinstance(entity, tlobject.TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
         entity = await self.get_entity(entity)
 
@@ -258,7 +259,7 @@ async def download_profile_photo(
 
 async def download_media(
         self: 'TelegramClient',
-        message: 'hints.MessageLike',
+        media: 'hints.MessageLike',
         file: 'hints.FileLike' = None,
         *,
         size = (),
@@ -269,6 +270,7 @@ async def download_media(
     msg_data = None
 
     # TODO This won't work for messageService
+    message = media
     if isinstance(message, _tl.Message):
         date = message.date
         media = message.media
@@ -405,7 +407,7 @@ async def _download_file(
 
 def iter_download(
         self: 'TelegramClient',
-        file: 'hints.FileLike',
+        media: 'hints.FileLike',
         *,
         offset: int = 0,
         stride: int = None,
@@ -417,7 +419,7 @@ def iter_download(
 ):
     return _iter_download(
         self,
-        file,
+        media,
         offset=offset,
         stride=stride,
         limit=limit,

@@ -13,12 +13,12 @@ async def inline_query(
         bot: 'hints.EntityLike',
         query: str,
         *,
-        entity: 'hints.EntityLike' = None,
+        dialog: 'hints.EntityLike' = None,
         offset: str = None,
         geo_point: '_tl.GeoPoint' = None) -> _custom.InlineResults:
     bot = await self.get_input_entity(bot)
-    if entity:
-        peer = await self.get_input_entity(entity)
+    if dialog:
+        peer = await self.get_input_entity(dialog)
     else:
         peer = _tl.InputPeerEmpty()
 
@@ -30,4 +30,4 @@ async def inline_query(
         geo_point=geo_point
     ))
 
-    return _custom.InlineResults(self, result, entity=peer if entity else None)
+    return _custom.InlineResults(self, result, entity=peer if dialog else None)

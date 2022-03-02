@@ -332,7 +332,7 @@ async def _get_peer(self: 'TelegramClient', input_peer: 'hints.EntityLike'):
 
 def get_messages(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         limit: float = (),
         *,
         offset_date: 'hints.DateLike' = None,
@@ -358,7 +358,7 @@ def get_messages(
             reverse=reverse,
             wait_time=wait_time,
             limit=len(ids),
-            entity=entity,
+            entity=dialog,
             ids=ids
         )
 
@@ -367,7 +367,7 @@ def get_messages(
         reverse=reverse,
         wait_time=wait_time,
         limit=limit,
-        entity=entity,
+        entity=dialog,
         offset_id=offset_id,
         min_id=min_id,
         max_id=max_id,
@@ -396,7 +396,7 @@ async def _get_comment_data(
 
 async def send_message(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         message: 'hints.MessageLike' = '',
         *,
         # - Message contents
@@ -466,7 +466,7 @@ async def send_message(
     elif not isinstance(message, InputMessage):
         raise TypeError(f'message must be either str, Message or InputMessage, but got: {message!r}')
 
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(dialog)
     if comment_to is not None:
         entity, reply_to = await _get_comment_data(self, entity, comment_to)
     elif reply_to:
@@ -525,9 +525,9 @@ async def send_message(
 
 async def forward_messages(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
-        from_peer: 'hints.EntityLike' = None,
+        from_dialog: 'hints.EntityLike' = None,
         *,
         background: bool = None,
         with_my_score: bool = None,
@@ -540,12 +540,13 @@ async def forward_messages(
     if as_album is not None:
         warnings.warn('the as_album argument is deprecated and no longer has any effect')
 
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(dialog)
 
-    if from_peer:
-        from_peer = await self.get_input_entity(from_peer)
+    if from_dialog:
+        from_peer = await self.get_input_entity(from_dialog)
         from_peer_id = await self.get_peer_id(from_peer)
     else:
+        from_peer = None
         from_peer_id = None
 
     def get_key(m):
@@ -587,7 +588,7 @@ async def forward_messages(
 
 async def edit_message(
         self: 'TelegramClient',
-        entity: 'typing.Union[hints.EntityLike, _tl.Message]',
+        dialog: 'typing.Union[hints.EntityLike, _tl.Message]',
         message: 'hints.MessageLike' = None,
         text: str = None,
         *,
@@ -631,7 +632,7 @@ async def edit_message(
         else:
             return await self(request)
 
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(dialog)
     request = _tl.fn.messages.EditMessage(
         peer=entity,
         id=utils.get_message_id(message),
@@ -647,7 +648,7 @@ async def edit_message(
 
 async def delete_messages(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
         *,
         revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
@@ -657,11 +658,12 @@ async def delete_messages(
         else int(m) for m in messages
     )
 
-    if entity:
-        entity = await self.get_input_entity(entity)
+    if dialog:
+        entity = await self.get_input_entity(dialog)
         ty = helpers._entity_type(entity)
     else:
         # no entity (None), set a value that's not a channel for private delete
+        entity = None
         ty = helpers._EntityType.USER
 
     if ty == helpers._EntityType.CHANNEL:
@@ -675,7 +677,7 @@ async def delete_messages(
 
 async def mark_read(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         message: 'hints.MessageIDLike' = None,
         *,
         clear_mentions: bool = False,
@@ -687,7 +689,7 @@ async def mark_read(
     else:
         max_id = message.id
 
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(dialog)
     if clear_mentions:
         await self(_tl.fn.messages.ReadMentions(entity))
 
@@ -705,22 +707,22 @@ async def mark_read(
 
 async def pin_message(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         message: 'typing.Optional[hints.MessageIDLike]',
         *,
         notify: bool = False,
         pm_oneside: bool = False
 ):
-    return await _pin(self, entity, message, unpin=False, notify=notify, pm_oneside=pm_oneside)
+    return await _pin(self, dialog, message, unpin=False, notify=notify, pm_oneside=pm_oneside)
 
 async def unpin_message(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         message: 'typing.Optional[hints.MessageIDLike]' = None,
         *,
         notify: bool = False
 ):
-    return await _pin(self, entity, message, unpin=True, notify=notify)
+    return await _pin(self, dialog, message, unpin=True, notify=notify)
 
 async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
     message = utils.get_message_id(message) or 0

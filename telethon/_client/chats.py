@@ -372,7 +372,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
 
 def get_participants(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         limit: float = (),
         *,
         search: str = '',
@@ -380,7 +380,7 @@ def get_participants(
     return _ParticipantsIter(
         self,
         limit,
-        entity=entity,
+        entity=chat,
         filter=filter,
         search=search
     )
@@ -388,7 +388,7 @@ def get_participants(
 
 def get_admin_log(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         limit: float = (),
         *,
         max_id: int = 0,
@@ -413,7 +413,7 @@ def get_admin_log(
     return _AdminLogIter(
         self,
         limit,
-        entity=entity,
+        entity=chat,
         admins=admins,
         search=search,
         min_id=min_id,
@@ -438,7 +438,7 @@ def get_admin_log(
 
 def get_profile_photos(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        profile: 'hints.EntityLike',
         limit: int = (),
         *,
         offset: int = 0,
@@ -446,7 +446,7 @@ def get_profile_photos(
     return _ProfilePhotoIter(
         self,
         limit,
-        entity=entity,
+        entity=profile,
         offset=offset,
         max_id=max_id
     )
@@ -454,7 +454,7 @@ def get_profile_photos(
 
 def action(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         action: 'typing.Union[str, _tl.TypeSendMessageAction]',
         *,
         delay: float = 4,
@@ -462,11 +462,11 @@ def action(
     action = _ChatAction._parse(action)
 
     return _ChatAction(
-        self, entity, action, delay=delay, auto_cancel=auto_cancel)
+        self, dialog, action, delay=delay, auto_cancel=auto_cancel)
 
 async def edit_admin(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         user: 'hints.EntityLike',
         *,
         change_info: bool = None,
@@ -481,7 +481,7 @@ async def edit_admin(
         anonymous: bool = None,
         is_admin: bool = None,
         title: str = None) -> _tl.Updates:
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(chat)
     user = await self.get_input_entity(user)
     ty = helpers._entity_type(user)
 
@@ -529,7 +529,7 @@ async def edit_admin(
 
 async def edit_permissions(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         user: 'typing.Optional[hints.EntityLike]' = None,
         until_date: 'hints.DateLike' = None,
         *,
@@ -545,7 +545,7 @@ async def edit_permissions(
         change_info: bool = True,
         invite_users: bool = True,
         pin_messages: bool = True) -> _tl.Updates:
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(chat)
     ty = helpers._entity_type(entity)
 
     rights = _tl.ChatBannedRights(
@@ -583,10 +583,10 @@ async def edit_permissions(
 
 async def kick_participant(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         user: 'typing.Optional[hints.EntityLike]'
 ):
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(chat)
     user = await self.get_input_entity(user)
 
     ty = helpers._entity_type(entity)
@@ -617,10 +617,10 @@ async def kick_participant(
 
 async def get_permissions(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         user: 'hints.EntityLike' = None
 ) -> 'typing.Optional[_custom.ParticipantPermissions]':
-    entity = await self.get_entity(entity)
+    entity = await self.get_entity(chat)
 
     if not user:
         if helpers._entity_type(entity) != helpers._EntityType.USER:
@@ -650,10 +650,10 @@ async def get_permissions(
 
 async def get_stats(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        chat: 'hints.EntityLike',
         message: 'typing.Union[int, _tl.Message]' = None,
 ):
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(chat)
 
     message = utils.get_message_id(message)
     if message is not None:

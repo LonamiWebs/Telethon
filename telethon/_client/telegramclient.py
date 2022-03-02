@@ -704,7 +704,7 @@ class TelegramClient:
             bot: 'hints.EntityLike',
             query: str,
             *,
-            entity: 'hints.EntityLike' = None,
+            dialog: 'hints.EntityLike' = None,
             offset: str = None,
             geo_point: '_tl.GeoPoint' = None) -> _custom.InlineResults:
         """
@@ -712,17 +712,17 @@ class TelegramClient:
 
         Arguments
             bot (`entity`):
-                The bot entity to which the inline query should be made.
+                The bot user to which the inline query should be made.
 
             query (`str`):
                 The query that should be made to the bot.
 
-            entity (`entity`, optional):
-                The entity where the inline query is being made from. Certain
+            dialog (`entity`, optional):
+                The dialog where the inline query is being made from. Certain
                 bots use this to display different results depending on where
                 it's used, such as private chats, groups or channels.
 
-                If specified, it will also be the default entity where the
+                If specified, it will also be the default dialog where the
                 message will be sent after clicked. Otherwise, the "empty
                 peer" will be used, which some bots may not handle correctly.
 
@@ -754,7 +754,7 @@ class TelegramClient:
     @forward_call(chats.get_participants)
     def get_participants(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             limit: float = (),
             *,
             search: str = '',
@@ -765,8 +765,8 @@ class TelegramClient:
         The order is unspecified.
 
         Arguments
-            entity (`entity`):
-                The entity from which to retrieve the participants list.
+            chat (`entity`):
+                The chat from which to retrieve the participants list.
 
             limit (`int`):
                 Limits amount of participants fetched.
@@ -822,7 +822,7 @@ class TelegramClient:
     @forward_call(chats.get_admin_log)
     def get_admin_log(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             limit: float = (),
             *,
             max_id: int = 0,
@@ -856,8 +856,8 @@ class TelegramClient:
         `True`, only those that are true will be returned.
 
         Arguments
-            entity (`entity`):
-                The channel entity from which to get its admin log.
+            chat (`entity`):
+                The chat from which to get its admin log.
 
             limit (`int` | `None`, optional):
                 Number of events to be retrieved.
@@ -957,7 +957,7 @@ class TelegramClient:
     @forward_call(chats.get_profile_photos)
     def get_profile_photos(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            profile: 'hints.EntityLike',
             limit: int = (),
             *,
             offset: int = 0,
@@ -968,8 +968,8 @@ class TelegramClient:
         The order is from the most recent photo to the oldest.
 
         Arguments
-            entity (`entity`):
-                The entity from which to get the profile or chat photos.
+            profile (`entity`):
+                The user or chat profile from which to get the profile photos.
 
             limit (`int` | `None`, optional):
                 Number of photos to be retrieved.
@@ -1005,7 +1005,7 @@ class TelegramClient:
     @forward_call(chats.action)
     def action(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             action: 'typing.Union[str, _tl.TypeSendMessageAction]',
             *,
             delay: float = 4,
@@ -1022,8 +1022,8 @@ class TelegramClient:
         See the example below for intended usage.
 
         Arguments
-            entity (`entity`):
-                The entity where the action should be showed in.
+            dialog (`entity`):
+                The dialog where the action should be showed in.
 
             action (`str` | :tl:`SendMessageAction`):
                 The action to show. You can either pass a instance of
@@ -1083,7 +1083,7 @@ class TelegramClient:
     @forward_call(chats.edit_admin)
     async def edit_admin(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             user: 'hints.EntityLike',
             *,
             change_info: bool = None,
@@ -1107,8 +1107,8 @@ class TelegramClient:
         Unless otherwise stated, permissions will work in channels and megagroups.
 
         Arguments
-            entity (`entity`):
-                The channel, megagroup or chat where the promotion should happen.
+            chat (`entity`):
+                The chat where the promotion should happen.
 
             user (`entity`):
                 The user to be promoted.
@@ -1189,7 +1189,7 @@ class TelegramClient:
     @forward_call(chats.edit_permissions)
     async def edit_permissions(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             user: 'typing.Optional[hints.EntityLike]' = None,
             until_date: 'hints.DateLike' = None,
             *,
@@ -1229,8 +1229,8 @@ class TelegramClient:
         permissions don't allow it either.
 
         Arguments
-            entity (`entity`):
-                The channel or megagroup where the restriction should happen.
+            chat (`entity`):
+                The chat where the restriction should happen.
 
             user (`entity`, optional):
                 If specified, the permission will be changed for the specific user.
@@ -1306,7 +1306,7 @@ class TelegramClient:
     @forward_call(chats.kick_participant)
     async def kick_participant(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             user: 'typing.Optional[hints.EntityLike]'
     ):
         """
@@ -1321,8 +1321,8 @@ class TelegramClient:
             ban + unban.
 
         Arguments
-            entity (`entity`):
-                The channel or chat where the user should be kicked from.
+            chat (`entity`):
+                The chat where the user should be kicked from.
 
             user (`entity`, optional):
                 The user to kick.
@@ -1345,7 +1345,7 @@ class TelegramClient:
     @forward_call(chats.get_permissions)
     async def get_permissions(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             user: 'hints.EntityLike' = None
     ) -> 'typing.Optional[_custom.ParticipantPermissions]':
         """
@@ -1358,8 +1358,8 @@ class TelegramClient:
             which can get somewhat expensive, so use of a cache is advised.
 
         Arguments
-            entity (`entity`):
-                The channel or chat the user is participant of.
+            chat (`entity`):
+                The chat the user is participant of.
 
             user (`entity`, optional):
                 Target user.
@@ -1383,7 +1383,7 @@ class TelegramClient:
     @forward_call(chats.get_stats)
     async def get_stats(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            chat: 'hints.EntityLike',
             message: 'typing.Union[int, _tl.Message]' = None,
     ):
         """
@@ -1394,22 +1394,22 @@ class TelegramClient:
         requires `at least 500 members`_).
 
         Arguments
-            entity (`entity`):
-                The channel from which to get statistics.
+            chat (`entity`):
+                The chat from which to get statistics.
 
             message (`int` | ``Message``, optional):
                 The message ID from which to get statistics, if your goal is
                 to obtain the statistics of a single message.
 
         Raises
-            If the given entity is not a channel (broadcast or megagroup),
+            If the given chat is not a broadcast channel ormegagroup,
             a `TypeError` is raised.
 
             If there are not enough members (poorly named) errors such as
             ``telethon.errors.ChatAdminRequiredError`` will appear.
 
         Returns
-            If both ``entity`` and ``message`` were provided, returns
+            If both ``chat`` and ``message`` were provided, returns
             :tl:`MessageStats`. Otherwise, either :tl:`BroadcastStats` or
             :tl:`MegagroupStats`, depending on whether the input belonged to a
             broadcast channel or megagroup.
@@ -1523,7 +1523,7 @@ class TelegramClient:
     @forward_call(dialogs.get_drafts)
     def get_drafts(
             self: 'TelegramClient',
-            entity: 'hints.EntitiesLike' = None
+            dialog: 'hints.EntitiesLike' = None
     ) -> dialogs._DraftsIter:
         """
         Iterator over draft messages.
@@ -1531,8 +1531,8 @@ class TelegramClient:
         The order is unspecified.
 
         Arguments
-            entity (`hints.EntitiesLike`, optional):
-                The entity or entities for which to fetch the draft messages.
+            dialog (`hints.EntitiesLike`, optional):
+                The dialog or dialogs for which to fetch the draft messages.
                 If left unspecified, all draft messages will be returned.
 
         Yields
@@ -1557,7 +1557,7 @@ class TelegramClient:
     @forward_call(dialogs.delete_dialog)
     async def delete_dialog(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             *,
             revoke: bool = False
     ):
@@ -1571,8 +1571,8 @@ class TelegramClient:
         See also `Dialog.delete() <telethon.tl._custom.dialog.Dialog.delete>`.
 
         Arguments
-            entity (entities):
-                The entity of the dialog to delete. If it's a chat or
+            dialog (entities):
+                The dialog to delete. If it's a chat or
                 channel, you will leave it. Note that the chat itself
                 is not deleted, only the dialog, because you left it.
 
@@ -1606,7 +1606,7 @@ class TelegramClient:
     @forward_call(downloads.download_profile_photo)
     async def download_profile_photo(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            profile: 'hints.EntityLike',
             file: 'hints.FileLike' = None,
             *,
             thumb: typing.Union[str, enums.Size] = (),
@@ -1615,8 +1615,8 @@ class TelegramClient:
         Downloads the profile photo from the given user, chat or channel.
 
         Arguments
-            entity (`entity`):
-                From who the photo will be downloaded.
+            profile (`entity`):
+                The profile from which to download its photo.
 
                 .. note::
 
@@ -1663,7 +1663,7 @@ class TelegramClient:
     @forward_call(downloads.download_media)
     async def download_media(
             self: 'TelegramClient',
-            message: 'hints.MessageLike',
+            media: 'hints.MessageLike',
             file: 'hints.FileLike' = None,
             *,
             thumb: typing.Union[str, enums.Size] = (),
@@ -1678,8 +1678,8 @@ class TelegramClient:
         See also `Message.download_media() <telethon.tl._custom.message.Message.download_media>`.
 
         Arguments
-            message (`Message <telethon.tl._custom.message.Message>` | :tl:`Media`):
-                The media or message containing the media that will be downloaded.
+            media (:tl:`Media`):
+                The media that will be downloaded.
 
             file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
@@ -1725,7 +1725,7 @@ class TelegramClient:
     @forward_call(downloads.iter_download)
     def iter_download(
             self: 'TelegramClient',
-            file: 'hints.FileLike',
+            media: 'hints.FileLike',
             *,
             offset: int = 0,
             stride: int = None,
@@ -1826,7 +1826,7 @@ class TelegramClient:
     @forward_call(messages.get_messages)
     def get_messages(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             limit: float = (),
             *,
             offset_date: 'hints.DateLike' = None,
@@ -1859,8 +1859,8 @@ class TelegramClient:
             second is the default for this limit (or above).
 
         Arguments
-            entity (`entity`):
-                The entity from whom to retrieve the message history.
+            dialog (`entity`):
+                The dialog from which to retrieve the message history.
 
                 It may be `None` to perform a global search, or
                 to get messages by their ID from no particular chat.
@@ -1912,7 +1912,7 @@ class TelegramClient:
                 containing photos.
 
             from_user (`entity`):
-                Only messages from this entity will be returned.
+                Only messages from this user will be returned.
 
             wait_time (`int`):
                 Wait time (in seconds) between different
@@ -1950,7 +1950,7 @@ class TelegramClient:
                 instead of being `max_id` as well since messages are returned
                 in ascending order.
 
-                You cannot use this if both `entity` and `ids` are `None`.
+                You cannot use this if both `dialog` and `ids` are `None`.
 
             reply_to (`int`, optional):
                 If set to a message ID, the messages that reply to this ID
@@ -1974,7 +1974,7 @@ class TelegramClient:
 
             scheduled (`bool`, optional):
                 If set to `True`, messages which are scheduled will be returned.
-                All other parameter will be ignored for this, except `entity`.
+                All other parameter will be ignored for this, except `dialog`.
 
         Yields
             Instances of `Message <telethon.tl._custom.message.Message>`.
@@ -2025,7 +2025,7 @@ class TelegramClient:
     @forward_call(messages.send_message)
     async def send_message(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             message: 'hints.MessageLike' = '',
             *,
             # - Message contents
@@ -2077,7 +2077,7 @@ class TelegramClient:
         and `Message.reply() <telethon.tl._custom.message.Message.reply>`.
 
         Arguments
-            entity (`entity`):
+            dialog (`entity`):
                 To who will it be sent.
 
             message (`str` | `Message <telethon.tl._custom.message.Message>`):
@@ -2235,9 +2235,9 @@ class TelegramClient:
     @forward_call(messages.forward_messages)
     async def forward_messages(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
-            from_peer: 'hints.EntityLike' = None,
+            from_dialog: 'hints.EntityLike' = None,
             *,
             background: bool = None,
             with_my_score: bool = None,
@@ -2246,7 +2246,7 @@ class TelegramClient:
             schedule: 'hints.DateLike' = None
     ) -> 'typing.Sequence[_tl.Message]':
         """
-        Forwards the given messages to the specified entity.
+        Forwards the given messages to the specified dialog.
 
         If you want to "forward" a message without the forward header
         (the "forwarded from" text), you should use `send_message` with
@@ -2255,17 +2255,17 @@ class TelegramClient:
         See also `Message.forward_to() <telethon.tl._custom.message.Message.forward_to>`.
 
         Arguments
-            entity (`entity`):
-                To which entity the message(s) will be forwarded.
+            dialog (`entity`):
+                The target dialog where the message(s) will be forwarded.
 
             messages (`list`):
                 The messages to forward, or their integer IDs.
 
-            from_peer (`entity`):
+            from_dialog (`entity`):
                 If the given messages are integer IDs and not instances
                 of the ``Message`` class, this *must* be specified in
                 order for the forward to work. This parameter indicates
-                the entity from which the messages should be forwarded.
+                the source dialog from which the messages should be forwarded.
 
             silent (`bool`, optional):
                 Whether the message should notify people with sound or not.
@@ -2317,7 +2317,7 @@ class TelegramClient:
     @forward_call(messages.edit_message)
     async def edit_message(
             self: 'TelegramClient',
-            entity: 'typing.Union[hints.EntityLike, _tl.Message]',
+            dialog: 'typing.Union[hints.EntityLike, _tl.Message]',
             message: 'hints.MessageLike',
             text: str = None,
             *,
@@ -2338,9 +2338,9 @@ class TelegramClient:
         See also `Message.edit() <telethon.tl._custom.message.Message.edit>`.
 
         Arguments
-            entity (`entity` | `Message <telethon.tl._custom.message.Message>`):
+            dialog (`entity` | `Message <telethon.tl._custom.message.Message>`):
                 From which chat to edit the message. This can also be
-                the message to be edited, and the entity will be inferred
+                the message to be edited, and the dialog will be inferred
                 from it, so the next parameter will be assumed to be the
                 message text.
 
@@ -2351,12 +2351,12 @@ class TelegramClient:
             message (`int` | `Message <telethon.tl._custom.message.Message>` | `str`):
                 The ID of the message (or `Message
                 <telethon.tl._custom.message.Message>` itself) to be edited.
-                If the `entity` was a `Message
+                If the `dialog` was a `Message
                 <telethon.tl._custom.message.Message>`, then this message
                 will be treated as the new text.
 
             text (`str`, optional):
-                The new text of the message. Does nothing if the `entity`
+                The new text of the message. Does nothing if the `dialog`
                 was a `Message <telethon.tl._custom.message.Message>`.
 
             parse_mode (`object`, optional):
@@ -2416,7 +2416,7 @@ class TelegramClient:
 
         Returns
             The edited `Message <telethon.tl._custom.message.Message>`,
-            unless `entity` was a :tl:`InputBotInlineMessageID` in which
+            unless `dialog` was a :tl:`InputBotInlineMessageID` in which
             case this method returns a boolean.
 
         Raises
@@ -2446,7 +2446,7 @@ class TelegramClient:
     @forward_call(messages.delete_messages)
     async def delete_messages(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
             *,
             revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
@@ -2463,7 +2463,7 @@ class TelegramClient:
             chats at once, so make sure to pass the right IDs.
 
         Arguments
-            entity (`entity`):
+            dialog (`entity`):
                 From who the message will be deleted. This can actually
                 be `None` for normal chats, but **must** be present
                 for channels and megagroups.
@@ -2498,7 +2498,7 @@ class TelegramClient:
     @forward_call(messages.mark_read)
     async def mark_read(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             message: 'hints.MessageIDLike' = None,
             *,
             clear_mentions: bool = False) -> bool:
@@ -2518,7 +2518,7 @@ class TelegramClient:
         See also `Message.mark_read() <telethon.tl._custom.message.Message.mark_read>`.
 
         Arguments
-            entity (`entity`):
+            dialog (`entity`):
                 The chat where these messages are located.
 
             message (`Message <telethon.tl._custom.message.Message>`):
@@ -2550,7 +2550,7 @@ class TelegramClient:
     @forward_call(messages.pin_message)
     async def pin_message(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             message: 'typing.Optional[hints.MessageIDLike]',
             *,
             notify: bool = False,
@@ -2565,7 +2565,7 @@ class TelegramClient:
         See also `Message.pin() <telethon.tl._custom.message.Message.pin>`.
 
         Arguments
-            entity (`entity`):
+            dialog (`entity`):
                 The chat where the message should be pinned.
 
             message (`int` | `Message <telethon.tl._custom.message.Message>`):
@@ -2591,7 +2591,7 @@ class TelegramClient:
     @forward_call(messages.unpin_message)
     async def unpin_message(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             message: 'typing.Optional[hints.MessageIDLike]' = None,
             *,
             notify: bool = False
@@ -2604,8 +2604,8 @@ class TelegramClient:
         See also `Message.unpin() <telethon.tl._custom.message.Message.unpin>`.
 
         Arguments
-            entity (`entity`):
-                The chat where the message should be pinned.
+            dialog (`entity`):
+                The dialog where the message should be pinned.
 
             message (`int` | `Message <telethon.tl._custom.message.Message>`):
                 The message or the message ID to unpin. If it's
@@ -2968,7 +2968,7 @@ class TelegramClient:
     @forward_call(uploads.send_file)
     async def send_file(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            dialog: 'hints.EntityLike',
             file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]',
             *,
             caption: typing.Union[str, typing.Sequence[str]] = None,
@@ -3006,7 +3006,7 @@ class TelegramClient:
             cannot be done if you are sending :tl:`InputFile`, however.
 
         Arguments
-            entity (`entity`):
+            dialog (`entity`):
                 Who will receive the file.
 
             file (`str` | `bytes` | `file` | `media`):

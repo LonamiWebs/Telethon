@@ -985,3 +985,5 @@ send code / sign in now only expect a single phone. resend code with new phone i
 sign_up code is also now a kwarg. and no longer noop if already loggedin.
 start also mandates phone= or password= as kwarg.
 qrlogin expires has been replaced with timeout and expired for parity with tos and auth. the goal is to hide the error-prone system clock and instead use asyncio's clock. recreate was removed (just call qr_login again; parity with get_tos). class renamed to QrLogin. now must be used in a contextmgr to prevent misuse.
+"entity" parameters have been renamed to "dialog" (user or chat expected) or "chat" (only chats expected), "profile" (if that makes sense). the goal is to move away from the entity terminology. this is intended to be a documentation change, but because the parameters were renamed, it's breaking. the expected usage of positional arguments is mostly unaffected. this includes the EntityLike hint.
+download_media param renamed message to media. iter_download file to media too

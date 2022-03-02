@@ -165,20 +165,20 @@ def get_dialogs(
 
 def get_drafts(
         self: 'TelegramClient',
-        entity: 'hints.EntitiesLike' = None
+        dialog: 'hints.EntitiesLike' = None
 ) -> _DraftsIter:
     limit = None
-    if entity:
-        if not utils.is_list_like(entity):
-            entity = (entity,)
-        limit = len(entity)
+    if dialog:
+        if not utils.is_list_like(dialog):
+            dialog = (dialog,)
+        limit = len(dialog)
 
-    return _DraftsIter(self, limit, entities=entity)
+    return _DraftsIter(self, limit, entities=dialog)
 
 
 async def delete_dialog(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        dialog: 'hints.EntityLike',
         *,
         revoke: bool = False
 ):
@@ -189,7 +189,7 @@ async def delete_dialog(
     else:
         deactivated = False
 
-    entity = await self.get_input_entity(entity)
+    entity = await self.get_input_entity(dialog)
     ty = helpers._entity_type(entity)
     if ty == helpers._EntityType.CHANNEL:
         return await self(_tl.fn.channels.LeaveChannel(entity))
