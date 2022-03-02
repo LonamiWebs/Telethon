@@ -3279,57 +3279,49 @@ class TelegramClient:
                     await client.sign_in(phone, code)
         """
 
-    @forward_call(users.get_entity)
-    async def get_entity(
+    @forward_call(users.get_profile)
+    async def get_profile(
             self: 'TelegramClient',
-            entity: 'hints.EntitiesLike') -> 'hints.Entity':
+            profile: 'hints.DialogsLike') -> 'hints.Entity':
         """
-        Turns the given entity into a valid Telegram :tl:`User`, :tl:`Chat`
-        or :tl:`Channel`. You can also pass a list or iterable of entities,
-        and they will be efficiently fetched from the network.
+        Turns the given profile reference into a `User <telethon.types._custom.user.User>`
+        or `Chat <telethon.types._custom.chat.Chat>` instance.
 
         Arguments
-            entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
+            profile (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
                 If a username is given, **the username will be resolved** making
                 an API call every time. Resolving usernames is an expensive
                 operation and will start hitting flood waits around 50 usernames
                 in a short period of time.
 
-                If you want to get the entity for a *cached* username, you should
-                first `get_input_entity(username) <get_input_entity>` which will
-                use the cache), and then use `get_entity` with the result of the
-                previous call.
+                Using phone numbers with strings will fetch your contact list first.
 
-                Similar limits apply to invite links, and you should use their
-                ID instead.
+                Using integer IDs will only work if the ID is in the session cache.
 
-                Using phone numbers (from people in your contact list), exact
-                names, integer IDs or :tl:`Peer` rely on a `get_input_entity`
-                first, which in turn needs the entity to be in cache, unless
-                a :tl:`InputPeer` was passed.
+                ``'me'`` is a special-case to the logged-in account (yourself).
 
                 Unsupported types will raise ``TypeError``.
 
-                If the entity can't be found, ``ValueError`` will be raised.
+                If the user or chat can't be found, ``ValueError`` will be raised.
 
         Returns
-            :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the
-            input entity. A list will be returned if more than one was given.
+            `User <telethon.types._custom.user.User>` or `Chat <telethon.types._custom.chat.Chat>`,
+            depending on the profile requested.
 
         Example
             .. code-block:: python
 
                 from telethon import utils
 
-                me = await client.get_entity('me')
+                me = await client.get_profile('me')
                 print(utils.get_display_name(me))
 
-                chat = await client.get_input_entity('username')
+                chat = await client.get_profile('username')
                 async for message in client.get_messages(chat):
                     ...
 
                 # Note that you could have used the username directly, but it's
-                # good to use get_input_entity if you will reuse it a lot.
+                # good to use get_profile if you will reuse it a lot.
                 async for message in client.get_messages('username'):
                     ...
 

@@ -150,9 +150,9 @@ async def is_user_authorized(self: 'TelegramClient') -> bool:
     except RpcError:
         return False
 
-async def get_entity(
+async def get_profile(
         self: 'TelegramClient',
-        entity: 'hints.EntitiesLike') -> 'hints.Entity':
+        profile: 'hints.DialogsLike') -> 'hints.Entity':
     single = not utils.is_list_like(entity)
     if single:
         entity = (entity,)
@@ -222,7 +222,7 @@ async def get_entity(
 
 async def get_input_entity(
         self: 'TelegramClient',
-        peer: 'hints.EntityLike') -> '_tl.TypeInputPeer':
+        peer: 'hints.DialogLike') -> '_tl.TypeInputPeer':
     # Short-circuit if the input parameter directly maps to an InputPeer
     try:
         return utils.get_input_peer(peer)
@@ -281,7 +281,7 @@ async def get_input_entity(
             pass
 
     raise ValueError(
-        'Could not find the input entity for {} ({}). Please read https://'
+        'Could not find the input peer for {} ({}). Please read https://'
         'docs.telethon.dev/en/latest/concepts/entities.html to'
         ' find out more details.'
         .format(peer, type(peer).__name__)
@@ -289,7 +289,7 @@ async def get_input_entity(
 
 async def get_peer_id(
         self: 'TelegramClient',
-        peer: 'hints.EntityLike') -> int:
+        peer: 'hints.DialogLike') -> int:
     if isinstance(peer, int):
         return utils.get_peer_id(peer)
 
