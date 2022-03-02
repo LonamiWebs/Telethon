@@ -205,6 +205,10 @@ class _ParticipantsIter(requestiter.RequestIter):
             else:
                 user_id = participant.user_id
 
+            if isinstance(participant, types.ChannelParticipantLeft):
+                # These participants should be ignored. See #3231.
+                continue
+
             user = users[user_id]
             if not self.filter_entity(user) or user.id in self.seen:
                 continue
