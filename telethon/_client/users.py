@@ -153,6 +153,7 @@ async def is_user_authorized(self: 'TelegramClient') -> bool:
 async def get_profile(
         self: 'TelegramClient',
         profile: 'hints.DialogsLike') -> 'hints.Entity':
+    entity = profile
     single = not utils.is_list_like(entity)
     if single:
         entity = (entity,)
