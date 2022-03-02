@@ -56,9 +56,9 @@ class Button:
             _tl.KeyboardButtonCallback,
             _tl.KeyboardButtonGame,
             _tl.KeyboardButtonSwitchInline,
-            _tl.KeyboardButtonUserProfile,
             _tl.KeyboardButtonUrl,
-            _tl.InputKeyboardButtonUrlAuth
+            _tl.InputKeyboardButtonUrlAuth,
+            _tl.InputKeyboardButtonUserProfile
         ))
 
     @staticmethod
@@ -170,11 +170,18 @@ class Button:
         )
 
     @staticmethod
-    def mention(text, input_entity=None):
+    def inline_mention(text, input_entity=None):
         """
         Creates a new inline button linked to the profile of user.
 
+        This will only work in Telegram versions released after December 7, 2021.
+        
+        Older clients will display unsupported message.
+
         Args:
+            text:
+                Label text on the button
+
             input_entity:
                 Input entity of :tl:User to use for profile button.
                 By default, this is the logged in user (itself), although
@@ -185,10 +192,46 @@ class Button:
                     For now, you cannot use ID or username for this argument.
                     If you want to use different user, you must manually use
                     `client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`.
+
         """
         return _tl.InputKeyboardButtonUserProfile(
             text,
             utils.get_input_user(input_entity or _tl.InputUserSelf())
+        )
+        
+
+    @staticmethod
+    def mention(text, input_entity=None):
+        """
+        Creates a text mentioning the user.
+
+        This will only work in Telegram versions (only Telegram Desktop and Telegram X) released after December 7, 2021.
+        
+        Older clients will display unsupported message.
+
+        Args:
+            text:
+                Label text on the button
+
+            input_entity:
+                Input entity of :tl:User to use for profile button.
+                By default, this is the logged in user (itself), although
+                you may pass a different input peer.
+
+                .. note::
+
+                    For now, you cannot use ID or username for this argument.
+                    If you want to use different user, you must manually use
+                    `client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`.
+
+        """
+        return types.KeyboardButtonUserProfile(
+            text,
+            (
+                utils.get_input_user(
+                    input_entity or _tl.InputUserSelf()
+                ).id
+            )
         )
 
 
@@ -414,3 +457,4 @@ def build_reply_markup(
     # elif is_normal:
     return _tl.ReplyKeyboardMarkup(
         rows, resize=resize, single_use=single_use, selective=selective)
+
