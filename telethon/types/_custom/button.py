@@ -138,7 +138,7 @@ class Button:
         If no `url` is specified, it will default to `text`.
 
         Args:
-            bot (`hints.EntityLike`):
+            bot (`hints.DialogLike`):
                 The bot that requires this authorization. By default, this
                 is the bot that is currently logged in (itself), although
                 you may pass a different input peer.

@@ -8,19 +8,19 @@ from ..types import _custom
 Phone = str
 Username = str
 PeerID = int
-Entity = typing.Union[_tl.User, _tl.Chat, _tl.Channel]
-FullEntity = typing.Union[_tl.UserFull, _tl.messages.ChatFull, _tl.ChatFull, _tl.ChannelFull]
+Dialog = typing.Union[_tl.User, _tl.Chat, _tl.Channel]
+FullDialog = typing.Union[_tl.UserFull, _tl.messages.ChatFull, _tl.ChatFull, _tl.ChannelFull]
 
-EntityLike = typing.Union[
+DialogLike = typing.Union[
     Phone,
     Username,
     PeerID,
     _tl.TypePeer,
     _tl.TypeInputPeer,
-    Entity,
-    FullEntity
+    Dialog,
+    FullDialog
 ]
-EntitiesLike = typing.Union[EntityLike, typing.Sequence[EntityLike]]
+DialogsLike = typing.Union[DialogLike, typing.Sequence[DialogsLike]]
 
 ButtonLike = typing.Union[_tl.TypeKeyboardButton, _custom.Button]
 MarkupLike = typing.Union[

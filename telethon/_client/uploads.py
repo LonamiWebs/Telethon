@@ -79,7 +79,7 @@ def _resize_photo_if_needed(
 
 async def send_file(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         file: typing.Optional[hints.FileLike] = None,
         *,
         # - Message contents
@@ -114,7 +114,7 @@ async def send_file(
         clear_draft: bool = False,
         background: bool = None,
         noforwards: bool = None,
-        send_as: 'hints.EntityLike' = None,
+        send_as: 'hints.DialogLike' = None,
         schedule: 'hints.DateLike' = None,
         comment_to: 'typing.Union[int, _tl.Message]' = None,
 ) -> '_tl.Message':

@@ -10,10 +10,10 @@ if typing.TYPE_CHECKING:
 
 async def inline_query(
         self: 'TelegramClient',
-        bot: 'hints.EntityLike',
+        bot: 'hints.DialogLike',
         query: str,
         *,
-        dialog: 'hints.EntityLike' = None,
+        dialog: 'hints.DialogLike' = None,
         offset: str = None,
         geo_point: '_tl.GeoPoint' = None) -> _custom.InlineResults:
     bot = await self.get_input_entity(bot)

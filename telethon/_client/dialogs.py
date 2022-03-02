@@ -146,7 +146,7 @@ def get_dialogs(
         *,
         offset_date: 'hints.DateLike' = None,
         offset_id: int = 0,
-        offset_peer: 'hints.EntityLike' = _tl.InputPeerEmpty(),
+        offset_peer: 'hints.DialogLike' = _tl.InputPeerEmpty(),
         ignore_pinned: bool = False,
         ignore_migrated: bool = False,
         folder: int = None,
@@ -165,7 +165,7 @@ def get_dialogs(
 
 def get_drafts(
         self: 'TelegramClient',
-        dialog: 'hints.EntitiesLike' = None
+        dialog: 'hints.DialogsLike' = None
 ) -> _DraftsIter:
     limit = None
     if dialog:
@@ -178,7 +178,7 @@ def get_drafts(
 
 async def delete_dialog(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         *,
         revoke: bool = False
 ):

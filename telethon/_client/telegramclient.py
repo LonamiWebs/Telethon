@@ -701,10 +701,10 @@ class TelegramClient:
     @forward_call(bots.inline_query)
     async def inline_query(
             self: 'TelegramClient',
-            bot: 'hints.EntityLike',
+            bot: 'hints.DialogLike',
             query: str,
             *,
-            dialog: 'hints.EntityLike' = None,
+            dialog: 'hints.DialogLike' = None,
             offset: str = None,
             geo_point: '_tl.GeoPoint' = None) -> _custom.InlineResults:
         """
@@ -754,7 +754,7 @@ class TelegramClient:
     @forward_call(chats.get_participants)
     def get_participants(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
+            chat: 'hints.DialogLike',
             limit: float = (),
             *,
             search: str = '',
@@ -822,13 +822,13 @@ class TelegramClient:
     @forward_call(chats.get_admin_log)
     def get_admin_log(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
+            chat: 'hints.DialogLike',
             limit: float = (),
             *,
             max_id: int = 0,
             min_id: int = 0,
             search: str = None,
-            admins: 'hints.EntitiesLike' = None,
+            admins: 'hints.DialogsLike' = None,
             join: bool = None,
             leave: bool = None,
             invite: bool = None,
@@ -957,7 +957,7 @@ class TelegramClient:
     @forward_call(chats.get_profile_photos)
     def get_profile_photos(
             self: 'TelegramClient',
-            profile: 'hints.EntityLike',
+            profile: 'hints.DialogLike',
             limit: int = (),
             *,
             offset: int = 0,
@@ -1005,7 +1005,7 @@ class TelegramClient:
     @forward_call(chats.action)
     def action(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             action: 'typing.Union[str, _tl.TypeSendMessageAction]',
             *,
             delay: float = 4,
@@ -1083,8 +1083,8 @@ class TelegramClient:
     @forward_call(chats.edit_admin)
     async def edit_admin(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
-            user: 'hints.EntityLike',
+            chat: 'hints.DialogLike',
+            user: 'hints.DialogLike',
             *,
             change_info: bool = None,
             post_messages: bool = None,
@@ -1189,8 +1189,8 @@ class TelegramClient:
     @forward_call(chats.edit_permissions)
     async def edit_permissions(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
-            user: 'typing.Optional[hints.EntityLike]' = None,
+            chat: 'hints.DialogLike',
+            user: 'typing.Optional[hints.DialogLike]' = None,
             until_date: 'hints.DateLike' = None,
             *,
             view_messages: bool = True,
@@ -1306,8 +1306,8 @@ class TelegramClient:
     @forward_call(chats.kick_participant)
     async def kick_participant(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
-            user: 'typing.Optional[hints.EntityLike]'
+            chat: 'hints.DialogLike',
+            user: 'typing.Optional[hints.DialogLike]'
     ):
         """
         Kicks a user from a chat.
@@ -1345,8 +1345,8 @@ class TelegramClient:
     @forward_call(chats.get_permissions)
     async def get_permissions(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
-            user: 'hints.EntityLike' = None
+            chat: 'hints.DialogLike',
+            user: 'hints.DialogLike' = None
     ) -> 'typing.Optional[_custom.ParticipantPermissions]':
         """
         Fetches the permissions of a user in a specific chat or channel or
@@ -1383,7 +1383,7 @@ class TelegramClient:
     @forward_call(chats.get_stats)
     async def get_stats(
             self: 'TelegramClient',
-            chat: 'hints.EntityLike',
+            chat: 'hints.DialogLike',
             message: 'typing.Union[int, _tl.Message]' = None,
     ):
         """
@@ -1437,7 +1437,7 @@ class TelegramClient:
             *,
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
-            offset_peer: 'hints.EntityLike' = _tl.InputPeerEmpty(),
+            offset_peer: 'hints.DialogLike' = _tl.InputPeerEmpty(),
             ignore_pinned: bool = False,
             ignore_migrated: bool = False,
             folder: int = None,
@@ -1523,7 +1523,7 @@ class TelegramClient:
     @forward_call(dialogs.get_drafts)
     def get_drafts(
             self: 'TelegramClient',
-            dialog: 'hints.EntitiesLike' = None
+            dialog: 'hints.DialogsLike' = None
     ) -> dialogs._DraftsIter:
         """
         Iterator over draft messages.
@@ -1531,7 +1531,7 @@ class TelegramClient:
         The order is unspecified.
 
         Arguments
-            dialog (`hints.EntitiesLike`, optional):
+            dialog (`hints.DialogsLike`, optional):
                 The dialog or dialogs for which to fetch the draft messages.
                 If left unspecified, all draft messages will be returned.
 
@@ -1557,7 +1557,7 @@ class TelegramClient:
     @forward_call(dialogs.delete_dialog)
     async def delete_dialog(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             *,
             revoke: bool = False
     ):
@@ -1606,7 +1606,7 @@ class TelegramClient:
     @forward_call(downloads.download_profile_photo)
     async def download_profile_photo(
             self: 'TelegramClient',
-            profile: 'hints.EntityLike',
+            profile: 'hints.DialogLike',
             file: 'hints.FileLike' = None,
             *,
             thumb: typing.Union[str, enums.Size] = (),
@@ -1826,7 +1826,7 @@ class TelegramClient:
     @forward_call(messages.get_messages)
     def get_messages(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             limit: float = (),
             *,
             offset_date: 'hints.DateLike' = None,
@@ -1836,7 +1836,7 @@ class TelegramClient:
             add_offset: int = 0,
             search: str = None,
             filter: 'typing.Union[_tl.TypeMessagesFilter, typing.Type[_tl.TypeMessagesFilter]]' = None,
-            from_user: 'hints.EntityLike' = None,
+            from_user: 'hints.DialogLike' = None,
             wait_time: float = None,
             ids: 'typing.Union[int, typing.Sequence[int]]' = None,
             reverse: bool = False,
@@ -2025,7 +2025,7 @@ class TelegramClient:
     @forward_call(messages.send_message)
     async def send_message(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             message: 'hints.MessageLike' = '',
             *,
             # - Message contents
@@ -2235,9 +2235,9 @@ class TelegramClient:
     @forward_call(messages.forward_messages)
     async def forward_messages(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
-            from_dialog: 'hints.EntityLike' = None,
+            from_dialog: 'hints.DialogLike' = None,
             *,
             background: bool = None,
             with_my_score: bool = None,
@@ -2317,7 +2317,7 @@ class TelegramClient:
     @forward_call(messages.edit_message)
     async def edit_message(
             self: 'TelegramClient',
-            dialog: 'typing.Union[hints.EntityLike, _tl.Message]',
+            dialog: 'typing.Union[hints.DialogLike, _tl.Message]',
             message: 'hints.MessageLike',
             text: str = None,
             *,
@@ -2446,7 +2446,7 @@ class TelegramClient:
     @forward_call(messages.delete_messages)
     async def delete_messages(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
             *,
             revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
@@ -2498,7 +2498,7 @@ class TelegramClient:
     @forward_call(messages.mark_read)
     async def mark_read(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             message: 'hints.MessageIDLike' = None,
             *,
             clear_mentions: bool = False) -> bool:
@@ -2550,7 +2550,7 @@ class TelegramClient:
     @forward_call(messages.pin_message)
     async def pin_message(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             message: 'typing.Optional[hints.MessageIDLike]',
             *,
             notify: bool = False,
@@ -2591,7 +2591,7 @@ class TelegramClient:
     @forward_call(messages.unpin_message)
     async def unpin_message(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             message: 'typing.Optional[hints.MessageIDLike]' = None,
             *,
             notify: bool = False
@@ -2968,7 +2968,7 @@ class TelegramClient:
     @forward_call(uploads.send_file)
     async def send_file(
             self: 'TelegramClient',
-            dialog: 'hints.EntityLike',
+            dialog: 'hints.DialogLike',
             file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]',
             *,
             caption: typing.Union[str, typing.Sequence[str]] = None,
@@ -3439,7 +3439,7 @@ class TelegramClient:
     @forward_call(messages._get_comment_data)
     async def _get_comment_data(
             self: 'TelegramClient',
-            entity: 'hints.EntityLike',
+            entity: 'hints.DialogLike',
             message: 'typing.Union[int, _tl.Message]'
     ):
         pass

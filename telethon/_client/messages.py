@@ -322,7 +322,7 @@ class _IDsIter(requestiter.RequestIter):
                 self.buffer.append(_custom.Message._new(self.client, message, entities, self._entity))
 
 
-async def _get_peer(self: 'TelegramClient', input_peer: 'hints.EntityLike'):
+async def _get_peer(self: 'TelegramClient', input_peer: 'hints.DialogLike'):
     try:
         return utils.get_peer(input_peer)
     except TypeError:
@@ -332,7 +332,7 @@ async def _get_peer(self: 'TelegramClient', input_peer: 'hints.EntityLike'):
 
 def get_messages(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         limit: float = (),
         *,
         offset_date: 'hints.DateLike' = None,
@@ -342,7 +342,7 @@ def get_messages(
         add_offset: int = 0,
         search: str = None,
         filter: 'typing.Union[_tl.TypeMessagesFilter, typing.Type[_tl.TypeMessagesFilter]]' = None,
-        from_user: 'hints.EntityLike' = None,
+        from_user: 'hints.DialogLike' = None,
         wait_time: float = None,
         ids: 'typing.Union[int, typing.Sequence[int]]' = None,
         reverse: bool = False,
@@ -383,7 +383,7 @@ def get_messages(
 
 async def _get_comment_data(
         self: 'TelegramClient',
-        entity: 'hints.EntityLike',
+        entity: 'hints.DialogLike',
         message: 'typing.Union[int, _tl.Message]'
 ):
     r = await self(_tl.fn.messages.GetDiscussionMessage(
@@ -396,7 +396,7 @@ async def _get_comment_data(
 
 async def send_message(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         message: 'hints.MessageLike' = '',
         *,
         # - Message contents
@@ -428,7 +428,7 @@ async def send_message(
         ttl: int = None,
         # - Send options
         reply_to: 'typing.Union[int, _tl.Message]' = None,
-        send_as: 'hints.EntityLike' = None,
+        send_as: 'hints.DialogLike' = None,
         clear_draft: bool = False,
         background: bool = None,
         noforwards: bool = None,
@@ -525,9 +525,9 @@ async def send_message(
 
 async def forward_messages(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
-        from_dialog: 'hints.EntityLike' = None,
+        from_dialog: 'hints.DialogLike' = None,
         *,
         background: bool = None,
         with_my_score: bool = None,
@@ -535,7 +535,7 @@ async def forward_messages(
         as_album: bool = None,
         schedule: 'hints.DateLike' = None,
         noforwards: bool = None,
-        send_as: 'hints.EntityLike' = None
+        send_as: 'hints.DialogLike' = None
 ) -> 'typing.Sequence[_tl.Message]':
     if as_album is not None:
         warnings.warn('the as_album argument is deprecated and no longer has any effect')
@@ -588,7 +588,7 @@ async def forward_messages(
 
 async def edit_message(
         self: 'TelegramClient',
-        dialog: 'typing.Union[hints.EntityLike, _tl.Message]',
+        dialog: 'typing.Union[hints.DialogLike, _tl.Message]',
         message: 'hints.MessageLike' = None,
         text: str = None,
         *,
@@ -648,7 +648,7 @@ async def edit_message(
 
 async def delete_messages(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
         *,
         revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
@@ -677,7 +677,7 @@ async def delete_messages(
 
 async def mark_read(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         message: 'hints.MessageIDLike' = None,
         *,
         clear_mentions: bool = False,
@@ -707,7 +707,7 @@ async def mark_read(
 
 async def pin_message(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         message: 'typing.Optional[hints.MessageIDLike]',
         *,
         notify: bool = False,
@@ -717,7 +717,7 @@ async def pin_message(
 
 async def unpin_message(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         message: 'typing.Optional[hints.MessageIDLike]' = None,
         *,
         notify: bool = False
@@ -752,7 +752,7 @@ async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
 
 async def send_reaction(
     self: 'TelegramClient',
-    entity: 'hints.EntityLike',
+    entity: 'hints.DialogLike',
     message: 'hints.MessageIDLike',
     reaction: typing.Optional[str] = None,
     big: bool = False

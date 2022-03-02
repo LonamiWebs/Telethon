@@ -372,7 +372,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
 
 def get_participants(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
+        chat: 'hints.DialogLike',
         limit: float = (),
         *,
         search: str = '',
@@ -388,13 +388,13 @@ def get_participants(
 
 def get_admin_log(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
+        chat: 'hints.DialogLike',
         limit: float = (),
         *,
         max_id: int = 0,
         min_id: int = 0,
         search: str = None,
-        admins: 'hints.EntitiesLike' = None,
+        admins: 'hints.DialogsLike' = None,
         join: bool = None,
         leave: bool = None,
         invite: bool = None,
@@ -438,7 +438,7 @@ def get_admin_log(
 
 def get_profile_photos(
         self: 'TelegramClient',
-        profile: 'hints.EntityLike',
+        profile: 'hints.DialogLike',
         limit: int = (),
         *,
         offset: int = 0,
@@ -454,7 +454,7 @@ def get_profile_photos(
 
 def action(
         self: 'TelegramClient',
-        dialog: 'hints.EntityLike',
+        dialog: 'hints.DialogLike',
         action: 'typing.Union[str, _tl.TypeSendMessageAction]',
         *,
         delay: float = 4,
@@ -466,8 +466,8 @@ def action(
 
 async def edit_admin(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
-        user: 'hints.EntityLike',
+        chat: 'hints.DialogLike',
+        user: 'hints.DialogLike',
         *,
         change_info: bool = None,
         post_messages: bool = None,
@@ -529,8 +529,8 @@ async def edit_admin(
 
 async def edit_permissions(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
-        user: 'typing.Optional[hints.EntityLike]' = None,
+        chat: 'hints.DialogLike',
+        user: 'typing.Optional[hints.DialogLike]' = None,
         until_date: 'hints.DateLike' = None,
         *,
         view_messages: bool = True,
@@ -583,8 +583,8 @@ async def edit_permissions(
 
 async def kick_participant(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
-        user: 'typing.Optional[hints.EntityLike]'
+        chat: 'hints.DialogLike',
+        user: 'typing.Optional[hints.DialogLike]'
 ):
     entity = await self.get_input_entity(chat)
     user = await self.get_input_entity(user)
@@ -617,8 +617,8 @@ async def kick_participant(
 
 async def get_permissions(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
-        user: 'hints.EntityLike' = None
+        chat: 'hints.DialogLike',
+        user: 'hints.DialogLike' = None
 ) -> 'typing.Optional[_custom.ParticipantPermissions]':
     entity = await self.get_entity(chat)
 
@@ -650,7 +650,7 @@ async def get_permissions(
 
 async def get_stats(
         self: 'TelegramClient',
-        chat: 'hints.EntityLike',
+        chat: 'hints.DialogLike',
         message: 'typing.Union[int, _tl.Message]' = None,
 ):
     entity = await self.get_input_entity(chat)

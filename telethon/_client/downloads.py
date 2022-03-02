@@ -178,7 +178,7 @@ class _GenericDownloadIter(_DirectDownloadIter):
 
 async def download_profile_photo(
         self: 'TelegramClient',
-        profile: 'hints.EntityLike',
+        profile: 'hints.DialogLike',
         file: 'hints.FileLike' = None,
         *,
         thumb,
