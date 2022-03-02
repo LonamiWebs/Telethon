@@ -733,6 +733,10 @@ class TelegramClient:
                 The geo point location information to send to the bot
                 for localised results. Available under some bots.
 
+        Raises
+            If the bot does not respond to the inline query in time,
+            `asyncio.TimeoutError` is raised. The timeout is decided by Telegram.
+
         Returns
             A list of `_custom.InlineResult
             <telethon.tl._custom.inlineresult.InlineResult>`.
