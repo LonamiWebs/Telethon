@@ -30,7 +30,7 @@ class _ChatAction:
         return self._once().__await__()
 
     async def __aenter__(self):
-        self._request = dataclasses.replace(self._request, peer=await self._client.get_input_entity(self._request.peer))
+        self._request = dataclasses.replace(self._request, peer=await self._client._get_input_peer(self._request.peer))
         self._running = True
         self._task = asyncio.create_task(self._update())
         return self
@@ -47,7 +47,7 @@ class _ChatAction:
             self._task = None
 
     async def _once(self):
-        self._request = dataclasses.replace(self._request, peer=await self._client.get_input_entity(self._request.peer))
+        self._request = dataclasses.replace(self._request, peer=await self._client._get_input_peer(self._request.peer))
         await self._client(_tl.fn.messages.SetTyping(self._chat, self._action))
 
     async def _update(self):
@@ -114,7 +114,7 @@ class _ParticipantsIter(requestiter.RequestIter):
             else:
                 raise RuntimeError('unhandled enum variant')
 
-        entity = await self.client.get_input_entity(entity)
+        entity = await self.client._get_input_peer(entity)
         ty = helpers._entity_type(entity)
         if search and (filter or ty != helpers._EntityType.CHANNEL):
             # We need to 'search' ourselves unless we have a PeerChannel
@@ -172,7 +172,7 @@ class _ParticipantsIter(requestiter.RequestIter):
         else:
             self.total = 1
             if self.limit != 0:
-                user = await self.client.get_entity(entity)
+                user = await self.client.get_profile(entity)
                 if self.filter_entity(user):
                     self.buffer.append(user)
 
@@ -232,7 +232,7 @@ class _AdminLogIter(requestiter.RequestIter):
         else:
             events_filter = None
 
-        self.entity = await self.client.get_input_entity(entity)
+        self.entity = await self.client._get_input_peer(entity)
 
         admin_list = []
         if admins:
@@ -240,7 +240,7 @@ class _AdminLogIter(requestiter.RequestIter):
                 admins = (admins,)
 
             for admin in admins:
-                admin_list.append(await self.client.get_input_entity(admin))
+                admin_list.append(await self.client._get_input_peer(admin))
 
         self.request = _tl.fn.channels.GetAdminLog(
             self.entity, q=search or '', min_id=min_id, max_id=max_id,
@@ -278,7 +278,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
     async def _init(
             self, entity, offset, max_id
     ):
-        entity = await self.client.get_input_entity(entity)
+        entity = await self.client._get_input_peer(entity)
         ty = helpers._entity_type(entity)
         if ty == helpers._EntityType.USER:
             self.request = _tl.fn.photos.GetUserPhotos(
@@ -481,8 +481,8 @@ async def edit_admin(
         anonymous: bool = None,
         is_admin: bool = None,
         title: str = None) -> _tl.Updates:
-    entity = await self.get_input_entity(chat)
-    user = await self.get_input_entity(user)
+    entity = await self._get_input_peer(chat)
+    user = await self._get_input_peer(user)
     ty = helpers._entity_type(user)
 
     perm_names = (
@@ -499,7 +499,7 @@ async def edit_admin(
         if post_messages or edit_messages:
             # TODO get rid of this once sessions cache this information
             if entity.channel_id not in self._megagroup_cache:
-                full_entity = await self.get_entity(entity)
+                full_entity = await self.get_profile(entity)
                 self._megagroup_cache[entity.channel_id] = full_entity.megagroup
 
             if self._megagroup_cache[entity.channel_id]:
@@ -545,7 +545,7 @@ async def edit_permissions(
         change_info: bool = True,
         invite_users: bool = True,
         pin_messages: bool = True) -> _tl.Updates:
-    entity = await self.get_input_entity(chat)
+    entity = await self._get_input_peer(chat)
     ty = helpers._entity_type(entity)
 
     rights = _tl.ChatBannedRights(
@@ -570,7 +570,7 @@ async def edit_permissions(
             banned_rights=rights
         ))
 
-    user = await self.get_input_entity(user)
+    user = await self._get_input_peer(user)
 
     if isinstance(user, _tl.InputPeerSelf):
         raise ValueError('You cannot restrict yourself')
@@ -586,8 +586,8 @@ async def kick_participant(
         chat: 'hints.DialogLike',
         user: 'typing.Optional[hints.DialogLike]'
 ):
-    entity = await self.get_input_entity(chat)
-    user = await self.get_input_entity(user)
+    entity = await self._get_input_peer(chat)
+    user = await self._get_input_peer(user)
 
     ty = helpers._entity_type(entity)
     if ty == helpers._EntityType.CHAT:
@@ -620,14 +620,14 @@ async def get_permissions(
         chat: 'hints.DialogLike',
         user: 'hints.DialogLike' = None
 ) -> 'typing.Optional[_custom.ParticipantPermissions]':
-    entity = await self.get_entity(chat)
+    entity = await self.get_profile(chat)
 
     if not user:
         if helpers._entity_type(entity) != helpers._EntityType.USER:
             return entity.default_banned_rights
 
-    entity = await self.get_input_entity(entity)
-    user = await self.get_input_entity(user)
+    entity = await self._get_input_peer(entity)
+    user = await self._get_input_peer(user)
 
     if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
         participant = await self(_tl.fn.channels.GetParticipant(
@@ -653,7 +653,7 @@ async def get_stats(
         chat: 'hints.DialogLike',
         message: 'typing.Union[int, _tl.Message]' = None,
 ):
-    entity = await self.get_input_entity(chat)
+    entity = await self._get_input_peer(chat)
 
     message = utils.get_message_id(message)
     if message is not None:

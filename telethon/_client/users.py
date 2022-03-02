@@ -166,7 +166,7 @@ async def get_profile(
         if isinstance(x, str):
             inputs.append(x)
         else:
-            inputs.append(await self.get_input_entity(x))
+            inputs.append(await self._get_input_peer(x))
 
     lists = {
         helpers._EntityType.USER: [],
@@ -220,7 +220,7 @@ async def get_profile(
 
     return result[0] if single else result
 
-async def get_input_entity(
+async def _get_input_peer(
         self: 'TelegramClient',
         peer: 'hints.DialogLike') -> '_tl.TypeInputPeer':
     # Short-circuit if the input parameter directly maps to an InputPeer
@@ -287,7 +287,7 @@ async def get_input_entity(
         .format(peer, type(peer).__name__)
     )
 
-async def get_peer_id(
+async def _get_peer_id(
         self: 'TelegramClient',
         peer: 'hints.DialogLike') -> int:
     if isinstance(peer, int):
@@ -296,9 +296,9 @@ async def get_peer_id(
     try:
         if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
             # 0x2d45687, 0xc91c90b6 == crc32(b'Peer') and b'InputPeer'
-            peer = await self.get_input_entity(peer)
+            peer = await self._get_input_peer(peer)
     except AttributeError:
-        peer = await self.get_input_entity(peer)
+        peer = await self._get_input_peer(peer)
 
     if isinstance(peer, _tl.InputPeerSelf):
         peer = _tl.PeerUser(self._session_state.user_id)
@@ -372,13 +372,13 @@ async def _get_input_dialog(self: 'TelegramClient', dialog):
     """
     try:
         if dialog.SUBCLASS_OF_ID == 0xa21c9795:  # crc32(b'InputDialogPeer')
-            return dataclasses.replace(dialog, peer=await self.get_input_entity(dialog.peer))
+            return dataclasses.replace(dialog, peer=await self._get_input_peer(dialog.peer))
         elif dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
             return _tl.InputDialogPeer(dialog)
     except AttributeError:
         pass
 
-    return _tl.InputDialogPeer(await self.get_input_entity(dialog))
+    return _tl.InputDialogPeer(await self._get_input_peer(dialog))
 
 async def _get_input_notify(self: 'TelegramClient', notify):
     """
@@ -389,9 +389,9 @@ async def _get_input_notify(self: 'TelegramClient', notify):
     try:
         if notify.SUBCLASS_OF_ID == 0x58981615:
             if isinstance(notify, _tl.InputNotifyPeer):
-                return dataclasses.replace(notify, peer=await self.get_input_entity(notify.peer))
+                return dataclasses.replace(notify, peer=await self._get_input_peer(notify.peer))
             return notify
     except AttributeError:
         pass
 
-    return _tl.InputNotifyPeer(await self.get_input_entity(notify))
+    return _tl.InputNotifyPeer(await self._get_input_peer(notify))

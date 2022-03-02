@@ -118,9 +118,7 @@ Users
     get_me
     is_bot
     is_user_authorized
-    get_entity
-    get_input_entity
-    get_peer_id
+    get_profile
 
 Chats
 -----

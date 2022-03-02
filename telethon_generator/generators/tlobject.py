@@ -16,11 +16,11 @@ AUTO_GEN_NOTICE = \
 
 AUTO_CASTS = {
     'InputPeer':
-        'utils.get_input_peer(await client.get_input_entity({}))',
+        'utils.get_input_peer(await client._get_input_peer({}))',
     'InputChannel':
-        'utils.get_input_channel(await client.get_input_entity({}))',
+        'utils.get_input_channel(await client._get_input_peer({}))',
     'InputUser':
-        'utils.get_input_user(await client.get_input_entity({}))',
+        'utils.get_input_user(await client._get_input_peer({}))',
 
     'InputDialogPeer': 'await client._get_input_dialog({})',
     'InputNotifyPeer': 'await client._get_input_notify({})',
@@ -33,7 +33,7 @@ AUTO_CASTS = {
 }
 
 NAMED_AUTO_CASTS = {
-    ('chat_id', 'int'): 'await client.get_peer_id({})'
+    ('chat_id', 'int'): 'await client._get_peer_id({})'
 }
 
 # Secret chats have a chat_id which may be negative.

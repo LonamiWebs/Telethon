@@ -107,7 +107,7 @@ use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
 .. code-block:: python
 
 
-    # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
+    # Obtain `channel' through dialogs or through client.get_profile() or anyhow.
     # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
 
     await client(GetMessagesViewsRequest(

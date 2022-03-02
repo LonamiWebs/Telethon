@@ -122,7 +122,7 @@ class _DraftsIter(requestiter.RequestIter):
             peers = []
             for entity in entities:
                 peers.append(_tl.InputDialogPeer(
-                    await self.client.get_input_entity(entity)))
+                    await self.client._get_input_peer(entity)))
 
             r = await self.client(_tl.fn.messages.GetPeerDialogs(peers))
             items = r.dialogs
@@ -189,7 +189,7 @@ async def delete_dialog(
     else:
         deactivated = False
 
-    entity = await self.get_input_entity(dialog)
+    entity = await self._get_input_peer(dialog)
     ty = helpers._entity_type(entity)
     if ty == helpers._EntityType.CHANNEL:
         return await self(_tl.fn.channels.LeaveChannel(entity))

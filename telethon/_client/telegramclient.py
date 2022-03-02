@@ -3326,7 +3326,7 @@ class TelegramClient:
                     ...
 
                 # Note that for this to work the phone number must be in your contacts
-                some_id = await client.get_peer_id('+34123456789')
+                some_id = (await client.get_profile('+34123456789')).id
         """
 
     # endregion Users
@@ -3393,6 +3393,14 @@ class TelegramClient:
             key: bytes = None,
             iv: bytes = None,
             progress_callback: 'hints.ProgressCallback' = None) -> '_tl.TypeInputFile':
+        pass
+
+    @forward_call(users._get_input_peer)
+    async def _get_input_peer(self, *, save=True, **changes):
+        pass
+
+    @forward_call(users._get_peer_id)
+    async def _get_peer_id(self, *, save=True, **changes):
         pass
 
     # endregion Private

@@ -19,7 +19,7 @@ async def _replace_with_mention(self: 'TelegramClient', entities, i, user):
     try:
         entities[i] = _tl.InputMessageEntityMentionName(
             entities[i].offset, entities[i].length,
-            await self.get_input_entity(user)
+            await self._get_input_peer(user)
         )
         return True
     except (ValueError, TypeError):

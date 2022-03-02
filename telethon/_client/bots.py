@@ -16,9 +16,9 @@ async def inline_query(
         dialog: 'hints.DialogLike' = None,
         offset: str = None,
         geo_point: '_tl.GeoPoint' = None) -> _custom.InlineResults:
-    bot = await self.get_input_entity(bot)
+    bot = await self._get_input_peer(bot)
     if dialog:
-        peer = await self.get_input_entity(dialog)
+        peer = await self._get_input_peer(dialog)
     else:
         peer = _tl.InputPeerEmpty()
 

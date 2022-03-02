@@ -54,6 +54,7 @@ and identifier, rather than just the number.
 
 // TODO we DEFINITELY need to provide a way to "upgrade" old ids
 // TODO and storing type+number by hand is a pain, provide better alternative
+// TODO get_peer_id is gone now too!
 
 
 Synchronous compatibility mode has been removed

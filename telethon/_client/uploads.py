@@ -168,7 +168,7 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
     # In theory documents can be sent inside the albums but they appear
     # as different messages (not inside the album), and the logic to set
     # the attributes/avoid cache is already written in .send_file().
-    entity = await self.get_input_entity(entity)
+    entity = await self._get_input_peer(entity)
     if not utils.is_list_like(caption):
         caption = (caption,)
 

@@ -143,7 +143,7 @@ class InlineResult:
 
         """
         if entity:
-            entity = await self._client.get_input_entity(entity)
+            entity = await self._client.get_input_peer(entity)
         elif self._entity:
             entity = self._entity
         else:

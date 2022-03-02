@@ -28,7 +28,7 @@ class _MessagesIter(requestiter.RequestIter):
     ):
         # Note that entity being `None` will perform a global search.
         if entity:
-            self.entity = await self.client.get_input_entity(entity)
+            self.entity = await self.client._get_input_peer(entity)
         else:
             self.entity = None
             if self.reverse:
@@ -62,8 +62,8 @@ class _MessagesIter(requestiter.RequestIter):
                 offset_id = 1
 
         if from_user:
-            from_user = await self.client.get_input_entity(from_user)
-            self.from_id = await self.client.get_peer_id(from_user)
+            from_user = await self.client._get_input_peer(from_user)
+            self.from_id = await self.client._get_peer_id(from_user)
         else:
             self.from_id = None
 
@@ -272,7 +272,7 @@ class _IDsIter(requestiter.RequestIter):
         self.total = len(ids)
         self._ids = list(reversed(ids)) if self.reverse else ids
         self._offset = 0
-        self._entity = (await self.client.get_input_entity(entity)) if entity else None
+        self._entity = (await self.client._get_input_peer(entity)) if entity else None
         self._ty = helpers._entity_type(self._entity) if self._entity else None
 
         # 30s flood wait every 300 messages (3 requests of 100 each, 30 of 10, etc.)
@@ -327,7 +327,7 @@ async def _get_peer(self: 'TelegramClient', input_peer: 'hints.DialogLike'):
         return utils.get_peer(input_peer)
     except TypeError:
         # Can only be self by now
-        return _tl.PeerUser(await self.get_peer_id(input_peer))
+        return _tl.PeerUser(await self._get_peer_id(input_peer))
 
 
 def get_messages(
@@ -466,7 +466,7 @@ async def send_message(
     elif not isinstance(message, InputMessage):
         raise TypeError(f'message must be either str, Message or InputMessage, but got: {message!r}')
 
-    entity = await self.get_input_entity(dialog)
+    entity = await self._get_input_peer(dialog)
     if comment_to is not None:
         entity, reply_to = await _get_comment_data(self, entity, comment_to)
     elif reply_to:
@@ -540,11 +540,11 @@ async def forward_messages(
     if as_album is not None:
         warnings.warn('the as_album argument is deprecated and no longer has any effect')
 
-    entity = await self.get_input_entity(dialog)
+    entity = await self._get_input_peer(dialog)
 
     if from_dialog:
-        from_peer = await self.get_input_entity(from_dialog)
-        from_peer_id = await self.get_peer_id(from_peer)
+        from_peer = await self._get_input_peer(from_dialog)
+        from_peer_id = await self._get_peer_id(from_peer)
     else:
         from_peer = None
         from_peer_id = None
@@ -632,7 +632,7 @@ async def edit_message(
         else:
             return await self(request)
 
-    entity = await self.get_input_entity(dialog)
+    entity = await self._get_input_peer(dialog)
     request = _tl.fn.messages.EditMessage(
         peer=entity,
         id=utils.get_message_id(message),
@@ -659,7 +659,7 @@ async def delete_messages(
     )
 
     if dialog:
-        entity = await self.get_input_entity(dialog)
+        entity = await self._get_input_peer(dialog)
         ty = helpers._entity_type(entity)
     else:
         # no entity (None), set a value that's not a channel for private delete
@@ -689,7 +689,7 @@ async def mark_read(
     else:
         max_id = message.id
 
-    entity = await self.get_input_entity(dialog)
+    entity = await self._get_input_peer(dialog)
     if clear_mentions:
         await self(_tl.fn.messages.ReadMentions(entity))
 
@@ -726,7 +726,7 @@ async def unpin_message(
 
 async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
     message = utils.get_message_id(message) or 0
-    entity = await self.get_input_entity(entity)
+    entity = await self._get_input_peer(entity)
     if message <= 0:  # old behaviour accepted negative IDs to unpin
         await self(_tl.fn.messages.UnpinAllMessages(entity))
         return

@@ -190,7 +190,7 @@ async def download_profile_photo(
     INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
     entity = profile
     if not isinstance(entity, tlobject.TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
-        entity = await self.get_entity(entity)
+        entity = await self.get_profile(entity)
 
     possible_names = []
     if entity.SUBCLASS_OF_ID not in ENTITIES:
@@ -217,7 +217,7 @@ async def download_profile_photo(
 
         dc_id = photo.dc_id
         loc = _tl.InputPeerPhotoFileLocation(
-            peer=await self.get_input_entity(entity),
+            peer=await self._get_input_peer(entity),
             photo_id=photo.photo_id,
             big=thumb >= enums.Size.LARGE
         )
@@ -244,7 +244,7 @@ async def download_profile_photo(
     except errors.LocationInvalidError:
         # See issue #500, Android app fails as of v4.6.0 (1155).
         # The fix seems to be using the full channel chat photo.
-        ie = await self.get_input_entity(entity)
+        ie = await self._get_input_peer(entity)
         ty = helpers._entity_type(ie)
         if ty == helpers._EntityType.CHANNEL:
             full = await self(_tl.fn.channels.GetFullChannel(ie))

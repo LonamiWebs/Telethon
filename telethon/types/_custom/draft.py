@@ -58,7 +58,7 @@ class Draft:
         if not self.entity and await self.get_input_entity():
             try:
                 self._entity =\
-                    await self._client.get_entity(self._input_entity)
+                    await self._client.get_profile(self._input_entity)
             except ValueError:
                 pass
 

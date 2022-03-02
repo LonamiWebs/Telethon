@@ -322,7 +322,7 @@ class App(tkinter.Tk):
         try:
             old = self.chat_id
             # Valid chat ID, set it and configure the colour back to white
-            self.chat_id = await self.cl.get_peer_id(chat)
+            self.chat_id = (await self.cl.get_profile(chat)).id
             self.chat.configure(bg='white')
 
             # If the chat ID changed, clear the

@@ -8,7 +8,7 @@ does a result have? Well, the easiest thing to do is printing it:
 
 .. code-block:: python
 
-    entity = await client.get_entity('username')
+    entity = await client.get_profile('username')
     print(entity)
 
 That will show a huge **string** similar to the following:

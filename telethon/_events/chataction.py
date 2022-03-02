@@ -307,7 +307,7 @@ class ChatAction(EventBuilder):
         Returns `added_by` but will make an API call if necessary.
         """
         if not self.added_by and self._added_by:
-            self._added_by = await self._client.get_entity(self._added_by)
+            self._added_by = await self._client.get_profile(self._added_by)
 
         return self._added_by
 
@@ -328,7 +328,7 @@ class ChatAction(EventBuilder):
         Returns `kicked_by` but will make an API call if necessary.
         """
         if not self.kicked_by and self._kicked_by:
-            self._kicked_by = await self._client.get_entity(self._kicked_by)
+            self._kicked_by = await self._client.get_profile(self._kicked_by)
 
         return self._kicked_by
 
