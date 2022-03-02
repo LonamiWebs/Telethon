@@ -18,6 +18,7 @@ from .._events.base import StopPropagation, EventBuilder, EventHandler
 from .._events.filters import make_filter, NotResolved
 from .._misc import utils
 from .. import _tl
+from ..types._custom import User, Chat
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -220,12 +221,13 @@ def _preprocess_updates(self, updates, users, chats):
 class Entities:
     def __init__(self, client, users, chats):
         self.self_id = client._session_state.user_id
+        self._client = client
         self._entities = {e.id: e for e in itertools.chain(
-            (User(client, u) for u in users),
-            (Chat(client, c) for u in chats),
+            (User._new(client, u) for u in users),
+            (Chat._new(client, c) for u in chats),
         )}
 
-    def get(self, client, peer):
+    def get(self, peer):
         if not peer:
             return None
 
@@ -233,11 +235,11 @@ class Entities:
         try:
             return self._entities[id]
         except KeyError:
-            entity = client._entity_cache.get(query.user_id)
+            entity = self._client._entity_cache.get(query.user_id)
             if not entity:
                 raise RuntimeError('Update is missing a hash but did not trigger a gap')
 
-            self._entities[entity.id] = User(client, entity) if entity.is_user else Chat(client, entity)
+            self._entities[entity.id] = User(self._client, entity) if entity.is_user else Chat(self._client, entity)
             return self._entities[entity.id]
 
 
@@ -246,7 +248,7 @@ async def _dispatch(self, update, entities):
     try:
         event_cache = {}
         for handler in self._update_handlers:
-            event, entities = event_cache.get(handler._event)
+            event = event_cache.get(handler._event)
             if not event:
                 # build can fail if we're missing an access hash; we want this to crash
                 event_cache[handler._event] = event = handler._event._build(self, update, entities)
