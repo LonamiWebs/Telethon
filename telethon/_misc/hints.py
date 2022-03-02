@@ -20,7 +20,7 @@ DialogLike = typing.Union[
     Dialog,
     FullDialog
 ]
-DialogsLike = typing.Union[DialogLike, typing.Sequence[DialogsLike]]
+DialogsLike = typing.Union[DialogLike, typing.Sequence[DialogLike]]
 
 ButtonLike = typing.Union[_tl.TypeKeyboardButton, _custom.Button]
 MarkupLike = typing.Union[
