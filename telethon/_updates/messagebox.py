@@ -318,8 +318,8 @@ class MessageBox:
 
         seq = getattr(updates, 'seq', None) or NO_SEQ
         seq_start = getattr(updates, 'seq_start', None) or seq
-        users = getattr(updates, 'users') or []
-        chats = getattr(updates, 'chats') or []
+        users = getattr(updates, 'users', None) or []
+        chats = getattr(updates, 'chats', None) or []
         updates = getattr(updates, 'updates', None) or [updates]
 
         # > For all the other [not `updates` or `updatesCombined`] `Updates` type constructors
