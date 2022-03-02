@@ -1,4 +1,5 @@
 import hashlib
+import dataclasses
 
 from ... import _tl
 from ..._misc import utils
@@ -144,7 +145,7 @@ class InlineBuilder:
             content=content
         )
         if id is None:
-            result.id = hashlib.sha256(bytes(result)).hexdigest()
+            result = dataclasses.replace(result, id=hashlib.sha256(bytes(result)).hexdigest())
 
         return result
 
