@@ -13,6 +13,7 @@ class ChatAction(EventBuilder):
     * Whenever a new message is pinned.
     * Whenever a user scores in a game.
     * Whenever a user joins or is added to the group.
+    * Whenever a new chat join request is sent.
     * Whenever a user is removed or leaves a group if it has
       less than 50 members or the removed user was a bot.
 
@@ -48,6 +49,9 @@ class ChatAction(EventBuilder):
             `True` if the user's join request was approved.
                 along with `user_joined` will be also True.
 
+        new_join_request (:tl:`ExportedChatInvite`, optional):
+            Chat Invite, if the new chat join request was sent (Only Bots get this Update).
+
         created (`bool`, optional):
             `True` if this chat was just created.
 
@@ -80,6 +84,7 @@ class ChatAction(EventBuilder):
         kicked_by = None
         created = None
         from_approval = None
+        new_join_request = None
         users = None
         new_title = None
         pin_ids = None
@@ -108,6 +113,11 @@ class ChatAction(EventBuilder):
             where = _tl.PeerChat(update.chat_id)
             kicked_by = True
             users = update.user_id
+
+        elif isinstance(update, _tl.UpdateBotChatInviteRequester):
+            users = update.user_id
+            where = _tl.PeerChat(update.chat_id)
+            new_join_request = update.invite
 
         # UpdateChannel is sent if we leave a channel, and the update._entities
         # set by _process_update would let us make some guesses. However it's
@@ -161,11 +171,14 @@ class ChatAction(EventBuilder):
                 new_photo = True
             elif isinstance(action, _tl.MessageActionPinMessage) and msg.reply_to:
                 where = msg
-                pin_ids=[msg.reply_to_msg_id]
+                pin_ids=[msg.reply_to.reply_to_msg_id]
             elif isinstance(action, _tl.MessageActionGameScore):
                 where = msg
                 new_score = action.score
-
+            else:
+                return
+        else:
+            return
         self = cls.__new__(cls)
         self._client = client
 
@@ -196,6 +209,7 @@ class ChatAction(EventBuilder):
             self.user_added = True
             self._added_by = added_by
         self.user_approved = from_approval
+        self.new_join_request = new_join_request
 
         # If `from_id` was not present (it's `True`) or the affected
         # user was "kicked by itself", then it left. Else it was kicked.
@@ -289,6 +303,17 @@ class ChatAction(EventBuilder):
                 self._input_chat, ids=self._pin_ids)
 
         return self._pinned_messages
+
+    async def approve_user(self, approved: bool = True):
+        """
+        Approve or disapprove chat join request of user.
+        """
+        if self.new_join_request:
+            return await self._client(_tl.fn.messages.HideChatJoinRequest(
+                await self.get_input_chat(),
+                user_id=self.user_id,
+                approved=approved
+            ))
 
     @property
     def added_by(self):

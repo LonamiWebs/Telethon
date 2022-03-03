@@ -2,6 +2,8 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from dataclasses import dataclass
 import mimetypes
+
+from ..._sessions.types import Entity
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
 from .messagebutton import MessageButton

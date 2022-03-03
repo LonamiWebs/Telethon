@@ -267,7 +267,7 @@ async def sign_up(
 
     result = await self(_tl.fn.auth.SignUp(
         phone_number=phone,
-        phone_code_hash=phone_code_hash,
+        phone_code_hash=self._phone_code_hash,
         first_name=first_name,
         last_name=last_name
     ))

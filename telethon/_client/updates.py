@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import itertools
 import random
+import functools
 import sys
 import time
 import traceback
@@ -225,7 +226,7 @@ class Entities:
         self._client = client
         self._entities = {e.id: e for e in itertools.chain(
             (User._new(client, u) for u in users),
-            (Chat._new(client, c) for u in chats),
+            (Chat._new(client, c) for c in chats),
         )}
 
     def get(self, peer):
