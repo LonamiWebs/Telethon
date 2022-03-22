@@ -2,6 +2,7 @@
 AES IGE implementation in Python.
 
 If available, cryptg will be used instead, otherwise
+If available, pyaesni will be used instead, otherwise
 if available, libssl will be used instead, otherwise
 the Python implementation will be used.
 """
@@ -13,10 +14,21 @@ from . import libssl
 
 __log__ = logging.getLogger(__name__)
 
+try:
+    import pyaesni
+    __log__.info('pyaesni detected, it will be used for encryption')
+except ImportError:
+    pyaesni = None
+    if libssl.encrypt_ige and libssl.decrypt_ige:
+        __log__.info('libssl detected, it will be used for encryption')
+    else:
+        __log__.info('pyaesni module not installed and libssl not found, '
+                     'falling back to (slower) Python encryption')
 
 try:
-    import cryptg
-    __log__.info('cryptg detected, it will be used for encryption')
+    if not pyaesni:
+      import cryptg
+      __log__.info('cryptg detected, it will be used for encryption')
 except ImportError:
     cryptg = None
     if libssl.encrypt_ige and libssl.decrypt_ige:
@@ -39,6 +51,8 @@ class AES:
         """
         if cryptg:
             return cryptg.decrypt_ige(cipher_text, key, iv)
+        elif pyaesni:
+            return pyaesni.ige256_decrypt(cipher_text, key, iv)
         if libssl.decrypt_ige:
             return libssl.decrypt_ige(cipher_text, key, iv)
 
@@ -80,6 +94,8 @@ class AES:
 
         if cryptg:
             return cryptg.encrypt_ige(plain_text, key, iv)
+        elif pyaesni:
+            return pyaesni.ige256_encrypt(plain_text, key, iv)
         if libssl.encrypt_ige:
             return libssl.encrypt_ige(plain_text, key, iv)
 
