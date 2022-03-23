@@ -1,4 +1,6 @@
+tgcrypto
 cryptg
+pyaesni
 pysocks
 python-socks[asyncio]
 hachoir
