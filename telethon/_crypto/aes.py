@@ -2,7 +2,7 @@
 AES IGE implementation in Python.
 
 If available, cryptg will be used instead, otherwise
-If available, pyaesni will be used instead, otherwise
+If available, pyaesni(intel aes-ni for python) will be used instead, otherwise
 if available, libssl will be used instead, otherwise
 the Python implementation will be used.
 """
@@ -13,30 +13,35 @@ from . import libssl
 
 
 __log__ = logging.getLogger(__name__)
-
+# tgcrypto
 try:
-    import pyaesni
+    import tgcrypto
     __log__.info('pyaesni detected, it will be used for encryption')
 except ImportError:
+    tgcrypto = None
+    __log__.info('tgcrypto module not installed and libssl not found, '
+                 'falling back to (slower) Python encryption')
+# pyaesni (intel aes-ni)
+try:
+    if not tgcrypto:
+        import pyaesni
+        __log__.info('pyaesni detected, it will be used for encryption')
+except ImportError:
     pyaesni = None
-    if libssl.encrypt_ige and libssl.decrypt_ige:
-        __log__.info('libssl detected, it will be used for encryption')
-    else:
-        __log__.info('pyaesni module not installed and libssl not found, '
-                     'falling back to (slower) Python encryption')
+    __log__.info('pyaesni module not installed and libssl not found, '
+                 'falling back to (slower) Python encryption')
 
 try:
-    if not pyaesni:
+    if not tgcrypto and not pyaesni:
       import cryptg
       __log__.info('cryptg detected, it will be used for encryption')
 except ImportError:
     cryptg = None
+    __log__.info('cryptg module not installed and libssl not found, '
+                 'falling back to (slower) Python encryption')
+if not tgcrypto and not pyaesni and not cryptg:
     if libssl.encrypt_ige and libssl.decrypt_ige:
         __log__.info('libssl detected, it will be used for encryption')
-    else:
-        __log__.info('cryptg module not installed and libssl not found, '
-                     'falling back to (slower) Python encryption')
-
 
 class AES:
     """
@@ -49,7 +54,9 @@ class AES:
         Decrypts the given text in 16-bytes blocks by using the
         given key and 32-bytes initialization vector.
         """
-        if cryptg:
+        if tgcrypto:
+            return tgcrypto.ige256_decrypt(cipher_text, key, iv)
+        elif cryptg:
             return cryptg.decrypt_ige(cipher_text, key, iv)
         elif pyaesni:
             return pyaesni.ige256_decrypt(cipher_text, key, iv)
@@ -92,7 +99,9 @@ class AES:
         if padding:
             plain_text += os.urandom(16 - padding)
 
-        if cryptg:
+        if tgcrypto:
+            return tgcrypto.ige256_encrypt(plain_text, key, iv)
+        elif cryptg:
             return cryptg.encrypt_ige(plain_text, key, iv)
         elif pyaesni:
             return pyaesni.ige256_encrypt(plain_text, key, iv)
