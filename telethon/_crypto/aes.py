@@ -16,7 +16,7 @@ __log__ = logging.getLogger(__name__)
 # tgcrypto
 try:
     import tgcrypto
-    __log__.info('pyaesni detected, it will be used for encryption')
+    __log__.info('tgcrypto detected, it will be used for encryption')
 except ImportError:
     tgcrypto = None
     __log__.info('tgcrypto module not installed and libssl not found, '
