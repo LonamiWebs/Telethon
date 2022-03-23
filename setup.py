@@ -234,7 +234,7 @@ def main(argv):
             ]),
             install_requires=['pyaes', 'rsa'],
             extras_require={
-                'cryptg': ['cryptg']
+                'tgcrypto': ['tgcrypto']
             }
         )
 
