@@ -182,6 +182,7 @@ INVITE_FORBIDDEN_WITH_JOINAS,400,
 INVITE_HASH_EMPTY,400,The invite hash is empty
 INVITE_HASH_EXPIRED,400,The chat the user tried to join has expired and is not valid anymore
 INVITE_HASH_INVALID,400,The invite hash is invalid
+INVITE_REQUEST_SENT,400,You have successfully requested to join this chat or channel
 LANG_CODE_INVALID,400,
 LANG_PACK_INVALID,400,The provided language pack is invalid
 LASTNAME_INVALID,400,The last name is invalid
