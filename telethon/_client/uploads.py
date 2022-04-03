@@ -194,7 +194,7 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
             ))
 
             fm = utils.get_input_media(r.photo)
-        elif isinstance(fm, _tl.InputMediaUploadedDocument):
+        elif isinstance(fm, (_tl.InputMediaUploadedDocument, _tl.InputMediaDocumentExternal)):
             r = await self(_tl.fn.messages.UploadMedia(
                 entity, media=fm
             ))
