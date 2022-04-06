@@ -144,7 +144,8 @@ class _MessagesIter(requestiter.RequestIter):
                     and offset_date and not search and not offset_id:
                 async for m in self.client.get_messages(
                         self.entity, 1, offset_date=offset_date):
-                    self.request = dataclasses.replace(self.request, offset_id=m.id + 1)
+                    self.request = dataclasses.replace(
+                        self.request, offset_id=m.id + 1)
         else:
             self.request = _tl.fn.messages.GetHistory(
                 peer=self.entity,
@@ -180,10 +181,12 @@ class _MessagesIter(requestiter.RequestIter):
         self.last_id = 0 if self.reverse else float('inf')
 
     async def _load_next_chunk(self):
-        self.request = dataclasses.replace(self.request, limit=min(self.left, _MAX_CHUNK_SIZE))
+        self.request = dataclasses.replace(
+            self.request, limit=min(self.left, _MAX_CHUNK_SIZE))
         if self.reverse and self.request.limit != _MAX_CHUNK_SIZE:
             # Remember that we need -limit when going in reverse
-            self.request = dataclasses.replace(self.request, add_offset=self.add_offset - self.request.limit)
+            self.request = dataclasses.replace(
+                self.request, add_offset=self.add_offset - self.request.limit)
 
         r = await self.client(self.request)
         self.total = getattr(r, 'count', len(r.messages))
@@ -205,7 +208,8 @@ class _MessagesIter(requestiter.RequestIter):
             # is an attempt to avoid these duplicates, since the message
             # IDs are returned in descending order (or asc if reverse).
             self.last_id = message.id
-            self.buffer.append(_custom.Message._new(self.client, message, entities, self.entity))
+            self.buffer.append(_custom.Message._new(
+                self.client, message, entities, self.entity))
 
         if len(r.messages) < self.request.limit:
             return True
@@ -243,10 +247,12 @@ class _MessagesIter(requestiter.RequestIter):
         """
         After making the request, update its offset with the last message.
         """
-        self.request = dataclasses.replace(self.request, offset_id=last_message.id)
+        self.request = dataclasses.replace(
+            self.request, offset_id=last_message.id)
         if self.reverse:
             # We want to skip the one we already have
-            self.request = dataclasses.replace(self.request, offset_id=self.request.offset_id + 1)
+            self.request = dataclasses.replace(
+                self.request, offset_id=self.request.offset_id + 1)
 
         if isinstance(self.request, _tl.fn.messages.Search):
             # Unlike getHistory and searchGlobal that use *offset* date,
@@ -256,15 +262,19 @@ class _MessagesIter(requestiter.RequestIter):
             self.request = dataclasses.replace(self.request, max_date=None)
         else:
             # getHistory, searchGlobal and getReplies call it offset_date
-            self.request = dataclasses.replace(self.request, offset_date=last_message.date)
+            self.request = dataclasses.replace(
+                self.request, offset_date=last_message.date)
 
         if isinstance(self.request, _tl.fn.messages.SearchGlobal):
             if last_message.input_chat:
-                self.request = dataclasses.replace(self.request, offset_peer=last_message.input_chat)
+                self.request = dataclasses.replace(
+                    self.request, offset_peer=last_message.input_chat)
             else:
-                self.request = dataclasses.replace(self.request, offset_peer=_tl.InputPeerEmpty())
+                self.request = dataclasses.replace(
+                    self.request, offset_peer=_tl.InputPeerEmpty())
 
-            self.request = dataclasses.replace(self.request, offset_rate=getattr(response, 'next_rate', 0))
+            self.request = dataclasses.replace(
+                self.request, offset_rate=getattr(response, 'next_rate', 0))
 
 
 class _IDsIter(requestiter.RequestIter):
@@ -319,7 +329,8 @@ class _IDsIter(requestiter.RequestIter):
                     from_id and message.peer_id != from_id):
                 self.buffer.append(None)
             else:
-                self.buffer.append(_custom.Message._new(self.client, message, entities, self._entity))
+                self.buffer.append(_custom.Message._new(
+                    self.client, message, entities, self._entity))
 
 
 async def _get_peer(self: 'TelegramClient', input_peer: 'hints.DialogLike'):
@@ -394,6 +405,7 @@ async def _get_comment_data(
     chat = next(c for c in r.chats if c.id == m.peer_id.channel_id)
     return utils.get_input_peer(chat), m.id
 
+
 async def send_message(
         self: 'TelegramClient',
         dialog: 'hints.DialogLike',
@@ -464,7 +476,8 @@ async def send_message(
     elif isinstance(message, _custom.Message):
         message = message._as_input()
     elif not isinstance(message, InputMessage):
-        raise TypeError(f'message must be either str, Message or InputMessage, but got: {message!r}')
+        raise TypeError(
+            f'message must be either str, Message or InputMessage, but got: {message!r}')
 
     entity = await self._get_input_peer(dialog)
     if comment_to is not None:
@@ -523,6 +536,7 @@ async def send_message(
 
     return self._get_response_message(request, result, entity)
 
+
 async def forward_messages(
         self: 'TelegramClient',
         dialog: 'hints.DialogLike',
@@ -535,10 +549,12 @@ async def forward_messages(
         as_album: bool = None,
         schedule: 'hints.DateLike' = None,
         noforwards: bool = None,
-        send_as: 'hints.DialogLike' = None
+        send_as: 'hints.DialogLike' = None,
+        drop_author: bool = None
 ) -> 'typing.Sequence[_tl.Message]':
     if as_album is not None:
-        warnings.warn('the as_album argument is deprecated and no longer has any effect')
+        warnings.warn(
+            'the as_album argument is deprecated and no longer has any effect')
 
     entity = await self._get_input_peer(dialog)
 
@@ -558,7 +574,8 @@ async def forward_messages(
         elif isinstance(m, _tl.Message):
             return m.chat_id
         else:
-            raise TypeError('Cannot forward messages of type {}'.format(type(m)))
+            raise TypeError(
+                'Cannot forward messages of type {}'.format(type(m)))
 
     sent = []
     for _chat_id, chunk in itertools.groupby(messages, key=get_key):
@@ -579,12 +596,15 @@ async def forward_messages(
             schedule_date=schedule,
             noforwards=noforwards,
             send_as=send_as,
-            random_id=[int.from_bytes(os.urandom(8), 'big', signed=True) for _ in chunk],
+            random_id=[int.from_bytes(os.urandom(
+                8), 'big', signed=True) for _ in chunk],
+            drop_author=drop_author,
         )
         result = await self(req)
         sent.extend(self._get_response_message(req, result, entity))
 
     return sent[0] if single else sent
+
 
 async def edit_message(
         self: 'TelegramClient',
@@ -606,10 +626,10 @@ async def edit_message(
     if formatting_entities is None:
         text, formatting_entities = await self._parse_message_text(text, parse_mode)
     file_handle, media, image = await self._file_to_media(file,
-            supports_streaming=supports_streaming,
-            thumb=thumb,
-            attributes=attributes,
-            force_document=force_document)
+                                                          supports_streaming=supports_streaming,
+                                                          thumb=thumb,
+                                                          attributes=attributes,
+                                                          force_document=force_document)
 
     if isinstance(message, _tl.InputBotInlineMessageID):
         request = _tl.fn.messages.EditInlineBotMessage(
@@ -646,6 +666,7 @@ async def edit_message(
     msg = self._get_response_message(request, await self(request), entity)
     return msg
 
+
 async def delete_messages(
         self: 'TelegramClient',
         dialog: 'hints.DialogLike',
@@ -668,12 +689,13 @@ async def delete_messages(
 
     if ty == helpers._EntityType.CHANNEL:
         res = await self([_tl.fn.channels.DeleteMessages(
-                entity, list(c)) for c in utils.chunks(messages)])
+            entity, list(c)) for c in utils.chunks(messages)])
     else:
         res = await self([_tl.fn.messages.DeleteMessages(
             list(c), revoke) for c in utils.chunks(messages)])
 
     return sum(r.pts_count for r in res)
+
 
 async def mark_read(
         self: 'TelegramClient',
@@ -705,6 +727,7 @@ async def mark_read(
 
     return False
 
+
 async def pin_message(
         self: 'TelegramClient',
         dialog: 'hints.DialogLike',
@@ -715,6 +738,7 @@ async def pin_message(
 ):
     return await _pin(self, dialog, message, unpin=False, notify=notify, pm_oneside=pm_oneside)
 
+
 async def unpin_message(
         self: 'TelegramClient',
         dialog: 'hints.DialogLike',
@@ -723,6 +747,7 @@ async def unpin_message(
         notify: bool = False
 ):
     return await _pin(self, dialog, message, unpin=True, notify=notify)
+
 
 async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
     message = utils.get_message_id(message) or 0
@@ -749,6 +774,7 @@ async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
 
     # Pinning a message that doesn't exist would RPC-error earlier
     return self._get_response_message(request, result, entity)
+
 
 async def send_reaction(
     self: 'TelegramClient',
@@ -781,6 +807,7 @@ async def send_reaction(
             return update.reactions
         if isinstance(update, _tl.UpdateEditMessage):
             return update.message.reactions
+
 
 async def set_quick_reaction(
     self: 'TelegramClient',
