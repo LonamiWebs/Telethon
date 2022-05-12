@@ -72,7 +72,7 @@ class TLObject:
            can be inferred will go last so they can default =None)
         """
         return sorted(self.args,
-                      key=lambda x: x.is_flag or x.can_be_inferred)
+                      key=lambda x: bool(x.flag) or x.can_be_inferred)
 
     def __repr__(self, ignore_id=False):
         if self.id is None or ignore_id:
@@ -95,8 +95,9 @@ class TLObject:
             .replace('<', ' ').replace('>', '')\
             .replace('{', '').replace('}', '')
 
+        # Remove optional empty values (special-cased to the true type)
         representation = re.sub(
-            r' \w+:flags\.\d+\?true',
+            r' \w+:\w+\.\d+\?true',
             r'',
             representation
         )

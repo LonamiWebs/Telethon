@@ -187,9 +187,9 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
                     crc32(tlobject.result.encode('ascii')))
     builder.writeln()
 
-    # Convert the args to string parameters, flags having =None
+    # Convert the args to string parameters, those with flag having =None
     args = ['{}: {}{}'.format(
-        a.name, a.type_hint(), '=None' if a.is_flag or a.can_be_inferred else '')
+        a.name, a.type_hint(), '=None' if a.flag or a.can_be_inferred else '')
         for a in tlobject.real_args
     ]
 
@@ -266,7 +266,7 @@ def _write_resolve(tlobject, builder):
                 if not ac:
                     continue
 
-            if arg.is_flag:
+            if arg.flag:
                 builder.writeln('if self.{}:', arg.name)
 
             if arg.is_vector:
@@ -279,7 +279,7 @@ def _write_resolve(tlobject, builder):
                 builder.writeln('self.{} = {}', arg.name,
                               ac.format('self.' + arg.name))
 
-            if arg.is_flag:
+            if arg.flag:
                 builder.end_block()
         builder.end_block()
 
@@ -327,8 +327,8 @@ def _write_to_bytes(tlobject, builder):
     # at the same time. In this case, add an assertion.
     repeated_args = defaultdict(list)
     for arg in tlobject.args:
-        if arg.is_flag:
-            repeated_args[arg.flag_index].append(arg)
+        if arg.flag:
+            repeated_args[(arg.flag, arg.flag_index)].append(arg)
 
     for ra in repeated_args.values():
         if len(ra) > 1:
@@ -416,7 +416,7 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
     # if it's not a True type.
     # True types are not actually sent, but instead only used to
     # determine the flags.
-    if arg.is_flag:
+    if arg.flag:
         if arg.type == 'true':
             return  # Exit, since True type is never written
         elif arg.is_vector:
@@ -444,31 +444,31 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
         builder.write("b''.join(")
 
         # Temporary disable .is_vector, not to enter this if again
-        # Also disable .is_flag since it's not needed per element
-        old_flag = arg.is_flag
-        arg.is_vector = arg.is_flag = False
+        # Also disable .flag since it's not needed per element
+        old_flag, arg.flag = arg.flag, None
+        arg.is_vector = False
         _write_arg_to_bytes(builder, arg, tlobject, name='x')
         arg.is_vector = True
-        arg.is_flag = old_flag
+        arg.flag = old_flag
 
         builder.write(' for x in {})', name)
 
     elif arg.flag_indicator:
         # Calculate the flags with those items which are not None
-        if not any(f.is_flag for f in tlobject.args):
+        if not any(f.flag for f in tlobject.args):
             # There's a flag indicator, but no flag arguments so it's 0
             builder.write(r"b'\0\0\0\0'")
         else:
-            def fmt_flag(flag):
-                if flag.type == 'Bool':
+            def fmt_flag_arg(a):
+                if a.type == 'Bool':
                     fmt = '(0 if {0} is None else {1})'
                 else:
                     fmt = '(0 if {0} is None or {0} is False else {1})'
-                return fmt.format('self.{}'.format(flag.name), 1 << flag.flag_index)
+                return fmt.format('self.{}'.format(a.name), 1 << a.flag_index)
 
             builder.write("struct.pack('<I', ")
             builder.write(
-                ' | '.join(fmt_flag(flag) for flag in tlobject.args if flag.is_flag)
+                ' | '.join(fmt_flag_arg(a) for a in tlobject.args if a.flag == arg.name)
             )
             builder.write(')')
 
@@ -520,7 +520,7 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
         if not boxed:
             builder.write('[4:]')
 
-    if arg.is_flag:
+    if arg.flag:
         builder.write(')')
         if arg.is_vector:
             builder.write(')')  # We were using a tuple
@@ -545,20 +545,19 @@ def _write_arg_read_code(builder, arg, tlobject, name):
         return  # Do nothing, this only specifies a later type
 
     # The argument may be a flag, only write that flag was given!
-    was_flag = False
-    if arg.is_flag:
+    old_flag = None
+    if arg.flag:
         # Treat 'true' flags as a special case, since they're true if
         # they're set, and nothing else needs to actually be read.
         if 'true' == arg.type:
-            builder.writeln('{} = bool(flags & {})',
-                            name, 1 << arg.flag_index)
+            builder.writeln('{} = bool({} & {})',
+                            name, arg.flag, 1 << arg.flag_index)
             return
 
-        was_flag = True
-        builder.writeln('if flags & {}:', 1 << arg.flag_index)
-        # Temporary disable .is_flag not to enter this if
+        builder.writeln('if {} & {}:', arg.flag, 1 << arg.flag_index)
+        # Temporary disable .flag not to enter this if
         # again when calling the method recursively
-        arg.is_flag = False
+        old_flag, arg.flag = arg.flag, None
 
     if arg.is_vector:
         if arg.use_vector_id:
@@ -575,7 +574,7 @@ def _write_arg_read_code(builder, arg, tlobject, name):
 
     elif arg.flag_indicator:
         # Read the flags, which will indicate what items we should read next
-        builder.writeln('flags = reader.read_int()')
+        builder.writeln('{} = reader.read_int()', arg.name)
         builder.writeln()
 
     elif 'int' == arg.type:
@@ -643,13 +642,13 @@ def _write_arg_read_code(builder, arg, tlobject, name):
     if arg.is_vector:
         builder.end_block()
 
-    if was_flag:
+    if old_flag:
         builder.current_indent -= 1
         builder.writeln('else:')
         builder.writeln('{} = None', name)
         builder.current_indent -= 1
-        # Restore .is_flag
-        arg.is_flag = True
+        # Restore .flag
+        arg.flag = old_flag
 
 
 def _write_all_tlobjects(tlobjects, layer, builder):

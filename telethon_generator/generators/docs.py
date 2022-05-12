@@ -164,7 +164,7 @@ def _get_description(arg):
     if arg.can_be_inferred:
         desc.append('If left unspecified, it will be inferred automatically.')
         otherwise = True
-    elif arg.is_flag:
+    elif arg.flag:
         desc.append('This argument defaults to '
                     '<code>None</code> and can be omitted.')
         otherwise = True
