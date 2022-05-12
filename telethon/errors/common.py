@@ -1,5 +1,6 @@
 """Errors not related to the Telegram API itself"""
 import struct
+import textwrap
 
 from ..tl import TLRequest
 
@@ -56,6 +57,22 @@ class InvalidBufferError(BufferError):
             self.code = None
             super().__init__(
                 'Invalid response buffer (too short {})'.format(self.payload))
+
+
+class AuthKeyNotFound(Exception):
+    """
+    The server claims it doesn't know about the authorization key (session
+    file) currently being used. This might be because it either has never
+    seen this authorization key, or it used to know about the authorization
+    key but has forgotten it, either temporarily or permanently (possibly
+    due to server errors).
+
+    If the issue persists, you may need to recreate the session file and login
+    again. This is not done automatically because it is not possible to know
+    if the issue is temporary or permanent.
+    """
+    def __init__(self):
+        super().__init__(textwrap.dedent(self.__class__.__doc__))
 
 
 class SecurityError(Exception):

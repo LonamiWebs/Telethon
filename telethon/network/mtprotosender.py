@@ -10,7 +10,7 @@ from .mtprotostate import MTProtoState
 from ..tl.tlobject import TLRequest
 from .. import helpers, utils
 from ..errors import (
-    BadMessageError, InvalidBufferError, SecurityError,
+    BadMessageError, InvalidBufferError, AuthKeyNotFound, SecurityError,
     TypeNotFoundError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
@@ -377,11 +377,8 @@ class MTProtoSender:
             except BufferError as e:
                 # TODO there should probably only be one place to except all these errors
                 if isinstance(e, InvalidBufferError) and e.code == 404:
-                    self._log.info('Broken authorization key; resetting')
-                    self.auth_key.key = None
-                    if self._auth_key_callback:
-                        await self._auth_key_callback(None)
-
+                    self._log.info('Server does not know about the current auth key; the session may need to be recreated')
+                    last_error = AuthKeyNotFound()
                     ok = False
                     break
                 else:
@@ -521,12 +518,8 @@ class MTProtoSender:
                 continue
             except BufferError as e:
                 if isinstance(e, InvalidBufferError) and e.code == 404:
-                    self._log.info('Broken authorization key; resetting')
-                    self.auth_key.key = None
-                    if self._auth_key_callback:
-                        await self._auth_key_callback(None)
-
-                    await self._disconnect(error=e)
+                    self._log.info('Server does not know about the current auth key; the session may need to be recreated')
+                    await self._disconnect(error=AuthKeyNotFound())
                 else:
                     self._log.warning('Invalid buffer %s', e)
                     self._start_reconnect(e)
