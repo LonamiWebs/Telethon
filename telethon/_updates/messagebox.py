@@ -469,7 +469,7 @@ class MessageBox:
         entry = ENTRY_ACCOUNT
         if entry in self.getting_diff_for:
             if entry in self.map:
-                return fn.updates.GetDifference(
+                return fn.updates.GetDifferenceRequest(
                     pts=self.map[ENTRY_ACCOUNT].pts,
                     pts_total_limit=None,
                     date=self.date,
@@ -557,7 +557,7 @@ class MessageBox:
             self.end_get_diff(entry)
             return None
 
-        return fn.updates.GetChannelDifference(
+        return fn.updates.GetChannelDifferenceRequest(
             force=False,
             channel=tl.InputChannel(packed.id, packed.hash),
             filter=tl.ChannelMessagesFilterEmpty(),
