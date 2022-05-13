@@ -15,6 +15,7 @@ from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import functions, types
 from ..tl.alltlobjects import LAYER
+from .._updates import MessageBox, EntityCache as MbEntityCache
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -376,18 +377,6 @@ class TelegramBaseClient(abc.ABC):
             proxy=init_proxy
         )
 
-        self._sender = MTProtoSender(
-            self.session.auth_key,
-            loggers=self._log,
-            retries=self._connection_retries,
-            delay=self._retry_delay,
-            auto_reconnect=self._auto_reconnect,
-            connect_timeout=self._timeout,
-            auth_key_callback=self._auth_key_callback,
-            update_callback=self._handle_update,
-            auto_reconnect_callback=self._handle_auto_reconnect
-        )
-
         # Remember flood-waited requests to avoid making them again
         self._flood_waited_requests = {}
 
@@ -396,18 +385,14 @@ class TelegramBaseClient(abc.ABC):
         self._borrow_sender_lock = asyncio.Lock()
 
         self._updates_handle = None
+        self._keepalive_handle = None
         self._last_request = time.time()
         self._channel_pts = {}
         self._no_updates = not receive_updates
 
-        if sequential_updates:
-            self._updates_queue = asyncio.Queue()
-            self._dispatching_updates_queue = asyncio.Event()
-        else:
-            # Use a set of pending instead of a queue so we can properly
-            # terminate all pending updates on disconnect.
-            self._updates_queue = set()
-            self._dispatching_updates_queue = None
+        # Used for non-sequential updates, in order to terminate all pending tasks on disconnect.
+        self._sequential_updates = sequential_updates
+        self._event_handler_tasks = set()
 
         self._authorized = None  # None = unknown, False = no, True = yes
 
@@ -441,6 +426,26 @@ class TelegramBaseClient(abc.ABC):
 
         # A place to store if channels are a megagroup or not (see `edit_admin`)
         self._megagroup_cache = {}
+
+        # This is backported from v2 in a very ad-hoc way just to get proper update handling
+        self._catch_up = True
+        self._updates_queue = asyncio.Queue()
+        self._message_box = MessageBox()
+        # This entity cache is tailored for the messagebox and is not used for absolutely everything like _entity_cache
+        self._mb_entity_cache = MbEntityCache()  # required for proper update handling (to know when to getDifference)
+
+        self._sender = MTProtoSender(
+            self.session.auth_key,
+            loggers=self._log,
+            retries=self._connection_retries,
+            delay=self._retry_delay,
+            auto_reconnect=self._auto_reconnect,
+            connect_timeout=self._timeout,
+            auth_key_callback=self._auth_key_callback,
+            updates_queue=self._updates_queue,
+            auto_reconnect_callback=self._handle_auto_reconnect
+        )
+
 
     # endregion
 
@@ -537,6 +542,7 @@ class TelegramBaseClient(abc.ABC):
         ))
 
         self._updates_handle = self.loop.create_task(self._update_loop())
+        self._keepalive_handle = self.loop.create_task(self._keepalive_loop())
 
     def is_connected(self: 'TelegramClient') -> bool:
         """
@@ -629,13 +635,12 @@ class TelegramBaseClient(abc.ABC):
 
         # trio's nurseries would handle this for us, but this is asyncio.
         # All tasks spawned in the background should properly be terminated.
-        if self._dispatching_updates_queue is None and self._updates_queue:
-            for task in self._updates_queue:
+        if self._event_handler_tasks:
+            for task in self._event_handler_tasks:
                 task.cancel()
 
-            await asyncio.wait(self._updates_queue)
-            self._updates_queue.clear()
-
+            await asyncio.wait(self._event_handler_tasks)
+            self._event_handler_tasks.clear()
 
         await self.session.close()
 
@@ -648,7 +653,8 @@ class TelegramBaseClient(abc.ABC):
         """
         await self._sender.disconnect()
         await helpers._cancel(self._log[__name__],
-                              updates_handle=self._updates_handle)
+                              updates_handle=self._updates_handle,
+                              keepalive_handle=self._keepalive_handle)
 
     async def _switch_dc(self: 'TelegramClient', new_dc):
         """
@@ -843,10 +849,6 @@ class TelegramBaseClient(abc.ABC):
             The result of the request (often a `TLObject`) or a list of
             results if more than one request was given.
         """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def _handle_update(self: 'TelegramClient', update):
         raise NotImplementedError
 
     @abc.abstractmethod

@@ -44,7 +44,7 @@ class MTProtoSender:
     def __init__(self, auth_key, *, loggers,
                  retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
                  auth_key_callback=None,
-                 update_callback=None, auto_reconnect_callback=None):
+                 updates_queue=None, auto_reconnect_callback=None):
         self._connection = None
         self._loggers = loggers
         self._log = loggers[__name__]
@@ -53,7 +53,7 @@ class MTProtoSender:
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
         self._auth_key_callback = auth_key_callback
-        self._update_callback = update_callback
+        self._updates_queue = updates_queue
         self._auto_reconnect_callback = auto_reconnect_callback
         self._connect_lock = asyncio.Lock()
         self._ping = None
@@ -645,8 +645,7 @@ class MTProtoSender:
             return
 
         self._log.debug('Handling update %s', message.obj.__class__.__name__)
-        if self._update_callback:
-            await self._update_callback(message.obj)
+        self._updates_queue.put_nowait(message.obj)
 
     async def _handle_pong(self, message):
         """
