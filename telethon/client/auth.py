@@ -608,7 +608,6 @@ class AuthMethods:
         self._bot = None
         self._self_input_peer = None
         self._authorized = False
-        self._state_cache.reset()
 
         await self.disconnect()
         await self.session.delete()

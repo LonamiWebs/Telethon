@@ -13,7 +13,6 @@ from ..entitycache import EntityCache
 from ..extensions import markdown
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
-from ..statecache import StateCache
 from ..tl import functions, types
 from ..tl.alltlobjects import LAYER
 
@@ -412,8 +411,6 @@ class TelegramBaseClient(abc.ABC):
 
         self._authorized = None  # None = unknown, False = no, True = yes
 
-        self._state_cache = StateCache(None, self._log)
-
         # Some further state for subclasses
         self._event_builders = []
 
@@ -519,11 +516,6 @@ class TelegramBaseClient(abc.ABC):
                 except OSError:
                     print('Failed to connect')
         """
-        # Update state (for catching up after a disconnection)
-        # TODO Get state from channels too
-        self._state_cache = StateCache(
-            await self.session.get_update_state(0), self._log)
-
         if not await self._sender.connect(self._connection(
             self.session.server_address,
             self.session.port,
@@ -644,15 +636,6 @@ class TelegramBaseClient(abc.ABC):
             await asyncio.wait(self._updates_queue)
             self._updates_queue.clear()
 
-        pts, date = self._state_cache[None]
-        if pts and date:
-            await self.session.set_update_state(0, types.updates.State(
-                pts=pts,
-                qts=0,
-                date=date,
-                seq=0,
-                unread_count=0
-            ))
 
         await self.session.close()
 
