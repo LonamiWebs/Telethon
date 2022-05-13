@@ -86,7 +86,7 @@ class PtsInfo:
 
         qts = getattr(update, 'qts', None)
         if qts:
-            pts_count = 1 if isinstance(update, _tl.UpdateNewEncryptedMessage) else 0
+            pts_count = 1 if isinstance(update, tl.UpdateNewEncryptedMessage) else 0
             return cls(pts=qts, pts_count=pts_count, entry=ENTRY_SECRET)
 
         return None
@@ -469,7 +469,7 @@ class MessageBox:
         entry = ENTRY_ACCOUNT
         if entry in self.getting_diff_for:
             if entry in self.map:
-                return _tl.fn.updates.GetDifference(
+                return fn.updates.GetDifference(
                     pts=self.map[ENTRY_ACCOUNT].pts,
                     pts_total_limit=None,
                     date=self.date,
@@ -487,19 +487,19 @@ class MessageBox:
         diff,
         chat_hashes,
     ):
-        if isinstance(diff, _tl.updates.DifferenceEmpty):
+        if isinstance(diff, tl.updates.DifferenceEmpty):
             self.date = diff.date
             self.seq = diff.seq
             self.end_get_diff(ENTRY_ACCOUNT)
             return [], [], []
-        elif isinstance(diff, _tl.updates.Difference):
+        elif isinstance(diff, tl.updates.Difference):
             self.end_get_diff(ENTRY_ACCOUNT)
             chat_hashes.extend(diff.users, diff.chats)
             return self.apply_difference_type(diff)
-        elif isinstance(diff, _tl.updates.DifferenceSlice):
+        elif isinstance(diff, tl.updates.DifferenceSlice):
             chat_hashes.extend(diff.users, diff.chats)
             return self.apply_difference_type(diff)
-        elif isinstance(diff, _tl.updates.DifferenceTooLong):
+        elif isinstance(diff, tl.updates.DifferenceTooLong):
             # TODO when are deadlines reset if we update the map??
             self.map[ENTRY_ACCOUNT].pts = diff.pts
             self.end_get_diff(ENTRY_ACCOUNT)
@@ -513,15 +513,15 @@ class MessageBox:
         self.set_state(state)
 
         for u in diff.other_updates:
-            if isinstance(u, _tl.UpdateChannelTooLong):
+            if isinstance(u, tl.UpdateChannelTooLong):
                 self.begin_get_diff(u.channel_id)
 
-        diff.other_updates.extend(_tl.UpdateNewMessage(
+        diff.other_updates.extend(tl.UpdateNewMessage(
             message=m,
             pts=NO_SEQ,
             pts_count=NO_SEQ,
         ) for m in diff.new_messages)
-        diff.other_updates.extend(_tl.UpdateNewEncryptedMessage(
+        diff.other_updates.extend(tl.UpdateNewEncryptedMessage(
             message=m,
             qts=NO_SEQ,
         ) for m in diff.new_encrypted_messages)
@@ -557,10 +557,10 @@ class MessageBox:
             self.end_get_diff(entry)
             return None
 
-        return _tl.fn.updates.GetChannelDifference(
+        return fn.updates.GetChannelDifference(
             force=False,
-            channel=_tl.InputChannel(packed.id, packed.hash),
-            filter=_tl.ChannelMessagesFilterEmpty(),
+            channel=tl.InputChannel(packed.id, packed.hash),
+            filter=tl.ChannelMessagesFilterEmpty(),
             pts=state.pts,
             limit=BOT_CHANNEL_DIFF_LIMIT if chat_hashes.self_bot else USER_CHANNEL_DIFF_LIMIT
         )
@@ -575,12 +575,12 @@ class MessageBox:
         entry = request.channel.channel_id
         self.possible_gaps.pop(entry, None)
 
-        if isinstance(diff, _tl.updates.ChannelDifferenceEmpty):
+        if isinstance(diff, tl.updates.ChannelDifferenceEmpty):
             assert diff.final
             self.end_get_diff(entry)
             self.map[entry].pts = diff.pts
             return [], [], []
-        elif isinstance(diff, _tl.updates.ChannelDifferenceTooLong):
+        elif isinstance(diff, tl.updates.ChannelDifferenceTooLong):
             assert diff.final
             self.map[entry].pts = diff.dialog.pts
             chat_hashes.extend(diff.users, diff.chats)
@@ -589,12 +589,12 @@ class MessageBox:
             # be strange to give the user only partial changes of these when they would
             # expect all updates to be fetched. Instead, nothing is returned.
             return [], [], []
-        elif isinstance(diff, _tl.updates.ChannelDifference):
+        elif isinstance(diff, tl.updates.ChannelDifference):
             if diff.final:
                 self.end_get_diff(entry)
 
             self.map[entry].pts = diff.pts
-            diff.other_updates.extend(_tl.UpdateNewMessage(
+            diff.other_updates.extend(tl.UpdateNewMessage(
                 message=m,
                 pts=NO_SEQ,
                 pts_count=NO_SEQ,
