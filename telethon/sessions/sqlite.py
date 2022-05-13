@@ -215,6 +215,14 @@ class SQLiteSession(MemorySession):
                       entity_id, state.pts, state.qts,
                       state.date.timestamp(), state.seq)
 
+    async def get_update_states(self):
+        c = self._cursor()
+        try:
+            rows = c.execute('select id, pts, qts, date, seq from update_state').fetchall()
+            return ((row[0], types.updates.State(*row[1:], unread_count=0)) for row in rows)
+        finally:
+            c.close()
+
     async def save(self):
         """Saves the current session object as session_user_id.session"""
         # This is a no-op if there are no changes to commit, so there's

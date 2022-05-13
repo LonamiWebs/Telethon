@@ -98,6 +98,12 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_update_states(self):
+        """
+        Returns an iterable over all known pairs of ``(entity ID, update state)``.
+        """
+
+    @abstractmethod
     async def close(self):
         """
         Called on client disconnection. Should be used to

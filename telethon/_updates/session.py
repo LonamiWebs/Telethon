@@ -1,5 +1,6 @@
 from typing import Optional, Tuple
 from enum import IntEnum
+from ..tl.types import InputPeerUser, InputPeerChat, InputPeerChannel
 
 
 class SessionState:
@@ -175,3 +176,11 @@ class Entity:
 
     def __bytes__(self):
         return struct.pack('<Bqq', self.ty, self.id, self.hash)
+
+    def _as_input_peer(self):
+        if self.is_user:
+            return InputPeerUser(self.id, self.hash)
+        elif self.ty == EntityType.GROUP:
+            return InputPeerChat(self.id)
+        else:
+            return InputPeerChannel(self.id, self.hash)

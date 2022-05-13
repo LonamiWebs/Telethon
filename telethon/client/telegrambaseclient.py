@@ -15,7 +15,7 @@ from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import functions, types
 from ..tl.alltlobjects import LAYER
-from .._updates import MessageBox, EntityCache as MbEntityCache
+from .._updates import MessageBox, EntityCache as MbEntityCache, SessionState, ChannelState, Entity, EntityType
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -535,6 +535,23 @@ class TelegramBaseClient(abc.ABC):
         self.session.auth_key = self._sender.auth_key
         await self.session.save()
 
+        if self._catch_up:
+            ss = SessionState(0, 0, False, 0, 0, 0, 0, None)
+            cs = []
+
+            for entity_id, state in await self.session.get_update_states():
+                if entity_id == 0:
+                    # TODO current session doesn't store self-user info but adding that is breaking on downstream session impls
+                    ss = SessionState(0, 0, False, state.pts, state.qts, state.date, state.seq, None)
+                else:
+                    cs.append(ChannelState(entity_id, state.pts))
+
+            self._message_box.load(ss, cs)
+            for state in cs:
+                entity = await self.session.get_input_entity(state.channel_id)
+                if entity:
+                    self._mb_entity_cache.put(Entity(EntityType.CHANNEL, entity.channel_id, entity.access_hash))
+
         self._init_request.query = functions.help.GetConfigRequest()
 
         await self._sender.send(functions.InvokeWithLayerRequest(
@@ -641,6 +658,17 @@ class TelegramBaseClient(abc.ABC):
 
             await asyncio.wait(self._event_handler_tasks)
             self._event_handler_tasks.clear()
+
+        entities = self._entity_cache.get_all_entities()
+
+        # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
+        # It doesn't matter if we put users in the list of chats.
+        await self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
+
+        session_state, channel_states = self._message_box.session_state()
+        await self.session.set_update_state(0, types.updates.State(ss.pts, ss.qts, ss.date, ss.seq, unread_count=0))
+        for channel_id, pts in channel_states.items():
+            await self.session.set_update_state(channel_id, types.updates.State(pts, 0, None, 0, unread_count=0))
 
         await self.session.close()
 

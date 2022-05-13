@@ -266,7 +266,7 @@ class UpdateMethods:
                     self._log[__name__].info('Getting difference for account updates')
                     diff = await self(get_diff)
                     updates, users, chats = self._message_box.apply_difference(diff, self._mb_entity_cache)
-                    updates_to_dispatch.extend(await self._preprocess_updates(updates, users, chats))
+                    updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
                     continue
 
                 get_diff = self._message_box.get_channel_difference(self._mb_entity_cache)
@@ -274,7 +274,7 @@ class UpdateMethods:
                     self._log[__name__].info('Getting difference for channel updates')
                     diff = await self(get_diff)
                     updates, users, chats = self._message_box.apply_channel_difference(get_diff, diff, self._mb_entity_cache)
-                    updates_to_dispatch.extend(await self._preprocess_updates(updates, users, chats))
+                    updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
                     continue
 
                 deadline = self._message_box.check_deadlines()
@@ -293,14 +293,11 @@ class UpdateMethods:
                 except GapError:
                     continue  # get(_channel)_difference will start returning requests
 
-                updates_to_dispatch.extend(await self._preprocess_updates(processed, users, chats))
+                updates_to_dispatch.extend(self._preprocess_updates(processed, users, chats))
         except Exception:
             self._log[__name__].exception('Fatal error handling updates (this is a bug in Telethon, please report it)')
 
-    async def _preprocess_updates(self, updates, users, chats):
-        await self.session.process_entities(update)
-        self._entity_cache.add(update)
-
+    def _preprocess_updates(self, updates, users, chats):
         self._mb_entity_cache.extend(users, chats)
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(users, chats)}
