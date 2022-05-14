@@ -192,7 +192,7 @@ class ChatAction(EventBuilder):
 
         if added_by is True or from_approval is True:
             self.user_joined = True
-        elif added_by:
+        elif added_by is None:
             self.user_added = True
             self._added_by = added_by
         self.user_approved = from_approval
