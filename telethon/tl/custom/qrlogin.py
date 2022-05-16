@@ -113,7 +113,7 @@ class QRLogin:
 
         if isinstance(resp, types.auth.LoginTokenSuccess):
             user = resp.authorization.user
-            self._client._on_login(user)
+            await self._client._on_login(user)
             return user
 
         raise TypeError('Login token response was unexpected: {}'.format(resp))
