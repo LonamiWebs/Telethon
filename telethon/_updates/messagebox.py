@@ -198,7 +198,7 @@ class MessageBox:
         return dict(
             pts=self.map[ENTRY_ACCOUNT].pts if ENTRY_ACCOUNT in self.map else NO_SEQ,
             qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
-            date=int(self.date.timestamp()),
+            date=self.date,
             seq=self.seq,
         ), {id: state.pts for id, state in self.map.items() if isinstance(id, int)}
 

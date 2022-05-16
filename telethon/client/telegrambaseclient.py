@@ -6,6 +6,7 @@ import logging
 import platform
 import time
 import typing
+import datetime
 
 from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
@@ -659,16 +660,17 @@ class TelegramBaseClient(abc.ABC):
             await asyncio.wait(self._event_handler_tasks)
             self._event_handler_tasks.clear()
 
-        entities = self._entity_cache.get_all_entities()
+        entities = self._mb_entity_cache.get_all_entities()
 
         # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
         # It doesn't matter if we put users in the list of chats.
         await self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
 
-        session_state, channel_states = self._message_box.session_state()
-        await self.session.set_update_state(0, types.updates.State(ss.pts, ss.qts, ss.date, ss.seq, unread_count=0))
-        for channel_id, pts in channel_states.items():
-            await self.session.set_update_state(channel_id, types.updates.State(pts, 0, None, 0, unread_count=0))
+        ss, cs = self._message_box.session_state()
+        await self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))
+        now = datetime.datetime.now()  # any datetime works; channels don't need it
+        for channel_id, pts in cs.items():
+            await self.session.set_update_state(channel_id, types.updates.State(pts, 0, now, 0, unread_count=0))
 
         await self.session.close()
 
