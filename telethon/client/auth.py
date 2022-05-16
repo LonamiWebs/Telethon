@@ -7,6 +7,7 @@ import warnings
 
 from .. import utils, helpers, errors, password as pwd_mod
 from ..tl import types, functions, custom
+from .._updates import SessionState
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -371,7 +372,7 @@ class AuthMethods:
             self._tos = result.terms_of_service
             raise errors.PhoneNumberUnoccupiedError(request=request)
 
-        return self._on_login(result.user)
+        return await self._on_login(result.user)
 
     async def sign_up(
             self: 'TelegramClient',
@@ -466,9 +467,9 @@ class AuthMethods:
             await self(
                 functions.help.AcceptTermsOfServiceRequest(self._tos.id))
 
-        return self._on_login(result.user)
+        return await self._on_login(result.user)
 
-    def _on_login(self, user):
+    async def _on_login(self, user):
         """
         Callback called whenever the login or sign up process completes.
 
@@ -477,6 +478,9 @@ class AuthMethods:
         self._bot = bool(user.bot)
         self._self_input_peer = utils.get_input_peer(user, allow_self=False)
         self._authorized = True
+
+        state = await self(functions.updates.GetStateRequest())
+        self._message_box.load(SessionState(0, 0, 0, state.pts, state.qts, int(state.date.timestamp()), state.seq, 0), [])
 
         return user
 
