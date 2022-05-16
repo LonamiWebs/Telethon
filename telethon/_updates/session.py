@@ -41,6 +41,9 @@ class SessionState:
         self.seq = seq
         self.takeout_id = takeout_id
 
+    def __repr__(self):
+        return repr({k: getattr(self, k) for k in self.__slots__})
+
 
 class ChannelState:
     """
@@ -58,6 +61,9 @@ class ChannelState:
     ):
         self.channel_id = channel_id
         self.pts = pts
+
+    def __repr__(self):
+        return repr({k: getattr(self, k) for k in self.__slots__})
 
 
 class EntityType(IntEnum):
@@ -184,3 +190,6 @@ class Entity:
             return InputPeerChat(self.id)
         else:
             return InputPeerChannel(self.id, self.hash)
+
+    def __repr__(self):
+        return repr({k: getattr(self, k) for k in self.__slots__})
