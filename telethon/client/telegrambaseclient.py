@@ -543,7 +543,7 @@ class TelegramBaseClient(abc.ABC):
             for entity_id, state in await self.session.get_update_states():
                 if entity_id == 0:
                     # TODO current session doesn't store self-user info but adding that is breaking on downstream session impls
-                    ss = SessionState(0, 0, False, state.pts, state.qts, state.date, state.seq, None)
+                    ss = SessionState(0, 0, False, state.pts, state.qts, int(state.date.timestamp()), state.seq, None)
                 else:
                     cs.append(ChannelState(entity_id, state.pts))
 
