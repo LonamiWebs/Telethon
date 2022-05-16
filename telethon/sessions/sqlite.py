@@ -326,7 +326,7 @@ class SQLiteSession(MemorySession):
         return self._execute(
             'select id, hash from entities where name = ?', name)
 
-    def get_entity_rows_by_id(self, id, exact=True):
+    async def get_entity_rows_by_id(self, id, exact=True):
         if exact:
             return self._execute(
                 'select id, hash from entities where id = ?', id)
