@@ -52,7 +52,7 @@ class MTProtoState:
         self.time_offset = 0
         self.salt = 0
 
-        self.id = self._sequence = self._last_msg_id = None
+        self.id = self._sequence = self._last_msg_id = self._last_remote_msg_id = None
         self.reset()
 
     def reset(self):
@@ -63,6 +63,7 @@ class MTProtoState:
         self.id = struct.unpack('q', os.urandom(8))[0]
         self._sequence = 0
         self._last_msg_id = 0
+        self._last_remote_msg_id = 0
 
     def update_message_id(self, message):
         """
@@ -158,6 +159,10 @@ class MTProtoState:
             raise SecurityError('Server replied with a wrong session ID')
 
         remote_msg_id = reader.read_long()
+        if remote_msg_id <= self._last_remote_msg_id:
+            raise SecurityError('Server replied with a wrong message ID')
+        self._last_remote_msg_id = remote_msg_id
+        
         remote_sequence = reader.read_int()
         reader.read_int()  # msg_len for the inner object, padding ignored
 
