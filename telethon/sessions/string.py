@@ -11,6 +11,15 @@ _STRUCT_PREFORMAT = '>B{}sH256s'
 CURRENT_VERSION = '1'
 
 
+class _AsyncString(str):
+    """
+    Ugly hack to enable awaiting strings.
+    """
+    def __await__(self):
+        yield
+        return self
+
+
 class StringSession(MemorySession):
     """
     This session file can be easily saved and loaded as a string. According
@@ -50,14 +59,17 @@ class StringSession(MemorySession):
         return base64.urlsafe_b64decode(x)
 
     def save(self: Session):
+        # save should be async but that would break code which relies on sync StringSession.
+        # Return a type which behaves like a string for all intents and purposes, but can be awaited.
+        # The await is necessary for the library to save all sessions in the same way.
         if not self.auth_key:
-            return ''
+            return _AsyncString('')
 
         ip = ipaddress.ip_address(self.server_address).packed
-        return CURRENT_VERSION + StringSession.encode(struct.pack(
+        return _AsyncString(CURRENT_VERSION + StringSession.encode(struct.pack(
             _STRUCT_PREFORMAT.format(len(ip)),
             self.dc_id,
             ip,
             self.port,
             self.auth_key.key
-        ))
+        )))
