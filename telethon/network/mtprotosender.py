@@ -505,6 +505,8 @@ class MTProtoSender:
 
             try:
                 message = self._state.decrypt_message_data(body)
+                if message is None:
+                    continue  # this message is to be ignored
             except TypeNotFoundError as e:
                 # Received object which we don't know how to deserialize
                 self._log.info('Type %08x not found, remaining data %r',
