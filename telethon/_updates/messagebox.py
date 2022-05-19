@@ -345,11 +345,21 @@ class MessageBox:
             # updatesTooLong is the only one with no date (we treat it as a gap)
             raise GapError
 
+        # v1 has never sent updates produced by the client itself to the handlers.
+        # However proper update handling requires those to be processed.
+        # This is an ugly workaround for that.
+        self_outgoing = getattr(updates, '_self_outgoing', False)
+        real_result = result
+        result = []
+
         seq = getattr(updates, 'seq', None) or NO_SEQ
         seq_start = getattr(updates, 'seq_start', None) or seq
         users = getattr(updates, 'users', None) or []
         chats = getattr(updates, 'chats', None) or []
         updates = getattr(updates, 'updates', None) or [updates]
+
+        for u in updates:
+            u._self_outgoing = self_outgoing
 
         # > For all the other [not `updates` or `updatesCombined`] `Updates` type constructors
         # > there is no need to check `seq` or change a local state.
@@ -391,6 +401,8 @@ class MessageBox:
 
             # Clear now-empty gaps.
             self.possible_gaps = {entry: gap for entry, gap in self.possible_gaps.items() if gap.updates}
+
+        real_result.extend(u for u in result if not u._self_outgoing)
 
         return (users, chats)
 

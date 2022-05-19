@@ -22,6 +22,7 @@ from ..tl.types import (
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
     MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload, DestroySessionOk, DestroySessionNone,
 )
+from ..tl import types as _tl
 from ..crypto import AuthKey
 from ..helpers import retry_range
 
@@ -615,6 +616,7 @@ class MTProtoSender:
                 if not state.future.cancelled():
                     state.future.set_exception(e)
             else:
+                self._store_own_updates(result)
                 if not state.future.cancelled():
                     state.future.set_result(result)
 
@@ -648,6 +650,21 @@ class MTProtoSender:
 
         self._log.debug('Handling update %s', message.obj.__class__.__name__)
         self._updates_queue.put_nowait(message.obj)
+
+    def _store_own_updates(self, obj, *, _update_ids=frozenset((
+        _tl.UpdateShortMessage.CONSTRUCTOR_ID,
+        _tl.UpdateShortChatMessage.CONSTRUCTOR_ID,
+        _tl.UpdateShort.CONSTRUCTOR_ID,
+        _tl.UpdatesCombined.CONSTRUCTOR_ID,
+        _tl.Updates.CONSTRUCTOR_ID,
+        _tl.UpdateShortSentMessage.CONSTRUCTOR_ID,
+    ))):
+        try:
+            if obj.CONSTRUCTOR_ID in _update_ids:
+                obj._self_outgoing = True  # flag to only process, but not dispatch these
+                self._updates_queue.put_nowait(obj)
+        except AttributeError:
+            pass
 
     async def _handle_pong(self, message):
         """
