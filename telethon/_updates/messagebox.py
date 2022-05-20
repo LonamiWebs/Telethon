@@ -56,7 +56,8 @@ def next_updates_deadline():
 
 
 class GapError(ValueError):
-    pass
+    def __repr__(self):
+        return 'GapError()'
 
 
 # Represents the information needed to correctly handle a specific `tl::enums::Update`.
@@ -91,6 +92,15 @@ class PtsInfo:
 
         return None
 
+    def __repr__(self):
+        if self.entry is ENTRY_ACCOUNT:
+            entry = 'ENTRY_ACCOUNT'
+        elif self.entry is ENTRY_SECRET:
+            entry = 'ENTRY_SECRET'
+        else:
+            entry = self.entry
+        return f'PtsInfo(pts={self.pts}, pts_count={self.pts_count}, entry={entry})'
+
 
 # The state of a particular entry in the message box.
 class State:
@@ -105,6 +115,9 @@ class State:
     ):
         self.pts = pts
         self.deadline = deadline
+
+    def __repr__(self):
+        return f'State(pts={self.pts}, deadline={self.deadline})'
 
 
 # > ### Recovering gaps
@@ -126,6 +139,9 @@ class PossibleGap:
     ):
         self.deadline = deadline
         self.updates = updates
+
+    def __repr__(self):
+        return f'PossibleGap(deadline={self.deadline}, update_count={len(self.updates)})'
 
 
 # Represents a "message box" (event `pts` for a specific entry).
