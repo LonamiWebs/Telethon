@@ -494,18 +494,18 @@ class MessageBox:
 
     # Return the request that needs to be made to get the difference, if any.
     def get_difference(self):
-        entry = ENTRY_ACCOUNT
-        if entry in self.getting_diff_for:
-            if entry in self.map:
-                return fn.updates.GetDifferenceRequest(
-                    pts=self.map[ENTRY_ACCOUNT].pts,
-                    pts_total_limit=None,
-                    date=self.date,
-                    qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
-                )
-            else:
-                # TODO investigate when/why/if this can happen
-                self.end_get_diff(entry)
+        for entry in (ENTRY_ACCOUNT, ENTRY_SECRET):
+            if entry in self.getting_diff_for:
+                if entry in self.map:
+                    return fn.updates.GetDifferenceRequest(
+                        pts=self.map[ENTRY_ACCOUNT].pts,
+                        pts_total_limit=None,
+                        date=self.date,
+                        qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
+                    )
+                else:
+                    # TODO investigate when/why/if this can happen
+                    self.end_get_diff(entry)
 
         return None
 
@@ -519,9 +519,11 @@ class MessageBox:
             self.date = diff.date
             self.seq = diff.seq
             self.end_get_diff(ENTRY_ACCOUNT)
+            self.end_get_diff(ENTRY_SECRET)
             return [], [], []
         elif isinstance(diff, tl.updates.Difference):
             self.end_get_diff(ENTRY_ACCOUNT)
+            self.end_get_diff(ENTRY_SECRET)
             chat_hashes.extend(diff.users, diff.chats)
             return self.apply_difference_type(diff)
         elif isinstance(diff, tl.updates.DifferenceSlice):
@@ -531,6 +533,7 @@ class MessageBox:
             # TODO when are deadlines reset if we update the map??
             self.map[ENTRY_ACCOUNT].pts = diff.pts
             self.end_get_diff(ENTRY_ACCOUNT)
+            self.end_get_diff(ENTRY_SECRET)
             return [], [], []
 
     def apply_difference_type(
