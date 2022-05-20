@@ -245,7 +245,8 @@ class TelegramBaseClient(abc.ABC):
             system_lang_code: str = 'en',
             loop: asyncio.AbstractEventLoop = None,
             base_logger: typing.Union[str, logging.Logger] = None,
-            receive_updates: bool = True
+            receive_updates: bool = True,
+            catch_up: bool = False
     ):
         if not api_id or not api_hash:
             raise ValueError(
@@ -429,7 +430,7 @@ class TelegramBaseClient(abc.ABC):
         self._megagroup_cache = {}
 
         # This is backported from v2 in a very ad-hoc way just to get proper update handling
-        self._catch_up = True
+        self._catch_up = catch_up
         self._updates_queue = asyncio.Queue()
         self._message_box = MessageBox()
         # This entity cache is tailored for the messagebox and is not used for absolutely everything like _entity_cache
