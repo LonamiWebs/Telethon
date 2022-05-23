@@ -296,6 +296,20 @@ class UpdateMethods:
                             self._mb_entity_cache
                         )
                         continue
+                    except errors.PersistentTimestampInvalidError:
+                        # Somehow our pts is either too new or the server does not know about this.
+                        # We treat this as PersistentTimestampOutdatedError for now.
+                        # TODO investigate why/when this happens and if this is the proper solution
+                        self._log[__name__].warning(
+                            'Getting difference for channel updates caused PersistentTimestampInvalidError;'
+                            ' ending getting difference prematurely until server issues are resolved'
+                        )
+                        self._message_box.end_channel_difference(
+                            get_diff,
+                            PrematureEndReason.TEMPORARY_SERVER_ISSUES,
+                            self._mb_entity_cache
+                        )
+                        continue
                     except errors.ChannelPrivateError:
                         # Timeout triggered a get difference, but we have been banned in the channel since then.
                         # Because we can no longer fetch updates from this channel, we should stop keeping track
