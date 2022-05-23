@@ -441,7 +441,7 @@ class MessageBox:
     ):
         # This update means we need to call getChannelDifference to get the updates from the channel
         if isinstance(update, tl.UpdateChannelTooLong):
-            self.begin_get_diff(u.channel_id)
+            self.begin_get_diff(update.channel_id)
             return None
 
         pts = PtsInfo.from_update(update)
