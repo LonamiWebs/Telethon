@@ -477,8 +477,8 @@ class MessageBox:
                 pass
         else:
             # No previous `pts` known, and because this update has to be "right" (it's the first one) our
-            # `local_pts` must be one less.
-            local_pts = pts.pts - 1
+            # `local_pts` must be the one before the server pts.
+            local_pts = pts.pts - pts.pts_count
 
         # For example, when we're in a channel, we immediately receive:
         # * ReadChannelInbox (pts = X)
