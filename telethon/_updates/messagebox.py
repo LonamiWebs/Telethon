@@ -439,6 +439,11 @@ class MessageBox:
         *,
         reset_deadline,
     ):
+        # This update means we need to call getChannelDifference to get the updates from the channel
+        if isinstance(update, tl.UpdateChannelTooLong):
+            self.begin_get_diff(u.channel_id)
+            return None
+
         pts = PtsInfo.from_update(update)
         if not pts:
             # No pts means that the update can be applied in any order.
