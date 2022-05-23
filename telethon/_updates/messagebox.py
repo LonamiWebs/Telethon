@@ -19,6 +19,7 @@ to get the difference.
 import asyncio
 import datetime
 import time
+from enum import Enum
 from .session import SessionState, ChannelState
 from ..tl import types as tl, functions as fn
 
@@ -58,6 +59,11 @@ def next_updates_deadline():
 class GapError(ValueError):
     def __repr__(self):
         return 'GapError()'
+
+
+class PrematureEndReason(Enum):
+    TEMPORARY_SERVER_ISSUES = 'tmp'
+    BANNED = 'ban'
 
 
 # Represents the information needed to correctly handle a specific `tl::enums::Update`.
@@ -634,5 +640,20 @@ class MessageBox:
             self.reset_channel_deadline(entry, None)
 
             return diff.other_updates, diff.users, diff.chats
+
+    def end_channel_difference(self, request, reason: PrematureEndReason, chat_hashes):
+        entry = request.channel.channel_id
+
+        if reason == PrematureEndReason.TEMPORARY_SERVER_ISSUES:
+            # Temporary issues. End getting difference without updating the pts so we can retry later.
+            self.possible_gaps.pop(entry, None)
+            self.end_get_diff(entry)
+        elif reason == PrematureEndReason.BANNED:
+            # Banned in the channel. Forget its state since we can no longer fetch updates from it.
+            self.possible_gaps.pop(entry, None)
+            self.end_get_diff(entry)
+            del self.map[entry]
+        else:
+            raise RuntimeError('Unknown reason to end channel difference')
 
     # endregion Getting and applying channel difference.

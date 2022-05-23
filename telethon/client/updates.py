@@ -12,7 +12,7 @@ from collections import deque
 from .. import events, utils, errors
 from ..events.common import EventBuilder, EventCommon
 from ..tl import types, functions
-from .._updates import GapError
+from .._updates import GapError, PrematureEndReason
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -290,11 +290,27 @@ class UpdateMethods:
                             'Getting difference for channel updates caused PersistentTimestampOutdated;'
                             ' ending getting difference prematurely until server issues are resolved'
                         )
-                        diff = types.updates.ChannelDifferenceEmpty(
-                            pts=self._message_box.map[get_diff.channel.channel_id].pts,
-                            final=True,
-                            timeout=30
+                        self._message_box.end_channel_difference(
+                            get_diff,
+                            PrematureEndReason.TEMPORARY_SERVER_ISSUES,
+                            self._mb_entity_cache
                         )
+                        continue
+                    except errors.ChannelPrivateError:
+                        # Timeout triggered a get difference, but we have been banned in the channel since then.
+                        # Because we can no longer fetch updates from this channel, we should stop keeping track
+                        # of it entirely.
+                        self._log[__name__].info(
+                            'Account is now banned in %d so we can no longer fetch updates from it',
+                            get_diff.channel.channel_id
+                        )
+                        self._message_box.end_channel_difference(
+                            get_diff,
+                            PrematureEndReason.BANNED,
+                            self._mb_entity_cache
+                        )
+                        continue
+
                     updates, users, chats = self._message_box.apply_channel_difference(get_diff, diff, self._mb_entity_cache)
                     updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
                     continue
