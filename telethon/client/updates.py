@@ -272,7 +272,29 @@ class UpdateMethods:
                 get_diff = self._message_box.get_channel_difference(self._mb_entity_cache)
                 if get_diff:
                     self._log[__name__].info('Getting difference for channel updates')
-                    diff = await self(get_diff)
+                    try:
+                        diff = await self(get_diff)
+                    except errors.PersistentTimestampOutdatedError:
+                        # According to Telegram's docs:
+                        # "Channel internal replication issues, try again later (treat this like an RPC_CALL_FAIL)."
+                        # We can treat this as "empty difference" and not update the local pts.
+                        # Then this same call will be retried when another gap is detected or timeout expires.
+                        #
+                        # Another option would be to literally treat this like an RPC_CALL_FAIL and retry after a few
+                        # seconds, but if Telegram is having issues it's probably best to wait for it to send another
+                        # update (hinting it may be okay now) and retry then.
+                        #
+                        # This is a bit hacky because MessageBox doesn't really have a way to "not update" the pts.
+                        # Instead we manually extract the previously-known pts and use that.
+                        self._log[__name__].warning(
+                            'Getting difference for channel updates caused PersistentTimestampOutdated;'
+                            ' ending getting difference prematurely until server issues are resolved'
+                        )
+                        diff = types.updates.ChannelDifferenceEmpty(
+                            pts=self._message_box.map[get_diff.channel.channel_id].pts,
+                            final=True,
+                            timeout=30
+                        )
                     updates, users, chats = self._message_box.apply_channel_difference(get_diff, diff, self._mb_entity_cache)
                     updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
                     continue
