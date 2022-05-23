@@ -531,10 +531,10 @@ class MessageBox:
             self.end_get_diff(ENTRY_ACCOUNT)
             self.end_get_diff(ENTRY_SECRET)
             chat_hashes.extend(diff.users, diff.chats)
-            return self.apply_difference_type(diff)
+            return self.apply_difference_type(diff, chat_hashes)
         elif isinstance(diff, tl.updates.DifferenceSlice):
             chat_hashes.extend(diff.users, diff.chats)
-            return self.apply_difference_type(diff)
+            return self.apply_difference_type(diff, chat_hashes)
         elif isinstance(diff, tl.updates.DifferenceTooLong):
             # TODO when are deadlines reset if we update the map??
             self.map[ENTRY_ACCOUNT].pts = diff.pts
@@ -545,25 +545,33 @@ class MessageBox:
     def apply_difference_type(
         self,
         diff,
+        chat_hashes,
     ):
         state = getattr(diff, 'intermediate_state', None) or diff.state
         self.set_state(state)
 
-        for u in diff.other_updates:
-            if isinstance(u, tl.UpdateChannelTooLong):
-                self.begin_get_diff(u.channel_id)
+        # diff.other_updates can contain things like UpdateChannelTooLong and UpdateNewChannelMessage.
+        # We need to process those as if they were socket updates to discard any we have already handled.
+        updates = []
+        self.process_updates(tl.Updates(
+            updates=diff.other_updates,
+            users=diff.users,
+            chats=diff.chats,
+            date=1,  # anything not-None
+            seq=NO_SEQ,  # this way date is not used
+        ), chat_hashes, updates)
 
-        diff.other_updates.extend(tl.UpdateNewMessage(
+        updates.extend(tl.UpdateNewMessage(
             message=m,
             pts=NO_SEQ,
             pts_count=NO_SEQ,
         ) for m in diff.new_messages)
-        diff.other_updates.extend(tl.UpdateNewEncryptedMessage(
+        updates.extend(tl.UpdateNewEncryptedMessage(
             message=m,
             qts=NO_SEQ,
         ) for m in diff.new_encrypted_messages)
 
-        return diff.other_updates, diff.users, diff.chats
+        return updates, diff.users, diff.chats
 
     # endregion Getting and applying account difference.
 
@@ -631,15 +639,25 @@ class MessageBox:
                 self.end_get_diff(entry)
 
             self.map[entry].pts = diff.pts
-            diff.other_updates.extend(tl.UpdateNewChannelMessage(
+            chat_hashes.extend(diff.users, diff.chats)
+
+            updates = []
+            self.process_updates(tl.Updates(
+                updates=diff.other_updates,
+                users=diff.users,
+                chats=diff.chats,
+                date=1,  # anything not-None
+                seq=NO_SEQ,  # this way date is not used
+            ), chat_hashes, updates)
+
+            updates.extend(tl.UpdateNewChannelMessage(
                 message=m,
                 pts=NO_SEQ,
                 pts_count=NO_SEQ,
             ) for m in diff.new_messages)
-            chat_hashes.extend(diff.users, diff.chats)
             self.reset_channel_deadline(entry, None)
 
-            return diff.other_updates, diff.users, diff.chats
+            return updates, diff.users, diff.chats
 
     def end_channel_difference(self, request, reason: PrematureEndReason, chat_hashes):
         entry = request.channel.channel_id
