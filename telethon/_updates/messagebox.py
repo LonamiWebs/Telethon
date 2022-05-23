@@ -625,7 +625,7 @@ class MessageBox:
                 self.end_get_diff(entry)
 
             self.map[entry].pts = diff.pts
-            diff.other_updates.extend(tl.UpdateNewMessage(
+            diff.other_updates.extend(tl.UpdateNewChannelMessage(
                 message=m,
                 pts=NO_SEQ,
                 pts_count=NO_SEQ,
