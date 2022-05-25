@@ -365,6 +365,7 @@ class MessageBox:
         date = getattr(updates, 'date', None)
         if date is None:
             # updatesTooLong is the only one with no date (we treat it as a gap)
+            self.begin_get_diff(ENTRY_ACCOUNT)
             raise GapError
 
         # v1 has never sent updates produced by the client itself to the handlers.
