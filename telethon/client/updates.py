@@ -247,6 +247,11 @@ class UpdateMethods:
 
     async def _update_loop(self: 'TelegramClient'):
         try:
+            if self._catch_up:
+                # User wants to catch up as soon as the client is up and running,
+                # so this is the best place to do it.
+                await self.catch_up()
+
             updates_to_dispatch = deque()
 
             while self.is_connected():
