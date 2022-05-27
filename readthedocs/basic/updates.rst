@@ -139,14 +139,14 @@ the following methods:
         # Good
         chat = await event.get_chat()
         sender = await event.get_sender()
-        chat_id = event.chat_id
-        sender_id = event.sender_id
+        chat_id = chat.chat_id
+        sender_id = sender.sender_id
 
         # BAD. Don't do this
         chat = event.chat
         sender = event.sender
-        chat_id = event.chat.id
-        sender_id = event.sender.id
+        chat_id = chat.chat.id
+        sender_id = sender.sender.id
 
 Events are like messages, but don't have all the information a message has!
 When you manually get a message, it will have all the information it needs.
