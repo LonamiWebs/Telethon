@@ -520,16 +520,15 @@ class MessageBox:
     def get_difference(self):
         for entry in (ENTRY_ACCOUNT, ENTRY_SECRET):
             if entry in self.getting_diff_for:
-                if entry in self.map:
-                    return fn.updates.GetDifferenceRequest(
-                        pts=self.map[ENTRY_ACCOUNT].pts,
-                        pts_total_limit=None,
-                        date=self.date,
-                        qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
-                    )
-                else:
-                    # TODO investigate when/why/if this can happen
-                    self.end_get_diff(entry)
+                if entry not in self.map:
+                    raise RuntimeError('Should not try to get difference for an entry without known state')
+
+                return fn.updates.GetDifferenceRequest(
+                    pts=self.map[ENTRY_ACCOUNT].pts,
+                    pts_total_limit=None,
+                    date=self.date,
+                    qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
+                )
 
         return None
 
