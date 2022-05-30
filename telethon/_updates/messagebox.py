@@ -606,6 +606,7 @@ class MessageBox:
         packed = chat_hashes.get(entry)
         if not packed:
             # Cannot get channel difference as we're missing its hash
+            # TODO we should probably log this
             self.end_get_diff(entry)
             # Remove the outdated `pts` entry from the map so that the next update can correct
             # it. Otherwise, it will spam that the access hash is missing.
@@ -614,10 +615,7 @@ class MessageBox:
 
         state = self.map.get(entry)
         if not state:
-            # TODO investigate when/why/if this can happen
-            # Cannot get channel difference as we're missing its pts
-            self.end_get_diff(entry)
-            return None
+            raise RuntimeError('Should not try to get difference for an entry without known state')
 
         return fn.updates.GetChannelDifferenceRequest(
             force=False,
