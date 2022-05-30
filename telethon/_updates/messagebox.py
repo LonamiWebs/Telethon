@@ -266,9 +266,8 @@ class MessageBox:
     #
     # It also updates the next deadline time to reflect the new closest deadline.
     def reset_deadline(self, entry, deadline):
-        if entry in self.map:
-            self.map[entry].deadline = deadline
-            # TODO figure out why not in map may happen
+        if entry not in self.map:
+            raise RuntimeError('Called reset_deadline on an entry for which we do not have state')
 
         if self.next_deadline == entry:
             # If the updated deadline was the closest one, recalculate the new minimum.
@@ -464,6 +463,8 @@ class MessageBox:
         # the "no updates" period for that entry is reset.
         #
         # Build the `HashSet` to avoid calling `reset_deadline` more than once for the same entry.
+        #
+        # By the time this method returns, self.map will have an entry for which we can reset its deadline.
         if reset_deadline:
             self.reset_deadlines_for.add(pts.entry)
 
