@@ -304,11 +304,11 @@ class SQLiteSession(MemorySession):
         finally:
             c.close()
 
-    def get_entity_rows_by_phone(self, phone):
+    async def get_entity_rows_by_phone(self, phone):
         return self._execute(
             'select id, hash from entities where phone = ?', phone)
 
-    def get_entity_rows_by_username(self, username):
+    async def get_entity_rows_by_username(self, username):
         c = self._cursor()
         try:
             results = c.execute(
@@ -329,7 +329,7 @@ class SQLiteSession(MemorySession):
         finally:
             c.close()
 
-    def get_entity_rows_by_name(self, name):
+    async def get_entity_rows_by_name(self, name):
         return self._execute(
             'select id, hash from entities where name = ?', name)
 
@@ -347,7 +347,7 @@ class SQLiteSession(MemorySession):
 
     # File processing
 
-    def get_file(self, md5_digest, file_size, cls):
+    async def get_file(self, md5_digest, file_size, cls):
         row = self._execute(
             'select id, hash from sent_files '
             'where md5_digest = ? and file_size = ? and type = ?',
@@ -357,7 +357,7 @@ class SQLiteSession(MemorySession):
             # Both allowed classes have (id, access_hash) as parameters
             return cls(row[0], row[1])
 
-    def cache_file(self, md5_digest, file_size, instance):
+    async def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
 
