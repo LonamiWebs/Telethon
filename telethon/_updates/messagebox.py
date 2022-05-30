@@ -273,11 +273,7 @@ class MessageBox:
         if self.next_deadline == entry:
             # If the updated deadline was the closest one, recalculate the new minimum.
             # TODO figure out when reset_deadline may be called while self.map is empty
-            self.next_deadline = min(
-                self.map.items(),
-                key=lambda entry_state: entry_state[1].deadline,
-                default=(None, None)
-            )[0]
+            self.next_deadline = min(self.map.items(), key=lambda entry_state: entry_state[1].deadline)[0]
         elif self.next_deadline in self.map and deadline < self.map[self.next_deadline].deadline:
             # If the updated deadline is smaller than the next deadline, change the next deadline to be the new one.
             self.next_deadline = entry
@@ -327,10 +323,19 @@ class MessageBox:
         if id not in self.map:
             self.map[id] = State(pts=pts, deadline=next_updates_deadline())
 
-    # Begin getting difference for the given entry.
+    # Try to begin getting difference for the given entry.
+    # Fails if the entry does not have a previously-known state that can be used to get its difference.
     #
     # Clears any previous gaps.
-    def begin_get_diff(self, entry):
+    def try_begin_get_diff(self, entry):
+        if entry not in self.map:
+            # Won't actually be able to get difference for this entry if we don't have a pts to start off from.
+            if entry in self.possible_gaps:
+                raise RuntimeError('Should not have a possible_gap for an entry not in the state map')
+
+            # TODO it would be useful to log when this happens
+            return
+
         self.getting_diff_for.add(entry)
         self.possible_gaps.pop(entry, None)
 
@@ -370,7 +375,7 @@ class MessageBox:
         date = getattr(updates, 'date', None)
         if date is None:
             # updatesTooLong is the only one with no date (we treat it as a gap)
-            self.begin_get_diff(ENTRY_ACCOUNT)
+            self.try_begin_get_diff(ENTRY_ACCOUNT)
             raise GapError
 
         # v1 has never sent updates produced by the client itself to the handlers.
@@ -397,7 +402,7 @@ class MessageBox:
                 return (users, chats)
             elif self.seq + 1 < seq_start:
                 # Gap detected
-                self.begin_get_diff(ENTRY_ACCOUNT)
+                self.try_begin_get_diff(ENTRY_ACCOUNT)
                 raise GapError
             # else apply
 
@@ -447,7 +452,7 @@ class MessageBox:
     ):
         # This update means we need to call getChannelDifference to get the updates from the channel
         if isinstance(update, tl.UpdateChannelTooLong):
-            self.begin_get_diff(update.channel_id)
+            self.try_begin_get_diff(update.channel_id)
             return None
 
         pts = PtsInfo.from_update(update)
