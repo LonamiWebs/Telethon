@@ -271,7 +271,6 @@ class MessageBox:
 
         if self.next_deadline == entry:
             # If the updated deadline was the closest one, recalculate the new minimum.
-            # TODO figure out when reset_deadline may be called while self.map is empty
             self.next_deadline = min(self.map.items(), key=lambda entry_state: entry_state[1].deadline)[0]
         elif self.next_deadline in self.map and deadline < self.map[self.next_deadline].deadline:
             # If the updated deadline is smaller than the next deadline, change the next deadline to be the new one.
@@ -553,8 +552,7 @@ class MessageBox:
             chat_hashes.extend(diff.users, diff.chats)
             return self.apply_difference_type(diff, chat_hashes)
         elif isinstance(diff, tl.updates.DifferenceTooLong):
-            # TODO when are deadlines reset if we update the map??
-            self.map[ENTRY_ACCOUNT].pts = diff.pts
+            self.map[ENTRY_ACCOUNT].pts = diff.pts  # the deadline will be reset once the diff ends
             self.end_get_diff(ENTRY_ACCOUNT)
             self.end_get_diff(ENTRY_SECRET)
             return [], [], []
