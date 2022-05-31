@@ -592,12 +592,20 @@ class MTProtoSender:
             # However receiving a File() with empty bytes is "common".
             # See #658, #759 and #958. They seem to happen in a container
             # which contain the real response right after.
-            try:
-                with BinaryReader(rpc_result.body) as reader:
-                    if not isinstance(reader.tgread_object(), upload.File):
-                        raise ValueError('Not an upload.File')
-            except (TypeNotFoundError, ValueError):
-                self._log.info('Received response without parent request: %s', rpc_result.body)
+            #
+            # But, it might also happen that we get an *error* for no parent request.
+            # If that's the case attempting to read from body which is None would fail with:
+            # "BufferError: No more data left to read (need 4, got 0: b''); last read None".
+            # This seems to be particularly common for "RpcError(error_code=-500, error_message='No workers running')".
+            if rpc_result.error:
+                self._log.info('Received error without parent request: %s', rpc_result.error)
+            else:
+                try:
+                    with BinaryReader(rpc_result.body) as reader:
+                        if not isinstance(reader.tgread_object(), upload.File):
+                            raise ValueError('Not an upload.File')
+                except (TypeNotFoundError, ValueError):
+                    self._log.info('Received response without parent request: %s', rpc_result.body)
             return
 
         if rpc_result.error:
