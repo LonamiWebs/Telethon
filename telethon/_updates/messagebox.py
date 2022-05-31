@@ -344,7 +344,8 @@ class MessageBox:
         try:
             self.getting_diff_for.remove(entry)
         except KeyError:
-            pass
+            raise RuntimeError('Called end_get_diff on an entry which was not getting diff for')
+
         self.reset_deadline(entry, next_updates_deadline())
         assert entry not in self.possible_gaps, "gaps shouldn't be created while getting difference"
 
@@ -537,25 +538,41 @@ class MessageBox:
         diff,
         chat_hashes,
     ):
+        finish = None
+        result = None
+
         if isinstance(diff, tl.updates.DifferenceEmpty):
+            finish = True
             self.date = diff.date
             self.seq = diff.seq
-            self.end_get_diff(ENTRY_ACCOUNT)
-            self.end_get_diff(ENTRY_SECRET)
-            return [], [], []
+            result = [], [], []
         elif isinstance(diff, tl.updates.Difference):
-            self.end_get_diff(ENTRY_ACCOUNT)
-            self.end_get_diff(ENTRY_SECRET)
+            finish = True
             chat_hashes.extend(diff.users, diff.chats)
-            return self.apply_difference_type(diff, chat_hashes)
+            result = self.apply_difference_type(diff, chat_hashes)
         elif isinstance(diff, tl.updates.DifferenceSlice):
+            finish = False
             chat_hashes.extend(diff.users, diff.chats)
-            return self.apply_difference_type(diff, chat_hashes)
+            result = self.apply_difference_type(diff, chat_hashes)
         elif isinstance(diff, tl.updates.DifferenceTooLong):
+            finish = True
             self.map[ENTRY_ACCOUNT].pts = diff.pts  # the deadline will be reset once the diff ends
-            self.end_get_diff(ENTRY_ACCOUNT)
-            self.end_get_diff(ENTRY_SECRET)
-            return [], [], []
+            result = [], [], []
+
+        if finish:
+            account = ENTRY_ACCOUNT in self.getting_diff_for
+            secret = ENTRY_SECRET in self.getting_diff_for
+
+            if not account and not secret:
+                raise RuntimeWarning('Should not be applying the difference when neither account or secret was diff was active')
+
+            # Both may be active if both expired at the same time.
+            if account:
+                self.end_get_diff(ENTRY_ACCOUNT)
+            if secret:
+                self.end_get_diff(ENTRY_SECRET)
+
+        return result
 
     def apply_difference_type(
         self,
