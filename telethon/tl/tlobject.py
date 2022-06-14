@@ -1,14 +1,7 @@
 import base64
 import json
 import struct
-from datetime import datetime, date, timedelta, timezone
-import time
-
-def _getNativeTimeZone():
-    offset = time.timezone
-    if time.localtime().tm_isdst:
-        offset += 1
-    return timezone(timedelta(hours=offset))
+from datetime import datetime, date, timedelta
 
 def _json_default(value):
     if isinstance(value, bytes):
@@ -138,10 +131,10 @@ class TLObject:
             elif isinstance(dt, float):
                 dt = int(dt)
             elif isinstance(dt, timedelta):
-                dt = int(datetime.fromtimestamp(dt.total_seconds()).timestamp())
+                dt = dt.total_seconds()
         except OSError:
             dt = 0
-
+        
         if isinstance(dt, int):
             return struct.pack('<i', dt)
 
