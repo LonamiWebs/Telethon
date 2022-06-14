@@ -4,23 +4,11 @@ import struct
 from datetime import datetime, date, timedelta, timezone
 import time
 
-_EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
-_EPOCH_NAIVE_LOCAL = datetime(*time.localtime(0)[:6])
-_EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)
-
-
-def _datetime_to_timestamp(dt):
-    # If no timezone is specified, it is assumed to be in utc zone
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    # We use .total_seconds() method instead of simply dt.timestamp(), 
-    # because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
-    secs = int((dt - _EPOCH).total_seconds())
-    # Make sure it's a valid signed 32 bit integer, as used by Telegram.
-    # This does make very large dates wrap around, but it's the best we
-    # can do with Telegram's limitations.
-    return struct.unpack('i', struct.pack('I', secs & 0xffffffff))[0]
-
+def _getNativeTimeZone():
+    offset = time.timezone
+    if time.localtime().tm_isdst:
+        offset += 1
+    return timezone(timedelta(hours=offset))
 
 def _json_default(value):
     if isinstance(value, bytes):
@@ -142,15 +130,17 @@ class TLObject:
         if not dt and not isinstance(dt, timedelta):
             return b'\0\0\0\0'
 
-        if isinstance(dt, datetime):
-            dt = _datetime_to_timestamp(dt)
-        elif isinstance(dt, date):
-            dt = _datetime_to_timestamp(datetime(dt.year, dt.month, dt.day))
-        elif isinstance(dt, float):
-            dt = int(dt)
-        elif isinstance(dt, timedelta):
-            # Timezones are tricky. datetime.utcnow() + ... timestamp() works
-            dt = _datetime_to_timestamp(datetime.utcnow() + dt)
+        try:
+            if isinstance(dt, datetime):
+                dt = int(dt.timestamp())
+            elif isinstance(dt, date):
+                dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
+            elif isinstance(dt, float):
+                dt = int(dt)
+            elif isinstance(dt, timedelta):
+                dt = int(datetime.fromtimestamp(dt.total_seconds()).timestamp())
+        except OSError:
+            dt = 0
 
         if isinstance(dt, int):
             return struct.pack('<i', dt)
