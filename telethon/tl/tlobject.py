@@ -123,6 +123,7 @@ class TLObject:
         if not dt and not isinstance(dt, timedelta):
             return b'\0\0\0\0'
 
+        # We should use the time zone of the user.
         try:
             if isinstance(dt, datetime):
                 dt = int(dt.timestamp())
@@ -131,7 +132,7 @@ class TLObject:
             elif isinstance(dt, float):
                 dt = int(dt)
             elif isinstance(dt, timedelta):
-                dt = dt.total_seconds()
+                dt = int(dt.total_seconds())
         except OSError:
             dt = 0
         
