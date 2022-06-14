@@ -135,7 +135,11 @@ class TLObject:
                 dt = int(dt.total_seconds())
         except OSError:
             dt = 0
-        
+
+        # 2145916800 is the date 2038, 1, 1.
+        if dt > 2145916800:
+            raise ValueError("Date is outside the range of valid values.")
+
         if isinstance(dt, int):
             return struct.pack('<i', dt)
 
