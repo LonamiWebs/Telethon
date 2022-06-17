@@ -1109,9 +1109,6 @@ class ChatMethods:
                 await client.edit_permissions(chat, user)
         """
         entity = await self.get_input_entity(entity)
-        ty = helpers._entity_type(entity)
-        if ty != helpers._EntityType.CHANNEL:
-            raise ValueError('You must pass either a channel or a supergroup')
 
         rights = types.ChatBannedRights(
             until_date=until_date,
@@ -1134,6 +1131,10 @@ class ChatMethods:
                 peer=entity,
                 banned_rights=rights
             ))
+
+        ty = helpers._entity_type(entity)
+        if ty != helpers._EntityType.CHANNEL:
+            raise ValueError('You must pass either a channel or a supergroup')
 
         user = await self.get_input_entity(user)
         ty = helpers._entity_type(user)
@@ -1259,7 +1260,7 @@ class ChatMethods:
             if isinstance(entity, types.Channel):
                 FullChat = await self(functions.channels.GetFullChannelRequest(entity))
             elif isinstance(entity, types.Chat):
-                FullChat = await self(functions.messages.GetFullChatRequest(entity))
+                FullChat = await self(functions.messages.GetFullChatRequest(entity.id))
             else:
                 return
             return FullChat.chats[0].default_banned_rights
@@ -1276,7 +1277,7 @@ class ChatMethods:
             return custom.ParticipantPermissions(participant.participant, False)
         elif helpers._entity_type(entity) == helpers._EntityType.CHAT:
             chat = await self(functions.messages.GetFullChatRequest(
-                entity
+                entity.chat_id
             ))
             if isinstance(user, types.InputPeerSelf):
                 user = await self.get_me(input_peer=True)
