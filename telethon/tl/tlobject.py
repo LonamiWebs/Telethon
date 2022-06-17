@@ -132,11 +132,11 @@ class TLObject:
             elif isinstance(dt, float):
                 dt = int(dt)
             elif isinstance(dt, timedelta):
-                dt = int(dt.total_seconds())
+                dt = int((datetime.now() + dt).timestamp())
         except OSError:
             dt = 0
 
-        # 2145916800 is the date 2038, 1, 1.
+        # 2145916800 is the date 2038-01-01.
         if dt > 2145916800:
             raise ValueError("Date is outside the range of valid values.")
 
