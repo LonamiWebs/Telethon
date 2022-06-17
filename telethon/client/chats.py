@@ -1109,6 +1109,9 @@ class ChatMethods:
                 await client.edit_permissions(chat, user)
         """
         entity = await self.get_input_entity(entity)
+        ty = helpers._entity_type(entity)
+        if ty != helpers._EntityType.CHAT and ty != helpers._EntityType.CHANNEL:
+            raise ValueError('You must pass either a chat, channel or a supergroup')
 
         rights = types.ChatBannedRights(
             until_date=until_date,
@@ -1132,9 +1135,8 @@ class ChatMethods:
                 banned_rights=rights
             ))
 
-        ty = helpers._entity_type(entity)
         if ty != helpers._EntityType.CHANNEL:
-            raise ValueError('You must pass either a channel or a supergroup')
+            raise ValueError('You must pass either a channel or a supergroup to edit user\'s perms')
 
         user = await self.get_input_entity(user)
         ty = helpers._entity_type(user)
