@@ -1,7 +1,30 @@
 import base64
 import json
 import struct
-from datetime import datetime, date, timedelta
+import time
+from datetime import date, datetime, timedelta, timezone
+
+_EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
+_EPOCH_NAIVE_LOCAL = datetime(*time.localtime(0)[:6])
+_EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)
+
+def _datetime_to_timestamp(dt):
+    tz = 0
+    # If no timezone is specified, it is assumed to be in utc zone
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+        # The offsets are in the opposite direction which is convenient.
+        tz = time.altzone if time.daylight else time.timezone
+    # We use .total_seconds() method instead of simply dt.timestamp(), 
+    # because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
+    secs = int((dt - _EPOCH).total_seconds())
+    # Time zone conversion to UTC. Result can be negative when secs is 0
+    # but I think that is fine.
+    secs = secs + tz
+    # Make sure it's a valid signed 32 bit integer, as used by Telegram.
+    # This does make very large dates wrap around, but it's the best we
+    # can do with Telegram's limitations.
+    return struct.unpack('i', struct.pack('I', secs & 0xffffffff))[0]
 
 def _json_default(value):
     if isinstance(value, bytes):
@@ -123,22 +146,14 @@ class TLObject:
         if not dt and not isinstance(dt, timedelta):
             return b'\0\0\0\0'
 
-        # We should use the time zone of the user.
-        try:
-            if isinstance(dt, datetime):
-                dt = int(dt.timestamp())
-            elif isinstance(dt, date):
-                dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
-            elif isinstance(dt, float):
-                dt = int(dt)
-            elif isinstance(dt, timedelta):
-                dt = int((datetime.now() + dt).timestamp())
-        except OSError:
-            dt = 0
-
-        # 2145916800 is the date 2038-01-01.
-        if dt > 2145916800:
-            raise ValueError("Date is outside the range of valid values.")
+        if isinstance(dt, datetime):
+            dt = _datetime_to_timestamp(dt)
+        elif isinstance(dt, date):
+            dt = _datetime_to_timestamp(datetime(dt.year, dt.month, dt.day))
+        elif isinstance(dt, float):
+            dt = int(dt)
+        elif isinstance(dt, timedelta):
+            dt = _datetime_to_timestamp((datetime.now() + dt))
 
         if isinstance(dt, int):
             return struct.pack('<i', dt)
