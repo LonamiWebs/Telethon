@@ -73,7 +73,7 @@ class UserMethods:
                             continue
                         try:
                             await self.session.process_entities(result)
-                        except OSError:
+                        except OSError as e:
                             self._log[__name__].warning(
                                 'Failed to save possibly new entities to the session: %s: %s', type(e), e)
                         self._entity_cache.add(result)
@@ -90,7 +90,7 @@ class UserMethods:
                     # It only means certain entities won't be saved.
                     try:
                         await self.session.process_entities(result)
-                    except OSError:
+                    except OSError as e:
                         self._log[__name__].warning(
                             'Failed to save possibly new entities to the session: %s: %s', type(e), e)
 
