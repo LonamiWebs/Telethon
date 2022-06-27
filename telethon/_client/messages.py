@@ -755,10 +755,11 @@ async def send_reaction(
     entity: 'hints.DialogLike',
     message: 'hints.MessageIDLike',
     reaction: typing.Optional[str] = None,
-    big: bool = False
+    big: bool = False,
+    use_default: bool = False
 ):
     message = utils.get_message_id(message) or 0
-    if not reaction:
+    if not reaction and use_default:
         get_default_request = _tl.fn.help.GetAppConfig()
         app_config = await self(get_default_request)
         reaction = (
