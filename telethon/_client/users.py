@@ -283,7 +283,7 @@ async def _get_input_peer(
 
     raise ValueError(
         'Could not find the input peer for {} ({}). Please read https://'
-        'docs.telethon.dev/en/latest/concepts/entities.html to'
+        'docs.telethon.dev/en/stable/concepts/entities.html to'
         ' find out more details.'
         .format(peer, type(peer).__name__)
     )
