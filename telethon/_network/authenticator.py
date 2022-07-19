@@ -140,7 +140,7 @@ async def do_authentication(sender):
     # dh_prime - 2^{2048-64} as well.
     # (https://core.telegram.org/mtproto/auth_key#dh-key-exchange-complete)
     if not (1 < g < (dh_prime - 1)):
-        raise SecurityError('g_a is not within (1, dh_prime - 1)')
+        raise SecurityError('g is not within (1, dh_prime - 1)')
 
     if not (1 < g_a < (dh_prime - 1)):
         raise SecurityError('g_a is not within (1, dh_prime - 1)')
