@@ -103,6 +103,9 @@ There are other community-maintained implementations available:
 * `MongoDB <https://github.com/watzon/telethon-session-mongo>`_:
   stores the current session in a MongoDB database.
 
+* `Django <https://github.com/ali-zahedi/django-telethon>`_:
+  stores all sessions for Django ORM.
+
 
 Creating your Own Storage
 =========================
