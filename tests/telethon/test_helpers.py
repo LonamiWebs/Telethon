@@ -7,11 +7,34 @@ from base64 import b64decode
 import pytest
 
 from telethon import helpers
+from telethon.utils import get_inner_text
+from telethon.tl.types import MessageEntityUnknown as Meu
 
 
 def test_strip_text():
-    assert helpers.strip_text(" text ", []) == "text"
-    # I can't interpret the rest of the code well enough yet
+    text = ' text '
+    text_stripped = 'text'
+    entities_before_and_after = (
+        ([], []),
+        ([Meu(i, 0) for i in range(10)], []),  # del ''
+        ([Meu(0, 0), Meu(0, 1), Meu(5, 1)], []),  # del '', ' ', ' '
+        ([Meu(0, 3)], [Meu(0, 2)]),  # ' te' -> 'te'
+        ([Meu(3, 1)], [Meu(2, 1)]),  # 'x'
+        ([Meu(3, 2)], [Meu(2, 2)]),  # 'xt'
+        ([Meu(3, 3)], [Meu(2, 2)]),  # 'xt ' -> 'xt'
+        ([Meu(0, 6)], [Meu(0, 4)]),  # ' text ' -> 'text'
+    )
+    for entities_before, entities_expected in entities_before_and_after:
+        entities_for_test = [Meu(meu.offset, meu.length) for meu in entities_before]  # deep copy
+        text_after = helpers.strip_text(text, entities_for_test)
+        assert text_after == text_stripped
+        assert sorted((e.offset, e.length) for e in entities_for_test) \
+               == sorted((e.offset, e.length) for e in entities_expected)
+        inner_text_before = get_inner_text(text, entities_before)
+        inner_text_before_stripped = [t.strip() for t in inner_text_before]
+        inner_text_after = get_inner_text(text_after, entities_for_test)
+        for t in inner_text_after:
+            assert t in inner_text_before_stripped
 
 
 class TestSyncifyAsyncContext:
