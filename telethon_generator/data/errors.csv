@@ -115,6 +115,7 @@ ENCRYPTION_DECLINED,400,The secret chat was declined
 ENCRYPTION_ID_INVALID,400,The provided secret chat ID is invalid
 ENCRYPTION_OCCUPY_FAILED,500,TDLib developer claimed it is not an error while accepting secret chats and 500 is used instead of 420
 ENTITIES_TOO_LONG,400,It is no longer possible to send such long data inside entity tags (for example inline text URLs)
+ENTITY_BOUNDS_INVALID,400,Some of provided entities have invalid bounds (length is zero or out of the boundaries of the string)
 ENTITY_MENTION_USER_INVALID,400,You can't use this entity
 ERROR_TEXT_EMPTY,400,The provided error message is empty
 EXPIRE_FORBIDDEN,400,
@@ -279,6 +280,7 @@ POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too lon
 POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 POLL_VOTE_REQUIRED,403,
+POSTPONED_TIMEOUT,500,The postponed call has timed out
 PREVIOUS_CHAT_IMPORT_ACTIVE_WAIT_XMIN,406,"Similar to a flood wait, must wait {minutes} minutes"
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
