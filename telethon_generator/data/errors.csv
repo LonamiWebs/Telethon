@@ -115,6 +115,7 @@ ENCRYPTION_DECLINED,400,The secret chat was declined
 ENCRYPTION_ID_INVALID,400,The provided secret chat ID is invalid
 ENCRYPTION_OCCUPY_FAILED,500,TDLib developer claimed it is not an error while accepting secret chats and 500 is used instead of 420
 ENTITIES_TOO_LONG,400,It is no longer possible to send such long data inside entity tags (for example inline text URLs)
+ENTITY_BOUNDS_INVALID,400,Some of provided entities have invalid bounds (length is zero or out of the boundaries of the string)
 ENTITY_MENTION_USER_INVALID,400,You can't use this entity
 ERROR_TEXT_EMPTY,400,The provided error message is empty
 EXPIRE_FORBIDDEN,400,
