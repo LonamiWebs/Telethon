@@ -250,7 +250,10 @@ class MessageBox:
         elif self.next_deadline in self.map:
             deadline = min(deadline, self.map[self.next_deadline].deadline)
 
-        if now > deadline:
+        # asyncio's loop time precision only seems to be about 3 decimal places, so it's possible that
+        # we find the same number again on repeated calls. Without the "or equal" part we would log the
+        # timeout for updates several times (it also makes sense to get difference if now is the deadline).
+        if now >= deadline:
             # Check all expired entries and add them to the list that needs getting difference.
             self.getting_diff_for.update(entry for entry, gap in self.possible_gaps.items() if now > gap.deadline)
             self.getting_diff_for.update(entry for entry, state in self.map.items() if now > state.deadline)

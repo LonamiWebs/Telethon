@@ -335,13 +335,15 @@ class UpdateMethods:
                     continue
 
                 deadline = self._message_box.check_deadlines()
-                try:
-                    updates = await asyncio.wait_for(
-                        self._updates_queue.get(),
-                        deadline - asyncio.get_running_loop().time()
-                    )
-                except asyncio.TimeoutError:
-                    self._log[__name__].info('Timeout waiting for updates expired')
+                deadline_delay = deadline - asyncio.get_running_loop().time()
+                if deadline_delay > 0:
+                    # Don't bother sleeping and timing out if the delay is already 0 (pollutes the logs).
+                    try:
+                        updates = await asyncio.wait_for(self._updates_queue.get(), deadline_delay)
+                    except asyncio.TimeoutError:
+                        self._log[__name__].info('Timeout waiting for updates expired')
+                        continue
+                else:
                     continue
 
                 processed = []
