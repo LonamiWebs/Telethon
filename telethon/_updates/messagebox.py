@@ -271,6 +271,7 @@ class MessageBox:
     def reset_deadline(self, entry, deadline):
         if entry not in self.map:
             raise RuntimeError('Called reset_deadline on an entry for which we do not have state')
+        self.map[entry].deadline = deadline
 
         if self.next_deadline == entry:
             # If the updated deadline was the closest one, recalculate the new minimum.
