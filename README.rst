@@ -35,15 +35,19 @@ Creating a client
 
 .. code-block:: python
 
-    from telethon import TelegramClient, events, sync
+    import asyncio
+    from telethon import TelegramClient, events
 
     # These example values won't work. You must get your own api_id and
     # api_hash from https://my.telegram.org, under API Development.
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
 
-    client = TelegramClient('session_name', api_id, api_hash)
-    client.start()
+    async def main():
+      client = TelegramClient('session_name', api_id, api_hash)
+      await client.start()
+
+    asyncio.run(main())
 
 
 Doing stuff
@@ -51,14 +55,14 @@ Doing stuff
 
 .. code-block:: python
 
-    print(client.get_me().stringify())
+    print((await client.get_me()).stringify())
 
-    client.send_message('username', 'Hello! Talking to you from Telethon')
-    client.send_file('username', '/home/myself/Pictures/holidays.jpg')
+    await client.send_message('username', 'Hello! Talking to you from Telethon')
+    await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-    client.download_profile_photo('me')
-    messages = client.get_messages('username')
-    messages[0].download_media()
+    await client.download_profile_photo('me')
+    messages = await client.get_messages('username')
+    await messages[0].download_media()
 
     @client.on(events.NewMessage(pattern='(?i)hi|hello'))
     async def handler(event):
@@ -75,7 +79,7 @@ useful information.
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _MTProto: https://core.telegram.org/mtproto
 .. _Telegram: https://telegram.org
-.. _Compatibility and Convenience: https://docs.telethon.dev/en/latest/misc/compatibility-and-convenience.html
+.. _Compatibility and Convenience: https://docs.telethon.dev/en/stable/misc/compatibility-and-convenience.html
 .. _Read The Docs: https://docs.telethon.dev
 
 .. |logo| image:: logo.svg

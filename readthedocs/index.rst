@@ -4,17 +4,21 @@ Telethon's Documentation
 
 .. code-block:: python
 
-   from telethon.sync import TelegramClient, events
+   import asyncio
+   from telethon import TelegramClient, events
 
-   with TelegramClient('name', api_id, api_hash) as client:
-      client.send_message('me', 'Hello, myself!')
-      print(client.download_profile_photo('me'))
+   async def main():
+      async with TelegramClient('name', api_id, api_hash) as client:
+         await client.send_message('me', 'Hello, myself!')
+         print(await client.download_profile_photo('me'))
 
-      @client.on(events.NewMessage(pattern='(?i).*Hello'))
-      async def handler(event):
-         await event.reply('Hey!')
+         @client.on(events.NewMessage(pattern='(?i).*Hello'))
+         async def handler(event):
+            await event.reply('Hey!')
 
-      client.run_until_disconnected()
+         await client.run_until_disconnected()
+
+   asyncio.run(main())
 
 
 * Are you new here? Jump straight into :ref:`installation`!
@@ -103,7 +107,7 @@ You can also use the menu on the left to quickly skip over sections.
     :caption: Miscellaneous
 
     misc/changelog
-    misc/wall-of-shame.rst
+    misc/v2-migration-guide.rst
     misc/compatibility-and-convenience
 
 .. toctree::

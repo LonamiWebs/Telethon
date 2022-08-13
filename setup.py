@@ -47,16 +47,16 @@ GENERATOR_DIR = Path('telethon_generator')
 LIBRARY_DIR = Path('telethon')
 
 ERRORS_IN = GENERATOR_DIR / 'data/errors.csv'
-ERRORS_OUT = LIBRARY_DIR / 'errors/rpcerrorlist.py'
+ERRORS_OUT = LIBRARY_DIR / 'errors/_generated.py'
 
 METHODS_IN = GENERATOR_DIR / 'data/methods.csv'
 
 # Which raw API methods are covered by *friendly* methods in the client?
 FRIENDLY_IN = GENERATOR_DIR / 'data/friendly.csv'
 
-TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
-TLOBJECT_OUT = LIBRARY_DIR / 'tl'
-IMPORT_DEPTH = 2
+TLOBJECT_IN_TLS = [Path(x) for x in sorted(GENERATOR_DIR.glob('data/*.tl'))]
+TLOBJECT_OUT = LIBRARY_DIR / '_tl'
+TLOBJECT_MOD = 'telethon._tl'
 
 DOCS_IN_RES = GENERATOR_DIR / 'data/html'
 DOCS_OUT = Path('docs')
@@ -94,7 +94,7 @@ def generate(which, action='gen'):
         if clean:
             clean_tlobjects(TLOBJECT_OUT)
         else:
-            generate_tlobjects(tlobjects, layer, IMPORT_DEPTH, TLOBJECT_OUT)
+            generate_tlobjects(tlobjects, layer, TLOBJECT_MOD, TLOBJECT_OUT)
 
     if 'errors' in which:
         which.remove('errors')
@@ -208,7 +208,7 @@ def main(argv):
             # See https://stackoverflow.com/a/40300957/4759433
             # -> https://www.python.org/dev/peps/pep-0345/#requires-python
             # -> http://setuptools.readthedocs.io/en/latest/setuptools.html
-            python_requires='>=3.5',
+            python_requires='>=3.7',
 
             # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
             classifiers=[
@@ -223,10 +223,10 @@ def main(argv):
                 'License :: OSI Approved :: MIT License',
 
                 'Programming Language :: Python :: 3',
-                'Programming Language :: Python :: 3.5',
-                'Programming Language :: Python :: 3.6',
                 'Programming Language :: Python :: 3.7',
                 'Programming Language :: Python :: 3.8',
+                'Programming Language :: Python :: 3.9',
+                'Programming Language :: Python :: 3.10',
             ],
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[

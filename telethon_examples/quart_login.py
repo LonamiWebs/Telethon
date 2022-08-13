@@ -5,6 +5,7 @@ import hypercorn.asyncio
 from quart import Quart, render_template_string, request
 
 from telethon import TelegramClient, utils
+from telethon.types import Message
 from telethon.errors import SessionPasswordNeededError
 
 
@@ -51,9 +52,11 @@ SESSION = os.environ.get('TG_SESSION', 'quart')
 API_ID = int(get_env('TG_API_ID', 'Enter your API ID: '))
 API_HASH = get_env('TG_API_HASH', 'Enter your API hash: ')
 
+# Render things nicely (global setting)
+Message.set_default_parse_mode('html')
+
 # Telethon client
 client = TelegramClient(SESSION, API_ID, API_HASH)
-client.parse_mode = 'html'  # <- Render things nicely
 phone = None
 
 # Quart app
@@ -69,7 +72,7 @@ async def format_message(message):
             message.raw_text
         )
     else:
-        # client.parse_mode = 'html', so bold etc. will work!
+        # The Message parse_mode is 'html', so bold etc. will work!
         content = (message.text or '(action message)').replace('\n', '<br>')
 
     return '<p><strong>{}</strong>: {}<sub>{}</sub></p>'.format(
@@ -116,7 +119,7 @@ async def root():
         # They are logged in, show them some messages from their first dialog
         dialog = (await client.get_dialogs())[0]
         result = '<h1>{}</h1>'.format(dialog.title)
-        async for m in client.iter_messages(dialog, 10):
+        async for m in client.get_messages(dialog, 10):
             result += await(format_message(m))
 
         return await render_template_string(BASE_TEMPLATE, content=result)
@@ -134,12 +137,13 @@ async def main():
 
 
 # By default, `Quart.run` uses `asyncio.run()`, which creates a new asyncio
-# event loop. If we create the `TelegramClient` before, `telethon` will
-# use `asyncio.get_event_loop()`, which is the implicit loop in the main
-# thread. These two loops are different, and it won't work.
+# event loop. Instead, we use `asyncio.run()` manually in order to make this
+# explicit, as the client cannot be "transferred" between loops while
+# connected due to the need to schedule work within an event loop.
 #
-# So, we have to manually pass the same `loop` to both applications to
-# make 100% sure it works and to avoid headaches.
+# In essence one needs to be careful to avoid mixing event loops, but this is
+# simple, as `asyncio.run` is generally only used in the entry-point of the
+# program.
 #
 # To run Quart inside `async def`, we must use `hypercorn.asyncio.serve()`
 # directly.
@@ -149,4 +153,4 @@ async def main():
 # won't have to worry about any of this, but it's still good to be
 # explicit about the event loop.
 if __name__ == '__main__':
-    client.loop.run_until_complete(main())
+    asyncio.run(main())

@@ -13,6 +13,61 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+
+Complete overhaul of the library (v2.0)
+=======================================
+
+(inc and link all of migration guide)
+properly-typed enums for filters and actions
+
+
+Rushed release to fix login (v1.24)
+===================================
+
++------------------------+
+| Scheme layer used: 133 |
++------------------------+
+
+This is a rushed release. It contains a layer recent enough to not fail with
+``UPDATE_APP_TO_LOGIN``, but still not the latest, to avoid breaking more
+than necessary.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The biggest change is user identifiers (and chat identifiers, and others)
+  **now use up to 64 bits**, rather than 32. If you were storing them in some
+  storage with fixed size, you may need to update (such as database tables
+  storing only integers).
+
+There have been other changes which I currently don't have the time to document.
+You can refer to the following link to see them early:
+https://github.com/LonamiWebs/Telethon/compare/v1.23.0...v1.24.0
+
+
+New schema and bug fixes (v1.23)
+================================
+
++------------------------+
+| Scheme layer used: 130 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=129&to=130>`__.
+
+Enhancements
+~~~~~~~~~~~~
+
+* `client.pin_message() <telethon.client.messages.MessageMethods.pin_message>`
+  can now pin on a single side in PMs.
+* Iterating participants should now be less expensive floodwait-wise.
+
+Bug fixes
+~~~~~~~~~
+
+* The QR login URL was being encoded incorrectly.
+* ``force_document`` was being ignored in inline queries for document.
+* ``manage_call`` permission was accidentally set to ``True`` by default.
+
 New schema and bug fixes (v1.22)
 ================================
 

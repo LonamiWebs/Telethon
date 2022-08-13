@@ -28,7 +28,7 @@ In short, you should do this:
         buttons = await event.get_buttons()
 
     async def main():
-        async for message in client.iter_messages('me', 10):
+        async for message in client.get_messages('me', 10):
             # Methods from the client always have these properties ready
             chat = message.input_chat
             sender = message.sender

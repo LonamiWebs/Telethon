@@ -1,3 +1,4 @@
+import builtins
 import functools
 import os
 import re
@@ -15,11 +16,11 @@ AUTO_GEN_NOTICE = \
 
 AUTO_CASTS = {
     'InputPeer':
-        'utils.get_input_peer(await client.get_input_entity({}))',
+        'utils.get_input_peer(await client._get_input_peer({}))',
     'InputChannel':
-        'utils.get_input_channel(await client.get_input_entity({}))',
+        'utils.get_input_channel(await client._get_input_peer({}))',
     'InputUser':
-        'utils.get_input_user(await client.get_input_entity({}))',
+        'utils.get_input_user(await client._get_input_peer({}))',
 
     'InputDialogPeer': 'await client._get_input_dialog({})',
     'InputNotifyPeer': 'await client._get_input_notify({})',
@@ -32,7 +33,7 @@ AUTO_CASTS = {
 }
 
 NAMED_AUTO_CASTS = {
-    ('chat_id', 'int'): 'await client.get_peer_id({}, add_mark=False)'
+    ('chat_id', 'int'): 'await client._get_peer_id({})'
 }
 
 # Secret chats have a chat_id which may be negative.
@@ -52,7 +53,7 @@ BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
 
 
 def _write_modules(
-        out_dir, depth, kind, namespace_tlobjects, type_constructors):
+        out_dir, in_mod, kind, namespace_tlobjects, type_constructors, layer, all_tlobjects):
     # namespace_tlobjects: {'namespace', [TLObject]}
     out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
@@ -60,10 +61,11 @@ def _write_modules(
         with file.open('w') as f, SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
-            builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
-            if kind != 'TLObject':
-                builder.writeln(
-                    'from {}.tl.tlobject import {}', '.' * depth, kind)
+            if kind == 'TLObject':
+                builder.writeln('from .._misc.tlobject import TLObject, TLRequest')
+                builder.writeln('from . import fn')
+            else:
+                builder.writeln('from ..._misc.tlobject import TLObject, TLRequest')
 
             builder.writeln('from typing import Optional, List, '
                             'Union, TYPE_CHECKING')
@@ -82,6 +84,9 @@ def _write_modules(
 
             # Import struct for the .__bytes__(self) serialization
             builder.writeln('import struct')
+
+            # Import dataclasses in order to freeze the instances
+            builder.writeln('import dataclasses')
 
             # Import datetime for type hinting
             builder.writeln('from datetime import datetime')
@@ -124,7 +129,11 @@ def _write_modules(
                     if not name or name in primitives:
                         continue
 
-                    import_space = '{}.tl.types'.format('.' * depth)
+                    if kind == 'TLObject':
+                        import_space = '.'
+                    else:
+                        import_space = '..'
+
                     if '.' in name:
                         namespace = name.split('.')[0]
                         name = name.split('.')[1]
@@ -158,6 +167,9 @@ def _write_modules(
             for line in type_defs:
                 builder.writeln(line)
 
+            if not ns and kind == 'TLObject':
+                _write_all_tlobjects(all_tlobjects, layer, builder)
+
 
 def _write_source_code(tlobject, kind, builder, type_constructors):
     """
@@ -170,7 +182,6 @@ def _write_source_code(tlobject, kind, builder, type_constructors):
     """
     _write_class_init(tlobject, kind, type_constructors, builder)
     _write_resolve(tlobject, builder)
-    _write_to_dict(tlobject, builder)
     _write_to_bytes(tlobject, builder)
     _write_from_reader(tlobject, builder)
     _write_read_result(tlobject, builder)
@@ -179,28 +190,9 @@ def _write_source_code(tlobject, kind, builder, type_constructors):
 def _write_class_init(tlobject, kind, type_constructors, builder):
     builder.writeln()
     builder.writeln()
+    builder.writeln('@dataclasses.dataclass(init=False, frozen=True)')
     builder.writeln('class {}({}):', tlobject.class_name, kind)
 
-    # Class-level variable to store its Telegram's constructor ID
-    builder.writeln('CONSTRUCTOR_ID = {:#x}', tlobject.id)
-    builder.writeln('SUBCLASS_OF_ID = {:#x}',
-                    crc32(tlobject.result.encode('ascii')))
-    builder.writeln()
-
-    # Convert the args to string parameters, flags having =None
-    args = ['{}: {}{}'.format(
-        a.name, a.type_hint(), '=None' if a.is_flag or a.can_be_inferred else '')
-        for a in tlobject.real_args
-    ]
-
-    # Write the __init__ function if it has any argument
-    if not tlobject.real_args:
-        return
-
-    if any(a.name in __builtins__ for a in tlobject.real_args):
-        builder.writeln('# noinspection PyShadowingBuiltins')
-
-    builder.writeln("def __init__({}):", ', '.join(['self'] + args))
     builder.writeln('"""')
     if tlobject.is_function:
         builder.write(':returns {}: ', tlobject.result)
@@ -219,47 +211,83 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
 
     builder.writeln('"""')
 
-    # Set the arguments
+    # Define slots to help reduce the size of the objects a little bit.
+    # It's also good for knowing what fields an object has.
+    builder.write('__slots__ = (')
+    sep = ''
     for arg in tlobject.real_args:
-        if not arg.can_be_inferred:
-            builder.writeln('self.{0} = {0}', arg.name)
+        builder.write('{}{!r},', sep, arg.name)
+        sep = ' '
+    builder.writeln(')')
 
-        # Currently the only argument that can be
-        # inferred are those called 'random_id'
-        elif arg.name == 'random_id':
-            # Endianness doesn't really matter, and 'big' is shorter
-            code = "int.from_bytes(os.urandom({}), 'big', signed=True)" \
-                .format(8 if arg.type == 'long' else 4)
+    # Class-level variable to store its Telegram's constructor ID
+    builder.writeln('CONSTRUCTOR_ID = {:#x}', tlobject.id)
+    builder.writeln('SUBCLASS_OF_ID = {:#x}',
+                    crc32(tlobject.result.encode('ascii')))
+    builder.writeln()
 
-            if arg.is_vector:
-                # Currently for the case of "messages.forwardMessages"
-                # Ensure we can infer the length from id:Vector<>
-                if not next(a for a in tlobject.real_args
-                            if a.name == 'id').is_vector:
-                    raise ValueError(
-                        'Cannot infer list of random ids for ', tlobject
-                    )
-                code = '[{} for _ in range(len(id))]'.format(code)
+    # Because we're using __slots__ and frozen instances, we cannot have flags = None directly.
+    # See https://stackoverflow.com/q/50180735 (Python 3.10 does offer a solution).
+    # Write the __init__ function if it has any argument.
+    if tlobject.real_args:
+        # Convert the args to string parameters
+        for a in tlobject.real_args:
+            builder.writeln('{}: {}', a.name, a.type_hint())
 
-            builder.writeln(
-                "self.random_id = random_id if random_id "
-                "is not None else {}", code
-            )
-        else:
-            raise ValueError('Cannot infer a value for ', arg)
+        # Convert the args to string parameters, flags having =None
+        args = ['{}: {}{}'.format(
+            a.name, a.type_hint(), '=None' if a.is_flag or a.can_be_inferred else '')
+            for a in tlobject.real_args
+        ]
 
-    builder.end_block()
+        if any(a.name in dir(builtins) for a in tlobject.real_args):
+            builder.writeln('# noinspection PyShadowingBuiltins')
+
+        builder.writeln("def __init__({}):", ', '.join(['self'] + args))
+
+        # Set the arguments
+        for arg in tlobject.real_args:
+            builder.writeln("object.__setattr__(self, '{0}', {0})", arg.name)
+
+        builder.end_block()
 
 
 def _write_resolve(tlobject, builder):
     if tlobject.is_function and any(
-            (arg.type in AUTO_CASTS
-             or ((arg.name, arg.type) in NAMED_AUTO_CASTS
-                 and tlobject.fullname not in NAMED_BLACKLIST))
-            for arg in tlobject.real_args
+        (arg.can_be_inferred
+            or arg.type in AUTO_CASTS
+            or ((arg.name, arg.type) in NAMED_AUTO_CASTS and tlobject.fullname not in NAMED_BLACKLIST))
+        for arg in tlobject.real_args
     ):
-        builder.writeln('async def resolve(self, client, utils):')
+        builder.writeln('async def _resolve(self, client, utils):')
+        builder.writeln('r = {}')  # hold replacements
+
         for arg in tlobject.real_args:
+            if arg.can_be_inferred:
+                builder.writeln('if self.{} is None:', arg.name)
+
+                # Currently the only argument that can be
+                # inferred are those called 'random_id'
+                if arg.name == 'random_id':
+                    # Endianness doesn't really matter, and 'big' is shorter
+                    code = "int.from_bytes(os.urandom({}), 'big', signed=True)" \
+                        .format(8 if arg.type == 'long' else 4)
+
+                    if arg.is_vector:
+                        # Currently for the case of "messages.forwardMessages"
+                        # Ensure we can infer the length from id:Vector<>
+                        if not next(a for a in tlobject.real_args if a.name == 'id').is_vector:
+                            raise ValueError('Cannot infer list of random ids for ', tlobject)
+
+                        code = '[{} for _ in range(len(self.id))]'.format(code)
+
+                    builder.writeln("r['{}'] = {}", arg.name, code)
+                else:
+                    raise ValueError('Cannot infer a value for ', arg)
+
+                builder.end_block()
+                continue
+
             ac = AUTO_CASTS.get(arg.type)
             if not ac:
                 ac = NAMED_AUTO_CASTS.get((arg.name, arg.type))
@@ -270,54 +298,18 @@ def _write_resolve(tlobject, builder):
                 builder.writeln('if self.{}:', arg.name)
 
             if arg.is_vector:
-                builder.writeln('_tmp = []')
-                builder.writeln('for _x in self.{0}:', arg.name)
-                builder.writeln('_tmp.append({})', ac.format('_x'))
+                builder.writeln("r['{}'] = []", arg.name)
+                builder.writeln('for x in self.{0}:', arg.name)
+                builder.writeln("r['{}'].append({})", arg.name, ac.format('x'))
                 builder.end_block()
-                builder.writeln('self.{} = _tmp', arg.name)
             else:
-                builder.writeln('self.{} = {}', arg.name,
-                              ac.format('self.' + arg.name))
+                builder.writeln("r['{}'] = {}", arg.name, ac.format('self.' + arg.name))
 
             if arg.is_flag:
                 builder.end_block()
+
+        builder.writeln('return dataclasses.replace(self, **r)')
         builder.end_block()
-
-
-def _write_to_dict(tlobject, builder):
-    builder.writeln('def to_dict(self):')
-    builder.writeln('return {')
-    builder.current_indent += 1
-
-    builder.write("'_': '{}'", tlobject.class_name)
-    for arg in tlobject.real_args:
-        builder.writeln(',')
-        builder.write("'{}': ", arg.name)
-        if arg.type in BASE_TYPES:
-            if arg.is_vector:
-                builder.write('[] if self.{0} is None else self.{0}[:]',
-                              arg.name)
-            else:
-                builder.write('self.{}', arg.name)
-        else:
-            if arg.is_vector:
-                builder.write(
-                    '[] if self.{0} is None else [x.to_dict() '
-                    'if isinstance(x, TLObject) else x for x in self.{0}]',
-                    arg.name
-                )
-            else:
-                builder.write(
-                    'self.{0}.to_dict() '
-                    'if isinstance(self.{0}, TLObject) else self.{0}',
-                    arg.name
-                )
-
-    builder.writeln()
-    builder.current_indent -= 1
-    builder.writeln("}")
-
-    builder.end_block()
 
 
 def _write_to_bytes(tlobject, builder):
@@ -360,7 +352,7 @@ def _write_to_bytes(tlobject, builder):
 
 def _write_from_reader(tlobject, builder):
     builder.writeln('@classmethod')
-    builder.writeln('def from_reader(cls, reader):')
+    builder.writeln('def _from_reader(cls, reader):')
     for arg in tlobject.args:
         _write_arg_read_code(builder, arg, tlobject, name='_' + arg.name)
 
@@ -390,7 +382,7 @@ def _write_read_result(tlobject, builder):
 
     builder.end_block()
     builder.writeln('@staticmethod')
-    builder.writeln('def read_result(reader):')
+    builder.writeln('def _read_result(reader):')
     builder.writeln('reader.read_int()  # Vector ID')
     builder.writeln('return [reader.read_{}() '
                     'for _ in range(reader.read_int())]', m.group(1))
@@ -495,7 +487,7 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
         builder.write("struct.pack('<d', {})", name)
 
     elif 'string' == arg.type:
-        builder.write('self.serialize_bytes({})', name)
+        builder.write('self._serialize_bytes({})', name)
 
     elif 'Bool' == arg.type:
         # 0x997275b5 if boolean else 0xbc799737
@@ -505,10 +497,10 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
         pass  # These are actually NOT written! Only used for flags
 
     elif 'bytes' == arg.type:
-        builder.write('self.serialize_bytes({})', name)
+        builder.write('self._serialize_bytes({})', name)
 
     elif 'date' == arg.type:  # Custom format
-        builder.write('self.serialize_datetime({})', name)
+        builder.write('self._serialize_datetime({})', name)
 
     else:
         # Else it may be a custom type
@@ -636,7 +628,7 @@ def _write_arg_read_code(builder, arg, tlobject, name):
             # and we don't have information about such thing in the
             # method we just ignore that case.
             builder.writeln('from {} import {}', ns, class_name)
-            builder.writeln('{} = {}.from_reader(reader)',
+            builder.writeln('{} = {}._from_reader(reader)',
                             name, class_name)
 
     # End vector and flag blocks if required (if we opened them before)
@@ -653,12 +645,6 @@ def _write_arg_read_code(builder, arg, tlobject, name):
 
 
 def _write_all_tlobjects(tlobjects, layer, builder):
-    builder.writeln(AUTO_GEN_NOTICE)
-    builder.writeln()
-
-    builder.writeln('from . import types, functions')
-    builder.writeln()
-
     # Create a constant variable to indicate which layer this is
     builder.writeln('LAYER = {}', layer)
     builder.writeln()
@@ -670,18 +656,19 @@ def _write_all_tlobjects(tlobjects, layer, builder):
     # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
     for tlobject in tlobjects:
         builder.write('{:#010x}: ', tlobject.id)
-        builder.write('functions' if tlobject.is_function else 'types')
+        if tlobject.is_function:
+            builder.write('fn.')
 
         if tlobject.namespace:
-            builder.write('.{}', tlobject.namespace)
+            builder.write('{}.', tlobject.namespace)
 
-        builder.writeln('.{},', tlobject.class_name)
+        builder.writeln('{},', tlobject.class_name)
 
     builder.current_indent -= 1
     builder.writeln('}')
 
 
-def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
+def generate_tlobjects(tlobjects, layer, input_mod, output_dir):
     # Group everything by {namespace: [tlobjects]} to generate __init__.py
     namespace_functions = defaultdict(list)
     namespace_types = defaultdict(list)
@@ -695,15 +682,10 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
 
-    _write_modules(output_dir / 'functions', import_depth, 'TLRequest',
-                   namespace_functions, type_constructors)
-    _write_modules(output_dir / 'types', import_depth, 'TLObject',
-                   namespace_types, type_constructors)
-
-    filename = output_dir / 'alltlobjects.py'
-    with filename.open('w') as file:
-        with SourceBuilder(file) as builder:
-            _write_all_tlobjects(tlobjects, layer, builder)
+    _write_modules(output_dir, input_mod, 'TLObject',
+                   namespace_types, type_constructors, layer, tlobjects)
+    _write_modules(output_dir / 'fn', input_mod + '.fn', 'TLRequest',
+                   namespace_functions, type_constructors, layer, tlobjects)
 
 
 def clean_tlobjects(output_dir):
@@ -711,7 +693,3 @@ def clean_tlobjects(output_dir):
         d = output_dir / d
         if d.is_dir():
             shutil.rmtree(str(d))
-
-    tl = output_dir / 'alltlobjects.py'
-    if tl.is_file():
-        tl.unlink()

@@ -84,6 +84,10 @@ use is very straightforward, or :tl:`InviteToChannelRequest` for channels:
         [users_to_add]
     ))
 
+Note that this method will only really work for friends or bot accounts.
+Trying to mass-add users with this approach will not work, and can put both
+your account and group to risk, possibly being flagged as spam and limited.
+
 
 Checking a link without joining
 ===============================
@@ -103,7 +107,7 @@ use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
 .. code-block:: python
 
 
-    # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
+    # Obtain `channel' through dialogs or through client.get_profile() or anyhow.
     # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
 
     await client(GetMessagesViewsRequest(

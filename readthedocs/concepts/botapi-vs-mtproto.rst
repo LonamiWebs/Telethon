@@ -145,7 +145,7 @@ After using Telethon:
 
 Key differences:
 
-* The recommended way to do it imports less things.
+* The recommended way to do it imports fewer things.
 * All handlers trigger by default, so we need ``events.StopPropagation``.
 * Adding handlers, responding and running is a lot less verbose.
 * Telethon needs ``async def`` and ``await``.

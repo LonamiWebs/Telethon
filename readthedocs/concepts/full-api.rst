@@ -74,7 +74,7 @@ Or we call `client.get_input_entity()
     async def main():
         peer = await client.get_input_entity('someone')
 
-    client.loop.run_until_complete(main())
+    asyncio.run(main())
 
 .. note::
 
@@ -129,7 +129,7 @@ as you wish. Remember to use the right types! To sum up:
 .. code-block:: python
 
     result = await client(SendMessageRequest(
-        await client.get_input_entity('username'), 'Hello there!'
+        await client.get_profile('username'), 'Hello there!'
     ))
 
 

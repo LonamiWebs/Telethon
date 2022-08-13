@@ -1,2 +1,3 @@
-pyaes
-rsa
+markdown-it-py~=1.1.0
+pyaes~=1.6.1
+rsa~=4.7.2

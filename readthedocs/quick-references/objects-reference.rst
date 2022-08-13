@@ -155,39 +155,12 @@ its name, bot-API style file ID, etc.
     sticker_set
 
 
-Conversation
-============
-
-The `Conversation <telethon.tl.custom.conversation.Conversation>` object
-is returned by the `client.conversation()
-<telethon.client.dialogs.DialogMethods.conversation>` method to easily
-send and receive responses like a normal conversation.
-
-It bases `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`.
-
-.. currentmodule:: telethon.tl.custom.conversation.Conversation
-
-.. autosummary::
-    :nosignatures:
-
-    send_message
-    send_file
-    mark_read
-    get_response
-    get_reply
-    get_edit
-    wait_read
-    wait_event
-    cancel
-    cancel_all
-
-
 AdminLogEvent
 =============
 
 The `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>` object
-is returned by the `client.iter_admin_log()
-<telethon.client.chats.ChatMethods.iter_admin_log>` method to easily iterate
+is returned by the `client.get_admin_log()
+<telethon.client.chats.ChatMethods.get_admin_log>` method to easily iterate
 over past "events" (deleted messages, edits, title changes, leaving members…)
 
 These are all the properties you can find in it:
@@ -297,7 +270,7 @@ Dialog
 ======
 
 The `Dialog <telethon.tl.custom.dialog.Dialog>` object is returned when
-you call `client.iter_dialogs() <telethon.client.dialogs.DialogMethods.iter_dialogs>`.
+you call `client.get_dialogs() <telethon.client.dialogs.DialogMethods.get_dialogs>`.
 
 .. currentmodule:: telethon.tl.custom.dialog.Dialog
 
@@ -313,7 +286,7 @@ Draft
 ======
 
 The `Draft <telethon.tl.custom.draft.Draft>` object is returned when
-you call `client.iter_drafts() <telethon.client.dialogs.DialogMethods.iter_drafts>`.
+you call `client.get_drafts() <telethon.client.dialogs.DialogMethods.get_drafts>`.
 
 .. currentmodule:: telethon.tl.custom.draft.Draft
 

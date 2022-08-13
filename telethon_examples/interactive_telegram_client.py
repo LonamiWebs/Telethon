@@ -9,9 +9,6 @@ from telethon.errors import SessionPasswordNeededError
 from telethon.network import ConnectionTcpAbridged
 from telethon.utils import get_display_name
 
-# Create a global variable to hold the loop we will be using
-loop = asyncio.get_event_loop()
-
 
 def sprint(string, *args, **kwargs):
     """Safe Print (handle UnicodeEncodeErrors on some terminals)"""
@@ -50,7 +47,7 @@ async def async_input(prompt):
     let the loop run while we wait for input.
     """
     print(prompt, end='', flush=True)
-    return (await loop.run_in_executor(None, sys.stdin.readline)).rstrip()
+    return (await asyncio.get_running_loop().run_in_executor(None, sys.stdin.readline)).rstrip()
 
 
 def get_env(name, message, cast=str):
@@ -109,34 +106,34 @@ class InteractiveTelegramClient(TelegramClient):
         # media known the message ID, for every message having media.
         self.found_media = {}
 
+    async def init(self):
         # Calling .connect() may raise a connection error False, so you need
         # to except those before continuing. Otherwise you may want to retry
         # as done here.
         print('Connecting to Telegram servers...')
         try:
-            loop.run_until_complete(self.connect())
+            await self.connect()
         except IOError:
             # We handle IOError and not ConnectionError because
             # PySocks' errors do not subclass ConnectionError
             # (so this will work with and without proxies).
             print('Initial connection failed. Retrying...')
-            loop.run_until_complete(self.connect())
+            await self.connect()
 
         # If the user hasn't called .sign_in() or .sign_up() yet, they won't
         # be authorized. The first thing you must do is authorize. Calling
         # .sign_in() should only be done once as the information is saved on
         # the *.session file so you don't need to enter the code every time.
-        if not loop.run_until_complete(self.is_user_authorized()):
+        if not await self.is_user_authorized():
             print('First run. Sending code request...')
             user_phone = input('Enter your phone: ')
-            loop.run_until_complete(self.sign_in(user_phone))
+            await self.sign_in(user_phone)
 
             self_user = None
             while self_user is None:
                 code = input('Enter the code you just received: ')
                 try:
-                    self_user =\
-                        loop.run_until_complete(self.sign_in(code=code))
+                    self_user = await self.sign_in(code=code)
 
                 # Two-step verification may be enabled, and .sign_in will
                 # raise this error. If that's the case ask for the password.
@@ -146,8 +143,7 @@ class InteractiveTelegramClient(TelegramClient):
                     pw = getpass('Two step verification is enabled. '
                                  'Please enter your password: ')
 
-                    self_user =\
-                        loop.run_until_complete(self.sign_in(password=pw))
+                    self_user = await self.sign_in(password=pw)
 
     async def run(self):
         """Main loop of the TelegramClient, will wait for user action"""
@@ -375,7 +371,7 @@ class InteractiveTelegramClient(TelegramClient):
         # with events. Since they are methods, you know they may make an API
         # call, which can be expensive.
         chat = await event.get_chat()
-        if event.is_group:
+        if chat.is_group:
             if event.out:
                 sprint('>> sent "{}" to chat {}'.format(
                     event.text, get_display_name(chat)
@@ -397,9 +393,13 @@ class InteractiveTelegramClient(TelegramClient):
                 ))
 
 
-if __name__ == '__main__':
+async def main():
     SESSION = os.environ.get('TG_SESSION', 'interactive')
     API_ID = get_env('TG_API_ID', 'Enter your API ID: ', int)
     API_HASH = get_env('TG_API_HASH', 'Enter your API hash: ')
-    client = InteractiveTelegramClient(SESSION, API_ID, API_HASH)
-    loop.run_until_complete(client.run())
+    client = await InteractiveTelegramClient(SESSION, API_ID, API_HASH).init()
+    await client.run()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())

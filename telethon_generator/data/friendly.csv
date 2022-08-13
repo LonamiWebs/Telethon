@@ -23,5 +23,4 @@ messages.MessageMethods,delete_messages,channels.deleteMessages messages.deleteM
 messages.MessageMethods,send_read_acknowledge,messages.readMentions channels.readHistory messages.readHistory
 updates.UpdateMethods,catch_up,updates.getDifference updates.getChannelDifference
 uploads.UploadMethods,send_file,messages.sendMedia messages.sendMultiMedia messages.uploadMedia
-uploads.UploadMethods,upload_file,upload.saveFilePart upload.saveBigFilePart
-users.UserMethods,get_entity,users.getUsers messages.getChats channels.getChannels contacts.resolveUsername
+users.UserMethods,get_profile,users.getUsers messages.getChats channels.getChannels contacts.resolveUsername

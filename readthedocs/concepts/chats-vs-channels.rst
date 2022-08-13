@@ -100,12 +100,12 @@ Note that this function can also work with other types, like :tl:`Chat` or
 :tl:`Channel` instances.
 
 If you need to convert other types like usernames which might need to perform
-API calls to find out the identifier, you can use ``client.get_peer_id``:
+API calls to find out the identifier, you can use ``client.get_profile``:
 
 
 .. code-block:: python
 
-    print(await client.get_peer_id('me'))  # your id
+    print((await client.get_profile('me')).id)  # your id
 
 
 If there is no "mark" (no minus sign), Telethon will assume your identifier

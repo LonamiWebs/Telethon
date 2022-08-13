@@ -78,7 +78,7 @@ async def handler(event):
     # and we said "save pic" in the message
     if event.out and event.is_reply and 'save pic' in event.raw_text:
         reply_msg = await event.get_reply_message()
-        replied_to_user = await reply_msg.get_input_sender()
+        replied_to_user = reply_msg.sender
 
         message = await event.reply('Downloading your profile photo...')
         file = await client.download_profile_photo(replied_to_user)

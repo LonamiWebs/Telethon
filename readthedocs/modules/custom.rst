@@ -46,15 +46,6 @@ ChatGetter
     :show-inheritance:
 
 
-Conversation
-============
-
-.. automodule:: telethon.tl.custom.conversation
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 Dialog
 ======
 
@@ -145,7 +136,7 @@ ParticipantPermissions
     :show-inheritance:
 
 
-QRLogin
+QrLogin
 =======
 
 .. automodule:: telethon.tl.custom.qrlogin

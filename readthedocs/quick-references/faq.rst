@@ -127,14 +127,7 @@ This is basic Python knowledge. You should use the dot operator:
 AttributeError: 'coroutine' object has no attribute 'id'
 ========================================================
 
-You either forgot to:
-
-.. code-block:: python
-
-    import telethon.sync
-    #              ^^^^^ import sync
-
-Or:
+Telethon is an asynchronous library. This means you need to ``await`` most methods:
 
 .. code-block:: python
 
@@ -218,19 +211,7 @@ Check out `quart_login.py`_ for an example web-application based on Quart.
 Can I use Anaconda/Spyder/IPython with the library?
 ===================================================
 
-Yes, but these interpreters run the asyncio event loop implicitly,
-which interferes with the ``telethon.sync`` magic module.
-
-If you use them, you should **not** import ``sync``:
-
-.. code-block:: python
-
-    # Change any of these...:
-    from telethon import TelegramClient, sync, ...
-    from telethon.sync import TelegramClient, ...
-
-    # ...with this:
-    from telethon import TelegramClient, ...
+Yes, but these interpreters run the asyncio event loop implicitly, so be wary of that.
 
 You are also more likely to get "sqlite3.OperationalError: database is locked"
 with them. If they cause too much trouble, just write your code in a ``.py``

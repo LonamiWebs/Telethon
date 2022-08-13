@@ -58,84 +58,6 @@ What are asyncio basics?
     loop.run_until_complete(main())
 
 
-What does telethon.sync do?
-===========================
-
-The moment you import any of these:
-
-.. code-block:: python
-
-    from telethon import sync, ...
-    # or
-    from telethon.sync import ...
-    # or
-    import telethon.sync
-
-The ``sync`` module rewrites most ``async def``
-methods in Telethon to something similar to this:
-
-.. code-block:: python
-
-    def new_method():
-        result = original_method()
-        if loop.is_running():
-            # the loop is already running, return the await-able to the user
-            return result
-        else:
-            # the loop is not running yet, so we can run it for the user
-            return loop.run_until_complete(result)
-
-
-That means you can do this:
-
-.. code-block:: python
-
-    print(client.get_me().username)
-
-Instead of this:
-
-.. code-block:: python
-
-    me = client.loop.run_until_complete(client.get_me())
-    print(me.username)
-
-    # or, using asyncio's default loop (it's the same)
-    import asyncio
-    loop = asyncio.get_event_loop()  # == client.loop
-    me = loop.run_until_complete(client.get_me())
-    print(me.username)
-
-
-As you can see, it's a lot of boilerplate and noise having to type
-``run_until_complete`` all the time, so you can let the magic module
-to rewrite it for you. But notice the comment above: it won't run
-the loop if it's already running, because it can't. That means this:
-
-.. code-block:: python
-
-    async def main():
-        # 3. the loop is running here
-        print(
-            client.get_me()  # 4. this will return a coroutine!
-            .username  # 5. this fails, coroutines don't have usernames
-        )
-
-    loop.run_until_complete(  # 2. run the loop and the ``main()`` coroutine
-        main()  # 1. calling ``async def`` "returns" a coroutine
-    )
-
-
-Will fail. So if you're inside an ``async def``, then the loop is
-running, and if the loop is running, you must ``await`` things yourself:
-
-.. code-block:: python
-
-    async def main():
-        print((await client.get_me()).username)
-
-    loop.run_until_complete(main())
-
-
 What are async, await and coroutines?
 =====================================
 
@@ -153,7 +75,7 @@ loops or use ``async with``:
         async with client:
             # ^ this is an asynchronous with block
 
-            async for message in client.iter_messages(chat):
+            async for message in client.get_messages(chat):
                 # ^ this is a for loop over an asynchronous generator
 
                 print(message.sender.username)
@@ -275,7 +197,7 @@ in it. So if you want to run *other* code, create tasks for it:
 
     loop.create_task(clock())
     ...
-    client.run_until_disconnected()
+    await client.run_until_disconnected()
 
 This creates a task for a clock that prints the time every second.
 You don't need to use `client.run_until_disconnected()
@@ -343,19 +265,6 @@ You can get as creative as you want. You can program anything you want.
 When you use a library, you're not limited to use only its methods. You can
 combine all the libraries you want. People seem to forget this simple fact!
 
-
-Why does client.start() work outside async?
-===========================================
-
-Because it's so common that it's really convenient to offer said
-functionality by default. This means you can set up all your event
-handlers and start the client without worrying about loops at all.
-
-Using the client in a ``with`` block, `start
-<telethon.client.auth.AuthMethods.start>`, `run_until_disconnected
-<telethon.client.updates.UpdateMethods.run_until_disconnected>`, and
-`disconnect <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
-all support this.
 
 Where can I read more?
 ======================
