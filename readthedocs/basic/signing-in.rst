@@ -53,7 +53,7 @@ We can finally write some code to log into our account!
     from telethon import TelegramClient
 
     # Use your own values from my.telegram.org
-    api_id = 12345
+    api_id = 11111
     api_hash = '0123456789abcdef0123456789abcdef'
 
     async def main():
@@ -94,16 +94,21 @@ Signing In as a Bot Account
 ===========================
 
 You can also use Telethon for your bots (normal bot accounts, not users).
-You will still need an API ID and hash, but the process is very similar:
+You will still need an API ID and hash that could be retrived from *any application*
+created before.
 
+So, the process is very similar:
 
 .. code-block:: python
 
     import asyncio
     from telethon import TelegramClient
 
-    api_id = 12345
+    # Use the values retrieved from an application created in my.telegram.org
+    api_id = 11111
     api_hash = '0123456789abcdef0123456789abcdef'
+    
+    # Use the value retrieved from the bot account
     bot_token = '12345:0123456789abcdef0123456789abcdef'
 
     async def main():
