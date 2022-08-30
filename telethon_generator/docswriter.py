@@ -142,8 +142,8 @@ class DocsWriter:
             self.write(':')
 
             # "Opening" modifiers
-            if arg.is_flag:
-                self.write('flags.{}?', arg.flag_index)
+            if arg.flag:
+                self.write('{}.{}?', arg.flag, arg.flag_index)
 
             if arg.is_generic:
                 self.write('!')
