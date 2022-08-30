@@ -312,7 +312,7 @@ class UpdateMethods:
                             self._mb_entity_cache
                         )
                         continue
-                    except errors.ChannelPrivateError:
+                    except (errors.ChannelPrivateError, errors.ChannelInvalidError):
                         # Timeout triggered a get difference, but we have been banned in the channel since then.
                         # Because we can no longer fetch updates from this channel, we should stop keeping track
                         # of it entirely.
