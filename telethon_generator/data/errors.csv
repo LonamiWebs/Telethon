@@ -162,6 +162,7 @@ GROUPCALL_NOT_MODIFIED,400,
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 GROUP_CALL_INVALID,400,Group call invalid
 HASH_INVALID,400,The provided hash is invalid
+HIDE_REQUESTER_MISSING,400,
 HISTORY_GET_FAILED,500,Fetching of history failed
 IMAGE_PROCESS_FAILED,400,Failure while processing image
 IMPORT_FILE_INVALID,400,The file is too large to be imported
@@ -213,7 +214,7 @@ MESSAGE_IDS_EMPTY,400,No message ids were provided
 MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that operation on such message"
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_POLL_CLOSED,400,The poll was closed and can no longer be voted on
-MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
+MESSAGE_TOO_LONG,400,Message was too long
 METHOD_INVALID,400,The API method is invalid and cannot be used
 MSGID_DECREASE_RETRY,500,The request should be retried with a lower message ID
 MSG_ID_INVALID,400,The message ID used in the peer was invalid

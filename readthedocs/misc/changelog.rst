@@ -13,6 +13,40 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Update handling overhaul (v1.25)
+================================
+
++------------------------+
+| Scheme layer used: 144 |
++------------------------+
+
+I had plans to release v2 way earlier, but my motivation drained off, so that
+didn't happen. The reason for another v1 release is that there was a clear
+need to fix some things regarding update handling (which were present in v2).
+I did not want to make this release. But with the release date for v2 still
+being unclear, I find it necessary to release another v1 version. I apologize
+for the delay (I should've done this a lot sooner but didn't because in my
+head I would've pushed through and finished v2, but I underestimated how much
+work that was and I probably experienced burn-out).
+
+I still don't intend to make new additions to the v1 series (beyond updating
+the Telegram layer being used). I still have plans to finish v2 some day.
+But in the meantime, new features, such as reactions, will have to be used
+through raw API.
+
+This update also backports the update overhaul from v2. If you experience
+issues with updates, please report them on the GitHub page for the project.
+However, this new update handling should be more reliable, and ``catch_up``
+should actually work properly.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* In order for ``catch_up`` to work (new flag in the ``TelegramClient``
+  constructor), sessions need to impleemnt the new ``get_update_states``.
+  Third-party session storages won't have this implemented by the time
+  this version released, so ``catch_up`` may not work with those.
+
 Rushed release to fix login (v1.24)
 ===================================
 

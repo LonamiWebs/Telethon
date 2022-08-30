@@ -164,4 +164,4 @@ It makes use of the ["raw API"](https://tl.telethon.dev) (that is, no friendly `
 [`asyncio`]: https://docs.python.org/3/library/asyncio.html
 [`tkinter`]: https://docs.python.org/3/library/tkinter.html
 [tkinter GUI]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/screenshot-gui.jpg
-[`events.NewMessage`]: https://docs.telethon.dev/en/latest/modules/events.html#telethon.events.newmessage.NewMessage
+[`events.NewMessage`]: https://docs.telethon.dev/en/stable/modules/events.html#telethon.events.newmessage.NewMessage
