@@ -37,7 +37,6 @@ class SQLiteSession(MemorySession):
         super().__init__()
         self.filename = ':memory:'
         self.save_entities = True
-        self._init_saved = True
 
         if session_id:
             self.filename = session_id
@@ -56,7 +55,7 @@ class SQLiteSession(MemorySession):
                 self._upgrade_database(old=version)
                 c.execute("delete from version")
                 c.execute("insert into version values (?)", (CURRENT_VERSION,))
-                self._init_saved = False
+                self.save()
 
             # These values will be saved
             c.execute('select * from sessions')
@@ -110,7 +109,7 @@ class SQLiteSession(MemorySession):
             c.execute("insert into version values (?)", (CURRENT_VERSION,))
             self._update_session_table()
             c.close()
-            self._init_saved = False
+            self.save()
 
     def clone(self, to_instance=None):
         cloned = super().clone(to_instance)

@@ -523,12 +523,6 @@ class TelegramBaseClient(abc.ABC):
                 except OSError:
                     print('Failed to connect')
         """
-        # Workaround specific to SQLiteSession, which sometimes need to persist info after init.
-        # Since .save() is now async we can't do that in init. Instead we do it in the first connect.
-        if isinstance(self.session, SQLiteSession) and not self.session._init_saved:
-            await self.session.save()
-            self.session._init_saved = True
-
         if not await self._sender.connect(self._connection(
             self.session.server_address,
             self.session.port,
