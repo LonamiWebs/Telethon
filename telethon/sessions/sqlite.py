@@ -201,7 +201,7 @@ class SQLiteSession(MemorySession):
         ))
         c.close()
 
-    async def get_update_state(self, entity_id):
+    def get_update_state(self, entity_id):
         row = self._execute('select pts, qts, date, seq from update_state '
                             'where id = ?', entity_id)
         if row:
@@ -210,7 +210,7 @@ class SQLiteSession(MemorySession):
                 date, tz=datetime.timezone.utc)
             return types.updates.State(pts, qts, date, seq, unread_count=0)
 
-    async def set_update_state(self, entity_id, state):
+    def set_update_state(self, entity_id, state):
         self._execute('insert or replace into update_state values (?,?,?,?,?)',
                       entity_id, state.pts, state.qts,
                       state.date.timestamp(), state.seq)
@@ -229,7 +229,7 @@ class SQLiteSession(MemorySession):
         finally:
             c.close()
 
-    async def save(self):
+    def save(self):
         """Saves the current session object as session_user_id.session"""
         # This is a no-op if there are no changes to commit, so there's
         # no need for us to keep track of an "unsaved changes" variable.
@@ -254,7 +254,7 @@ class SQLiteSession(MemorySession):
         finally:
             c.close()
 
-    async def close(self):
+    def close(self):
         """Closes the connection unless we're working in-memory"""
         if self.filename != ':memory:':
             if self._conn is not None:
@@ -262,7 +262,7 @@ class SQLiteSession(MemorySession):
                 self._conn.close()
                 self._conn = None
 
-    async def delete(self):
+    def delete(self):
         """Deletes the current session file"""
         if self.filename == ':memory:':
             return True
@@ -282,7 +282,7 @@ class SQLiteSession(MemorySession):
 
     # Entity processing
 
-    async def process_entities(self, tlo):
+    def process_entities(self, tlo):
         """
         Processes all the found entities on the given TLObject,
         unless .save_entities is False.
