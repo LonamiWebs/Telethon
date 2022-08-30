@@ -614,7 +614,7 @@ class AuthMethods:
         self._authorized = False
 
         await self.disconnect()
-        await self.session.delete()
+        self.session.delete()
         return True
 
     async def edit_2fa(

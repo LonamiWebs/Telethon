@@ -71,22 +71,22 @@ class MemorySession(Session):
     def takeout_id(self, value):
         self._takeout_id = value
 
-    async def get_update_state(self, entity_id):
+    def get_update_state(self, entity_id):
         return self._update_states.get(entity_id, None)
 
-    async def set_update_state(self, entity_id, state):
+    def set_update_state(self, entity_id, state):
         self._update_states[entity_id] = state
 
     async def get_update_states(self):
         return self._update_states.items()
 
-    async def close(self):
+    def close(self):
         pass
 
-    async def save(self):
+    def save(self):
         pass
 
-    async def delete(self):
+    def delete(self):
         pass
 
     @staticmethod
@@ -147,31 +147,31 @@ class MemorySession(Session):
                 rows.append(row)
         return rows
 
-    async def process_entities(self, tlo):
+    def process_entities(self, tlo):
         self._entities |= set(self._entities_to_rows(tlo))
 
-    async def get_entity_rows_by_phone(self, phone):
+    def get_entity_rows_by_phone(self, phone):
         try:
             return next((id, hash) for id, hash, _, found_phone, _
                         in self._entities if found_phone == phone)
         except StopIteration:
             pass
 
-    async def get_entity_rows_by_username(self, username):
+    def get_entity_rows_by_username(self, username):
         try:
             return next((id, hash) for id, hash, found_username, _, _
                         in self._entities if found_username == username)
         except StopIteration:
             pass
 
-    async def get_entity_rows_by_name(self, name):
+    def get_entity_rows_by_name(self, name):
         try:
             return next((id, hash) for id, hash, _, _, found_name
                         in self._entities if found_name == name)
         except StopIteration:
             pass
 
-    async def get_entity_rows_by_id(self, id, exact=True):
+    def get_entity_rows_by_id(self, id, exact=True):
         try:
             if exact:
                 return next((id, hash) for found_id, hash, _, _, _
@@ -187,7 +187,7 @@ class MemorySession(Session):
         except StopIteration:
             pass
 
-    async def get_input_entity(self, key):
+    def get_input_entity(self, key):
         try:
             if key.SUBCLASS_OF_ID in (0xc91c90b6, 0xe669bf46, 0x40f202fd):
                 # hex(crc32(b'InputPeer', b'InputUser' and b'InputChannel'))
@@ -207,21 +207,21 @@ class MemorySession(Session):
         if isinstance(key, str):
             phone = utils.parse_phone(key)
             if phone:
-                result = await self.get_entity_rows_by_phone(phone)
+                result = self.get_entity_rows_by_phone(phone)
             else:
                 username, invite = utils.parse_username(key)
                 if username and not invite:
-                    result = await self.get_entity_rows_by_username(username)
+                    result = self.get_entity_rows_by_username(username)
                 else:
                     tup = utils.resolve_invite_link(key)[1]
                     if tup:
-                        result = await self.get_entity_rows_by_id(tup, exact=False)
+                        result = self.get_entity_rows_by_id(tup, exact=False)
 
         elif isinstance(key, int):
-            result = await self.get_entity_rows_by_id(key, exact)
+            result = self.get_entity_rows_by_id(key, exact)
 
         if not result and isinstance(key, str):
-            result = await self.get_entity_rows_by_name(key)
+            result = self.get_entity_rows_by_name(key)
 
         if result:
             entity_id, entity_hash = result  # unpack resulting tuple
@@ -236,14 +236,14 @@ class MemorySession(Session):
         else:
             raise ValueError('Could not find input entity with key ', key)
 
-    async def cache_file(self, md5_digest, file_size, instance):
+    def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
         key = (md5_digest, file_size, _SentFileType.from_type(type(instance)))
         value = (instance.id, instance.access_hash)
         self._files[key] = value
 
-    async def get_file(self, md5_digest, file_size, cls):
+    def get_file(self, md5_digest, file_size, cls):
         key = (md5_digest, file_size, _SentFileType.from_type(cls))
         try:
             return cls(*self._files[key])

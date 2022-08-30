@@ -397,11 +397,7 @@ class UpdateMethods:
             # inserted because this is a rather expensive operation
             # (default's sqlite3 takes ~0.1s to commit changes). Do
             # it every minute instead. No-op if there's nothing new.
-            try:
-                await self.session.save()
-            except OSError as e:
-                # No big deal if this cannot be immediately saved
-                self._log[__name__].warning('Could not perform the periodic save of session data: %s: %s', type(e), e)
+            self.session.save()
 
     async def _dispatch_update(self: 'TelegramClient', update):
         # TODO only used for AlbumHack, and MessageBox is not really designed for this

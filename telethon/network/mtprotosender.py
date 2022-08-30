@@ -296,7 +296,7 @@ class MTProtoSender:
             # notify whenever we change it. This is crucial when we
             # switch to different data centers.
             if self._auth_key_callback:
-                await self._auth_key_callback(self.auth_key)
+                self._auth_key_callback(self.auth_key)
 
             self._log.debug('auth_key generation success!')
             return True

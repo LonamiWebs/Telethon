@@ -398,6 +398,11 @@ class TelegramBaseClient(abc.ABC):
 
         self._authorized = None  # None = unknown, False = no, True = yes
 
+        # Update state (for catching up after a disconnection)
+        # TODO Get state from channels too
+        self._state_cache = StateCache(
+            self.session.get_update_state(0), self._log)
+
         # Some further state for subclasses
         self._event_builders = []
 
@@ -535,13 +540,13 @@ class TelegramBaseClient(abc.ABC):
             return
 
         self.session.auth_key = self._sender.auth_key
-        await self.session.save()
+        self.session.save()
 
         if self._catch_up:
             ss = SessionState(0, 0, False, 0, 0, 0, 0, None)
             cs = []
 
-            for entity_id, state in await self.session.get_update_states():
+            for entity_id, state in self.session.get_update_states():
                 if entity_id == 0:
                     # TODO current session doesn't store self-user info but adding that is breaking on downstream session impls
                     ss = SessionState(0, 0, False, state.pts, state.qts, int(state.date.timestamp()), state.seq, None)
@@ -550,7 +555,7 @@ class TelegramBaseClient(abc.ABC):
 
             self._message_box.load(ss, cs)
             for state in cs:
-                entity = await self.session.get_input_entity(state.channel_id)
+                entity = self.session.get_input_entity(state.channel_id)
                 if entity:
                     self._mb_entity_cache.put(Entity(EntityType.CHANNEL, entity.channel_id, entity.access_hash))
 
@@ -670,15 +675,15 @@ class TelegramBaseClient(abc.ABC):
 
         # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
         # It doesn't matter if we put users in the list of chats.
-        await self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
+        self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
 
         ss, cs = self._message_box.session_state()
-        await self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))
+        self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))
         now = datetime.datetime.now()  # any datetime works; channels don't need it
         for channel_id, pts in cs.items():
-            await self.session.set_update_state(channel_id, types.updates.State(pts, 0, now, 0, unread_count=0))
+            self.session.set_update_state(channel_id, types.updates.State(pts, 0, now, 0, unread_count=0))
 
-        await self.session.close()
+        self.session.close()
 
     async def _disconnect(self: 'TelegramClient'):
         """
@@ -704,17 +709,17 @@ class TelegramBaseClient(abc.ABC):
         # so it's not valid anymore. Set to None to force recreating it.
         self._sender.auth_key.key = None
         self.session.auth_key = None
-        await self.session.save()
+        self.session.save()
         await self._disconnect()
         return await self.connect()
 
-    async def _auth_key_callback(self: 'TelegramClient', auth_key):
+    def _auth_key_callback(self: 'TelegramClient', auth_key):
         """
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
         """
         self.session.auth_key = auth_key
-        await self.session.save()
+        self.session.save()
 
     # endregion
 
