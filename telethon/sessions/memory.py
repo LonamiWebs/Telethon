@@ -77,7 +77,7 @@ class MemorySession(Session):
     def set_update_state(self, entity_id, state):
         self._update_states[entity_id] = state
 
-    async def get_update_states(self):
+    def get_update_states(self):
         return self._update_states.items()
 
     def close(self):

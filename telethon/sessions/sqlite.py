@@ -215,7 +215,7 @@ class SQLiteSession(MemorySession):
                       entity_id, state.pts, state.qts,
                       state.date.timestamp(), state.seq)
 
-    async def get_update_states(self):
+    def get_update_states(self):
         c = self._cursor()
         try:
             rows = c.execute('select id, pts, qts, date, seq from update_state').fetchall()
@@ -332,7 +332,7 @@ class SQLiteSession(MemorySession):
         return self._execute(
             'select id, hash from entities where name = ?', name)
 
-    async def get_entity_rows_by_id(self, id, exact=True):
+    def get_entity_rows_by_id(self, id, exact=True):
         if exact:
             return self._execute(
                 'select id, hash from entities where id = ?', id)
