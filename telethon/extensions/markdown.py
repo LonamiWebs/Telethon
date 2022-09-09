@@ -22,7 +22,7 @@ DEFAULT_DELIMITERS = {
     '```': MessageEntityPre
 }
 
-DEFAULT_URL_RE = re.compile(r'\[([\S\s]+?)\]\((.+?)\)')
+DEFAULT_URL_RE = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
 DEFAULT_URL_FORMAT = '[{0}]({1})'
 
 
