@@ -392,7 +392,9 @@ class MessageBox:
         seq_start = getattr(updates, 'seq_start', None) or seq
         users = getattr(updates, 'users', None) or []
         chats = getattr(updates, 'chats', None) or []
-        updates = getattr(updates, 'updates', None) or [updates]
+
+        # updateShort is the only update which cannot be dispatched directly but doesn't have 'updates' field
+        updates = getattr(updates, 'updates', None) or [updates.update if isinstance(updates, tl.UpdateShort) else updates]
 
         for u in updates:
             u._self_outgoing = self_outgoing
