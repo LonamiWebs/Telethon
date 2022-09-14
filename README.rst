@@ -8,6 +8,14 @@ Telethon
 MTProto_ library to interact with Telegram_'s API
 as a user or through a bot account (bot API alternative).
 
+.. image:: https://kandi.openweaver.com/badges/xray.svg
+   :target: https://kandi.openweaver.com/python/LonamiWebs/Telethon
+   :alt: kandi X-Ray
+
+.. image:: https://kandi.openweaver.com/badges/featured.svg
+   :target: https://kandi.openweaver.com/collections/python/python-telegram-bot
+   :alt: kandi Featured
+
 .. important::
 
     If you have code using Telethon before its 1.0 version, you must
