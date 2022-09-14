@@ -43,9 +43,9 @@ Breaking Changes
 ~~~~~~~~~~~~~~~~
 
 * In order for ``catch_up`` to work (new flag in the ``TelegramClient``
-  constructor), sessions need to impleemnt the new ``get_update_states``.
+  constructor), sessions need to implement the new ``get_update_states``.
   Third-party session storages won't have this implemented by the time
-  this version released, so ``catch_up`` may not work with those.
+  this version is released, so ``catch_up`` may not work with those.
 
 Rushed release to fix login (v1.24)
 ===================================
