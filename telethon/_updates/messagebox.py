@@ -305,20 +305,21 @@ class MessageBox:
     def set_state(self, state, reset=True):
         deadline = next_updates_deadline()
 
-        # TODO there have been multiple reports where `end_get_diff(ENTRY_SECRET)` is used during `apply_difference`,
-        # but because the `map` no longer contains `ENTRY_SECRET`, `reset_deadline` fails. AFAIK that can only happen
-        # here (not sure why Telegram's update difference state lacks the new `qts`; this needs investigating).
-        # If the difference state does not contain info about `pts` or `qts`, ignore it and don't remove the state.
-        # This issue probably occurs with bot accounts only but I have not verified it.
-
-        if state.pts != NO_SEQ:
+        if state.pts != NO_SEQ or not reset:
             self.map[ENTRY_ACCOUNT] = State(pts=state.pts, deadline=deadline)
-        elif reset:
+        else:
             self.map.pop(ENTRY_ACCOUNT, None)
 
-        if state.qts != NO_SEQ:
+        # Telegram seems to use the `qts` for bot accounts, but while applying difference,
+        # it might be reset back to 0. See issue #3873 for more details.
+        #
+        # During login, a value of zero would mean the `pts` is unknown,
+        # so the map shouldn't contain that entry.
+        # But while applying difference, if the value is zero, it (probably)
+        # truly means that's what should be used (hence the `reset` flag).
+        if state.qts != NO_SEQ or not reset:
             self.map[ENTRY_SECRET] = State(pts=state.qts, deadline=deadline)
-        elif reset:
+        else:
             self.map.pop(ENTRY_SECRET, None)
 
         self.date = state.date
