@@ -22,6 +22,7 @@ AUTH_RESTART,500,Restart the authorization process
 AUTH_TOKEN_ALREADY_ACCEPTED,400,The authorization token was already used
 AUTH_TOKEN_EXPIRED,400,The provided authorization token has expired and the updated QR-code must be re-scanned
 AUTH_TOKEN_INVALID,400,An invalid authorization token was provided
+AUTH_TOKEN_INVALID2,400,An invalid authorization token was provided
 AUTOARCHIVE_NOT_AVAILABLE,400,You cannot use this feature yet
 BANK_CARD_NUMBER_INVALID,400,Incorrect credit card number
 BASE_PORT_LOC_INVALID,400,Base port location invalid
@@ -282,6 +283,7 @@ POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 POLL_VOTE_REQUIRED,403,
 POSTPONED_TIMEOUT,500,The postponed call has timed out
+PREMIUM_ACCOUNT_REQUIRED,403,
 PREVIOUS_CHAT_IMPORT_ACTIVE_WAIT_XMIN,406,"Similar to a flood wait, must wait {minutes} minutes"
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
