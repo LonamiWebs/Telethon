@@ -302,17 +302,23 @@ class MessageBox:
     #
     # Should be called right after login if [`MessageBox::new`] was used, otherwise undesirable
     # updates will be fetched.
-    def set_state(self, state):
+    def set_state(self, state, reset=True):
         deadline = next_updates_deadline()
+
+        # TODO there have been multiple reports where `end_get_diff(ENTRY_SECRET)` is used during `apply_difference`,
+        # but because the `map` no longer contains `ENTRY_SECRET`, `reset_deadline` fails. AFAIK that can only happen
+        # here (not sure why Telegram's update difference state lacks the new `qts`; this needs investigating).
+        # If the difference state does not contain info about `pts` or `qts`, ignore it and don't remove the state.
+        # This issue probably occurs with bot accounts only but I have not verified it.
 
         if state.pts != NO_SEQ:
             self.map[ENTRY_ACCOUNT] = State(pts=state.pts, deadline=deadline)
-        else:
+        elif reset:
             self.map.pop(ENTRY_ACCOUNT, None)
 
         if state.qts != NO_SEQ:
             self.map[ENTRY_SECRET] = State(pts=state.qts, deadline=deadline)
-        else:
+        elif reset:
             self.map.pop(ENTRY_SECRET, None)
 
         self.date = state.date
@@ -586,7 +592,7 @@ class MessageBox:
         chat_hashes,
     ):
         state = getattr(diff, 'intermediate_state', None) or diff.state
-        self.set_state(state)
+        self.set_state(state, reset=False)
 
         # diff.other_updates can contain things like UpdateChannelTooLong and UpdateNewChannelMessage.
         # We need to process those as if they were socket updates to discard any we have already handled.
