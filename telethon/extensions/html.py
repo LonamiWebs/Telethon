@@ -86,7 +86,7 @@ class HTMLToTelegramParser(HTMLParser):
                     EntityType = MessageEntityUrl
                 else:
                     EntityType = MessageEntityTextUrl
-                    args['url'] = url
+                    args['url'] = _del_surrogate(url)
                     url = None
             self._open_tags_meta.popleft()
             self._open_tags_meta.appendleft(url)
