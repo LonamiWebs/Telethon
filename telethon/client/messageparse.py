@@ -87,10 +87,15 @@ class MessageParseMethods:
         message, msg_entities = parse_mode.parse(message)
         if original_message and not message and not msg_entities:
             raise ValueError("Failed to parse message")
-        
+
         for i in reversed(range(len(msg_entities))):
             e = msg_entities[i]
-            if isinstance(e, types.MessageEntityTextUrl):
+            if not e.length:
+                # 0-length MessageEntity is no longer valid #3884.
+                # Because the user can provide their own parser (with reasonable 0-length
+                # entities), strip them here rather than fixing the built-in parsers.
+                del msg_entities[i]
+            elif isinstance(e, types.MessageEntityTextUrl):
                 m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
                 if m:
                     user = int(m.group(1)) if m.group(1) else e.url
