@@ -880,7 +880,8 @@ class MessageMethods:
                 media=result.media,
                 entities=result.entities,
                 reply_markup=request.reply_markup,
-                ttl_period=result.ttl_period
+                ttl_period=result.ttl_period,
+                reply_to=types.MessageReplyHeader(request.reply_to_msg_id)
             )
             message._finish_init(self, {}, entity)
             return message
