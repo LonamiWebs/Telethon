@@ -611,6 +611,19 @@ class MessageBox:
 
         return updates, diff.users, diff.chats
 
+    def end_difference(self):
+        account = ENTRY_ACCOUNT in self.getting_diff_for
+        secret = ENTRY_SECRET in self.getting_diff_for
+
+        if not account and not secret:
+            raise RuntimeWarning('Should not be ending get difference when neither account or secret was diff was active')
+
+        # Both may be active if both expired at the same time.
+        if account:
+            self.end_get_diff(ENTRY_ACCOUNT)
+        if secret:
+            self.end_get_diff(ENTRY_SECRET)
+
     # endregion Getting and applying account difference.
 
     # region Getting and applying channel difference.

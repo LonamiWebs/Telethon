@@ -270,7 +270,13 @@ class UpdateMethods:
                 get_diff = self._message_box.get_difference()
                 if get_diff:
                     self._log[__name__].info('Getting difference for account updates')
-                    diff = await self(get_diff)
+                    try:
+                        diff = await self(get_diff)
+                    except (errors.UnauthorizedError, errors.AuthKeyError) as e:
+                        # Not logged in or broken authorization key, can't get difference
+                        self._log[__name__].info('Cannot get difference since the account is not logged in: %s', type(e).__name__)
+                        self._message_box.end_difference()
+                        continue
                     updates, users, chats = self._message_box.apply_difference(diff, self._mb_entity_cache)
                     updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
                     continue
@@ -280,7 +286,13 @@ class UpdateMethods:
                     self._log[__name__].info('Getting difference for channel updates')
                     try:
                         diff = await self(get_diff)
-                    except (errors.PersistentTimestampOutdatedError, errors.PersistentTimestampInvalidError, ValueError) as e:
+                    except (
+                        errors.PersistentTimestampOutdatedError,
+                        errors.PersistentTimestampInvalidError,
+                        errors.UnauthorizedError,
+                        errors.AuthKeyError,
+                        ValueError
+                    ) as e:
                         # According to Telegram's docs:
                         # "Channel internal replication issues, try again later (treat this like an RPC_CALL_FAIL)."
                         # We can treat this as "empty difference" and not update the local pts.
@@ -297,15 +309,10 @@ class UpdateMethods:
                         # Somehow our pts is either too new or the server does not know about this.
                         # We treat this as PersistentTimestampOutdatedError for now.
                         # TODO investigate why/when this happens and if this is the proper solution
-                        if isinstance(e, errors.PersistentTimestampOutdatedError):
-                            reason = 'caused PersistentTimestampOutdated'
-                        elif isinstance(e, errors.PersistentTimestampInvalidError):
-                            reason = 'caused PersistentTimestampInvalidError'
-                        else:
-                            reason = 'is failing'
                         self._log[__name__].warning(
-                            'Getting difference for channel updates %s;'
-                            ' ending getting difference prematurely until server issues are resolved', reason
+                            'Getting difference for channel updates caused %s;'
+                            ' ending getting difference prematurely until server issues are resolved',
+                            type(e).__name__
                         )
                         self._message_box.end_channel_difference(
                             get_diff,
