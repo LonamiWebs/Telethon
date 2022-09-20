@@ -152,16 +152,8 @@ class Album(EventBuilder):
         """
         def __init__(self, messages):
             message = messages[0]
-            if not message.out and isinstance(message.peer_id, types.PeerUser):
-                # Incoming message (e.g. from a bot) has peer_id=us, and
-                # from_id=bot (the actual "chat" from a user's perspective).
-                chat_peer = message.from_id
-            else:
-                chat_peer = message.peer_id
-
-            super().__init__(chat_peer=chat_peer,
+            super().__init__(chat_peer=message.peer_id,
                              msg_id=message.id, broadcast=bool(message.post))
-
             SenderGetter.__init__(self, message.sender_id)
             self.messages = messages
 
