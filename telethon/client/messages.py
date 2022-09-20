@@ -618,7 +618,7 @@ class MessageMethods:
             thumb: 'hints.FileLike' = None,
             force_document: bool = False,
             clear_draft: bool = False,
-            buttons: 'hints.MarkupLike' = None,
+            buttons: typing.Optional['hints.MarkupLike'] = None,
             silent: bool = None,
             background: bool = None,
             supports_streaming: bool = False,
@@ -1030,7 +1030,7 @@ class MessageMethods:
             file: 'hints.FileLike' = None,
             thumb: 'hints.FileLike' = None,
             force_document: bool = False,
-            buttons: 'hints.MarkupLike' = None,
+            buttons: typing.Optional['hints.MarkupLike'] = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None
     ) -> 'types.Message':

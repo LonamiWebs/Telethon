@@ -110,7 +110,7 @@ class UploadMethods:
             formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             voice_note: bool = False,
             video_note: bool = False,
-            buttons: 'hints.MarkupLike' = None,
+            buttons: typing.Optional['hints.MarkupLike'] = None,
             silent: bool = None,
             background: bool = None,
             supports_streaming: bool = False,
