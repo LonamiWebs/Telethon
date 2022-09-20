@@ -136,7 +136,7 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 
 ![Screenshot of the tkinter GUI][tkinter GUI]
 
-### [`payment.py`](https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/payment.py)
+### [`payment.py`](https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/payment.py)
 
 * Usable as: **bot**.
 * Difficulty: **medium**.
@@ -150,18 +150,18 @@ It makes use of the ["raw API"](https://tl.telethon.dev) (that is, no friendly `
 
 
 [Telethon]: https://github.com/LonamiWebs/Telethon
-[CC0 License]: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/LICENSE
+[CC0 License]: https://github.com/LonamiWebs/Telethon/blob/v1/telethon_examples/LICENSE
 [@BotFather]: https://t.me/BotFather
-[`assistant.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/assistant.py
-[`quart_login.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/quart_login.py
-[`gui.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/gui.py
-[`interactive_telegram_client.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/interactive_telegram_client.py
-[`print_messages.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/print_messages.py
-[`print_updates.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/print_updates.py
-[`replier.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/replier.py
+[`assistant.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/assistant.py
+[`quart_login.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/quart_login.py
+[`gui.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/gui.py
+[`interactive_telegram_client.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/interactive_telegram_client.py
+[`print_messages.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/print_messages.py
+[`print_updates.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/print_updates.py
+[`replier.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/replier.py
 [@TelethonianBot]: https://t.me/TelethonianBot
 [official Telethon's chat]: https://t.me/TelethonChat
 [`asyncio`]: https://docs.python.org/3/library/asyncio.html
 [`tkinter`]: https://docs.python.org/3/library/tkinter.html
-[tkinter GUI]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/screenshot-gui.jpg
+[tkinter GUI]: https://raw.githubusercontent.com/LonamiWebs/Telethon/v1/telethon_examples/screenshot-gui.jpg
 [`events.NewMessage`]: https://docs.telethon.dev/en/stable/modules/events.html#telethon.events.newmessage.NewMessage

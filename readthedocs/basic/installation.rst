@@ -25,7 +25,7 @@ you can run the following command instead:
 
 .. code-block:: sh
 
-    python3 -m pip install --upgrade https://github.com/LonamiWebs/Telethon/archive/master.zip
+    python3 -m pip install --upgrade https://github.com/LonamiWebs/Telethon/archive/v1.zip
 
 .. note::
 

@@ -239,4 +239,4 @@ file and run that, or use the normal ``python`` interpreter.
 .. _logging: https://docs.python.org/3/library/logging.html
 .. _@SpamBot: https://t.me/SpamBot
 .. _issue 297: https://github.com/LonamiWebs/Telethon/issues/297
-.. _quart_login.py: https://github.com/LonamiWebs/Telethon/tree/master/telethon_examples#quart_loginpy
+.. _quart_login.py: https://github.com/LonamiWebs/Telethon/tree/v1/telethon_examples#quart_loginpy
