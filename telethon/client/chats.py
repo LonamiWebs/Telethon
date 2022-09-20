@@ -1259,7 +1259,7 @@ class ChatMethods:
             if isinstance(entity, types.Channel):
                 FullChat = await self(functions.channels.GetFullChannelRequest(entity))
             elif isinstance(entity, types.Chat):
-                FullChat = await self(functions.messages.GetFullChatRequest(entity))
+                FullChat = await self(functions.messages.GetFullChatRequest(entity.id))
             else:
                 return
             return FullChat.chats[0].default_banned_rights
@@ -1276,7 +1276,7 @@ class ChatMethods:
             return custom.ParticipantPermissions(participant.participant, False)
         elif helpers._entity_type(entity) == helpers._EntityType.CHAT:
             chat = await self(functions.messages.GetFullChatRequest(
-                entity
+                entity.chat_id
             ))
             if isinstance(user, types.InputPeerSelf):
                 user = await self.get_me(input_peer=True)
