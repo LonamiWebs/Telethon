@@ -97,7 +97,7 @@ class _ChatAction:
 
 
 class _ParticipantsIter(RequestIter):
-    async def _init(self, entity, filter, search, aggressive):
+    async def _init(self, entity, filter, search):
         if isinstance(filter, type):
             if filter in (types.ChannelParticipantsBanned,
                           types.ChannelParticipantsKicked,
@@ -122,7 +122,8 @@ class _ParticipantsIter(RequestIter):
             self.filter_entity = lambda ent: True
 
         # Only used for channels, but we should always set the attribute
-        self.requests = []
+        # Called `requests` even though it's just one for legacy purposes.
+        self.requests = None
 
         if ty == helpers._EntityType.CHANNEL:
             if self.limit <= 0:
@@ -133,22 +134,13 @@ class _ParticipantsIter(RequestIter):
                 raise StopAsyncIteration
 
             self.seen = set()
-            if aggressive and not filter:
-                self.requests.extend(functions.channels.GetParticipantsRequest(
-                    channel=entity,
-                    filter=types.ChannelParticipantsSearch(x),
-                    offset=0,
-                    limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
-                    hash=0
-                ) for x in (search or string.ascii_lowercase))
-            else:
-                self.requests.append(functions.channels.GetParticipantsRequest(
-                    channel=entity,
-                    filter=filter or types.ChannelParticipantsSearch(search),
-                    offset=0,
-                    limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
-                    hash=0
-                ))
+            self.requests = functions.channels.GetParticipantsRequest(
+                channel=entity,
+                filter=filter or types.ChannelParticipantsSearch(search),
+                offset=0,
+                limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
+                hash=0
+            )
 
         elif ty == helpers._EntityType.CHAT:
             full = await self.client(
@@ -190,21 +182,14 @@ class _ParticipantsIter(RequestIter):
         if not self.requests:
             return True
 
-        # Only care about the limit for the first request
-        # (small amount of people, won't be aggressive).
-        #
-        # Most people won't care about getting exactly 12,345
-        # members so it doesn't really matter not to be 100%
-        # precise with being out of the offset/limit here.
-        self.requests[0].limit = min(
-            self.limit - self.requests[0].offset, _MAX_PARTICIPANTS_CHUNK_SIZE)
+        self.requests.limit = min(self.limit - self.requests.offset, _MAX_PARTICIPANTS_CHUNK_SIZE)
 
-        if self.requests[0].offset > self.limit:
+        if self.requests.offset > self.limit:
             return True
 
         if self.total is None:
-            f = self.requests[0].filter
-            if len(self.requests) > 1 or (
+            f = self.requests.filter
+            if (
                 not isinstance(f, types.ChannelParticipantsRecent)
                 and (not isinstance(f, types.ChannelParticipantsSearch) or f.q)
             ):
@@ -212,42 +197,40 @@ class _ParticipantsIter(RequestIter):
                 # if there's a filter which would reduce the real total number.
                 # getParticipants is cheaper than getFull.
                 self.total = (await self.client(functions.channels.GetParticipantsRequest(
-                    channel=self.requests[0].channel,
+                    channel=self.requests.channel,
                     filter=types.ChannelParticipantsRecent(),
                     offset=0,
                     limit=1,
                     hash=0
                 ))).count
 
-        results = await self.client(self.requests)
-        for i in reversed(range(len(self.requests))):
-            participants = results[i]
-            if self.total is None:
-                # Will only get here if there was one request with a filter that matched all users.
-                self.total = participants.count
-            if not participants.users:
-                self.requests.pop(i)
-                continue
+        participants = await self.client(self.requests)
+        if self.total is None:
+            # Will only get here if there was one request with a filter that matched all users.
+            self.total = participants.count
+        if not participants.users:
+            self.requests = None
+            return
 
-            self.requests[i].offset += len(participants.participants)
-            users = {user.id: user for user in participants.users}
-            for participant in participants.participants:
+        self.requests.offset += len(participants.participants)
+        users = {user.id: user for user in participants.users}
+        for participant in participants.participants:
 
-                if isinstance(participant, types.ChannelParticipantBanned):
-                    if not isinstance(participant.peer, types.PeerUser):
-                        # May have the entire channel banned. See #3105.
-                        continue
-                    user_id = participant.peer.user_id
-                else:
-                    user_id = participant.user_id
-
-                user = users[user_id]
-                if not self.filter_entity(user) or user.id in self.seen:
+            if isinstance(participant, types.ChannelParticipantBanned):
+                if not isinstance(participant.peer, types.PeerUser):
+                    # May have the entire channel banned. See #3105.
                     continue
-                self.seen.add(user_id)
-                user = users[user_id]
-                user.participant = participant
-                self.buffer.append(user)
+                user_id = participant.peer.user_id
+            else:
+                user_id = participant.user_id
+
+            user = users[user_id]
+            if not self.filter_entity(user) or user.id in self.seen:
+                continue
+            self.seen.add(user_id)
+            user = users[user_id]
+            user.participant = participant
+            self.buffer.append(user)
 
 
 class _AdminLogIter(RequestIter):
@@ -431,9 +414,6 @@ class ChatMethods:
             search (`str`, optional):
                 Look for participants with this string in name/username.
 
-                If ``aggressive is True``, the symbols from this string will
-                be used.
-
             filter (:tl:`ChannelParticipantsFilter`, optional):
                 The filter to be used, if you want e.g. only admins
                 Note that you might not have permissions for some filter.
@@ -446,14 +426,11 @@ class ChatMethods:
                     use :tl:`ChannelParticipantsKicked` instead.
 
             aggressive (`bool`, optional):
-                Aggressively looks for all participants in the chat.
+                Does nothing. This is kept for backwards-compatibility.
 
-                This is useful for channels since 20 July 2018,
-                Telegram added a server-side limit where only the
-                first 200 members can be retrieved. With this flag
-                set, more than 200 will be often be retrieved.
-
-                This has no effect if a ``filter`` is given.
+                There have been several changes to Telegram's API that limits
+                the amount of members that can be retrieved, and this was a
+                hack that no longer works.
 
         Yields
             The :tl:`User` objects returned by :tl:`GetParticipantsRequest`
@@ -482,8 +459,7 @@ class ChatMethods:
             limit,
             entity=entity,
             filter=filter,
-            search=search,
-            aggressive=aggressive
+            search=search
         )
 
     async def get_participants(
