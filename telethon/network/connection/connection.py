@@ -265,7 +265,12 @@ class Connection(abc.ABC):
             self._writer.close()
             if sys.version_info >= (3, 7):
                 try:
-                    await self._writer.wait_closed()
+                    await asyncio.wait_for(self._writer.wait_closed(), timeout=10)
+                except asyncio.TimeoutError:
+                    # See issue #3917. For some users, this line was hanging indefinitely.
+                    # The hard timeout is not ideal (connection won't be properly closed),
+                    # but the code will at least be able to procceed.
+                    self._log.warning('Graceful disconnection timed out, forcibly ignoring cleanup')
                 except Exception as e:
                     # Disconnecting should never raise. Seen:
                     # * OSError: No route to host and
