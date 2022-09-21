@@ -278,6 +278,11 @@ class UpdateMethods:
                     self._log[__name__].info('Getting difference for account updates')
                     try:
                         diff = await self(get_diff)
+                    except (errors.ServerError, ValueError) as e:
+                        # Telegram is having issues
+                        self._log[__name__].info('Cannot get difference since Telegram is having issues: %s', type(e).__name__)
+                        self._message_box.end_difference()
+                        continue
                     except (errors.UnauthorizedError, errors.AuthKeyError) as e:
                         # Not logged in or broken authorization key, can't get difference
                         self._log[__name__].info('Cannot get difference since the account is not logged in: %s', type(e).__name__)
@@ -295,6 +300,7 @@ class UpdateMethods:
                     except (
                         errors.PersistentTimestampOutdatedError,
                         errors.PersistentTimestampInvalidError,
+                        errors.ServerError,
                         errors.UnauthorizedError,
                         errors.AuthKeyError,
                         ValueError
