@@ -42,4 +42,49 @@ send yourself the very first sticker you have:
     await client.send_file('me', stickers.documents[0])
 
 
-.. _issues: https://github.com/LonamiWebs/Telethon/issues/215
+Sending reactions
+=================
+
+It works very similar to replying to a message. You need to specify the chat,
+message ID you wish to react to, and reaction, using :tl:`SendReaction`:
+
+.. code-block:: python
+
+    from telethon.tl.functions.messages import SendReactionRequest
+
+    await client(SendReactionRequest(
+        peer=chat,
+        msg_id=42,
+        reaction='❤️'
+    ))
+
+Note that you cannot use strings like ``:heart:`` for the reaction. You must
+use the desired emoji directly. You can most easily achieve this by
+copy-pasting the emoji from an official application such as Telegram Desktop.
+
+If for some reason you cannot embed emoji directly into the code, you can also
+use its unicode escape (which you can find using websites like
+`unicode-table.com`_), or install a different package, like `emoji`_:
+
+.. code-block:: python
+
+    # All of these work exactly the same (you only need one):
+    import emoji
+    reaction = emoji.emojize(':red_heart:')
+    reaction = '❤️'
+    reaction = '\u2764'
+
+    from telethon.tl.functions.messages import SendReactionRequest
+    await client(SendReactionRequest(
+        peer=chat,
+        msg_id=42,
+        reaction=reaction
+    ))
+
+Please make sure to check the help pages of the respective websites you use
+if you need a more in-depth explanation on how they work. Telethon only needs
+you to provide the emoji in some form. Some packages or websites can make this
+easier.
+
+.. _unicode-table.com: https://unicode-table.com/en/emoji/
+.. _emoji: https://pypi.org/project/emoji/
