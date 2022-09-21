@@ -386,6 +386,7 @@ class TelegramBaseClient(abc.ABC):
         self._borrowed_senders = {}
         self._borrow_sender_lock = asyncio.Lock()
 
+        self._updates_error = None
         self._updates_handle = None
         self._keepalive_handle = None
         self._last_request = time.time()

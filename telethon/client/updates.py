@@ -28,7 +28,10 @@ class UpdateMethods:
         try:
             # Make a high-level request to notify that we want updates
             await self(functions.updates.GetStateRequest())
-            return await self.disconnected
+            result = await self.disconnected
+            if self._updates_error is not None:
+                raise self._updates_error
+            return result
         except KeyboardInterrupt:
             pass
         finally:
@@ -51,6 +54,8 @@ class UpdateMethods:
 
         It also notifies Telegram that we want to receive updates
         as described in https://core.telegram.org/api/updates.
+        If an unexpected error occurs during update handling,
+        the client will disconnect and said error will be raised.
 
         Manual disconnections can be made by calling `disconnect()
         <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
@@ -246,6 +251,7 @@ class UpdateMethods:
     # region Private methods
 
     async def _update_loop(self: 'TelegramClient'):
+        self._updates_error = None
         try:
             if self._catch_up:
                 # User wants to catch up as soon as the client is up and running,
@@ -360,8 +366,10 @@ class UpdateMethods:
                 updates_to_dispatch.extend(self._preprocess_updates(processed, users, chats))
         except asyncio.CancelledError:
             pass
-        except Exception:
+        except Exception as e:
             self._log[__name__].exception('Fatal error handling updates (this is a bug in Telethon, please report it)')
+            self._updates_error = e
+            await self.disconnect()
 
     def _preprocess_updates(self, updates, users, chats):
         self._mb_entity_cache.extend(users, chats)
