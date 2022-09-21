@@ -595,6 +595,8 @@ class AuthMethods:
         """
         Logs out Telegram and deletes the current ``*.session`` file.
 
+        The client is unusable after logging out and a new instance should be created.
+
         Returns
             `True` if the operation was successful.
 
