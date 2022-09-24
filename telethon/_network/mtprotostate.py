@@ -143,7 +143,7 @@ class MTProtoState:
 
         msg_key = body[8:24]
         aes_key, aes_iv = self._calc_key(self.auth_key.key, msg_key, False)
-        body = AES.decrypt_ige(body[24:], aes_key, aes_iv)
+        body = AES.decrypt_ige(bytes(body[24:]), aes_key, aes_iv)
 
         # https://core.telegram.org/mtproto/security_guidelines
         # Sections "checking sha256 hash" and "message length"
