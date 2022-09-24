@@ -13,6 +13,37 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Bug fixes (v1.25.1)
+===================
+
+This version should fix some of the problems that came with the revamped
+update handling.
+
+* Some inline URLs were not parsing correctly with markdown.
+* ``events.Raw`` was handling :tl:`UpdateShort` which it shouldn't do.
+* ``events.Album`` should now work again.
+* ``CancelledError`` was being incorrectly logged as a fatal error.
+* Some fixes to update handling primarly aimed for bot accounts.
+* Update handling now can deal with more errors without crashing.
+* Unhandled errors from update handling will now be propagated through
+  ``client.run_until_disconnected``.
+* Invite links with ``+`` are now recognized.
+* Added new known RPC errors.
+* ``telethon.types`` could not be used as a module.
+* 0-length message entities are now stripped to avoid errors.
+* ``client.send_message`` was not returning a message with ``reply_to``
+  in some cases.
+* ``aggressive`` in ``client.iter_participants`` now does nothing (it did
+  not really work anymore anyway, and this should prevent other errors).
+* ``client.iter_participants`` was failing in some groups.
+* Text with HTML URLs could sometimes fail to parse.
+* Added a hard timeout during disconnect in order to prevent the program
+  from freezing.
+
+Please be sure to report issues with update handling if you still encounter
+some errors!
+
+
 Update handling overhaul (v1.25)
 ================================
 
