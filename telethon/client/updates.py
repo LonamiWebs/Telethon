@@ -294,7 +294,7 @@ class UpdateMethods:
 
                 get_diff = self._message_box.get_channel_difference(self._mb_entity_cache)
                 if get_diff:
-                    self._log[__name__].info('Getting difference for channel updates')
+                    self._log[__name__].info('Getting difference for channel %s updates', get_diff.channel.channel_id)
                     try:
                         diff = await self(get_diff)
                     except (
@@ -322,9 +322,9 @@ class UpdateMethods:
                         # We treat this as PersistentTimestampOutdatedError for now.
                         # TODO investigate why/when this happens and if this is the proper solution
                         self._log[__name__].warning(
-                            'Getting difference for channel updates caused %s;'
+                            'Getting difference for channel updates %s caused %s;'
                             ' ending getting difference prematurely until server issues are resolved',
-                            type(e).__name__
+                            get_diff.channel.channel_id, type(e).__name__
                         )
                         self._message_box.end_channel_difference(
                             get_diff,
