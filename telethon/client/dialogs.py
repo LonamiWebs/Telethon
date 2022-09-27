@@ -58,6 +58,8 @@ class _DialogsIter(RequestIter):
                     for x in itertools.chain(r.users, r.chats)
                     if not isinstance(x, (types.UserEmpty, types.ChatEmpty))}
 
+        self.client._mb_entity_cache.extend(r.users, r.chats)
+
         messages = {}
         for m in r.messages:
             m._finish_init(self.client, entities, None)
@@ -82,7 +84,8 @@ class _DialogsIter(RequestIter):
 
                 cd = custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
-                    self.client._channel_pts[cd.id] = cd.dialog.pts
+                    self.client._message_box.try_set_channel_state(
+                        utils.get_peer_id(d.peer, add_mark=False), cd.dialog.pts)
 
                 if not self.ignore_migrated or getattr(
                         cd.entity, 'migrated_to', None) is None:

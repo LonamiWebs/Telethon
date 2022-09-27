@@ -390,7 +390,6 @@ class TelegramBaseClient(abc.ABC):
         self._updates_handle = None
         self._keepalive_handle = None
         self._last_request = time.time()
-        self._channel_pts = {}
         self._no_updates = not receive_updates
 
         # Used for non-sequential updates, in order to terminate all pending tasks on disconnect.
