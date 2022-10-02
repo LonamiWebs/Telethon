@@ -7,6 +7,7 @@ import struct
 import inspect
 import logging
 import functools
+import sys
 from pathlib import Path
 from hashlib import sha1
 
@@ -423,3 +424,9 @@ class _FileStream(io.IOBase):
         pass
 
 # endregion
+
+def get_running_loop():
+    if sys.version_info[:2] <= (3, 6):
+        return asyncio._get_running_loop()
+
+    return asyncio.get_running_loop()
