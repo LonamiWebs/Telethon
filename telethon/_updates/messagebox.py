@@ -22,6 +22,7 @@ import time
 from enum import Enum
 from .session import SessionState, ChannelState
 from ..tl import types as tl, functions as fn
+from ..helpers import get_running_loop
 
 
 # Telegram sends `seq` equal to `0` when "it doesn't matter", so we use that value too.
@@ -53,7 +54,7 @@ ENTRY_SECRET = object()
 _sentinel = object()
 
 def next_updates_deadline():
-    return asyncio.get_running_loop().time() + NO_UPDATES_TIMEOUT
+    return get_running_loop().time() + NO_UPDATES_TIMEOUT
 
 
 class GapError(ValueError):
@@ -237,7 +238,7 @@ class MessageBox:
         If a deadline expired, the corresponding entries will be marked as needing to get its difference.
         While there are entries pending of getting their difference, this method returns the current instant.
         """
-        now = asyncio.get_running_loop().time()
+        now = get_running_loop().time()
 
         if self.getting_diff_for:
             return now
@@ -283,7 +284,7 @@ class MessageBox:
 
     # Convenience to reset a channel's deadline, with optional timeout.
     def reset_channel_deadline(self, channel_id, timeout):
-        self.reset_deadline(channel_id, asyncio.get_running_loop().time() + (timeout or NO_UPDATES_TIMEOUT))
+        self.reset_deadline(channel_id, get_running_loop().time() + (timeout or NO_UPDATES_TIMEOUT))
 
     # Reset all the deadlines in `reset_deadlines_for` and then empty the set.
     def apply_deadlines_reset(self):
@@ -496,7 +497,7 @@ class MessageBox:
                 # TODO store chats too?
                 if pts.entry not in self.possible_gaps:
                     self.possible_gaps[pts.entry] = PossibleGap(
-                        deadline=asyncio.get_running_loop().time() + POSSIBLE_GAP_TIMEOUT,
+                        deadline=get_running_loop().time() + POSSIBLE_GAP_TIMEOUT,
                         updates=[]
                     )
 

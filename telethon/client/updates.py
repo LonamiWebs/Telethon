@@ -13,6 +13,8 @@ from .. import events, utils, errors
 from ..events.common import EventBuilder, EventCommon
 from ..tl import types, functions
 from .._updates import GapError, PrematureEndReason
+from ..helpers import get_running_loop
+
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -358,7 +360,7 @@ class UpdateMethods:
                     continue
 
                 deadline = self._message_box.check_deadlines()
-                deadline_delay = deadline - asyncio.get_running_loop().time()
+                deadline_delay = deadline - get_running_loop().time()
                 if deadline_delay > 0:
                     # Don't bother sleeping and timing out if the delay is already 0 (pollutes the logs).
                     try:
