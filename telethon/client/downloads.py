@@ -272,7 +272,9 @@ class DownloadMethods:
         if isinstance(photo, (types.UserProfilePhoto, types.ChatPhoto)):
             dc_id = photo.dc_id
             loc = types.InputPeerPhotoFileLocation(
-                peer=await self.get_input_entity(entity),
+                # min users can be used to download profile photos
+                # self.get_input_entity would otherwise not accept those
+                peer=utils.get_input_peer(entity, check_hash=False),
                 photo_id=photo.photo_id,
                 big=download_big
             )
@@ -402,7 +404,7 @@ class DownloadMethods:
             if isinstance(message.action,
                           types.MessageActionChatEditPhoto):
                 media = media.photo
-       
+
         if isinstance(media, types.MessageMediaWebPage):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo
