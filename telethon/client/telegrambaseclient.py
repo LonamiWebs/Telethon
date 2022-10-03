@@ -591,6 +591,12 @@ class TelegramBaseClient(abc.ABC):
         coroutine that you should await on your own code; otherwise
         the loop is ran until said coroutine completes.
 
+        Event handlers which are currently running will be cancelled before
+        this function returns (in order to properly clean-up their tasks).
+        In particular, this means that using ``disconnect`` in a handler
+        will cause code after the ``disconnect`` to never run. If this is
+        needed, consider spawning a separate task to do the remaining work.
+
         Example
             .. code-block:: python
 
