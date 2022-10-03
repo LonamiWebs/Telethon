@@ -598,7 +598,11 @@ class TelegramBaseClient(abc.ABC):
                 await client.disconnect()
         """
         if self.loop.is_running():
-            return self._disconnect_coro()
+            # Disconnect may be called from an event handler, which would
+            # cancel itself during itself and never actually complete the
+            # disconnection. Shield the task to prevent disconnect itself
+            # from being cancelled. See issue #3942 for more details.
+            return asyncio.shield(self.loop.create_task(self._disconnect_coro()))
         else:
             try:
                 self.loop.run_until_complete(self._disconnect_coro())
