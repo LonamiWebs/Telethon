@@ -204,7 +204,20 @@ class _MessagesIter(RequestIter):
             message._finish_init(self.client, entities, self.entity)
             self.buffer.append(message)
 
-        if len(r.messages) < self.request.limit:
+        # Some channels are "buggy" and may return less messages than
+        # requested (apparently, the messages excluded are, for example,
+        # "not displayable due to local laws").
+        #
+        # This means it's not safe to rely on `len(r.messages) < req.limit` as
+        # the stop condition. Unfortunately more requests must be made.
+        #
+        # However we can still check if the highest ID is equal to or lower
+        # than the limit, in which case there won't be any more messages
+        # because the lowest message ID is 1.
+        #
+        # We also assume the API will always return, at least, one message if
+        # there is more to fetch.
+        if not r.messages or r.messages[0].id <= self.request.limit:
             return True
 
         # Get the last message that's not empty (in some rare cases
