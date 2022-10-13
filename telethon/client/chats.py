@@ -966,7 +966,7 @@ class ChatMethods:
                 is_admin = any(locals()[x] for x in perm_names)
 
             return await self(functions.messages.EditChatAdminRequest(
-                entity, user, is_admin=is_admin))
+                entity.chat_id, user, is_admin=is_admin))
 
         else:
             raise ValueError(
