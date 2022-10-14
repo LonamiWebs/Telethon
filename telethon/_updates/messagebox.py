@@ -42,7 +42,7 @@ POSSIBLE_GAP_TIMEOUT = 0.5
 # client will resume normal operation, and the timeout will reset.
 #
 # Documentation recommends 15 minutes without updates (https://core.telegram.org/api/updates).
-NO_UPDATES_TIMEOUT = 15 * 60
+NO_UPDATES_TIMEOUT = 15
 
 # Entry "enum".
 # Account-wide `pts` includes private conversations (one-to-one) and small group chats.
