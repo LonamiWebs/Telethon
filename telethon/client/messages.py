@@ -204,6 +204,10 @@ class _MessagesIter(RequestIter):
             message._finish_init(self.client, entities, self.entity)
             self.buffer.append(message)
 
+        # Not a slice (using offset would return the same, with e.g. SearchGlobal).
+        if isinstance(r, types.messages.Messages):
+            return True
+
         # Some channels are "buggy" and may return less messages than
         # requested (apparently, the messages excluded are, for example,
         # "not displayable due to local laws").
