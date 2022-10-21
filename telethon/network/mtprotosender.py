@@ -109,8 +109,8 @@ class MTProtoSender:
             MsgsStateReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
             MsgResendReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
             MsgsAllInfo.CONSTRUCTOR_ID: self._handle_msg_all,
-            DestroySessionOk: self._handle_destroy_session,
-            DestroySessionNone: self._handle_destroy_session,
+            DestroySessionOk.CONSTRUCTOR_ID: self._handle_destroy_session,
+            DestroySessionNone.CONSTRUCTOR_ID: self._handle_destroy_session,
         }
 
     # Public API
