@@ -653,7 +653,11 @@ class MTProtoSender:
         try:
             assert message.obj.SUBCLASS_OF_ID == 0x8af52aac  # crc32(b'Updates')
         except AssertionError:
-            self._log.warning('Note: %s is not an update, not dispatching it %s', message.obj)
+            self._log.warning(
+                'Note: %s is not an update, not dispatching it %s',
+                message.obj.__class__.__name__,
+                message.obj
+            )
             return
 
         self._log.debug('Handling update %s', message.obj.__class__.__name__)
