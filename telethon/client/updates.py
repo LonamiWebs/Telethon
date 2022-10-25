@@ -290,6 +290,13 @@ class UpdateMethods:
                         self._log[__name__].info('Cannot get difference since the account is not logged in: %s', type(e).__name__)
                         self._message_box.end_difference()
                         continue
+                    except OSError as e:
+                        # Network is likely down, but it's unclear for how long.
+                        # If disconnect is called this task will be cancelled along with the sleep.
+                        # If disconnect is not called, getting difference should be retried after a few seconds.
+                        self._log[__name__].info('Cannot get difference since the network is down: %s: %s', type(e).__name__, e)
+                        await asyncio.sleep(5)
+                        continue
                     updates, users, chats = self._message_box.apply_difference(diff, self._mb_entity_cache)
                     if updates:
                         self._log[__name__].info('Got difference for account updates')
@@ -350,6 +357,13 @@ class UpdateMethods:
                             PrematureEndReason.BANNED,
                             self._mb_entity_cache
                         )
+                        continue
+                    except OSError as e:
+                        self._log[__name__].info(
+                            'Cannot get difference for channel %d since the network is down: %s: %s',
+                            get_diff.channel.channel_id, type(e).__name__, e
+                        )
+                        await asyncio.sleep(5)
                         continue
 
                     updates, users, chats = self._message_box.apply_channel_difference(get_diff, diff, self._mb_entity_cache)
