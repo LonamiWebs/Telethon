@@ -207,7 +207,7 @@ Notice that unlike `client.disconnected
 <telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>`,
 `client.run_until_disconnected
 <telethon.client.updates.UpdateMethods.run_until_disconnected>` will
-handle ``KeyboardInterrupt`` with you. This method is special and can
+handle ``KeyboardInterrupt`` for you. This method is special and can
 also be ran while the loop is running, so you can do this:
 
 .. code-block:: python

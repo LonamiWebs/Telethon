@@ -28,6 +28,9 @@ their own Telegram bots. Quoting their main page:
 Bot API is simply an HTTP endpoint which translates your requests to it into
 MTProto calls through tdlib_, their bot backend.
 
+Configuration of your bot, such as its available commands and auto-completion,
+is configured through `@BotFather <https://t.me/BotFather>`_.
+
 
 What is MTProto?
 ================
@@ -296,7 +299,7 @@ After rewriting:
 
     class Subbot(TelegramClient):
         def __init__(self, *a, **kw):
-            await super().__init__(*a, **kw)
+            super().__init__(*a, **kw)
             self.add_event_handler(self.on_update, events.NewMessage)
 
         async def connect():
