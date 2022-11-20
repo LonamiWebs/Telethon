@@ -423,13 +423,25 @@ class MessageBox:
             if seq != NO_SEQ:
                 self.seq = seq
 
-        result.extend(filter(None, (self.apply_pts_info(u, reset_deadline=True) for u in updates)))
-
-        self.apply_deadlines_reset()
-
         def _sort_gaps(update):
             pts = PtsInfo.from_update(update)
             return pts.pts - pts.pts_count if pts else 0
+
+        # Telegram can send updates out of order (e.g. ReadChannelInbox first
+        # and then NewChannelMessage, both with the same pts, but the count is
+        # 0 and 1 respectively).
+        #
+        # We can't know beforehand if this would cause issues (i.e. if any of
+        # the updates is the first one we get to know about a specific channel)
+        # (other than doing a pre-scan to check if any has info about an entry
+        # we lack), so instead we sort preemptively. As a bonus there's less
+        # likelyhood of "possible gaps" by doing this.
+        # TODO give this more thought, perhaps possible gaps can't happen at all
+        #      (not ones which would be resolved by sorting anyway)
+        result.extend(filter(None, (
+            self.apply_pts_info(u, reset_deadline=True) for u in sorted(updates, key=_sort_gaps))))
+
+        self.apply_deadlines_reset()
 
         if self.possible_gaps:
             # For each update in possible gaps, see if the gap has been resolved already.
@@ -506,23 +518,28 @@ class MessageBox:
             else:
                 # Apply
                 pass
-        else:
-            # No previous `pts` known, and because this update has to be "right" (it's the first one) our
-            # `local_pts` must be the one before the server pts.
-            local_pts = pts.pts - pts.pts_count
 
         # In a channel, we may immediately receive:
-        # * ReadChannelInbox (pts = X)
+        # * ReadChannelInbox (pts = X, pts_count = 0)
         # * NewChannelMessage (pts = X, pts_count = 1)
         #
-        # Notice how both `pts` are the same. The first one however would've triggered a gap
-        # because `local_pts` + `pts_count` of 0 would be less than `remote_pts`. So there is
-        # no risk by setting the `local_pts` to match the `remote_pts` here of missing the new
-        # message.
+        # Notice how both `pts` are the same. If they were to be applied out of order, the first
+        # one however would've triggered a gap because `local_pts` + `pts_count` of 0 would be
+        # less than `remote_pts`. So there is no risk by setting the `local_pts` to match the
+        # `remote_pts` here of missing the new message.
+        #
+        # The message would however be lost if we initialized the pts with the first one, since
+        # the second one would appear "already handled". To prevent this we set the pts to be
+        # one less when the count is 0 (which might be wrong and trigger a gap later on, but is
+        # unlikely). This will prevent us from losing updates in the unlikely scenario where these
+        # two updates arrive in different packets (and therefore couldn't be sorted beforehand).
         if pts.entry in self.map:
             self.map[pts.entry].pts = pts.pts
         else:
-            self.map[pts.entry] = State(pts=pts.pts, deadline=next_updates_deadline())
+            self.map[pts.entry] = State(
+                pts=pts.pts - (0 if pts.pts_count else 1),
+                deadline=next_updates_deadline()
+            )
 
         return update
 
