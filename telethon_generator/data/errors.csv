@@ -57,6 +57,7 @@ CALL_PEER_INVALID,400,The provided call peer object is invalid
 CALL_PROTOCOL_FLAGS_INVALID,400,Call protocol flags invalid
 CDN_METHOD_INVALID,400,This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods
 CHANNELS_ADMIN_PUBLIC_TOO_MUCH,400,"You're admin of too many public channels, make some channels private to change the username of this channel"
+CHANNEL_TOO_BIG,400,
 CHANNELS_TOO_MUCH,400,You have joined too many channels/supergroups
 CHANNEL_BANNED,400,The channel is banned
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
@@ -252,6 +253,7 @@ PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a p
 PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
 PEER_FLOOD,400,Too many requests
+PEER_HISTORY_EMPTY,400,
 PEER_ID_INVALID,400,"An invalid Peer was used. Make sure to pass the right peer type and that the value is valid (for instance, bots cannot start conversations)"
 PEER_ID_NOT_SUPPORTED,400,The provided peer ID is not supported
 PERSISTENT_TIMESTAMP_EMPTY,400,Persistent timestamp empty

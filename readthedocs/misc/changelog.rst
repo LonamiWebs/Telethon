@@ -13,6 +13,39 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New Layer and some Bug fixes (v1.26)
+====================================
+
+This new layer includes things such as emoji status, more admin log events,
+forum topics and message reactions, among other things. You can access these
+using raw API. It also contains a few bug fixes.
+
+These were fixed in the v1.25 series:
+
+* ``client.edit_admin`` did not work on small group chats.
+* ``client.get_messages`` could stop early in some channels.
+* ``client.download_profile_photo`` now should work even if ``User.min``.
+* ``client.disconnect`` should no longer hang when being called from within
+  an event handlers.
+* ``client.get_dialogs`` now initializes the update state for channels.
+* The message sender should not need to be fetched in more cases.
+* Lowered the severity of some log messages to be less spammy.
+
+These are new to v1.26.0:
+
+* Layer update.
+* New documented RPC errors.
+* Sometimes the first message update to a channel could be missed if said
+  message was read immediately.
+* ``client.get_dialogs`` would fail when the total count evenly divided
+  the chunk size of 100.
+* ``client.get_messages`` could get stuck during a global search.
+* Potentially fixed some issues when sending certain videos.
+* Update handling should be more resilient.
+* The client should handle having its auth key destroyed more gracefully.
+* Fixed some issues when logging certain messages.
+
+
 Bug fixes (v1.25.1)
 ===================
 
