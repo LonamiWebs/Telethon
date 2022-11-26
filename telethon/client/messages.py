@@ -848,6 +848,7 @@ class MessageMethods:
                     reply_to=reply_to,
                     buttons=markup,
                     formatting_entities=message.entities,
+                    parse_mode=None,  # explicitly disable parse_mode to force using even empty formatting_entities
                     schedule=schedule
                 )
 
