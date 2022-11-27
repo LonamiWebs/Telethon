@@ -620,6 +620,7 @@ class AuthMethods:
 
         await self.disconnect()
         self.session.delete()
+        self.session = None
         return True
 
     async def edit_2fa(
