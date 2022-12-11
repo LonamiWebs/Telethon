@@ -49,13 +49,13 @@ It works very similar to replying to a message. You need to specify the chat,
 message ID you wish to react to, and reaction, using :tl:`SendReaction`:
 
 .. code-block:: python
-
+    from telethon.tl import types
     from telethon.tl.functions.messages import SendReactionRequest
 
     await client(SendReactionRequest(
         peer=chat,
         msg_id=42,
-        reaction='❤️'
+        reaction=types.ReactionEmoji('❤️')
     ))
 
 Note that you cannot use strings like ``:heart:`` for the reaction. You must
@@ -74,11 +74,12 @@ use its unicode escape (which you can find using websites like
     reaction = '❤️'
     reaction = '\u2764'
 
+    from telethon.tl import types
     from telethon.tl.functions.messages import SendReactionRequest
     await client(SendReactionRequest(
         peer=chat,
         msg_id=42,
-        reaction=reaction
+        reaction=types.ReactionEmoji(reaction)
     ))
 
 Please make sure to check the help pages of the respective websites you use
