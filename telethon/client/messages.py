@@ -634,6 +634,7 @@ class MessageMethods:
             file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
             thumb: 'hints.FileLike' = None,
             force_document: bool = False,
+            topic_id: int = None,
             clear_draft: bool = False,
             buttons: typing.Optional['hints.MarkupLike'] = None,
             silent: bool = None,
@@ -674,6 +675,9 @@ class MessageMethods:
             reply_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
                 Whether to reply to a message or not. If an integer is provided,
                 it should be the ID of the message that it should reply to.
+
+            topic_id (`int`, optional):
+                Whether to send message in topic forum, It should be ID of topic forum.
 
             attributes (`list`, optional):
                 Optional attributes that override the inferred ones, like
@@ -821,7 +825,8 @@ class MessageMethods:
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
                 formatting_entities=formatting_entities,
-                comment_to=comment_to, background=background
+                comment_to=comment_to, background=background,
+                topic_id=topic_id
             )
 
         entity = await self.get_input_entity(entity)
@@ -846,6 +851,7 @@ class MessageMethods:
                     silent=silent,
                     background=background,
                     reply_to=reply_to,
+                    topic_id=topic_id,
                     buttons=markup,
                     formatting_entities=message.entities,
                     parse_mode=None,  # explicitly disable parse_mode to force using even empty formatting_entities
@@ -856,6 +862,7 @@ class MessageMethods:
                 peer=entity,
                 message=message.message or '',
                 silent=silent,
+                top_msg_id=topic_id,
                 background=background,
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 reply_markup=markup,
@@ -878,6 +885,7 @@ class MessageMethods:
                 peer=entity,
                 message=message,
                 entities=formatting_entities,
+                top_msg_id=topic_id,
                 no_webpage=not link_preview,
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 clear_draft=clear_draft,
@@ -912,6 +920,7 @@ class MessageMethods:
             messages: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
             from_peer: 'hints.EntityLike' = None,
             *,
+            topic_id: int = None,
             background: bool = None,
             with_my_score: bool = None,
             silent: bool = None,
@@ -939,6 +948,9 @@ class MessageMethods:
                 of the ``Message`` class, this *must* be specified in
                 order for the forward to work. This parameter indicates
                 the entity from which the messages should be forwarded.
+
+            topic_id (`int`, optional):
+                Whether to forward message in topic forum, It should be ID of topic forum.
 
             silent (`bool`, optional):
                 Whether the message should notify people with sound or not.
@@ -1025,6 +1037,7 @@ class MessageMethods:
                 from_peer=chat,
                 id=chunk,
                 to_peer=entity,
+                top_msg_id=topic_id,
                 silent=silent,
                 background=background,
                 with_my_score=with_my_score,

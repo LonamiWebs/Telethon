@@ -104,7 +104,7 @@ class InlineResult:
 
     async def click(self, entity=None, reply_to=None, comment_to=None,
                     silent=False, clear_draft=False, hide_via=False,
-                    background=None):
+                    background=None, topic_id=None):
         """
         Clicks this result and sends the associated `message`.
 
@@ -119,6 +119,9 @@ class InlineResult:
                 Similar to ``reply_to``, but replies in the linked group of a
                 broadcast channel instead (effectively leaving a "comment to"
                 the specified message).
+
+            topic_id (`int`, optional):
+                Whether to send message in topic forum, It should be ID of topic forum.
 
             silent (`bool`, optional):
                 Whether the message should notify people with sound or not.
@@ -154,6 +157,7 @@ class InlineResult:
             peer=entity,
             query_id=self._query_id,
             id=self.result.id,
+            top_msg_id=topic_id,
             silent=silent,
             background=background,
             clear_draft=clear_draft,
