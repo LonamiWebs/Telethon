@@ -606,9 +606,6 @@ class TelegramBaseClient(abc.ABC):
                 # You don't need to use this if you used "with client"
                 await client.disconnect()
         """
-        if self.session is None:
-            return  # already logged out and disconnected
-
         if self.loop.is_running():
             # Disconnect may be called from an event handler, which would
             # cancel itself during itself and never actually complete the
@@ -656,6 +653,9 @@ class TelegramBaseClient(abc.ABC):
                 connection._proxy = proxy
 
     async def _disconnect_coro(self: 'TelegramClient'):
+        if self.session is None:
+            return  # already logged out and disconnected
+
         await self._disconnect()
 
         # Also clean-up all exported senders because we're done with them
