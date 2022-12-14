@@ -395,6 +395,7 @@ USERNAME_INVALID,400,"Nobody is using this username, or the username is unaccept
 USERNAME_NOT_MODIFIED,400,The username is not different from the current username
 USERNAME_NOT_OCCUPIED,400,The username is not in use by anyone else yet
 USERNAME_OCCUPIED,400,The username is already taken
+USERNAME_PURCHASE_AVAILABLE,400,
 USERS_TOO_FEW,400,"Not enough users (to create a chat, for example)"
 USERS_TOO_MUCH,400,"The maximum number of users has been exceeded (to create a chat, for example)"
 USER_ADMIN_INVALID,400,Either you're not an admin or you tried to ban an admin that you didn't promote

@@ -35,7 +35,8 @@ send yourself the very first sticker you have:
     stickers = await client(GetStickerSetRequest(
         stickerset=InputStickerSetID(
             id=sticker_set.id, access_hash=sticker_set.access_hash
-        )
+        ),
+        hash=0
     ))
 
     # Stickers are nothing more than files, so send that
