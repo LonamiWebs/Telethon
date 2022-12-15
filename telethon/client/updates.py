@@ -271,7 +271,7 @@ class UpdateMethods:
                             # TODO if _dispatch_update fails for whatever reason, it's not logged! this should be fixed
                             task = self.loop.create_task(self._dispatch_update(updates_to_dispatch.popleft()))
                             self._event_handler_tasks.add(task)
-                            task.add_done_callback(lambda _: self._event_handler_tasks.discard(task))
+                            task.add_done_callback(self._event_handler_tasks.discard)
 
                     continue
 
