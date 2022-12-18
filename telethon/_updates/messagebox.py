@@ -329,7 +329,7 @@ class MessageBox:
     # updates will be fetched.
     def set_state(self, state, reset=True):
         if __debug__:
-            self._trace('Setting state %r', state)
+            self._trace('Setting state %s', state)
 
         deadline = next_updates_deadline()
 
