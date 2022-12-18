@@ -631,7 +631,7 @@ class MessageBox:
             secret = ENTRY_SECRET in self.getting_diff_for
 
             if not account and not secret:
-                raise RuntimeWarning('Should not be applying the difference when neither account or secret was diff was active')
+                raise RuntimeError('Should not be applying the difference when neither account or secret was diff was active')
 
             # Both may be active if both expired at the same time.
             if account:
@@ -677,7 +677,7 @@ class MessageBox:
         secret = ENTRY_SECRET in self.getting_diff_for
 
         if not account and not secret:
-            raise RuntimeWarning('Should not be ending get difference when neither account or secret was diff was active')
+            raise RuntimeError('Should not be ending get difference when neither account or secret was diff was active')
 
         # Both may be active if both expired at the same time.
         if account:
