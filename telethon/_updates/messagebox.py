@@ -283,6 +283,9 @@ class MessageBox:
             self.getting_diff_for.update(entry for entry, gap in self.possible_gaps.items() if now > gap.deadline)
             self.getting_diff_for.update(entry for entry, state in self.map.items() if now > state.deadline)
 
+            if __debug__:
+                self._trace('Deadlines met, now getting diff for %r', self.getting_diff_for)
+
             # When extending `getting_diff_for`, it's important to have the moral equivalent of
             # `begin_get_diff` (that is, clear possible gaps if we're now getting difference).
             for entry in self.getting_diff_for:
@@ -587,12 +590,15 @@ class MessageBox:
                 if entry not in self.map:
                     raise RuntimeError('Should not try to get difference for an entry without known state')
 
-                return fn.updates.GetDifferenceRequest(
+                gd = fn.updates.GetDifferenceRequest(
                     pts=self.map[ENTRY_ACCOUNT].pts,
                     pts_total_limit=None,
                     date=self.date,
                     qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
                 )
+                if __debug__:
+                    self._trace('Requesting account difference %s', gd)
+                return gd
 
         return None
 
@@ -673,6 +679,9 @@ class MessageBox:
         return updates, diff.users, diff.chats
 
     def end_difference(self):
+        if __debug__:
+            self._trace('Ending account difference')
+
         account = ENTRY_ACCOUNT in self.getting_diff_for
         secret = ENTRY_SECRET in self.getting_diff_for
 
@@ -712,13 +721,16 @@ class MessageBox:
         if not state:
             raise RuntimeError('Should not try to get difference for an entry without known state')
 
-        return fn.updates.GetChannelDifferenceRequest(
+        gd = fn.updates.GetChannelDifferenceRequest(
             force=False,
             channel=tl.InputChannel(packed.id, packed.hash),
             filter=tl.ChannelMessagesFilterEmpty(),
             pts=state.pts,
             limit=BOT_CHANNEL_DIFF_LIMIT if chat_hashes.self_bot else USER_CHANNEL_DIFF_LIMIT
         )
+        if __debug__:
+            self._trace('Requesting channel difference %s', gd)
+        return gd
 
     # Similar to [`MessageBox::process_updates`], but using the result from getting difference.
     def apply_channel_difference(
@@ -775,7 +787,7 @@ class MessageBox:
     def end_channel_difference(self, request, reason: PrematureEndReason, chat_hashes):
         entry = request.channel.channel_id
         if __debug__:
-            self._trace('Ending channel difference for %r', entry)
+            self._trace('Ending channel difference for %r because %s', entry, reason)
 
         if reason == PrematureEndReason.TEMPORARY_SERVER_ISSUES:
             # Temporary issues. End getting difference without updating the pts so we can retry later.
