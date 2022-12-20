@@ -12,7 +12,7 @@ from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl, MessageEntityMentionName,
-    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
+    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote, MessageEntitySpoiler,
     TypeMessageEntity
 )
 
@@ -51,10 +51,12 @@ class HTMLToTelegramParser(HTMLParser):
             EntityType = MessageEntityItalic
         elif tag == 'u':
             EntityType = MessageEntityUnderline
-        elif tag == 'del' or tag == 's':
+        elif tag in ['del', 's', 'strike']:
             EntityType = MessageEntityStrike
         elif tag == 'blockquote':
             EntityType = MessageEntityBlockquote
+        elif tag == 'spoiler':
+            EntityType = MessageEntitySpoiler
         elif tag == 'code':
             try:
                 # If we're in the middle of a <pre> tag, this <code> tag is
@@ -195,8 +197,14 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
             html.append('<u>{}</u>'.format(entity_text))
         elif entity_type == MessageEntityStrike:
             html.append('<del>{}</del>'.format(entity_text))
+        elif entity_type == MessageEntityStrike:
+            html.append('<s>{}</s>'.format(entity_text))
+        elif entity_type == MessageEntityStrike:
+            html.append('<strike>{}</strike>'.format(entity_text))
         elif entity_type == MessageEntityBlockquote:
             html.append('<blockquote>{}</blockquote>'.format(entity_text))
+        elif entity_type == MessageEntitySpoiler:
+            html.append('<spoiler>{}</spoiler>'.format(entity_text))
         elif entity_type == MessageEntityPre:
             if entity.language:
                 html.append(
