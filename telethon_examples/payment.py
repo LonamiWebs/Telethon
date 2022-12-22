@@ -85,9 +85,9 @@ async def payment_received_handler(event):
         payment: types.MessageActionPaymentSentMe = event.message.action
         # do something after payment was received
         if payment.payload.decode('UTF-8') == 'product A':
-            await bot.send_message(event.message.from_id, 'Thank you for buying product A!')
+            await bot.send_message(event.message.peer_id.user_id, 'Thank you for buying product A!')
         elif payment.payload.decode('UTF-8') == 'product B':
-            await bot.send_message(event.message.from_id, 'Thank you for buying product B!')
+            await bot.send_message(event.message.peer_id.user_id, 'Thank you for buying product B!')
         raise events.StopPropagation
 
 
