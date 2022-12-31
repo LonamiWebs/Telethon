@@ -14,7 +14,7 @@ from ..tl.custom.sendergetter import SenderGetter
 #      in a single place will make it annoying to use (since
 #      the user needs to check for the existence of `None`).
 #
-# TODO Handle UpdateUserBlocked, UpdateUserName, UpdateUserPhone, UpdateUserPhoto
+# TODO Handle UpdateUserBlocked, UpdateUserName, UpdateUserPhone, UpdateUser
 
 def _requires_action(function):
     @functools.wraps(function)
