@@ -44,6 +44,7 @@ class Error:
         # Should these be split into different files or doesn't really matter?
         # Telegram isn't exactly consistent with returned errors anyway.
         self.int_code = codes[0]
+        self.int_codes = codes
         self.str_code = name
         self.subclass = _get_class_name(codes[0])
         self.subclass_exists = abs(codes[0]) in KNOWN_BASE_CLASSES

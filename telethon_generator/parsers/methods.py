@@ -9,6 +9,15 @@ class Usability(enum.Enum):
     BOT = 2
     BOTH = 4
 
+    @property
+    def key(self):
+        return {
+            Usability.UNKNOWN: 'unknown',
+            Usability.USER: 'user',
+            Usability.BOT: 'bot',
+            Usability.BOTH: 'both',
+        }[self]
+
 
 class MethodInfo:
     def __init__(self, name, usability, errors, friendly):
