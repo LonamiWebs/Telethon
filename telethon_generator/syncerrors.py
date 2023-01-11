@@ -30,6 +30,8 @@ def main():
     for int_code, errors in tg_data['errors'].items():
         int_code = int(int_code)  # json does not support non-string keys
         for code, methods in errors.items():
+            if not re.match(r'\w+', code):
+                continue  # skip, full code is unknown (contains asterisk or is multiple words)
             str_code = code.replace('%d', 'X')
             if error := self_errors.get(str_code):
                 error.int_codes.append(int_code)  # de-duplicated once later

@@ -166,7 +166,6 @@ FILE_PART_SIZE_CHANGED,400,The file part size (chunk size) cannot change during 
 FILE_PART_SIZE_INVALID,400,The provided file part size is invalid
 FILE_PART_TOO_BIG,400,The uploaded file part is too big
 FILE_PART_X_MISSING,400,Part {which} of the file is missing from storage
-FILE_REFERENCE_*,400,"The file reference expired, it [must be refreshed](https://core.telegram.org/api/file_reference)"
 FILE_REFERENCE_EMPTY,400,The file reference must exist to access the media and it cannot be empty
 FILE_REFERENCE_EXPIRED,400,The file reference has expired and is no longer valid or it belongs to self-destructing media and cannot be resent
 FILE_REFERENCE_INVALID,400,The file reference is invalid or you can't do that operation on such message
@@ -229,9 +228,6 @@ INVITE_HASH_INVALID,400,The invite hash is invalid
 INVITE_REQUEST_SENT,400,You have successfully requested to join this chat or channel
 INVITE_REVOKED_MISSING,400,The specified invite link was already revoked or is invalid
 INVOICE_PAYLOAD_INVALID,400,The specified invoice payload is invalid
-Invalid msg_resend_req query,-500,Invalid msg_resend_req query
-Invalid msgs_ack query,-500,Invalid msgs_ack query
-Invalid msgs_state_req query,-500,Invalid msgs_state_req query
 JOIN_AS_PEER_INVALID,400,The specified peer cannot be used to join a group call
 LANG_CODE_INVALID,400,The specified language code is invalid
 LANG_CODE_NOT_SUPPORTED,400,The specified language code is not supported
