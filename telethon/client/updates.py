@@ -253,6 +253,11 @@ class UpdateMethods:
     # region Private methods
 
     async def _update_loop(self: 'TelegramClient'):
+        # If the MessageBox is not empty, the account had to be logged-in to fill in its state.
+        # This flag is used to propagate the "you got logged-out" error up (but getting logged-out
+        # can only happen if it was once logged-in).
+        was_once_logged_in = self._authorized is True or not self._message_box.is_empty()
+
         self._updates_error = None
         try:
             if self._catch_up:
@@ -289,6 +294,10 @@ class UpdateMethods:
                         # Not logged in or broken authorization key, can't get difference
                         self._log[__name__].info('Cannot get difference since the account is not logged in: %s', type(e).__name__)
                         self._message_box.end_difference()
+                        if was_once_logged_in:
+                            self._updates_error = e
+                            await self.disconnect()
+                            break
                         continue
                     except OSError as e:
                         # Network is likely down, but it's unclear for how long.
@@ -309,12 +318,26 @@ class UpdateMethods:
                     self._log[__name__].debug('Getting difference for channel %s updates', get_diff.channel.channel_id)
                     try:
                         diff = await self(get_diff)
+                    except (errors.UnauthorizedError, errors.AuthKeyError) as e:
+                        # Not logged in or broken authorization key, can't get difference
+                        self._log[__name__].warning(
+                            'Cannot get difference for channel %s since the account is not logged in: %s',
+                            get_diff.channel.channel_id, type(e).__name__
+                        )
+                        self._message_box.end_channel_difference(
+                            get_diff,
+                            PrematureEndReason.TEMPORARY_SERVER_ISSUES,
+                            self._mb_entity_cache
+                        )
+                        if was_once_logged_in:
+                            self._updates_error = e
+                            await self.disconnect()
+                            break
+                        continue
                     except (
                         errors.PersistentTimestampOutdatedError,
                         errors.PersistentTimestampInvalidError,
                         errors.ServerError,
-                        errors.UnauthorizedError,
-                        errors.AuthKeyError,
                         ValueError
                     ) as e:
                         # According to Telegram's docs:
