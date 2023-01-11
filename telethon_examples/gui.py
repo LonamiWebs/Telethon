@@ -53,7 +53,7 @@ def callback(func):
     def wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
         if inspect.iscoroutine(result):
-            aio_loop.create_task(result)
+            asyncio.create_task(result)
 
     return wrapped
 
@@ -369,10 +369,4 @@ async def main(interval=0.05):
 
 
 if __name__ == "__main__":
-    # Some boilerplate code to set up the main method
-    aio_loop = asyncio.get_event_loop()
-    try:
-        aio_loop.run_until_complete(main())
-    finally:
-        if not aio_loop.is_closed():
-            aio_loop.close()
+    asyncio.run(main())

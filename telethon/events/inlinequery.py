@@ -4,7 +4,7 @@ import re
 import asyncio
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
+from .. import utils, helpers
 from ..tl import types, functions, custom
 from ..tl.custom.sendergetter import SenderGetter
 
@@ -242,6 +242,6 @@ class InlineQuery(EventBuilder):
             if inspect.isawaitable(obj):
                 return asyncio.ensure_future(obj)
 
-            f = asyncio.get_event_loop().create_future()
+            f = helpers.get_running_loop().create_future()
             f.set_result(obj)
             return f

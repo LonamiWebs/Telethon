@@ -2088,7 +2088,7 @@ the scenes! This means you're now able to do both of the following:
     async def main():
       await client.send_message('me', 'Hello!')
 
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
 
     # ...can be rewritten as:
 

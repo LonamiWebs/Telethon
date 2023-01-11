@@ -153,7 +153,7 @@ def retry_range(retries, force_retry=True):
     while attempt != retries:
         attempt += 1
         yield attempt
-        
+
 
 
 async def _maybe_await(value):
@@ -426,7 +426,10 @@ class _FileStream(io.IOBase):
 # endregion
 
 def get_running_loop():
-    if sys.version_info[:2] <= (3, 6):
-        return asyncio._get_running_loop()
-
-    return asyncio.get_running_loop()
+    if sys.version_info >= (3, 7):
+        try:
+            return asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.get_event_loop_policy().get_event_loop()
+    else:
+        return asyncio.get_event_loop()

@@ -192,7 +192,7 @@ class TelegramBaseClient(abc.ABC):
             Defaults to `lang_code`.
 
         loop (`asyncio.AbstractEventLoop`, optional):
-            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`.
+            Asyncio event loop to use. Defaults to `asyncio.get_running_loop()`.
             This argument is ignored.
 
         base_logger (`str` | `logging.Logger`, optional):
@@ -470,7 +470,7 @@ class TelegramBaseClient(abc.ABC):
                 # Join the task (wait for it to complete)
                 await task
         """
-        return asyncio.get_event_loop()
+        return helpers.get_running_loop()
 
     @property
     def disconnected(self: 'TelegramClient') -> asyncio.Future:

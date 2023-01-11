@@ -161,19 +161,17 @@ just get rid of ``telethon.sync`` and work inside an ``async def``:
 
             await client.run_until_disconnected()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 
 
-The ``telethon.sync`` magic module simply wraps every method behind:
+The ``telethon.sync`` magic module essentially wraps every method behind:
 
 .. code-block:: python
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 
-So that you don't have to write it yourself every time. That's the
-overhead you pay if you import it, and what you save if you don't.
+With some other tricks, so that you don't have to write it yourself every time.
+That's the overhead you pay if you import it, and what you save if you don't.
 
 Learning
 ========

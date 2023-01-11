@@ -191,8 +191,7 @@ so the code above and the following are equivalent:
     async def main():
         await client.disconnected
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 
 
 You could also run `client.disconnected

@@ -155,7 +155,7 @@ class Connection(abc.ABC):
 
                 # Actual TCP connection is performed here.
                 await asyncio.wait_for(
-                    asyncio.get_event_loop().sock_connect(sock=sock, address=address),
+                    helpers.get_running_loop().sock_connect(sock=sock, address=address),
                     timeout=timeout
                 )
 
@@ -190,7 +190,7 @@ class Connection(abc.ABC):
 
             # Actual TCP connection and negotiation performed here.
             await asyncio.wait_for(
-                asyncio.get_event_loop().sock_connect(sock=sock, address=address),
+                helpers.get_running_loop().sock_connect(sock=sock, address=address),
                 timeout=timeout
             )
 
@@ -244,7 +244,7 @@ class Connection(abc.ABC):
         await self._connect(timeout=timeout, ssl=ssl)
         self._connected = True
 
-        loop = asyncio.get_event_loop()
+        loop = helpers.get_running_loop()
         self._send_task = loop.create_task(self._send_loop())
         self._recv_task = loop.create_task(self._recv_loop())
 

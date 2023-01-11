@@ -68,7 +68,7 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
-        self._disconnected = asyncio.get_event_loop().create_future()
+        self._disconnected = helpers.get_running_loop().create_future()
         self._disconnected.set_result(None)
 
         # We need to join the loops upon disconnection
@@ -261,7 +261,7 @@ class MTProtoSender:
             await self._disconnect(error=e)
             raise e
 
-        loop = asyncio.get_event_loop()
+        loop = helpers.get_running_loop()
         self._log.debug('Starting send loop')
         self._send_loop_handle = loop.create_task(self._send_loop())
 
@@ -400,7 +400,7 @@ class MTProtoSender:
                 self._pending_state.clear()
 
                 if self._auto_reconnect_callback:
-                    asyncio.get_event_loop().create_task(self._auto_reconnect_callback())
+                    helpers.get_running_loop().create_task(self._auto_reconnect_callback())
 
                 break
         else:
@@ -425,7 +425,7 @@ class MTProtoSender:
             # gets stuck.
             # TODO It still gets stuck? Investigate where and why.
             self._reconnecting = True
-            asyncio.get_event_loop().create_task(self._reconnect(error))
+            helpers.get_running_loop().create_task(self._reconnect(error))
 
     def _keepalive_ping(self, rnd_id):
         """

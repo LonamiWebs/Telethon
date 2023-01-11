@@ -14,7 +14,7 @@ import asyncio
 import functools
 import inspect
 
-from . import events, errors, utils, connection
+from . import events, errors, utils, connection, helpers
 from .client.account import _TakeoutClient
 from .client.telegramclient import TelegramClient
 from .tl import types, functions, custom
@@ -32,7 +32,7 @@ def _syncify_wrap(t, method_name):
     @functools.wraps(method)
     def syncified(*args, **kwargs):
         coro = method(*args, **kwargs)
-        loop = asyncio.get_event_loop()
+        loop = helpers.get_running_loop()
         if loop.is_running():
             return coro
         else:
