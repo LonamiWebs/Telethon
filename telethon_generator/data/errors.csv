@@ -11,8 +11,8 @@ ALBUM_PHOTOS_TOO_MANY,400,Too many photos were included in the album
 API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
-AUDIO_TITLE_EMPTY,400,The title attribute of the audio must be non-empty
 AUDIO_CONTENT_URL_EMPTY,400,
+AUDIO_TITLE_EMPTY,400,The title attribute of the audio must be non-empty
 AUTH_BYTES_INVALID,400,The provided authorization is invalid
 AUTH_KEY_DUPLICATED,406,"The authorization key (session file) was used under two different IP addresses simultaneously, and can no longer be used. Use the same session exclusively, or use different sessions"
 AUTH_KEY_INVALID,401,The key is invalid
@@ -25,10 +25,9 @@ AUTH_TOKEN_INVALID,400,An invalid authorization token was provided
 AUTH_TOKEN_INVALID2,400,An invalid authorization token was provided
 AUTOARCHIVE_NOT_AVAILABLE,400,You cannot use this feature yet
 BANK_CARD_NUMBER_INVALID,400,Incorrect credit card number
-BASE_PORT_LOC_INVALID,400,Base port location invalid
 BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this request, i.e. restricting view_messages as a default"
+BASE_PORT_LOC_INVALID,400,Base port location invalid
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
-BOT_ONESIDE_NOT_AVAIL,400,
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
 BOT_COMMAND_DESCRIPTION_INVALID,400,"The command description was empty, too long or had invalid characters used"
 BOT_COMMAND_INVALID,400,
@@ -39,6 +38,7 @@ BOT_INLINE_DISABLED,400,This bot can't be used in inline mode
 BOT_INVALID,400,This is not a valid bot
 BOT_METHOD_INVALID,400,The API access for bot users is restricted. The method you tried to invoke cannot be executed as a bot
 BOT_MISSING,400,This method can only be run by a bot
+BOT_ONESIDE_NOT_AVAIL,400,
 BOT_PAYMENTS_DISABLED,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
 BOT_RESPONSE_TIMEOUT,400,The bot did not answer to the callback query in time
@@ -57,12 +57,12 @@ CALL_PEER_INVALID,400,The provided call peer object is invalid
 CALL_PROTOCOL_FLAGS_INVALID,400,Call protocol flags invalid
 CDN_METHOD_INVALID,400,This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods
 CHANNELS_ADMIN_PUBLIC_TOO_MUCH,400,"You're admin of too many public channels, make some channels private to change the username of this channel"
-CHANNEL_TOO_BIG,400,
 CHANNELS_TOO_MUCH,400,You have joined too many channels/supergroups
 CHANNEL_BANNED,400,The channel is banned
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
 CHANNEL_PRIVATE,400,The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it
 CHANNEL_PUBLIC_GROUP_NA,403,channel/supergroup not available
+CHANNEL_TOO_BIG,400,
 CHANNEL_TOO_LARGE,406,
 CHAT_ABOUT_NOT_MODIFIED,400,About text has not changed
 CHAT_ABOUT_TOO_LONG,400,Chat about too long
@@ -162,8 +162,8 @@ GROUPCALL_ADD_PARTICIPANTS_FAILED,500,
 GROUPCALL_ALREADY_DISCARDED,400,
 GROUPCALL_FORBIDDEN,403,
 GROUPCALL_JOIN_MISSING,400,
-GROUPCALL_SSRC_DUPLICATE_MUCH,400,
 GROUPCALL_NOT_MODIFIED,400,
+GROUPCALL_SSRC_DUPLICATE_MUCH,400,
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 GROUP_CALL_INVALID,400,Group call invalid
 HASH_INVALID,400,The provided hash is invalid
@@ -216,7 +216,7 @@ MESSAGE_DELETE_FORBIDDEN,403,"You can't delete one of the messages you tried to 
 MESSAGE_EDIT_TIME_EXPIRED,400,"You can't edit this message anymore, too much time has passed since its creation."
 MESSAGE_EMPTY,400,Empty or invalid UTF-8 message was sent
 MESSAGE_IDS_EMPTY,400,No message ids were provided
-MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that operation on such message"
+MESSAGE_ID_INVALID,400,The specified message ID is invalid or you can't do that operation on such message
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_POLL_CLOSED,400,The poll was closed and can no longer be voted on
 MESSAGE_TOO_LONG,400,Message was too long
@@ -241,8 +241,8 @@ PACK_SHORT_NAME_INVALID,400,"Invalid sticker pack name. It must begin with a let
 PACK_SHORT_NAME_OCCUPIED,400,A stickerpack with this name already exists
 PARTICIPANTS_TOO_FEW,400,Not enough participants
 PARTICIPANT_CALL_FAILED,500,Failure while making call
-PARTICIPANT_JOIN_MISSING,403,
 PARTICIPANT_ID_INVALID,400,
+PARTICIPANT_JOIN_MISSING,403,
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
@@ -281,8 +281,8 @@ PHOTO_INVALID,400,Photo invalid
 PHOTO_INVALID_DIMENSIONS,400,The photo dimensions are invalid (hint: `pip install pillow` for `send_file` to resize images)
 PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Telegram. A reason may be that it exceeds 10MB. Try resizing it locally
 PHOTO_THUMB_URL_EMPTY,400,The URL used as a thumbnail appears to be empty or has caused another HTTP error
-PIN_RESTRICTED,400,You can't pin messages in private chats with other people
 PINNED_DIALOGS_TOO_MUCH,400,
+PIN_RESTRICTED,400,You can't pin messages in private chats with other people
 POLL_ANSWERS_INVALID,400,The poll did not have enough answers or had too many
 POLL_OPTION_DUPLICATE,400,A duplicate option was sent in the same poll
 POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too long)
@@ -372,10 +372,10 @@ TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being ab
 TAKEOUT_INVALID,400,The takeout session has been invalidated by another data export session
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
-TIMEOUT,500,A timeout occurred while fetching data from the worker
-TITLE_INVALID,400,
 THEME_INVALID,400,Theme invalid
 THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
+TIMEOUT,500,A timeout occurred while fetching data from the worker
+TITLE_INVALID,400,
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
 TMP_PASSWORD_INVALID,400,Password auth needs to be regenerated
 TOKEN_INVALID,400,The provided token is invalid
@@ -390,12 +390,12 @@ UNKNOWN_METHOD,500,The method you tried to call cannot be called on non-CDN DCs
 UNTIL_DATE_INVALID,400,That date cannot be specified in this request (try using None)
 UPDATE_APP_TO_LOGIN,406,
 URL_INVALID,400,The URL used was invalid (e.g. when answering a callback with a URL that's not t.me/yourbot or your game's URL)
-USER_VOLUME_INVALID,400,
 USERNAME_INVALID,400,"Nobody is using this username, or the username is unacceptable. If the latter, it must match r""[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]"""
 USERNAME_NOT_MODIFIED,400,The username is not different from the current username
 USERNAME_NOT_OCCUPIED,400,The username is not in use by anyone else yet
 USERNAME_OCCUPIED,400,The username is already taken
 USERNAME_PURCHASE_AVAILABLE,400,
+USERPIC_UPLOAD_REQUIRED,400,You must have a profile picture before using this method
 USERS_TOO_FEW,400,"Not enough users (to create a chat, for example)"
 USERS_TOO_MUCH,400,"The maximum number of users has been exceeded (to create a chat, for example)"
 USER_ADMIN_INVALID,400,Either you're not an admin or you tried to ban an admin that you didn't promote
@@ -420,7 +420,7 @@ USER_NOT_MUTUAL_CONTACT,400 403,The provided user is not a mutual contact
 USER_NOT_PARTICIPANT,400,The target user is not a member of the specified megagroup or channel
 USER_PRIVACY_RESTRICTED,403,The user's privacy settings do not allow you to do this
 USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
-USERPIC_UPLOAD_REQUIRED,400,You must have a profile picture before using this method
+USER_VOLUME_INVALID,400,
 VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
 VIDEO_FILE_INVALID,400,The given video cannot be used
 VIDEO_TITLE_EMPTY,400,
