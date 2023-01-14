@@ -559,9 +559,11 @@ class TelegramBaseClient(abc.ABC):
 
         self._init_request.query = functions.help.GetConfigRequest()
 
-        await self._sender.send(functions.InvokeWithLayerRequest(
-            LAYER, self._init_request
-        ))
+        req = self._init_request
+        if self._no_updates:
+            req = functions.InvokeWithoutUpdatesRequest(req)
+
+        await self._sender.send(functions.InvokeWithLayerRequest(LAYER, req))
 
         if self._message_box.is_empty():
             me = await self.get_me()
