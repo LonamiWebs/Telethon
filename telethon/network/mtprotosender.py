@@ -674,11 +674,28 @@ class MTProtoSender:
         _tl.UpdatesCombined.CONSTRUCTOR_ID,
         _tl.Updates.CONSTRUCTOR_ID,
         _tl.UpdateShortSentMessage.CONSTRUCTOR_ID,
+    )), _update_like_ids=frozenset((
+        _tl.messages.AffectedHistory.CONSTRUCTOR_ID,
+        _tl.messages.AffectedMessages.CONSTRUCTOR_ID,
+        _tl.messages.AffectedFoundMessages.CONSTRUCTOR_ID,
     ))):
         try:
             if obj.CONSTRUCTOR_ID in _update_ids:
                 obj._self_outgoing = True  # flag to only process, but not dispatch these
                 self._updates_queue.put_nowait(obj)
+            elif obj.CONSTRUCTOR_ID in _update_like_ids:
+                # Ugly "hack" (?) - otherwise bots reliably detect gaps when deleting messages.
+                #
+                # Note: the `date` being `None` is used to check for `updatesTooLong`, so `0` is
+                # used instead. It is still not read, because `updateShort` has no `seq`.
+                #
+                # Some requests, such as `readHistory`, also return these types. But the `pts_count`
+                # seems to be zero, so while this will produce some bogus `updateDeleteMessages`,
+                # it's still one of the "cleaner" approaches to handling the new `pts`.
+                # `updateDeleteMessages` is probably the "least-invasive" update that can be used.
+                upd = _tl.UpdateShort(_tl.UpdateDeleteMessages([], obj.pts, obj.pts_count), 0)
+                upd._self_outgoing = True
+                self._updates_queue.put_nowait(upd)
         except AttributeError:
             pass
 
