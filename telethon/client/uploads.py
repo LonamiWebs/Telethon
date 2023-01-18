@@ -36,7 +36,7 @@ class _CacheType:
 
 
 def _resize_photo_if_needed(
-        file, is_image, width=1280, height=1280, background=(255, 255, 255)):
+        file, is_image, width=2560, height=2560, background=(255, 255, 255)):
 
     # https://github.com/telegramdesktop/tdesktop/blob/12905f0dcb9d513378e7db11989455a1b764ef75/Telegram/SourceFiles/boxes/photo_crop_box.cpp#L254
     if (not is_image
