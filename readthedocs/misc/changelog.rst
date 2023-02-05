@@ -13,8 +13,35 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New Layer and some Bug fixes (v1.27)
+====================================
+
++------------------------+
+| Scheme layer used: 152 |
++------------------------+
+
+Bug fixes
+~~~~~~~~~
+
+* When the account is logged-out, the library should now correctly propagate
+  an error through ``run_until_disconnected`` to let you handle it.
+* The library no longer uses ``asyncio.get_event_loop()`` in newer Python
+  versions, which should get rid of some deprecation warnings.
+* It could happen that bots would receive messages sent by themselves,
+  very often right after they deleted a message. This should happen far
+  less often now (but might still happen with unlucky timings).
+* Maximum photo size for automatic image resizing is now larger.
+* The initial request is now correctly wrapped in ``invokeWithoutUpdates``
+  when updates are disabled after constructing the client instance.
+* Using a ``pathlib.Path`` to download contacts and web documents should
+  now work correctly.
+
 New Layer and some Bug fixes (v1.26)
 ====================================
+
++------------------------+
+| Scheme layer used: 149 |
++------------------------+
 
 This new layer includes things such as emoji status, more admin log events,
 forum topics and message reactions, among other things. You can access these
