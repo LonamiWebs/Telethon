@@ -524,6 +524,10 @@ class AuthMethods:
                 return await self.send_code_request(
                     phone, force_sms=force_sms, _retry_count=_retry_count+1)
 
+            # TODO figure out when/if/how this can happen
+            if isinstance(result, types.auth.SentCodeSuccess):
+                raise RuntimeError('logged in right after sending the code')
+
             # If we already sent a SMS, do not resend the code (hash may be empty)
             if isinstance(result.type, types.auth.SentCodeTypeSms):
                 force_sms = False
@@ -549,6 +553,9 @@ class AuthMethods:
                 )
                 return await self.send_code_request(
                     phone, force_sms=False, _retry_count=_retry_count+1)
+
+            if isinstance(result, types.auth.SentCodeSuccess):
+                raise RuntimeError('logged in right after resending the code')
 
             self._phone_code_hash[phone] = result.phone_code_hash
 
