@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import sys
+import urllib.request
 from pathlib import Path
 from subprocess import run
 
@@ -42,6 +43,8 @@ class TempWorkDir:
     def __exit__(self, *args):
         os.chdir(self.original)
 
+
+API_REF_URL = 'https://tl.telethon.dev/'
 
 GENERATOR_DIR = Path('telethon_generator')
 LIBRARY_DIR = Path('telethon')
@@ -155,6 +158,22 @@ def main(argv):
         generate(argv[2:], argv[1])
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
+        # Make sure tl.telethon.dev is up-to-date first
+        with urllib.request.urlopen(API_REF_URL) as resp:
+            html = resp.read()
+            m = re.search(br'layer\s+(\d+)', html)
+            if not m:
+                print('Failed to check that the API reference is up to date:', API_REF_URL)
+                return
+
+            from telethon_generator.parsers import find_layer
+            layer = next(filter(None, map(find_layer, TLOBJECT_IN_TLS)))
+            published_layer = int(m[1])
+            if published_layer != layer:
+                print('Published layer', published_layer, 'does not match current layer', layer, '.')
+                print('Make sure to update the API reference site first:', API_REF_URL)
+                return
+
         # (Re)generate the code to make sure we don't push without it
         generate(['tl', 'errors'])
 
