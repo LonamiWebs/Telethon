@@ -1018,7 +1018,7 @@ class MessageMethods:
             if isinstance(chunk[0], int):
                 chat = from_peer
             else:
-                chat = await chunk[0].get_input_chat()
+                chat = from_peer or await self.get_input_entity(chunk[0].peer_id)
                 chunk = [m.id for m in chunk]
 
             req = functions.messages.ForwardMessagesRequest(
