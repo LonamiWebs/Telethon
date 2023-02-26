@@ -223,7 +223,8 @@ class DownloadMethods:
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
                 If file is the type `bytes`, it will be downloaded in-memory
-                as a bytestring (e.g. ``file=bytes``).
+                and returned as a bytestring (i.e. ``file=bytes``, without
+                parentheses or quotes).
 
             download_big (`bool`, optional):
                 Whether to use the big version of the available photos.
@@ -333,7 +334,8 @@ class DownloadMethods:
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
                 If file is the type `bytes`, it will be downloaded in-memory
-                as a bytestring (e.g. ``file=bytes``).
+                and returned as a bytestring (i.e. ``file=bytes``, without
+                parentheses or quotes).
 
             progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
@@ -375,6 +377,9 @@ class DownloadMethods:
                 # or
                 path = await message.download_media()
                 await message.download_media(filename)
+
+                # Downloading to memory
+                blob = await client.download_media(message, bytes)
 
                 # Printing download progress
                 def callback(current, total):

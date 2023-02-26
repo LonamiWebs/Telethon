@@ -427,6 +427,7 @@ STICKER_FILE_INVALID,400,Sticker file invalid
 STICKER_GIF_DIMENSIONS,400,The specified video sticker has invalid dimensions
 STICKER_ID_INVALID,400,The provided sticker ID is invalid
 STICKER_INVALID,400,The provided sticker is invalid
+STICKER_MIME_INVALID,400,Make sure to pass a valid image file for the right InputFile parameter
 STICKER_PNG_DIMENSIONS,400,Sticker png dimensions invalid
 STICKER_PNG_NOPNG,400,Stickers must be a png file but the used image was not a png
 STICKER_TGS_NODOC,400,You must send the animated sticker as a document
