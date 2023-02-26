@@ -1,7 +1,6 @@
 ns,friendly,raw
 account.AccountMethods,takeout,invokeWithTakeout account.initTakeoutSession account.finishTakeoutSession
 auth.AuthMethods,sign_in,auth.signIn auth.importBotAuthorization
-auth.AuthMethods,sign_up,auth.signUp
 auth.AuthMethods,send_code_request,auth.sendCode auth.resendCode
 auth.AuthMethods,log_out,auth.logOut
 auth.AuthMethods,edit_2fa,account.updatePasswordSettings

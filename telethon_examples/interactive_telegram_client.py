@@ -120,7 +120,7 @@ class InteractiveTelegramClient(TelegramClient):
             print('Initial connection failed. Retrying...')
             await self.connect()
 
-        # If the user hasn't called .sign_in() or .sign_up() yet, they won't
+        # If the user hasn't called .sign_in() yet, they won't
         # be authorized. The first thing you must do is authorize. Calling
         # .sign_in() should only be done once as the information is saved on
         # the *.session file so you don't need to enter the code every time.

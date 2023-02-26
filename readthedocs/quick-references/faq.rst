@@ -67,8 +67,7 @@ However, you may also be part of a limited country, such as Iran or Russia.
 In that case, we have bad news for you. Telegram is much more likely to ban
 these numbers, as they are often used to spam other accounts, likely through
 the use of libraries like this one. The best advice we can give you is to not
-abuse the API, like calling many requests really quickly, and to sign up with
-these phones through an official application.
+abuse the API, like calling many requests really quickly.
 
 We have also had reports from Kazakhstan and China, where connecting
 would fail. To solve these connection problems, you should use a proxy.
