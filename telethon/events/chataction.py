@@ -108,6 +108,17 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  new_score=action.score)
 
+        elif isinstance(update, types.UpdateChannelParticipant) \
+                and bool(update.new_participant) != bool(update.prev_participant):
+            # If members are hidden, bots will receive this update instead,
+            # as there won't be a service message. Promotions and demotions
+            # seem to have both new and prev participant, which are ignored
+            # by this event.
+            return cls.Event(types.PeerChannel(update.channel_id),
+                             users=update.user_id,
+                             added_by=update.actor_id if update.new_participant else None,
+                             kicked_by=update.actor_id if update.prev_participant else None)
+
     class Event(EventCommon):
         """
         Represents the event of a new chat action.
@@ -142,7 +153,7 @@ class ChatAction(EventBuilder):
 
             new_title (`str`, optional):
                 The new title string for the chat, if applicable.
-            
+
             new_score (`str`, optional):
                 The new score string for the game, if applicable.
 
