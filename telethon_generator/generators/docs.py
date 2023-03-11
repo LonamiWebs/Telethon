@@ -117,11 +117,11 @@ def _generate_index(folder, paths,
                          .replace(os.path.sep, '/').title())
 
         if bots_index:
-            docs.write_text('These are the methods that you may be able to '
+            docs.write_text('These are the requests that you may be able to '
                             'use as a bot. Click <a href="{}">here</a> to '
                             'view them all.'.format(INDEX))
         else:
-            docs.write_text('Click <a href="{}">here</a> to view the methods '
+            docs.write_text('Click <a href="{}">here</a> to view the requests '
                             'that you can use as a bot.'.format(BOT_INDEX))
         if namespaces:
             docs.write_title('Namespaces', level=3)
@@ -268,7 +268,7 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
                     start = \
                         'Both users and bots <strong>may</strong> be able to'
 
-                docs.write_text('{} use this method. <a href="#examples">'
+                docs.write_text('{} use this request. <a href="#examples">'
                                 'See code examples.</a>'.format(start))
 
             # Write the code definition for this TLObject
@@ -287,7 +287,7 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
                 # We assume it's a function returning a generic type
                 generic_arg = next((arg.name for arg in tlobject.args
                                     if arg.is_generic))
-                docs.write_text('This function returns the result of whatever '
+                docs.write_text('This request returns the result of whatever '
                                 'the result from invoking the request passed '
                                 'through <i>{}</i> is.'.format(generic_arg))
             else:
@@ -465,15 +465,15 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
             docs.end_table()
 
             # List all the methods which return this type
-            docs.write_title('Methods returning this type', level=3)
+            docs.write_title('Requests returning this type', level=3)
             functions = type_to_functions.get(t, [])
             if not functions:
-                docs.write_text('No method returns this type.')
+                docs.write_text('No request returns this type.')
             elif len(functions) == 1:
-                docs.write_text('Only the following method returns this type.')
+                docs.write_text('Only the following request returns this type.')
             else:
                 docs.write_text(
-                    'The following %d methods return this type as a result.' %
+                    'The following %d requests return this type as a result.' %
                     len(functions)
                 )
 
@@ -484,7 +484,7 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
             docs.end_table()
 
             # List all the methods which take this type as input
-            docs.write_title('Methods accepting this type as input', level=3)
+            docs.write_title('Requests accepting this type as input', level=3)
             other_methods = sorted(
                 (u for u in tlobjects
                  if any(a.type == t for a in u.args) and u.is_function),
@@ -492,13 +492,13 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
             )
             if not other_methods:
                 docs.write_text(
-                    'No methods accept this type as an input parameter.')
+                    'No request accepts this type as an input parameter.')
             elif len(other_methods) == 1:
                 docs.write_text(
-                    'Only this method has a parameter with this type.')
+                    'Only this request has a parameter with this type.')
             else:
                 docs.write_text(
-                    'The following %d methods accept this type as an input '
+                    'The following %d requests accept this type as an input '
                     'parameter.' % len(other_methods))
 
             docs.begin_table(2)
