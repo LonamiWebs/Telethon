@@ -21,7 +21,12 @@ class File:
     @property
     def id(self):
         """
-        The bot-API style ``file_id`` representing this file.
+        The old bot-API style ``file_id`` representing this file.
+
+        .. warning::
+
+            This feature has not been maintained for a long time and
+            may not work. It will be removed in future versions.
 
         .. note::
 
