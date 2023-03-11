@@ -203,6 +203,36 @@ Telegram has a lot to offer, and inheritance helps the library reduce
 boilerplate, so it's important to know this concept. For newcomers,
 this may be a problem, so we explain what it means here in the FAQ.
 
+Can I send files by ID?
+=======================
+
+When people talk about IDs, they often refer to one of two things:
+the integer ID inside media, and a random-looking long string.
+
+You cannot use the integer ID to send media. Generally speaking, sending media
+requires a combination of ID, ``access_hash`` and ``file_reference``.
+The first two are integers, while the last one is a random ``bytes`` sequence.
+
+* The integer ``id`` will always be the same for every account, so every user
+  or bot looking at a particular media file, will see a consistent ID.
+* The ``access_hash`` will always be the same for a given account, but
+  different accounts will each see their own, different ``access_hash``.
+  This makes it impossible to get media object from one account and use it in
+  another. The other account must fetch the media object itself.
+* The ``file_reference`` is random for everyone and will only work for a few
+  hours before it expires. It must be refetched before the media can be used
+  (to either resend the media or download it).
+
+The second type of "`file ID <https://core.telegram.org/bots/api#inputfile>`_"
+people refer to is a concept from the HTTP Bot API. It's a custom format which
+encodes enough information to use the media.
+
+Telethon provides an old version of these HTTP Bot API-style file IDs via
+``message.file.id``, however, this feature is no longer maintained, so it may
+not work. It will be removed in future versions. Nonetheless, it is possible
+to find a different Python package (or write your own) to parse these file IDs
+and construct the necessary input file objects to send or download the media.
+
 
 Can I use Flask with the library?
 =================================
