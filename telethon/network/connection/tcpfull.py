@@ -2,7 +2,7 @@ import struct
 from zlib import crc32
 
 from .connection import Connection, PacketCodec
-from ...errors import InvalidChecksumError
+from ...errors import InvalidChecksumError, InvalidBufferError
 
 
 class FullPacketCodec(PacketCodec):
@@ -24,6 +24,13 @@ class FullPacketCodec(PacketCodec):
     async def read_packet(self, reader):
         packet_len_seq = await reader.readexactly(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
+        if packet_len < 0 and seq < 0:
+            # It has been observed that the length and seq can be -429,
+            # followed by the body of 4 bytes also being -429.
+            # See https://github.com/LonamiWebs/Telethon/issues/4042.
+            body = await reader.readexactly(4)
+            raise InvalidBufferError(body)
+
         body = await reader.readexactly(packet_len - 8)
         checksum = struct.unpack('<I', body[-4:])[0]
         body = body[:-4]

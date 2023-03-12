@@ -13,7 +13,7 @@ try:
 except ImportError:
     python_socks = None
 
-from ...errors import InvalidChecksumError
+from ...errors import InvalidChecksumError, InvalidBufferError
 from ... import helpers
 
 
@@ -336,6 +336,9 @@ class Connection(abc.ABC):
                 elif isinstance(e, InvalidChecksumError):
                     msg = 'The server response had an invalid checksum'
                     self._log.info(msg)
+                elif isinstance(e, InvalidBufferError):
+                    msg = 'The server response had an invalid buffer'
+                    self._log.error(msg)
                 else:
                     msg = 'Unexpected exception in the receive loop'
                     self._log.exception(msg)
