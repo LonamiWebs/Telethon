@@ -507,6 +507,18 @@ class MTProtoSender:
                 self._log.info('Connection closed while receiving data')
                 self._start_reconnect(e)
                 return
+            except InvalidBufferError as e:
+                if e.code == 429:
+                    self._log.warning('Server indicated flood error at transport level: %s', e)
+                    await self._disconnect(error=e)
+                else:
+                    self._log.exception('Server sent invalid buffer')
+                    self._start_reconnect(e)
+                return
+            except Exception as e:
+                self._log.exception('Unhandled error while receiving data')
+                self._start_reconnect(e)
+                return
 
             try:
                 message = self._state.decrypt_message_data(body)
@@ -532,7 +544,7 @@ class MTProtoSender:
                     self._start_reconnect(e)
                 return
             except Exception as e:
-                self._log.exception('Unhandled error while receiving data')
+                self._log.exception('Unhandled error while decrypting data')
                 self._start_reconnect(e)
                 return
 
