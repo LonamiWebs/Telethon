@@ -285,7 +285,7 @@ class UpdateMethods:
                     self._log[__name__].debug('Getting difference for account updates')
                     try:
                         diff = await self(get_diff)
-                    except (errors.ServerError, ValueError) as e:
+                    except (errors.ServerError, errors.TimeoutError, ValueError) as e:
                         # Telegram is having issues
                         self._log[__name__].info('Cannot get difference since Telegram is having issues: %s', type(e).__name__)
                         self._message_box.end_difference()
@@ -338,6 +338,7 @@ class UpdateMethods:
                         errors.PersistentTimestampOutdatedError,
                         errors.PersistentTimestampInvalidError,
                         errors.ServerError,
+                        errors.TimeoutError,
                         ValueError
                     ) as e:
                         # According to Telegram's docs:
