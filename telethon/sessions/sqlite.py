@@ -48,68 +48,75 @@ class SQLiteSession(MemorySession):
         c.execute("select name from sqlite_master "
                   "where type='table' and name='version'")
         if c.fetchone():
-            # Tables already exist, check for the version
-            c.execute("select version from version")
-            version = c.fetchone()[0]
-            if version < CURRENT_VERSION:
-                self._upgrade_database(old=version)
-                c.execute("delete from version")
-                c.execute("insert into version values (?)", (CURRENT_VERSION,))
-                self.save()
-
-            # These values will be saved
-            c.execute('select * from sessions')
-            tuple_ = c.fetchone()
-            if tuple_:
-                self._dc_id, self._server_address, self._port, key, \
-                    self._takeout_id = tuple_
-                self._auth_key = AuthKey(data=key)
-
-            c.close()
+            self._check_database_version(c)
         else:
-            # Tables don't exist, create new ones
-            self._create_table(
-                c,
-                "version (version integer primary key)"
-                ,
-                """sessions (
-                    dc_id integer primary key,
-                    server_address text,
-                    port integer,
-                    auth_key blob,
-                    takeout_id integer
-                )"""
-                ,
-                """entities (
-                    id integer primary key,
-                    hash integer not null,
-                    username text,
-                    phone integer,
-                    name text,
-                    date integer
-                )"""
-                ,
-                """sent_files (
-                    md5_digest blob,
-                    file_size integer,
-                    type integer,
-                    id integer,
-                    hash integer,
-                    primary key(md5_digest, file_size, type)
-                )"""
-                ,
-                """update_state (
-                    id integer primary key,
-                    pts integer,
-                    qts integer,
-                    date integer,
-                    seq integer
-                )"""
-            )
+            self._create_database(c)
+
+    def _check_database_version(self, c):
+
+        # Tables already exist, check for the version
+        c.execute("select version from version")
+        version = c.fetchone()[0]
+        if version < CURRENT_VERSION:
+            self._upgrade_database(old=version)
+            c.execute("delete from version")
             c.execute("insert into version values (?)", (CURRENT_VERSION,))
-            self._update_session_table()
-            c.close()
             self.save()
+
+        # These values will be saved
+        c.execute('select * from sessions')
+        tuple_ = c.fetchone()
+        if tuple_:
+            self._dc_id, self._server_address, self._port, key, \
+                self._takeout_id = tuple_
+            self._auth_key = AuthKey(data=key)
+
+        c.close()
+
+    def _create_database(self, c):
+        # Tables don't exist, create new ones
+        self._create_table(
+            c,
+            "version (version integer primary key)"
+            ,
+            """sessions (
+                dc_id integer primary key,
+                server_address text,
+                port integer,
+                auth_key blob,
+                takeout_id integer
+            )"""
+            ,
+            """entities (
+                id integer primary key,
+                hash integer not null,
+                username text,
+                phone integer,
+                name text,
+                date integer
+            )"""
+            ,
+            """sent_files (
+                md5_digest blob,
+                file_size integer,
+                type integer,
+                id integer,
+                hash integer,
+                primary key(md5_digest, file_size, type)
+            )"""
+            ,
+            """update_state (
+                id integer primary key,
+                pts integer,
+                qts integer,
+                date integer,
+                seq integer
+            )"""
+        )
+        c.execute("insert into version values (?)", (CURRENT_VERSION,))
+        self._update_session_table()
+        c.close()
+        self.save()
 
     def clone(self, to_instance=None):
         cloned = super().clone(to_instance)
