@@ -467,6 +467,9 @@ class UpdateMethods:
             # inserted because this is a rather expensive operation
             # (default's sqlite3 takes ~0.1s to commit changes). Do
             # it every minute instead. No-op if there's nothing new.
+            
+            ss, cs = self._message_box.session_state()
+            self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))
             self.session.save()
 
     async def _dispatch_update(self: 'TelegramClient', update):
