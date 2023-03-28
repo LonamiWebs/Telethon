@@ -664,10 +664,8 @@ class TelegramBaseClient(abc.ABC):
         ss, cs = self._message_box.session_state()
         self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))
         now = datetime.datetime.now()  # any datetime works; channels don't need it
-        entities_ids = {e.id for e in entities}
         for channel_id, pts in cs.items():
-            if channel_id in entities_ids:
-                self.session.set_update_state(channel_id, types.updates.State(pts, 0, now, 0, unread_count=0))
+            self.session.set_update_state(channel_id, types.updates.State(pts, 0, now, 0, unread_count=0))
 
     async def _disconnect_coro(self: 'TelegramClient'):
         if self.session is None:
