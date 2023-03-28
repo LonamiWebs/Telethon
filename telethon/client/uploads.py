@@ -375,18 +375,6 @@ class UploadMethods:
                 captions = captions[10:]
                 sent_count += 10
 
-            for doc, cap in zip(file, captions):
-                result.append(await self.send_file(
-                    entity, doc, allow_cache=allow_cache,
-                    caption=cap, force_document=force_document,
-                    progress_callback=used_callback, reply_to=reply_to,
-                    attributes=attributes, thumb=thumb, voice_note=voice_note,
-                    video_note=video_note, buttons=buttons, silent=silent,
-                    supports_streaming=supports_streaming, schedule=schedule,
-                    clear_draft=clear_draft, background=background,
-                    **kwargs
-                ))
-
             return result
 
         if formatting_entities is not None:
