@@ -310,7 +310,7 @@ class UpdateMethods:
                     if updates:
                         self._log[__name__].info('Got difference for account updates')
 
-                    updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
+                    updates_to_dispatch.extend(await self._preprocess_updates(updates, users, chats))
                     continue
 
                 get_diff = self._message_box.get_channel_difference(self._mb_entity_cache)
@@ -394,7 +394,7 @@ class UpdateMethods:
                     if updates:
                         self._log[__name__].info('Got difference for channel %d updates', get_diff.channel.channel_id)
 
-                    updates_to_dispatch.extend(self._preprocess_updates(updates, users, chats))
+                    updates_to_dispatch.extend(await self._preprocess_updates(updates, users, chats))
                     continue
 
                 deadline = self._message_box.check_deadlines()
@@ -415,7 +415,7 @@ class UpdateMethods:
                 except GapError:
                     continue  # get(_channel)_difference will start returning requests
 
-                updates_to_dispatch.extend(self._preprocess_updates(processed, users, chats))
+                updates_to_dispatch.extend(await self._preprocess_updates(processed, users, chats))
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -423,10 +423,52 @@ class UpdateMethods:
             self._updates_error = e
             await self.disconnect()
 
-    def _preprocess_updates(self, updates, users, chats):
-        self._mb_entity_cache.extend(users, chats)
-        entities = {utils.get_peer_id(x): x
-                    for x in itertools.chain(users, chats)}
+    async def _fetch_peers(self, users: list, chats: list):
+        result_users = {}
+        result_chats = {}
+        is_min = False
+        for peer in itertools.chain(users, chats):
+            if getattr(peer, 'min', False):
+                peer_id = peer.id
+                if not self._mb_entity_cache.get(peer_id) and peer.id != 136817688:
+                    is_min = True
+            if isinstance(peer, types.User):
+                result_users.update({utils.get_peer_id(peer): peer})
+            elif isinstance(peer, (types.Chat, types.Channel)):
+                result_chats.update({utils.get_peer_id(peer): peer})
+
+        return is_min, result_users, result_chats
+
+    async def _preprocess_updates(self, updates, users, chats):
+        is_min, users, chats = await self._fetch_peers(users, chats)
+        for update in updates:
+            if isinstance(update, (
+                    types.UpdateChannelTooLong,
+                    types.UpdateNewChannelMessage,
+                    types.UpdateEditChannelMessage,
+                    types.UpdateReadChannelInbox,
+                    types.UpdateReadChannelOutbox,
+            )):
+                if is_min and update.pts:
+                        get_diff = functions.updates.GetChannelDifferenceRequest(
+                            force=False,
+                            channel=await self.get_input_entity(update.message.peer_id),
+                            filter=types.ChannelMessagesFilter(
+                                ranges=[types.MessageRange(
+                                    min_id=update.message.id,
+                                    max_id=update.message.id
+                                )]
+                            ),
+                            pts=update.pts - update.pts_count,
+                            limit=update.pts
+                        )
+                        diff = await self(get_diff)
+                        if not isinstance(diff, types.updates.ChannelDifferenceEmpty):
+                            chats.update({utils.get_peer_id(x): x for x in diff.chats})
+                            users.update({utils.get_peer_id(x): x for x in diff.users})
+
+        self._mb_entity_cache.extend(list(users.values()), list(chats.values()))
+        entities = users | chats
         for u in updates:
             u._entities = entities
         return updates
