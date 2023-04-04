@@ -435,7 +435,7 @@ class UpdateMethods:
             if isinstance(peer, types.User):
                 result_users[utils.get_peer_id(peer)] = peer
             elif isinstance(peer, (types.Chat, types.Channel)):
-                result_chats.update({utils.get_peer_id(peer): peer})
+                result_chats[utils.get_peer_id(peer)] = peer
 
         return is_min, result_users, result_chats
 
