@@ -433,7 +433,7 @@ class UpdateMethods:
                 if not self._mb_entity_cache.get(peer_id) and peer.id != 136817688:
                     is_min = True
             if isinstance(peer, types.User):
-                result_users.update({utils.get_peer_id(peer): peer})
+                result_users[utils.get_peer_id(peer)] = peer
             elif isinstance(peer, (types.Chat, types.Channel)):
                 result_chats.update({utils.get_peer_id(peer): peer})
 
