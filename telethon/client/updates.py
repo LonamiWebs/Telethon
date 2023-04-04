@@ -450,22 +450,22 @@ class UpdateMethods:
                     types.UpdateReadChannelOutbox,
             )):
                 if is_min and update.pts:
-                        get_diff = functions.updates.GetChannelDifferenceRequest(
-                            force=False,
-                            channel=await self.get_input_entity(update.message.peer_id),
-                            filter=types.ChannelMessagesFilter(
-                                ranges=[types.MessageRange(
-                                    min_id=update.message.id,
-                                    max_id=update.message.id
-                                )]
-                            ),
-                            pts=update.pts - update.pts_count,
-                            limit=update.pts
-                        )
-                        diff = await self(get_diff)
-                        if not isinstance(diff, types.updates.ChannelDifferenceEmpty):
-                            chats.update({utils.get_peer_id(x): x for x in diff.chats})
-                            users.update({utils.get_peer_id(x): x for x in diff.users})
+                    get_diff = functions.updates.GetChannelDifferenceRequest(
+                        force=False,
+                        channel=await self.get_input_entity(update.message.peer_id),
+                        filter=types.ChannelMessagesFilter(
+                            ranges=[types.MessageRange(
+                                min_id=update.message.id,
+                                max_id=update.message.id
+                            )]
+                        ),
+                        pts=update.pts - update.pts_count,
+                        limit=update.pts
+                    )
+                    diff = await self(get_diff)
+                    if not isinstance(diff, types.updates.ChannelDifferenceEmpty):
+                        chats.update({utils.get_peer_id(x): x for x in diff.chats})
+                        users.update({utils.get_peer_id(x): x for x in diff.users})
 
         self._mb_entity_cache.extend(list(users.values()), list(chats.values()))
         entities = users | chats
