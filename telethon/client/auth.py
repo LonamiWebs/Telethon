@@ -333,9 +333,12 @@ class AuthMethods:
 
             # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
             # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-            request = functions.auth.SignInRequest(
-                phone, phone_code_hash, str(code)
-            )
+            try:
+                request = functions.auth.SignInRequest(
+                    phone, phone_code_hash, str(code)
+                )
+            except errors.PhoneCodeExpiredError:
+                self._phone_code_hash.pop(phone, None)
         elif password:
             pwd = await self(functions.account.GetPasswordRequest())
             request = functions.auth.CheckPasswordRequest(
