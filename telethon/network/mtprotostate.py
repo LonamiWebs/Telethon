@@ -176,7 +176,7 @@ class MTProtoState:
         reader = BinaryReader(body)
         reader.read_long()  # remote_salt
         if reader.read_long() != self.id:
-            raise SecurityError('Server replied with a wrong session ID')
+            raise SecurityError('Server replied with a wrong session ID (see FAQ for details)')
 
         remote_msg_id = reader.read_long()
 
