@@ -285,7 +285,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         if self.peer_id == types.PeerUser(client._self_id) and not self.fwd_from:
             self.out = True
 
-        cache = client._entity_cache
+        cache = client._mb_entity_cache
 
         self._sender, self._input_sender = utils._get_entity_pair(
             self.sender_id, entities, cache)
@@ -1138,8 +1138,9 @@ class Message(ChatGetter, SenderGetter, TLObject):
                         return bot
                     else:
                         try:
-                            return self._client._entity_cache[self.via_bot_id]
-                        except KeyError:
+                            return self._client._mb_entity_cache.get(
+                                utils.resolve_id(self.via_bot_id)[0])._as_input_peer()
+                        except AttributeError:
                             raise ValueError('No input sender') from None
 
     def _document_by_attribute(self, kind, condition=None):

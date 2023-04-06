@@ -154,7 +154,7 @@ class EventCommon(ChatGetter, abc.ABC):
         self._client = client
         if self._chat_peer:
             self._chat, self._input_chat = utils._get_entity_pair(
-                self.chat_id, self._entities, client._entity_cache)
+                self.chat_id, self._entities, client._mb_entity_cache)
         else:
             self._chat = self._input_chat = None
 

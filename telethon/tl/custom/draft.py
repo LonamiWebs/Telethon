@@ -5,7 +5,7 @@ from ..functions.messages import SaveDraftRequest
 from ..types import DraftMessage
 from ...errors import RPCError
 from ...extensions import markdown
-from ...utils import get_input_peer, get_peer
+from ...utils import get_input_peer, get_peer, get_peer_id
 
 
 class Draft:
@@ -53,8 +53,9 @@ class Draft:
         """
         if not self._input_entity:
             try:
-                self._input_entity = self._client._entity_cache[self._peer]
-            except KeyError:
+                self._input_entity = self._client._mb_entity_cache.get(
+                        get_peer_id(self._peer, add_mark=False))._as_input_peer()
+            except AttributeError:
                 pass
 
         return self._input_entity

@@ -72,7 +72,6 @@ class UserMethods:
                             results.append(None)
                             continue
                         self.session.process_entities(result)
-                        self._entity_cache.add(result)
                         exceptions.append(None)
                         results.append(result)
                         request_index += 1
@@ -83,7 +82,6 @@ class UserMethods:
                 else:
                     result = await future
                     self.session.process_entities(result)
-                    self._entity_cache.add(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError,
                     errors.RpcMcgetFailError, errors.InterdcCallErrorError,
@@ -417,8 +415,8 @@ class UserMethods:
         try:
             # 0x2d45687 == crc32(b'Peer')
             if isinstance(peer, int) or peer.SUBCLASS_OF_ID == 0x2d45687:
-                return self._entity_cache[peer]
-        except (AttributeError, KeyError):
+                return self._mb_entity_cache.get(utils.get_peer_id(peer, add_mark=False))._as_input_peer()
+        except AttributeError:
             pass
 
         # Then come known strings that take precedence

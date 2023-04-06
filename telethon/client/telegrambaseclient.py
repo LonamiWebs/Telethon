@@ -300,7 +300,7 @@ class TelegramBaseClient(abc.ABC):
         self.flood_sleep_threshold = flood_sleep_threshold
 
         # TODO Use AsyncClassWrapper(session)
-        # ChatGetter and SenderGetter can use the in-memory _entity_cache
+        # ChatGetter and SenderGetter can use the in-memory _mb_entity_cache
         # to avoid network access and the need for await in session files.
         #
         # The session files only wants the entities to persist
@@ -308,7 +308,6 @@ class TelegramBaseClient(abc.ABC):
         # TODO Session should probably return all cached
         #      info of entities, not just the input versions
         self.session = session
-        self._entity_cache = EntityCache()
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
@@ -433,7 +432,6 @@ class TelegramBaseClient(abc.ABC):
         self._catch_up = catch_up
         self._updates_queue = asyncio.Queue()
         self._message_box = MessageBox(self._log['messagebox'])
-        # This entity cache is tailored for the messagebox and is not used for absolutely everything like _entity_cache
         self._mb_entity_cache = MbEntityCache()  # required for proper update handling (to know when to getDifference)
 
         self._sender = MTProtoSender(
