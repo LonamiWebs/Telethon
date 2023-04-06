@@ -14,6 +14,7 @@ from ..events.common import EventBuilder, EventCommon
 from ..tl import types, functions
 from .._updates import GapError, PrematureEndReason
 from ..helpers import get_running_loop
+from ..version import __version__
 
 
 if typing.TYPE_CHECKING:
@@ -419,7 +420,7 @@ class UpdateMethods:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            self._log[__name__].exception('Fatal error handling updates (this is a bug in Telethon, please report it)')
+            self._log[__name__].exception(f'Fatal error handling updates (this is a bug in Telethon v{__version__}, please report it)')
             self._updates_error = e
             await self.disconnect()
 
