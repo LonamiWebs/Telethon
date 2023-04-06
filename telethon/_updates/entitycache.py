@@ -52,3 +52,9 @@ class EntityCache:
 
     def put(self, entity):
         self.hash_map[entity.id] = (entity.hash, entity.ty)
+
+    def retain(self, filter):
+        self.hash_map = {k: v for k, v in self.hash_map.items() if filter(k)}
+
+    def __len__(self):
+        return len(self.hash_map)

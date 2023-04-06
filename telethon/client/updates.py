@@ -7,6 +7,7 @@ import time
 import traceback
 import typing
 import logging
+import warnings
 from collections import deque
 
 from .. import events, utils, errors
@@ -280,6 +281,24 @@ class UpdateMethods:
                             task.add_done_callback(self._event_handler_tasks.discard)
 
                     continue
+
+                if len(self._mb_entity_cache) >= self._entity_cache_limit:
+                    self._log[__name__].info(
+                        'In-memory entity cache limit reached (%s/%s), flushing to session',
+                        len(self._mb_entity_cache),
+                        self._entity_cache_limit
+                    )
+                    self._save_states_and_entities()
+                    self._mb_entity_cache.retain(lambda id: id == self._mb_entity_cache.self_id or id in self._message_box.map)
+                    if len(self._mb_entity_cache) >= self._entity_cache_limit:
+                        warnings.warn('in-memory entities exceed entity_cache_limit after flushing; consider setting a larger limit')
+
+                    self._log[__name__].info(
+                        'In-memory entity cache at %s/%s after flushing to session',
+                        len(self._mb_entity_cache),
+                        self._entity_cache_limit
+                    )
+
 
                 get_diff = self._message_box.get_difference()
                 if get_diff:

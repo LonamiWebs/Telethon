@@ -208,6 +208,20 @@ class TelegramBaseClient(abc.ABC):
             so event handlers, conversations, and QR login will not work.
             However, certain scripts don't need updates, so this will reduce
             the amount of bandwidth used.
+
+        entity_cache_limit (`int`, optional):
+            How many users, chats and channels to keep in the in-memory cache
+            at most. This limit is checked against when processing updates.
+
+            When this limit is reached or exceeded, all entities that are not
+            required for update handling will be flushed to the session file.
+
+            Note that this implies that there is a lower bound to the amount
+            of entities that must be kept in memory.
+
+            Setting this limit too low will cause the library to attempt to
+            flush entities to the session file even if no entities can be
+            removed from the in-memory cache, which will degrade performance.
     """
 
     # Current TelegramClient version
@@ -245,7 +259,8 @@ class TelegramBaseClient(abc.ABC):
             loop: asyncio.AbstractEventLoop = None,
             base_logger: typing.Union[str, logging.Logger] = None,
             receive_updates: bool = True,
-            catch_up: bool = False
+            catch_up: bool = False,
+            entity_cache_limit: int = 5000
     ):
         if not api_id or not api_hash:
             raise ValueError(
@@ -432,6 +447,7 @@ class TelegramBaseClient(abc.ABC):
         self._updates_queue = asyncio.Queue()
         self._message_box = MessageBox(self._log['messagebox'])
         self._mb_entity_cache = MbEntityCache()  # required for proper update handling (to know when to getDifference)
+        self._entity_cache_limit = entity_cache_limit
 
         self._sender = MTProtoSender(
             self.session.auth_key,
