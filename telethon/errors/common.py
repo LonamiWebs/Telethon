@@ -19,8 +19,8 @@ class TypeNotFoundError(Exception):
     def __init__(self, invalid_constructor_id, remaining):
         super().__init__(
             'Could not find a matching Constructor ID for the TLObject '
-            'that was supposed to be read with ID {:08x}. Most likely, '
-            'a TLObject was trying to be read when it should not be read. '
+            'that was supposed to be read with ID {:08x}. See the FAQ '
+            'for more details. '
             'Remaining bytes: {!r}'.format(invalid_constructor_id, remaining))
 
         self.invalid_constructor_id = invalid_constructor_id
