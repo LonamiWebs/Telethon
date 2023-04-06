@@ -530,7 +530,7 @@ class AuthMethods:
         except errors.RPCError:
             return False
 
-        self._mb_entity_cache.set_self_user(None, False, None)
+        self._mb_entity_cache.set_self_user(None, None, None)
         self._authorized = False
 
         await self.disconnect()

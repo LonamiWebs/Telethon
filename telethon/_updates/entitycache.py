@@ -9,7 +9,7 @@ class EntityCache:
         self,
         hash_map: dict = _sentinel,
         self_id: int = None,
-        self_bot: bool = False
+        self_bot: bool = None
     ):
         self.hash_map = {} if hash_map is _sentinel else hash_map
         self.self_id = self_id

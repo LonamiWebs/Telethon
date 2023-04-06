@@ -549,6 +549,14 @@ class TelegramBaseClient(abc.ABC):
         self.session.auth_key = self._sender.auth_key
         self.session.save()
 
+        try:
+            # See comment when saving entities to understand this hack
+            self_id = self.session.get_input_entity(0).access_hash
+            self_user = self.session.get_input_entity(self_id)
+            self._mb_entity_cache.set_self_user(self_id, None, self_user.access_hash)
+        except ValueError:
+            pass
+
         if self._catch_up:
             ss = SessionState(0, 0, False, 0, 0, 0, 0, None)
             cs = []
@@ -669,6 +677,11 @@ class TelegramBaseClient(abc.ABC):
         # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
         # It doesn't matter if we put users in the list of chats.
         self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
+
+        # As a hack to not need to change the session files, save ourselves with ``id=0`` and ``access_hash`` of our ``id``.
+        # This way it is possible to determine our own ID by querying for 0. However, whether we're a bot is not saved.
+        if self._mb_entity_cache.self_id:
+            self.session.process_entities(types.contacts.ResolvedPeer(None, [types.InputPeerUser(0, self._mb_entity_cache.self_id)], []))
 
         ss, cs = self._message_box.session_state()
         self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))

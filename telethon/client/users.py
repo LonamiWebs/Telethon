@@ -188,7 +188,7 @@ class UserMethods:
                 else:
                     print('Hello')
         """
-        if self._mb_entity_cache.self_id is None:
+        if self._mb_entity_cache.self_bot is None:
             await self.get_me(input_peer=True)
 
         return self._mb_entity_cache.self_bot
