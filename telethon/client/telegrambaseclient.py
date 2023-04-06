@@ -10,7 +10,6 @@ import datetime
 
 from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
-from ..entitycache import EntityCache
 from ..extensions import markdown
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
