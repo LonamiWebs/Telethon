@@ -15,9 +15,11 @@ class EntityCache:
         self.self_id = self_id
         self.self_bot = self_bot
 
-    def set_self_user(self, id, bot):
+    def set_self_user(self, id, bot, hash):
         self.self_id = id
         self.self_bot = bot
+        if hash:
+            self.hash_map[id] = (hash, EntityType.BOT if bot else EntityType.USER)
 
     def get(self, id):
         try:

@@ -495,10 +495,10 @@ class UpdateMethods:
         # TODO only used for AlbumHack, and MessageBox is not really designed for this
         others = None
 
-        if not self._self_input_peer:
+        if not self._mb_entity_cache.self_id:
             # Some updates require our own ID, so we must make sure
             # that the event builder has offline access to it. Calling
-            # `get_me()` will cache it under `self._self_input_peer`.
+            # `get_me()` will cache it under `self._mb_entity_cache`.
             #
             # It will return `None` if we haven't logged in yet which is
             # fine, we will just retry next time anyway.

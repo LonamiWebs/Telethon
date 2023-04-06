@@ -380,8 +380,7 @@ class AuthMethods:
 
         Returns the input user parameter.
         """
-        self._bot = bool(user.bot)
-        self._self_input_peer = utils.get_input_peer(user, allow_self=False)
+        self._mb_entity_cache.set_self_user(user.id, user.bot, user.access_hash)
         self._authorized = True
 
         state = await self(functions.updates.GetStateRequest())
@@ -531,8 +530,7 @@ class AuthMethods:
         except errors.RPCError:
             return False
 
-        self._bot = None
-        self._self_input_peer = None
+        self._mb_entity_cache.set_self_user(None, False, None)
         self._authorized = False
 
         await self.disconnect()
