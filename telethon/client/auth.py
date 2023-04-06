@@ -333,12 +333,9 @@ class AuthMethods:
 
             # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
             # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-            try:
-                request = functions.auth.SignInRequest(
-                    phone, phone_code_hash, str(code)
-                )
-            except errors.PhoneCodeExpiredError:
-                self._phone_code_hash.pop(phone, None)
+            request = functions.auth.SignInRequest(
+                phone, phone_code_hash, str(code)
+            )
         elif password:
             pwd = await self(functions.account.GetPasswordRequest())
             request = functions.auth.CheckPasswordRequest(
@@ -355,7 +352,12 @@ class AuthMethods:
                 'and a password only if an RPCError was raised before.'
             )
 
-        result = await self(request)
+        try:
+            result = await self(request)
+        except errors.PhoneCodeExpiredError:
+            self._phone_code_hash.pop(phone, None)
+            raise
+
         if isinstance(result, types.auth.AuthorizationSignUpRequired):
             # Emulate pre-layer 104 behaviour
             self._tos = result.terms_of_service
