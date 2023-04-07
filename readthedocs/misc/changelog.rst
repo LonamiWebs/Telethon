@@ -51,6 +51,8 @@ Bug fixes
   you can actually have a chance to handle them.
 * Update handling should be more resilient.
 * ``PhoneCodeExpiredError`` will correctly clear the stored hash if it occurs in ``sign_in``.
+* In patch ``v1.28.2``, :tl:`InputBotInlineMessageID64` can now be used
+  to edit inline messages.
 
 
 .. _issue 4050: https://github.com/LonamiWebs/Telethon/issues/4050
