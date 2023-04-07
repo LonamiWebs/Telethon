@@ -232,7 +232,7 @@ class MessageBox:
             self.map[ENTRY_SECRET] = State(pts=session_state.qts, deadline=deadline)
         self.map.update((s.channel_id, State(pts=s.pts, deadline=deadline)) for s in channel_states)
 
-        self.date = datetime.datetime.fromtimestamp(session_state.date).replace(tzinfo=datetime.timezone.utc)
+        self.date = datetime.datetime.fromtimestamp(session_state.date, tz=datetime.timezone.utc)
         self.seq = session_state.seq
         self.next_deadline = ENTRY_ACCOUNT
 

@@ -425,9 +425,10 @@ class ChatAction(EventBuilder):
 
                     # If missing, try from the entity cache
                     try:
-                        self._input_users.append(self._client._entity_cache[user_id])
+                        self._input_users.append(self._client._mb_entity_cache.get(
+                            utils.resolve_id(user_id)[0])._as_input_peer())
                         continue
-                    except KeyError:
+                    except AttributeError:
                         pass
 
             return self._input_users or []

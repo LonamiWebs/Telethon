@@ -178,6 +178,69 @@ won't do unnecessary work unless you need to:
         sender = await event.get_sender()
 
 
+What does "Server sent a very new message with ID" mean?
+========================================================
+
+You may also see this error as "Server sent a very old message with ID".
+
+This is a security feature from Telethon that cannot be disabled and is
+meant to protect you against replay attacks.
+
+When this message is incorrectly reported as a "bug",
+the most common patterns seem to be:
+
+* Your system time is incorrect.
+* The proxy you're using may be interfering somehow.
+* The Telethon session is being used or has been used from somewhere else.
+  Make sure that you created the session from Telethon, and are not using the
+  same session anywhere else. If you need to use the same account from
+  multiple places, login and use a different session for each place you need.
+
+
+What does "Server replied with a wrong session ID" mean?
+========================================================
+
+This is a security feature from Telethon that cannot be disabled and is
+meant to protect you against unwanted session reuse.
+
+When this message is reported as a "bug", the most common patterns seem to be:
+
+* The proxy you're using may be interfering somehow.
+* The Telethon session is being used or has been used from somewhere else.
+  Make sure that you created the session from Telethon, and are not using the
+  same session anywhere else. If you need to use the same account from
+  multiple places, login and use a different session for each place you need.
+* You may be using multiple connections to the Telegram server, which seems
+  to confuse Telegram.
+
+Most of the time it should be safe to ignore this warning. If the library
+still doesn't behave correctly, make sure to check if any of the above bullet
+points applies in your case and try to work around it.
+
+If the issue persists and there is a way to reliably reproduce this error,
+please add a comment with any additional details you can provide to
+`issue 3759`_, and perhaps some additional investigation can be done
+(but it's unlikely, as Telegram *is* sending unexpected data).
+
+
+What does "Could not find a matching Constructor ID for the TLObject" mean?
+===========================================================================
+
+Telegram uses "layers", which you can think of as "versions" of the API they
+offer. When Telethon reads responses that the Telegram servers send, these
+need to be deserialized (into what Telethon calls "TLObjects").
+
+Every Telethon version understands a single Telegram layer. When Telethon
+connects to Telegram, both agree on the layer to use. If the layers don't
+match, Telegram may send certain objects which Telethon no longer understands.
+
+When this message is reported as a "bug", the most common patterns seem to be
+that he Telethon session is being used or has been used from somewhere else.
+Make sure that you created the session from Telethon, and are not using the
+same session anywhere else. If you need to use the same account from
+multiple places, login and use a different session for each place you need.
+
+
 What does "bases ChatGetter" mean?
 ==================================
 
@@ -268,4 +331,5 @@ file and run that, or use the normal ``python`` interpreter.
 .. _logging: https://docs.python.org/3/library/logging.html
 .. _@SpamBot: https://t.me/SpamBot
 .. _issue 297: https://github.com/LonamiWebs/Telethon/issues/297
+.. _issue 3759: https://github.com/LonamiWebs/Telethon/issues/3759
 .. _quart_login.py: https://github.com/LonamiWebs/Telethon/tree/v1/telethon_examples#quart_loginpy

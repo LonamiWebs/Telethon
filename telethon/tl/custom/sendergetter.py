@@ -1,5 +1,7 @@
 import abc
 
+from ... import utils
+
 
 class SenderGetter(abc.ABC):
     """
@@ -69,9 +71,9 @@ class SenderGetter(abc.ABC):
         """
         if self._input_sender is None and self._sender_id and self._client:
             try:
-                self._input_sender = \
-                    self._client._entity_cache[self._sender_id]
-            except KeyError:
+                self._input_sender = self._client._mb_entity_cache.get(
+                        utils.resolve_id(self._sender_id)[0])._as_input_peer()
+            except AttributeError:
                 pass
         return self._input_sender
 

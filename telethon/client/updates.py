@@ -7,6 +7,7 @@ import time
 import traceback
 import typing
 import logging
+import warnings
 from collections import deque
 
 from .. import events, utils, errors
@@ -14,6 +15,7 @@ from ..events.common import EventBuilder, EventCommon
 from ..tl import types, functions
 from .._updates import GapError, PrematureEndReason
 from ..helpers import get_running_loop
+from ..version import __version__
 
 
 if typing.TYPE_CHECKING:
@@ -280,6 +282,24 @@ class UpdateMethods:
 
                     continue
 
+                if len(self._mb_entity_cache) >= self._entity_cache_limit:
+                    self._log[__name__].info(
+                        'In-memory entity cache limit reached (%s/%s), flushing to session',
+                        len(self._mb_entity_cache),
+                        self._entity_cache_limit
+                    )
+                    self._save_states_and_entities()
+                    self._mb_entity_cache.retain(lambda id: id == self._mb_entity_cache.self_id or id in self._message_box.map)
+                    if len(self._mb_entity_cache) >= self._entity_cache_limit:
+                        warnings.warn('in-memory entities exceed entity_cache_limit after flushing; consider setting a larger limit')
+
+                    self._log[__name__].info(
+                        'In-memory entity cache at %s/%s after flushing to session',
+                        len(self._mb_entity_cache),
+                        self._entity_cache_limit
+                    )
+
+
                 get_diff = self._message_box.get_difference()
                 if get_diff:
                     self._log[__name__].debug('Getting difference for account updates')
@@ -419,7 +439,7 @@ class UpdateMethods:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            self._log[__name__].exception('Fatal error handling updates (this is a bug in Telethon, please report it)')
+            self._log[__name__].exception(f'Fatal error handling updates (this is a bug in Telethon v{__version__}, please report it)')
             self._updates_error = e
             await self.disconnect()
 
@@ -467,16 +487,18 @@ class UpdateMethods:
             # inserted because this is a rather expensive operation
             # (default's sqlite3 takes ~0.1s to commit changes). Do
             # it every minute instead. No-op if there's nothing new.
+            self._save_states_and_entities()
+
             self.session.save()
 
     async def _dispatch_update(self: 'TelegramClient', update):
         # TODO only used for AlbumHack, and MessageBox is not really designed for this
         others = None
 
-        if not self._self_input_peer:
+        if not self._mb_entity_cache.self_id:
             # Some updates require our own ID, so we must make sure
             # that the event builder has offline access to it. Calling
-            # `get_me()` will cache it under `self._self_input_peer`.
+            # `get_me()` will cache it under `self._mb_entity_cache`.
             #
             # It will return `None` if we haven't logged in yet which is
             # fine, we will just retry next time anyway.

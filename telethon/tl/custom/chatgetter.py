@@ -66,8 +66,9 @@ class ChatGetter(abc.ABC):
         """
         if self._input_chat is None and self._chat_peer and self._client:
             try:
-                self._input_chat = self._client._entity_cache[self._chat_peer]
-            except KeyError:
+                self._input_chat = self._client._mb_entity_cache.get(
+                        utils.get_peer_id(self._chat_peer, add_mark=False))._as_input_peer()
+            except AttributeError:
                 pass
 
         return self._input_chat

@@ -13,6 +13,49 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New Layer and housekeeping (v1.28)
+==================================
+
++------------------------+
+| Scheme layer used: 155 |
++------------------------+
+
+Plenty of stale issues closed, as well as improvements for some others.
+
+Additions
+~~~~~~~~~
+
+* New ``entity_cache_limit`` parameter in the ``TelegramClient`` constructor.
+  This should help a bit in keeping memory usage in check.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``progress_callback`` is now called when dealing with albums. See the
+  documentation on `client.send_file() <telethon.client.uploads.UploadMethods.send_file>`
+  for details.
+* Update state and entities are now periodically saved, so that the information
+  isn't lost in the case of crash or unexpected script terminations. You should
+  still be calling ``disconnect`` or using the context-manager, though.
+* The client should no longer unnecessarily call ``get_me`` every time it's started.
+
+Bug fixes
+~~~~~~~~~
+
+* Messages obtained via raw API could not be used in ``forward_messages``.
+* ``force_sms`` and ``sign_up`` have been deprecated. See `issue 4050`_ for details.
+  It is no longer possible for third-party applications, such as those made with
+  Telethon, to use those features.
+* ``events.ChatAction`` should now work in more cases in groups with hidden members.
+* Errors that occur at the connection level should now be properly propagated, so that
+  you can actually have a chance to handle them.
+* Update handling should be more resilient.
+* ``PhoneCodeExpiredError`` will correctly clear the stored hash if it occurs in ``sign_in``.
+
+
+.. _issue 4050: https://github.com/LonamiWebs/Telethon/issues/4050
+
+
 New Layer and some Bug fixes (v1.27)
 ====================================
 

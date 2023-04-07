@@ -583,11 +583,14 @@ def _get_entity_pair(entity_id, entities, cache,
     """
     Returns ``(entity, input_entity)`` for the given entity ID.
     """
+    if not entity_id:
+        return None, None
+
     entity = entities.get(entity_id)
     try:
-        input_entity = cache[entity_id]
-    except KeyError:
-        # KeyError is unlikely, so another TypeError won't hurt
+        input_entity = cache.get(resolve_id(entity_id)[0])._as_input_peer()
+    except AttributeError:
+        # AttributeError is unlikely, so another TypeError won't hurt
         try:
             input_entity = get_input_peer(entity)
         except TypeError:

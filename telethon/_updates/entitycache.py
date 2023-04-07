@@ -9,15 +9,17 @@ class EntityCache:
         self,
         hash_map: dict = _sentinel,
         self_id: int = None,
-        self_bot: bool = False
+        self_bot: bool = None
     ):
         self.hash_map = {} if hash_map is _sentinel else hash_map
         self.self_id = self_id
         self.self_bot = self_bot
 
-    def set_self_user(self, id, bot):
+    def set_self_user(self, id, bot, hash):
         self.self_id = id
         self.self_bot = bot
+        if hash:
+            self.hash_map[id] = (hash, EntityType.BOT if bot else EntityType.USER)
 
     def get(self, id):
         try:
@@ -52,3 +54,9 @@ class EntityCache:
 
     def put(self, entity):
         self.hash_map[entity.id] = (entity.hash, entity.ty)
+
+    def retain(self, filter):
+        self.hash_map = {k: v for k, v in self.hash_map.items() if filter(k)}
+
+    def __len__(self):
+        return len(self.hash_map)
