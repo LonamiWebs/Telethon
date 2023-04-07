@@ -300,7 +300,7 @@ class CallbackQuery(EventBuilder):
             """
             Edits the message. Shorthand for
             `telethon.client.messages.MessageMethods.edit_message` with
-            the ``entity`` set to the correct :tl:`InputBotInlineMessageID`.
+            the ``entity`` set to the correct :tl:`InputBotInlineMessageID` or :tl:`InputBotInlineMessageID64`.
 
             Returns `True` if the edit was successful.
 
@@ -313,7 +313,7 @@ class CallbackQuery(EventBuilder):
                 since the message object is normally not present.
             """
             self._client.loop.create_task(self.answer())
-            if isinstance(self.query.msg_id, types.InputBotInlineMessageID):
+            if isinstance(self.query.msg_id, (types.InputBotInlineMessageID, types.InputBotInlineMessageID64)):
                 return await self._client.edit_message(
                     self.query.msg_id, *args, **kwargs
                 )
