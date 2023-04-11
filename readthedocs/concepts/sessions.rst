@@ -143,7 +143,7 @@ output (likely your terminal).
 .. warning::
 
     **Keep this string safe!** Anyone with this string can use it
-    to login into your account and do anything they want to to do.
+    to login into your account and do anything they want to.
 
     This is similar to leaking your ``*.session`` files online,
     but it is easier to leak a string than it is to leak a file.
