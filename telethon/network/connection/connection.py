@@ -339,7 +339,7 @@ class Connection(abc.ABC):
                 except InvalidBufferError as e:
                     self._log.warning('Server response had invalid buffer: %s', e)
                     await self._recv_queue.put((None, e))
-                except Exception:
+                except Exception as e:
                     self._log.exception('Unexpected exception in the receive loop')
                     await self._recv_queue.put((None, e))
                 else:
