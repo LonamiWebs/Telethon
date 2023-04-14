@@ -287,13 +287,13 @@ class UploadMethods:
                 Not all types of media can be used with this parameter, such
                 as text documents, which will fail with ``TtlMediaInvalidError``.
 
-            nosound_video (`bool`. optional):
-                This value only applies if sending a video without an audio
-                track. If True, the video will be displayed in telegram as a
-                video. If False, telegram will attempt to display it as an
-                animated gif. (Though it may still display as a video,
-                depending on other factors.) The value is ignored if the file
-                is not a video. The value is set to True for albums, as gifs
+            nosound_video (`bool`, optional):
+                Only applicable when sending a video file without an audio
+                track. If set to ``True``, the video will be displayed in
+                Telegram as a video. If set to ``False``, Telegram will attempt
+                to display the video as an animated gif. (It may still display
+                as a video due to other factors.) The value is ignored if set
+                on non-video files. This is set to ``True`` for albums, as gifs
                 cannot be sent in albums.
 
         Returns

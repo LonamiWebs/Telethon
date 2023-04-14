@@ -755,14 +755,14 @@ class MessageMethods:
                 This parameter takes precedence over ``reply_to``. If there is
                 no linked chat, `telethon.errors.sgIdInvalidError` is raised.
 
-            nosoundvideo (`bool`, optional):
+            nosound_video (`bool`, optional):
                 Only applicable when sending a video file without an audio
-                track. If set to true, the video will be displayed in telegram
-                as a video. If set to false, telegram will attempt to display
-                the video as an animated gif. (It may still display as a video
-                due to other factors.) The value is ignored if set on
-                non-video files. This is set to true for albums, as gifs cannot
-                be sent in albums.
+                track. If set to ``True``, the video will be displayed in
+                Telegram as a video. If set to ``False``, Telegram will attempt
+                to display the video as an animated gif. (It may still display
+                as a video due to other factors.) The value is ignored if set
+                on non-video files. This is set to ``True`` for albums, as gifs
+                cannot be sent in albums.
 
         Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
