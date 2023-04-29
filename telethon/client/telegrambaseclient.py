@@ -570,8 +570,12 @@ class TelegramBaseClient(abc.ABC):
 
             self._message_box.load(ss, cs)
             for state in cs:
-                entity = self.session.get_input_entity(state.channel_id)
-                if entity:
+                try:
+                    entity = self.session.get_input_entity(state.channel_id)
+                except ValueError:
+                    self._log[__name__].warning(
+                        'No access_hash in cache for channel %s, will not catch up', state.channel_id)
+                else:
                     self._mb_entity_cache.put(Entity(EntityType.CHANNEL, entity.channel_id, entity.access_hash))
 
         self._init_request.query = functions.help.GetConfigRequest()
