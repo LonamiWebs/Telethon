@@ -30,6 +30,11 @@ class FullPacketCodec(PacketCodec):
             # See https://github.com/LonamiWebs/Telethon/issues/4042.
             body = await reader.readexactly(4)
             raise InvalidBufferError(body)
+        elif packet_len < 8:
+            # Currently unknown why packet_len may be less than 8 but not negative.
+            # Attempting to `readexactly` with less than 0 fails without saying what
+            # the number was which is less helpful.
+            raise InvalidBufferError(packet_len_seq)
 
         body = await reader.readexactly(packet_len - 8)
         checksum = struct.unpack('<I', body[-4:])[0]
