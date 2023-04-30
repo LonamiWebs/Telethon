@@ -246,7 +246,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageUploadPhotoAction)
 
         @property
-        @_requires_action
+        @_requires_status
         def last_seen(self):
             """
             Exact `datetime.datetime` when the user was last seen if known.
