@@ -316,7 +316,9 @@ class UserMethods:
 
         # Merge users, chats and channels into a single dictionary
         id_entity = {
-            utils.get_peer_id(x): x
+            # `get_input_entity` might've guessed the type from a non-marked ID,
+            # so the only way to match that with the input is by not using marks here.
+            utils.get_peer_id(x, add_mark=False): x
             for x in itertools.chain(users, chats, channels)
         }
 
@@ -329,7 +331,7 @@ class UserMethods:
             if isinstance(x, str):
                 result.append(await self._get_entity_from_string(x))
             elif not isinstance(x, types.InputPeerSelf):
-                result.append(id_entity[utils.get_peer_id(x)])
+                result.append(id_entity[utils.get_peer_id(x, add_mark=False)])
             else:
                 result.append(next(
                     u for u in id_entity.values()
