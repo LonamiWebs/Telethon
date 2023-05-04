@@ -60,6 +60,16 @@ And except them as such:
 My account was deleted/limited when using the library
 =====================================================
 
+First and foremost, **this is not a problem exclusive to Telethon.
+Any third-party library is prone to cause the accounts to appear banned.**
+Even official applications can make Telegram ban an account under certain
+circumstances. Third-party libraries such as Telethon are a lot easier to
+use, and as such, they are misused to spam, which causes Telegram to learn
+certain patterns and ban suspicious activity.
+
+There is no point in Telethon trying to circumvent this. Even if it succeeded,
+spammers would then abuse the library again, and the cycle would repeat.
+
 The library will only do things that you tell it to do. If you use
 the library with bad intentions, Telegram will hopefully ban you.
 
@@ -74,6 +84,16 @@ would fail. To solve these connection problems, you should use a proxy.
 
 Telegram may also ban virtual (VoIP) phone numbers,
 as again, they're likely to be used for spam.
+
+More recently (year 2023 onwards), Telegram has started putting a lot more
+measures to prevent spam (with even additions such as anonymous participants
+in groups or the inability to fetch group members at all). This means some
+of the anti-spam measures have gotten more aggressive.
+
+The recommendation has usually been to use the library only on well-established
+accounts (and not an account you just created), and to not perform actions that
+could be seen as abuse. Telegram decides what those actions are, and they're
+free to change how they operate at any time.
 
 If you want to check if your account has been limited,
 simply send a private message to `@SpamBot`_ through Telegram itself.

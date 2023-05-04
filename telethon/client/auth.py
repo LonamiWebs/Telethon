@@ -238,13 +238,14 @@ class AuthMethods:
                 me = await self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
-        signed, name = 'Signed in successfully as', utils.get_display_name(me)
+        signed, name = 'Signed in successfully as ', utils.get_display_name(me)
+        tos = '; remember to not break the ToS or you will risk an account ban!'
         try:
-            print(signed, name)
+            print(signed, name, tos, sep='')
         except UnicodeEncodeError:
             # Some terminals don't support certain characters
             print(signed, name.encode('utf-8', errors='ignore')
-                              .decode('ascii', errors='ignore'))
+                              .decode('ascii', errors='ignore'), tos, sep='')
 
         return self
 
