@@ -196,7 +196,7 @@ class NewMessage(EventBuilder):
                 ...
                 >>>
         """
-        def __init__(self, message):
+        def __init__(self, message: types.Message):
             self.__dict__['_init'] = False
             super().__init__(chat_peer=message.peer_id,
                              msg_id=message.id, broadcast=bool(message.post))
