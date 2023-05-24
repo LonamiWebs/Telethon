@@ -399,6 +399,7 @@ class TelegramBaseClient(abc.ABC):
         self._borrowed_senders = {}
         self._borrow_sender_lock = asyncio.Lock()
 
+        self._loop = None  # only used as a sanity check
         self._updates_error = None
         self._updates_handle = None
         self._keepalive_handle = None
@@ -534,6 +535,11 @@ class TelegramBaseClient(abc.ABC):
         """
         if self.session is None:
             raise ValueError('TelegramClient instance cannot be reused after logging out')
+
+        if self._loop is None:
+            self._loop = helpers.get_running_loop()
+        elif self._loop != helpers.get_running_loop():
+            raise RuntimeError('The asyncio event loop must not change after connection (see the FAQ for details)')
 
         if not await self._sender.connect(self._connection(
             self.session.server_address,
