@@ -198,6 +198,23 @@ won't do unnecessary work unless you need to:
         sender = await event.get_sender()
 
 
+File download is slow or sending files takes too long
+=====================================================
+
+The communication with Telegram is encrypted. Encryption requires a lot of
+math, and doing it in pure Python is very slow. ``cryptg`` is a library which
+containns the encryption functions used by Telethon. If it is installed (via
+``pip install cryptg``), it will automatically be used and should provide
+a considerable speed boost. You can know whether it's used by configuring
+``logging`` (at ``INFO`` level or lower) *before* importing ``telethon``.
+
+Note that the library does *not* download or upload files in parallel, which
+can also help with the speed of downloading or uploading a single file. There
+are snippets online implementing that. The reason why this is not built-in
+is because the limiting factor in the long run are ``FloodWaitError``, and
+using parallel download or uploads only makes them occur sooner.
+
+
 What does "Server sent a very new message with ID" mean?
 ========================================================
 
@@ -259,6 +276,17 @@ that he Telethon session is being used or has been used from somewhere else.
 Make sure that you created the session from Telethon, and are not using the
 same session anywhere else. If you need to use the same account from
 multiple places, login and use a different session for each place you need.
+
+
+What does "Task was destroyed but it is pending" mean?
+======================================================
+
+Your script likely finished abruptly, the ``asyncio`` event loop got
+destroyed, and the library did not get a chance to properly close the
+connection and close the session.
+
+Make sure you're either using the context manager for the client or always
+call ``await client.disconnect()`` (by e.g. using a ``try/finally``).
 
 
 What does "The asyncio event loop must not change after connection" mean?
