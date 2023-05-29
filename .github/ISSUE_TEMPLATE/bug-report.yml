@@ -1,5 +1,5 @@
 name: Bug Report
-description: Create a report about a bug inside the library or issues with the documentation
+description: Create a report about a bug inside the library.
 body:
 
   - type: textarea

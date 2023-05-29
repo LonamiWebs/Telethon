@@ -1,0 +1,22 @@
+name: Documentation Issue
+description: Report a problem with the documentation.
+labels: [documentation]
+body:
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the problem in detail.
+      placeholder: This part is unclear...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      options:
+        - label: This is a documentation problem, not a question or a bug report.
+          required: true
+        - label: I have searched for this issue before posting it and there isn't a duplicate.
+          required: true
