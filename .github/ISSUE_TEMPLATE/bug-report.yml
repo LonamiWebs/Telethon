@@ -1,0 +1,96 @@
+name: Bug Report
+description: Create a report about a bug inside the library or issues with the documentation
+body:
+
+  - type: textarea
+    id: reproducing-example
+    attributes:
+      label: Code that causes the issue
+      description: Provide a code example that reproduces the problem.
+      placeholder: |
+        ```python
+        from telethon.sync import TelegramClient
+        ...
+
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: Explain what you should expect to happen.
+      placeholder: |
+        "This should happen..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: Explain what actually happens.
+      placeholder: |
+        "This happened instead..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Traceback
+      description: |
+        The traceback, if the problem is a crash.
+      placeholder: |
+        ```
+        Traceback (most recent call last):
+          File "code.py", line 1, in <code>
+
+        ```
+
+  - type: input
+    id: telethon-version
+    attributes:
+      label: Telethon version
+      placeholder: "1.28.5"
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: The output of `python3 --version`.
+      placeholder: "3.10.11"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: The name and version of your operating system.
+      placeholder: btw i use arch
+    validations:
+      required: true
+
+  - type: textarea
+    id: other-details
+    attributes:
+      label: Other details
+      placeholder: |
+        Additional details and attachments.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      options:
+        - label: The error is in the library's code, and not in my own.
+          required: true
+        - label: I have searched for this issue before posting it and there isn't a duplicate.
+          required: true
+        - label: I ran `pip install -U https://github.com/LonamiWebs/Telethon/archive/v1.zip` and triggered the bug in the latest version.
+          required: true
