@@ -1,0 +1,22 @@
+name: Feature Request
+description: Suggest ideas, changes or other enhancements for the library.
+labels: [enhancement]
+body:
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Describe your suggested feature
+      description: Please describe your idea. Would you like another friendly method? Renaming them to something more appropriate? Changing the way something works?
+      placeholder: "It should work like this..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
+      options:
+        - label: I have searched for this issue before posting it and there isn't a duplicate.
+          required: true
