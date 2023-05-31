@@ -617,7 +617,7 @@ class MessageMethods:
             peer=entity,
             msg_id=utils.get_message_id(message)
         ))
-        m = r.messages[0]
+        m = min(r.messages, key=lambda msg: msg.id)
         chat = next(c for c in r.chats if c.id == m.peer_id.channel_id)
         return utils.get_input_peer(chat), m.id
 
