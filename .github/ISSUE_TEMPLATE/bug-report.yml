@@ -70,9 +70,8 @@ body:
   - type: input
     id: os
     attributes:
-      label: Operating system
-      description: The name and version of your operating system.
-      placeholder: Windows, Mac, Linux-based distribution...
+      label: Operating system (including distribution name and version)
+      placeholder: Windows 11, macOS 13.4, Ubuntu 23.04...
     validations:
       required: true
 
