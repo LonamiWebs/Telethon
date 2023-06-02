@@ -503,6 +503,8 @@ class MTProtoSender:
             self._log.debug('Receiving items from the network...')
             try:
                 body = await self._connection.recv()
+            except asyncio.CancelledError:
+                raise  # bypass except Exception
             except IOError as e:
                 self._log.info('Connection closed while receiving data')
                 self._start_reconnect(e)
