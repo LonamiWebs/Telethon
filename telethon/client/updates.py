@@ -363,7 +363,7 @@ class UpdateMethods:
                         continue
                     except errors.TypeNotFoundError as e:
                         self._log[__name__].warning(
-                            'Cannot get difference since the account is likely misusing the session: %s',
+                            'Cannot get difference for channel %s since the account is likely misusing the session: %s',
                             get_diff.channel.channel_id, e
                         )
                         self._message_box.end_channel_difference(
