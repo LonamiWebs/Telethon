@@ -1,5 +1,6 @@
 Telethon
 ========
+
 .. epigraph::
 
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
@@ -10,10 +11,11 @@ as a user or through a bot account (bot API alternative).
 
 .. important::
 
-    If you have code using Telethon before its 1.0 version, you must
-    read `Compatibility and Convenience`_ to learn how to migrate.
+    If you have code using Telethon before its 2.0 version, it is strongly
+    recommended to read the Migration Guide section in the documentation.
     As with any third-party library for Telegram, be careful not to
     break `Telegram's ToS`_ or `Telegram can ban the account`_.
+
 
 What is this?
 -------------
@@ -29,7 +31,7 @@ Installing
 
 .. code-block:: sh
 
-  pip3 install telethon
+  pip install telethon
 
 
 Creating a client
@@ -44,8 +46,8 @@ Creating a client
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
 
-    client = TelegramClient('session_name', api_id, api_hash)
-    client.start()
+    async with TelegramClient('session_name', api_id, api_hash) as client:
+       ...
 
 
 Doing stuff
@@ -53,34 +55,28 @@ Doing stuff
 
 .. code-block:: python
 
-    print(client.get_me().stringify())
+    print(await client.get_me())
 
-    client.send_message('username', 'Hello! Talking to you from Telethon')
-    client.send_file('username', '/home/myself/Pictures/holidays.jpg')
+    await client.send_message('username', 'Hello! Talking to you from Telethon')
+    await client.send_message('username', photo='/home/myself/Pictures/holidays.jpg')
 
-    client.download_profile_photo('me')
-    messages = client.get_messages('username')
-    messages[0].download_media()
-
-    @client.on(events.NewMessage(pattern='(?i)hi|hello'))
-    async def handler(event):
-        await event.respond('Hey!')
+    async for message in client.get_messages('username', 1):
+        path = await message.download_media()
+        print('Saved media to', path)
 
 
 Next steps
 ----------
 
-Do you like how Telethon looks? Check out `Read The Docs`_ for a more
+Do you like how Telethon looks? Check out the documentation for a more
 in-depth explanation, with examples, troubleshooting issues, and more
 useful information.
 
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _MTProto: https://core.telegram.org/mtproto
 .. _Telegram: https://telegram.org
-.. _Compatibility and Convenience: https://docs.telethon.dev/en/stable/misc/compatibility-and-convenience.html
 .. _Telegram's ToS: https://core.telegram.org/api/terms
 .. _Telegram can ban the account: https://docs.telethon.dev/en/stable/quick-references/faq.html#my-account-was-deleted-limited-when-using-the-library
-.. _Read The Docs: https://docs.telethon.dev
 
 .. |logo| image:: logo.svg
     :width: 24pt

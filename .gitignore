@@ -1,23 +1,4 @@
-# Generated code
-/telethon/tl/functions/
-/telethon/tl/types/
-/telethon/tl/alltlobjects.py
-/telethon/errors/rpcerrorlist.py
-
-# User session
-*.session
-/usermedia/
-
-# Builds and testing
 __pycache__/
-/dist/
-/build/
-/*.egg-info/
-/readthedocs/_build/
-/.tox/
-
-# API reference docs
-/docs/
-
-# File used to manually test new changes, contains sensitive data
-/example.py
+*.py[cod]
+*$py.class
+.pytest_cache/
