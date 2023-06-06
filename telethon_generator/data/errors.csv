@@ -67,6 +67,7 @@ CHANNELS_ADMIN_LOCATED_TOO_MUCH,400,The user has reached the limit of public geo
 CHANNELS_ADMIN_PUBLIC_TOO_MUCH,400,"You're admin of too many public channels, make some channels private to change the username of this channel"
 CHANNELS_TOO_MUCH,400,You have joined too many channels/supergroups
 CHANNEL_BANNED,400,The channel is banned
+CHANNEL_FORUM_MISSING,400,
 CHANNEL_ID_INVALID,400,The specified supergroup ID is invalid
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
 CHANNEL_PARICIPANT_MISSING,400,The current user is not in the channel
