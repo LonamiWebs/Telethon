@@ -338,6 +338,8 @@ class CallbackQuery(EventBuilder):
             This method will likely fail if `via_inline` is `True`.
             """
             self._client.loop.create_task(self.answer())
+            if isinstance(self.query.msg_id, (types.InputBotInlineMessageID, types.InputBotInlineMessageID64)):
+                raise TypeError('Inline messages cannot be deleted as there is no API request available to do so')
             return await self._client.delete_messages(
                 await self.get_input_chat(), [self.query.msg_id],
                 *args, **kwargs
