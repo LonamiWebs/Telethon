@@ -60,14 +60,8 @@ TG_JOIN_RE = re.compile(
     r'tg://(join)\?invite='
 )
 
-# The only shorter-than-five-characters usernames are those used for some
-# special, very well known bots. This list may be incomplete though:
-#    "[...] @gif, @vid, @pic, @bing, @wiki, @imdb and @bold [...]"
-#
-# See https://telegram.org/blog/inline-bots#how-does-it-work
 VALID_USERNAME_RE = re.compile(
-    r'^([a-z](?:(?!__)\w){3,30}[a-z\d]'
-    r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub)$',
+    r'^[a-z](?:(?!__)\w){1,30}[a-z\d]$',
     re.IGNORECASE
 )
 
