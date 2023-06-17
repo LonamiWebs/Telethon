@@ -7,7 +7,8 @@ from html import escape
 from html.parser import HTMLParser
 from typing import Iterable, Optional, Tuple, List
 
-from .. import helpers
+from ..helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
+from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
@@ -15,18 +16,6 @@ from ..tl.types import (
     MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
     TypeMessageEntity
 )
-
-
-# Helpers from markdown.py
-def _add_surrogate(text):
-    return ''.join(
-        ''.join(chr(y) for y in struct.unpack('<HH', x.encode('utf-16le')))
-        if (0x10000 <= ord(x) <= 0x10FFFF) else x for x in text
-    )
-
-
-def _del_surrogate(text):
-    return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
 class HTMLToTelegramParser(HTMLParser):
@@ -86,7 +75,7 @@ class HTMLToTelegramParser(HTMLParser):
                     EntityType = MessageEntityUrl
                 else:
                     EntityType = MessageEntityTextUrl
-                    args['url'] = _del_surrogate(url)
+                    args['url'] = del_surrogate(url)
                     url = None
             self._open_tags_meta.popleft()
             self._open_tags_meta.appendleft(url)
@@ -133,13 +122,33 @@ def parse(html: str) -> Tuple[str, List[TypeMessageEntity]]:
         return html, []
 
     parser = HTMLToTelegramParser()
-    parser.feed(_add_surrogate(html))
-    text = helpers.strip_text(parser.text, parser.entities)
-    return _del_surrogate(text), parser.entities
+    parser.feed(add_surrogate(html))
+    text = strip_text(parser.text, parser.entities)
+    return del_surrogate(text), parser.entities
 
 
-def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
-            _length: Optional[int] = None) -> str:
+ENTITY_TO_FORMATTER = {
+    MessageEntityBold: ('<strong>', '</strong>'),
+    MessageEntityItalic: ('<em>', '</em>'),
+    MessageEntityCode: ('<code>', '</code>'),
+    MessageEntityUnderline: ('<u>', '</u>'),
+    MessageEntityStrike: ('<del>', '</del>'),
+    MessageEntityBlockquote: ('<blockquote>', '</blockquote>'),
+    MessageEntityPre: lambda e, _: (
+        "<pre>\n"
+        "    <code class='language-{}'>\n"
+        "        ".format(e.language), "{}\n"
+        "    </code>\n"
+        "</pre>"
+    ),
+    MessageEntityEmail: lambda _, t: ('<a href="mailto:{}">'.format(t), '</a>'),
+    MessageEntityUrl: lambda _, t: ('<a href="{}">'.format(t), '</a>'),
+    MessageEntityTextUrl: lambda e, _: ('<a href="{}">'.format(escape(e.url)), '</a>'),
+    MessageEntityMentionName: lambda e, _: ('<a href="tg://user?id={}">'.format(e.user_id), '</a>'),
+}
+
+
+def unparse(text: str, entities: Iterable[TypeMessageEntity]) -> str:
     """
     Performs the reverse operation to .parse(), effectively returning HTML
     given a normal text and its MessageEntity's.
@@ -153,77 +162,32 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
     elif not entities:
         return escape(text)
 
-    text = _add_surrogate(text)
-    if _length is None:
-        _length = len(text)
-    html = []
-    last_offset = 0
-    for i, entity in enumerate(entities):
-        if entity.offset >= _offset + _length:
-            break
-        relative_offset = entity.offset - _offset
-        if relative_offset > last_offset:
-            html.append(escape(text[last_offset:relative_offset]))
-        elif relative_offset < last_offset:
-            continue
+    if isinstance(entities, TLObject):
+        entities = (entities,)
 
-        skip_entity = False
-        length = entity.length
+    text = add_surrogate(text)
+    insert_at = []
+    for entity in entities:
+        s = entity.offset
+        e = entity.offset + entity.length
+        delimiter = ENTITY_TO_FORMATTER.get(type(entity), None)
+        if delimiter:
+            if callable(delimiter):
+                delimiter = delimiter(entity, text[s:e])
+            insert_at.append((s, delimiter[0]))
+            insert_at.append((e, delimiter[1]))
 
-        # If we are in the middle of a surrogate nudge the position by +1.
-        # Otherwise we would end up with malformed text and fail to encode.
-        # For example of bad input: "Hi \ud83d\ude1c"
-        # https://en.wikipedia.org/wiki/UTF-16#U+010000_to_U+10FFFF
-        while helpers.within_surrogate(text, relative_offset, length=_length):
-            relative_offset += 1
+    insert_at.sort(key=lambda t: t[0])
+    next_escape_bound = len(text)
+    while insert_at:
+        # Same logic as markdown.py
+        at, what = insert_at.pop()
+        while within_surrogate(text, at):
+            at += 1
 
-        while helpers.within_surrogate(text, relative_offset + length, length=_length):
-            length += 1
+        text = text[:at] + what + escape(text[at:next_escape_bound]) + text[next_escape_bound:]
+        next_escape_bound = at
 
-        entity_text = unparse(text=text[relative_offset:relative_offset + length],
-                              entities=entities[i + 1:],
-                              _offset=entity.offset, _length=length)
-        entity_type = type(entity)
+    text = escape(text[:next_escape_bound]) + text[next_escape_bound:]
 
-        if entity_type == MessageEntityBold:
-            html.append('<strong>{}</strong>'.format(entity_text))
-        elif entity_type == MessageEntityItalic:
-            html.append('<em>{}</em>'.format(entity_text))
-        elif entity_type == MessageEntityCode:
-            html.append('<code>{}</code>'.format(entity_text))
-        elif entity_type == MessageEntityUnderline:
-            html.append('<u>{}</u>'.format(entity_text))
-        elif entity_type == MessageEntityStrike:
-            html.append('<del>{}</del>'.format(entity_text))
-        elif entity_type == MessageEntityBlockquote:
-            html.append('<blockquote>{}</blockquote>'.format(entity_text))
-        elif entity_type == MessageEntityPre:
-            if entity.language:
-                html.append(
-                    "<pre>\n"
-                    "    <code class='language-{}'>\n"
-                    "        {}\n"
-                    "    </code>\n"
-                    "</pre>".format(entity.language, entity_text))
-            else:
-                html.append('<pre><code>{}</code></pre>'
-                            .format(entity_text))
-        elif entity_type == MessageEntityEmail:
-            html.append('<a href="mailto:{0}">{0}</a>'.format(entity_text))
-        elif entity_type == MessageEntityUrl:
-            html.append('<a href="{0}">{0}</a>'.format(entity_text))
-        elif entity_type == MessageEntityTextUrl:
-            html.append('<a href="{}">{}</a>'
-                        .format(escape(entity.url), entity_text))
-        elif entity_type == MessageEntityMentionName:
-            html.append('<a href="tg://user?id={}">{}</a>'
-                        .format(entity.user_id, entity_text))
-        else:
-            skip_entity = True
-        last_offset = relative_offset + (0 if skip_entity else length)
-
-    while helpers.within_surrogate(text, last_offset, length=_length):
-        last_offset += 1
-
-    html.append(escape(text[last_offset:]))
-    return _del_surrogate(''.join(html))
+    return del_surrogate(text)
