@@ -210,7 +210,7 @@ class AuthMethods:
         else:
             raise RuntimeError(
                 '{} consecutive sign-in attempts failed. Aborting'
-                .format(max_attempts)
+                    .format(max_attempts)
             )
 
         if two_step_detected:
@@ -245,7 +245,7 @@ class AuthMethods:
         except UnicodeEncodeError:
             # Some terminals don't support certain characters
             print(signed, name.encode('utf-8', errors='ignore')
-                              .decode('ascii', errors='ignore'), tos, sep='')
+                  .decode('ascii', errors='ignore'), tos, sep='')
 
         return self
 
@@ -374,11 +374,50 @@ class AuthMethods:
             *,
             phone: str = None,
             phone_code_hash: str = None) -> 'types.User':
-        """
-        This method can no longer be used, and will immediately raise a ``ValueError``.
-        See `issue #4050 <https://github.com/LonamiWebs/Telethon/issues/4050>`_ for context.
-        """
-        raise ValueError('Third-party applications cannot sign up for Telegram. See https://github.com/LonamiWebs/Telethon/issues/4050 for details')
+        me = await self.get_me()
+        if me:
+            return me
+
+        # To prevent abuse, one has to try to sign in before signing up. This
+        # is the current way in which Telegram validates the code to sign up.
+        #
+        # `sign_in` will set `_tos`, so if it's set we don't need to call it
+        # because the user already tried to sign in.
+        #
+        # We're emulating pre-layer 104 behaviour so except the right error:
+        if not self._tos:
+            try:
+                return await self.sign_in(
+                    phone=phone,
+                    code=code,
+                    phone_code_hash=phone_code_hash,
+                )
+            except errors.PhoneNumberUnoccupiedError:
+                pass  # code is correct and was used, now need to sign in
+
+        if self._tos and self._tos.text:
+            if self.parse_mode:
+                t = self.parse_mode.unparse(self._tos.text, self._tos.entities)
+            else:
+                t = self._tos.text
+            sys.stderr.write("{}\n".format(t))
+            sys.stderr.flush()
+
+        phone, phone_code_hash = \
+            self._parse_phone_and_hash(phone, phone_code_hash)
+
+        result = await self(functions.auth.SignUpRequest(
+            phone_number=phone,
+            phone_code_hash=phone_code_hash,
+            first_name=first_name,
+            last_name=last_name
+        ))
+
+        if self._tos:
+            await self(
+                functions.help.AcceptTermsOfServiceRequest(self._tos.id))
+
+        return await self._on_login(result.user)
 
     async def _on_login(self, user):
         """
@@ -437,7 +476,7 @@ class AuthMethods:
                 if _retry_count > 2:
                     raise
                 return await self.send_code_request(
-                    phone, force_sms=force_sms, _retry_count=_retry_count+1)
+                    phone, force_sms=force_sms, _retry_count=_retry_count + 1)
 
             # TODO figure out when/if/how this can happen
             if isinstance(result, types.auth.SentCodeSuccess):
@@ -467,7 +506,7 @@ class AuthMethods:
                     "Phone code expired in ResendCodeRequest, requesting a new code"
                 )
                 return await self.send_code_request(
-                    phone, force_sms=False, _retry_count=_retry_count+1)
+                    phone, force_sms=False, _retry_count=_retry_count + 1)
 
             if isinstance(result, types.auth.SentCodeSuccess):
                 raise RuntimeError('logged in right after resending the code')
