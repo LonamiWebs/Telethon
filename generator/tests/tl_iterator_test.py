@@ -1,18 +1,17 @@
 from pytest import raises
-
-from .tl_iterator import FunctionDef, TypeDef, iterate
+from telethon_generator.tl_parser import FunctionDef, TypeDef, parse_tl_file
 
 
 def test_parse_bad_separator() -> None:
     with raises(ValueError) as e:
-        for _ in iterate("---foo---"):
+        for _ in parse_tl_file("---foo---"):
             pass
     e.match("bad separator")
 
 
 def test_parse_file() -> None:
     items = list(
-        iterate(
+        parse_tl_file(
             """
             // leading; comment
             first#1 = t; // inline comment

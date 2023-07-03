@@ -1,4 +1,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
 .pytest_cache/
+.mypy_cache/
+dist/
+build/
+**/tl/layer.py
+**/tl/abcs/
+**/tl/functions/
+**/tl/types/

@@ -37,6 +37,11 @@ class Type:
             generic_arg=generic_arg,
         )
 
+    @property
+    def full_name(self) -> str:
+        ns = ".".join(self.namespace) + "." if self.namespace else ""
+        return f"{ns}{self.name}"
+
     def __str__(self) -> str:
         res = ""
         for ns in self.namespace:

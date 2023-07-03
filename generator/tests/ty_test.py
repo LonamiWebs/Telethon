@@ -1,8 +1,7 @@
 from typing import Optional
 
 from pytest import mark, raises
-
-from .ty import Type
+from telethon_generator.tl_parser import Type
 
 
 def test_empty_simple() -> None:

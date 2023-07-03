@@ -1,4 +1,4 @@
-from .utils import infer_id, remove_tl_comments
+from telethon_generator._impl.tl_parser.utils import infer_id, remove_tl_comments
 
 
 def test_remove_comments_noop() -> None:

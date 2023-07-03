@@ -1,0 +1,35 @@
+
+[project]
+name = "telethon_generator"
+description = "Code generator for Telethon"
+authors = [
+  { name="Lonami", email="totufals@hotmail.com" },
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+keywords = ["telegram", "parser", "codegen", "telethon"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: File Formats",
+    "Topic :: Software Development :: Code Generators",
+    "Typing :: Typed",
+]
+dynamic = ["version"]
+
+[project.urls]
+"Homepage" = "https://telethon.dev/"
+"Source" = "https://telethon.dev/code/"
+"Documentation" = "https://telethon.dev/docs/"
+"Bug Tracker" = "https://telethon.dev/issues/"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "telethon_generator.__version__"}

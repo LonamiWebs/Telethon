@@ -1,10 +1,12 @@
 from pytest import mark, raises
-
-from .definition import Definition
-from .flag import Flag
-from .parameter import Parameter
-from .parameter_type import FlagsParameter, NormalParameter
-from .ty import Type
+from telethon_generator.tl_parser import (
+    Definition,
+    Flag,
+    FlagsParameter,
+    NormalParameter,
+    Parameter,
+    Type,
+)
 
 
 def test_parse_empty_def() -> None:

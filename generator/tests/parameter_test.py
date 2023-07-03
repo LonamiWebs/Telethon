@@ -1,9 +1,12 @@
 from pytest import mark, raises
-
-from .flag import Flag
-from .parameter import Parameter, TypeDefNotImplemented
-from .parameter_type import FlagsParameter, NormalParameter
-from .ty import Type
+from telethon_generator.tl_parser import (
+    Flag,
+    FlagsParameter,
+    NormalParameter,
+    Parameter,
+    Type,
+    TypeDefNotImplemented,
+)
 
 
 @mark.parametrize("param", [":noname", "notype:", ":"])
