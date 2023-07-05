@@ -1,0 +1,41 @@
+
+[project]
+name = "Telethon"
+description = "Full-featured Telegram client library"
+authors = [
+  { name="Lonami", email="totufals@hotmail.com" },
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+keywords = ["telegram", "chat", "messaging", "mtproto", "telethon"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: Chat",
+    "Typing :: Typed",
+]
+dependencies = [
+  "pyaes~=1.6",
+  "rsa~=4.9",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+cryptg = ["cryptg~=0.4"]
+
+[project.urls]
+"Homepage" = "https://telethon.dev/"
+"Source" = "https://telethon.dev/code/"
+"Documentation" = "https://telethon.dev/docs/"
+"Bug Tracker" = "https://telethon.dev/issues/"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "telethon.__version__"}

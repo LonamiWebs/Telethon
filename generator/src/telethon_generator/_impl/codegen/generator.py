@@ -14,17 +14,23 @@ from .serde.deserialization import generate_read
 from .serde.serialization import generate_function, generate_write
 
 
-def generate_init(writer: SourceWriter, namespaces: Set[str]) -> None:
-    sorted_ns = list(namespaces)
-    sorted_ns.sort()
+def generate_init(
+    writer: SourceWriter, namespaces: Set[str], classes: Set[str]
+) -> None:
+    sorted_cls = list(sorted(classes))
+    sorted_ns = list(sorted(namespaces))
+
+    if sorted_cls:
+        sorted_import = ", ".join(sorted_cls)
+        writer.write(f"from ._nons import {sorted_import}")
 
     if sorted_ns:
         sorted_import = ", ".join(sorted_ns)
-        writer.write(f"from ._nons import *")
         writer.write(f"from . import {sorted_import}")
 
-    sorted_all = ", ".join(f"{ns!r}" for ns in sorted_ns)
-    writer.write(f"__all__ = [{sorted_all}]")
+    if sorted_cls or sorted_ns:
+        sorted_all = ", ".join(f"{ns!r}" for ns in sorted_cls + sorted_ns)
+        writer.write(f"__all__ = [{sorted_all}]")
 
 
 def generate(fs: FakeFs, tl: ParsedTl) -> None:
@@ -39,7 +45,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     type_namespaces = set()
     function_namespaces = set()
 
-    generated_type_names = []
+    abc_class_names = set()
+    type_class_names = set()
+    function_def_names = set()
+    generated_type_names = set()
 
     for typedef in tl.typedefs:
         if typedef.ty.full_name not in generated_types:
@@ -49,11 +58,12 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
                 abc_namespaces.add(typedef.ty.namespace[0])
                 abc_path = (Path("abcs") / typedef.ty.namespace[0]).with_suffix(".py")
             else:
+                abc_class_names.add(to_class_name(typedef.ty.name))
                 abc_path = Path("abcs/_nons.py")
 
             if abc_path not in fs:
                 fs.write(abc_path, "from abc import ABCMeta\n")
-                fs.write(abc_path, "from ..core.serializable import Serializable\n")
+                fs.write(abc_path, "from ..core import Serializable\n")
 
             fs.write(
                 abc_path,
@@ -72,6 +82,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             type_namespaces.add(typedef.namespace[0])
             type_path = (Path("types") / typedef.namespace[0]).with_suffix(".py")
         else:
+            type_class_names.add(to_class_name(typedef.name))
             type_path = Path("types/_nons.py")
 
         writer = fs.open(type_path)
@@ -80,11 +91,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write(f"import struct")
             writer.write(f"from typing import List, Optional, Self")
             writer.write(f"from .. import abcs")
-            writer.write(f"from ..core.reader import Reader")
-            writer.write(f"from ..core.serializable import serialize_bytes_to")
+            writer.write(f"from ..core import Reader, serialize_bytes_to")
 
         ns = f"{typedef.namespace[0]}." if typedef.namespace else ""
-        generated_type_names.append(f"{ns}{to_class_name(typedef.name)}")
+        generated_type_names.add(f"{ns}{to_class_name(typedef.name)}")
 
         # class Type(BaseType)
         writer.write(
@@ -138,6 +148,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
                 ".py"
             )
         else:
+            function_def_names.add(to_method_name(functiondef.name))
             function_path = Path("functions/_nons.py")
 
         writer = fs.open(function_path)
@@ -146,8 +157,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write(f"import struct")
             writer.write(f"from typing import List, Optional, Self")
             writer.write(f"from .. import abcs")
-            writer.write(f"from ..core.request import Request")
-            writer.write(f"from ..core.serializable import serialize_bytes_to")
+            writer.write(f"from ..core import Request, serialize_bytes_to")
 
         #   def name(params, ...)
         params = ", ".join(f"{p.name}: {param_type_fmt(p.ty)}" for p in required_params)
@@ -156,11 +166,12 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         generate_function(writer, functiondef)
         writer.dedent(2)
 
-    generate_init(fs.open(Path("abcs/__init__.py")), abc_namespaces)
-    generate_init(fs.open(Path("types/__init__.py")), type_namespaces)
-    generate_init(fs.open(Path("functions/__init__.py")), function_namespaces)
+    generate_init(fs.open(Path("abcs/__init__.py")), abc_namespaces, abc_class_names)
+    generate_init(fs.open(Path("types/__init__.py")), type_namespaces, type_class_names)
+    generate_init(
+        fs.open(Path("functions/__init__.py")), function_namespaces, function_def_names
+    )
 
-    generated_type_names.sort()
     writer = fs.open(Path("layer.py"))
     writer.write(f"from . import types")
     writer.write(f"from .core import Serializable, Reader")
@@ -169,7 +180,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     writer.write(
         "TYPE_MAPPING = {t.constructor_id(): t for t in cast(Tuple[Type[Serializable]], ("
     )
-    for name in generated_type_names:
+    for name in sorted(generated_type_names):
         writer.write(f"  types.{name},")
     writer.write("))}")
     writer.write(

@@ -1,3 +1,4 @@
+import struct
 from itertools import groupby
 from typing import Iterator
 
@@ -127,7 +128,8 @@ def generate_write(writer: SourceWriter, defn: Definition) -> None:
 
 def generate_function(writer: SourceWriter, defn: Definition) -> None:
     tmp_names = gen_tmp_names()
-    writer.write("_buffer = bytearray()")
+    serialized_cid = struct.pack("<I", defn.id)
+    writer.write(f"_buffer = bytearray({serialized_cid!r})")
     for trivial, iter in groupby(
         defn.params,
         key=lambda p: is_trivial(p.ty),

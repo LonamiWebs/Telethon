@@ -6,7 +6,12 @@ __pycache__/
 .mypy_cache/
 dist/
 build/
+**/tl/__init__.py
 **/tl/layer.py
 **/tl/abcs/
 **/tl/functions/
 **/tl/types/
+**/mtproto/layer.py
+**/mtproto/abcs/
+**/mtproto/functions/
+**/mtproto/types/
