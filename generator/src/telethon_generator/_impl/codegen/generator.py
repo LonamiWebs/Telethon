@@ -115,7 +115,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             params = "".join(
                 f", {p.name}: {param_type_fmt(p.ty)}" for p in property_params
             )
-            writer.write(f"  def __init__(_s{params}) -> None:")
+            writer.write(f"  def __init__(_s, *{params}) -> None:")
             for p in property_params:
                 writer.write(f"    _s.{p.name} = {p.name}")
 
@@ -183,7 +183,4 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     for name in sorted(generated_type_names):
         writer.write(f"  types.{name},")
     writer.write("))}")
-    writer.write(
-        "Reader._get_ty = TYPE_MAPPING.get  # type: ignore [method-assign, assignment]"
-    )
     writer.write(f"__all__ = ['LAYER', 'TYPE_MAPPING']")

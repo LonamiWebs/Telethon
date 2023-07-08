@@ -1,11 +1,31 @@
 import struct
-from typing import TYPE_CHECKING, Any, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 if TYPE_CHECKING:
     from .serializable import Serializable
 
 
 T = TypeVar("T", bound="Serializable")
+
+
+def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
+    # Lazy import because generate code depends on the Reader.
+    # After the first call, the class method is replaced with direct access.
+    if Reader._get_ty is _bootstrap_get_ty:
+        from ..layer import TYPE_MAPPING as API_TYPES
+        from ..mtproto.layer import TYPE_MAPPING as MTPROTO_TYPES
+
+        if API_TYPES.keys() & MTPROTO_TYPES.keys():
+            raise RuntimeError(
+                "generated api and mtproto schemas cannot have colliding constructor identifiers"
+            )
+        ALL_TYPES = API_TYPES | MTPROTO_TYPES
+
+        # Signatures don't fully match, but this is a private method
+        # and all previous uses are compatible with `dict.get`.
+        Reader._get_ty = ALL_TYPES.get  # type: ignore [assignment]
+
+    return Reader._get_ty(constructor_id)
 
 
 class Reader:
@@ -44,11 +64,7 @@ class Reader:
 
         return data
 
-    @staticmethod
-    def _get_ty(_: int) -> Type["Serializable"]:
-        # Implementation replaced during import to prevent cycles,
-        # without the performance hit of having the import inside.
-        raise NotImplementedError
+    _get_ty = staticmethod(_bootstrap_get_ty)
 
     def read_serializable(self, cls: Type[T]) -> T:
         # Calls to this method likely need to ignore "type-abstract".

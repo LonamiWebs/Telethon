@@ -1,5 +1,10 @@
+import struct
+
 from pytest import mark
 from telethon._impl.tl.core import Reader
+from telethon._impl.tl.core.serializable import Serializable
+from telethon._impl.tl.mtproto.types import BadServerSalt
+from telethon._impl.tl.types import GeoPoint
 
 
 @mark.parametrize(
@@ -24,3 +29,21 @@ sentence made it past!",
 def test_string(string: str, prefix: bytes, suffix: bytes) -> None:
     data = prefix + string.encode("ascii") + suffix
     assert str(Reader(data).read_bytes(), "ascii") == string
+
+
+@mark.parametrize(
+    "obj",
+    [
+        GeoPoint(long=12.34, lat=56.78, access_hash=123123, accuracy_radius=100),
+        BadServerSalt(
+            bad_msg_id=1234,
+            bad_msg_seqno=5678,
+            error_code=9876,
+            new_server_salt=5432,
+        ),
+    ],
+)
+def test_generated_object(obj: Serializable) -> None:
+    assert bytes(obj)[:4] == struct.pack("<I", obj.constructor_id())
+    assert type(obj)._read_from(Reader(bytes(obj)[4:])) == obj
+    assert Reader(bytes(obj)).read_serializable(type(obj)) == obj

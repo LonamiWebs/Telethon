@@ -38,6 +38,13 @@ class Serializable(abc.ABC):
         attrs = ", ".join(repr(getattr(self, attr)) for attr in self.__slots__)
         return f"{self.__class__.__name__}({attrs})"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return all(
+            getattr(self, attr) == getattr(other, attr) for attr in self.__slots__
+        )
+
 
 def serialize_bytes_to(buffer: bytearray, data: bytes) -> None:
     length = len(data)
