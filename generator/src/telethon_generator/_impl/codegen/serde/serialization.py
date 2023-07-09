@@ -26,16 +26,16 @@ def generate_buffer_append(
             )
         else:
             writer.write(f"{buffer} += struct.pack(f'<{fmt}', {name})")
-    elif ty.generic_ref:
+    elif ty.generic_ref or ty.name == "Object":
         writer.write(f"{buffer} += {name}")  # assume previously-serialized
     elif ty.name == "string":
         writer.write(f"serialize_bytes_to({buffer}, {name}.encode('utf-8'))")
     elif ty.name == "bytes":
         writer.write(f"serialize_bytes_to({buffer}, {name})")
     elif ty.name == "int128":
-        writer.write(f"{buffer} += {name}.to_bytes(16, 'little', signed=True)")
+        writer.write(f"{buffer} += {name}.to_bytes(16)")
     elif ty.name == "int256":
-        writer.write(f"{buffer} += {name}.to_bytes(32, 'little', signed=True)")
+        writer.write(f"{buffer} += {name}.to_bytes(32)")
     elif ty.bare:
         writer.write(f"{name}._write_to({buffer})")
     else:

@@ -29,35 +29,41 @@ def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
 
 
 class Reader:
-    __slots__ = ("_buffer", "_pos", "_view")
+    __slots__ = ("_view", "_pos", "_len")
 
     def __init__(self, buffer: bytes) -> None:
-        self._buffer = buffer
+        self._view = (
+            memoryview(buffer) if not isinstance(buffer, memoryview) else buffer
+        )
         self._pos = 0
-        self._view = memoryview(self._buffer)
+        self._len = len(self._view)
+
+    def read_remaining(self) -> bytes:
+        return self.read(self._len - self._pos)
 
     def read(self, n: int) -> bytes:
         self._pos += n
-        return self._view[self._pos - n : n]
+        assert self._pos <= self._len
+        return self._view[self._pos - n : self._pos]
 
     def read_fmt(self, fmt: str, size: int) -> tuple[Any, ...]:
         assert struct.calcsize(fmt) == size
         self._pos += size
+        assert self._pos <= self._len
         return struct.unpack(fmt, self._view[self._pos - size : self._pos])
 
     def read_bytes(self) -> bytes:
-        if self._buffer[self._pos] == 254:
+        if self._view[self._pos] == 254:
             self._pos += 4
-            (length,) = struct.unpack(
-                "<i", self._buffer[self._pos - 3 : self._pos] + b"\0"
-            )
+            length = struct.unpack("<i", self._view[self._pos - 4 : self._pos])[0] >> 8
             padding = length % 4
         else:
-            length = self._buffer[self._pos]
+            length = self._view[self._pos]
             padding = (length + 1) % 4
             self._pos += 1
 
         self._pos += length
+        assert self._pos <= self._len
         data = self._view[self._pos - length : self._pos]
         if padding > 0:
             self._pos += 4 - padding
@@ -72,6 +78,7 @@ class Reader:
         # Unfortunately `typing.cast` would add a tiny amount of runtime overhead
         # which cannot be removed with optimization enabled.
         self._pos += 4
+        assert self._pos <= self._len
         cid = struct.unpack("<I", self._view[self._pos - 4 : self._pos])[0]
         ty = self._get_ty(cid)
         if ty is None:

@@ -1,3 +1,4 @@
+import os
 import struct
 from hashlib import sha1
 
@@ -8,15 +9,21 @@ from ..tl.core import serialize_bytes_to
 
 def compute_fingerprint(key: PublicKey) -> int:
     buffer = bytearray()
-    serialize_bytes_to(buffer, int.to_bytes(key.n, (key.n.bit_length() + 7) // 8))
-    serialize_bytes_to(buffer, int.to_bytes(key.e, (key.e.bit_length() + 7) // 8))
+    serialize_bytes_to(buffer, key.n.to_bytes((key.n.bit_length() + 7) // 8))
+    serialize_bytes_to(buffer, key.e.to_bytes((key.e.bit_length() + 7) // 8))
     fingerprint = struct.unpack("<q", sha1(buffer).digest()[-8:])[0]
     assert isinstance(fingerprint, int)
     return fingerprint
 
 
-def encrypt_hashed(data: bytes, key: PublicKey) -> bytes:
-    return encrypt(sha1(data).digest() + data, key)
+def encrypt_hashed(data: bytes, key: PublicKey, random_data: bytes) -> bytes:
+    # Cannot use `rsa.encrypt` because it's not deterministic and requires its own padding.
+    padding_length = 235 - len(data)
+    assert padding_length >= 0 and len(random_data) >= padding_length
+    to_encrypt = sha1(data).digest() + data + random_data[:padding_length]
+    payload = int.from_bytes(to_encrypt)
+    encrypted = pow(payload, key.e, key.n)
+    return encrypted.to_bytes(256)
 
 
 # From my.telegram.org.

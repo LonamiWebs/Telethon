@@ -47,3 +47,13 @@ def test_generated_object(obj: Serializable) -> None:
     assert bytes(obj)[:4] == struct.pack("<I", obj.constructor_id())
     assert type(obj)._read_from(Reader(bytes(obj)[4:])) == obj
     assert Reader(bytes(obj)).read_serializable(type(obj)) == obj
+
+
+def test_repeated_read() -> None:
+    reader = Reader(bytes(range(8)))
+    assert reader.read(4) == bytes(range(4))
+    assert reader.read(4) == bytes(range(4, 8))
+
+    reader = Reader(bytes(range(8)))
+    assert reader.read_fmt("4b", 4) == tuple(range(4))
+    assert reader.read_fmt("4b", 4) == tuple(range(4, 8))

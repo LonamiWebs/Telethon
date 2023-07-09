@@ -62,8 +62,8 @@ def test_decrypt_server_data_v2() -> None:
 
 
 def test_key_from_nonce() -> None:
-    server_nonce = bytes(range(16))
-    new_nonce = bytes(range(32))
+    server_nonce = int.from_bytes(bytes(range(16)))
+    new_nonce = int.from_bytes(bytes(range(32)))
 
     (key, iv) = generate_key_data_from_nonce(server_nonce, new_nonce)
     assert (

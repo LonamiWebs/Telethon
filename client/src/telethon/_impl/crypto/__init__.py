@@ -90,13 +90,15 @@ def decrypt_data_v2(ciphertext: bytes, auth_key: AuthKey) -> bytes:
     return plaintext
 
 
-def generate_key_data_from_nonce(server_nonce: bytes, new_nonce: bytes) -> CalcKey:
-    hash1 = sha1(new_nonce + server_nonce).digest()
-    hash2 = sha1(server_nonce + new_nonce).digest()
-    hash3 = sha1(new_nonce + new_nonce).digest()
+def generate_key_data_from_nonce(server_nonce: int, new_nonce: int) -> CalcKey:
+    server_bytes = server_nonce.to_bytes(16)
+    new_bytes = new_nonce.to_bytes(32)
+    hash1 = sha1(new_bytes + server_bytes).digest()
+    hash2 = sha1(server_bytes + new_bytes).digest()
+    hash3 = sha1(new_bytes + new_bytes).digest()
 
     key = hash1 + hash2[:12]
-    iv = hash2[12:20] + hash3 + new_nonce[:4]
+    iv = hash2[12:20] + hash3 + new_bytes[:4]
     return CalcKey(key, iv)
 
 
@@ -108,3 +110,6 @@ def encrypt_ige(plaintext: bytes, key: bytes, iv: bytes) -> bytes:
 
 def decrypt_ige(padded_ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
     return ige_decrypt(padded_ciphertext, key, iv)
+
+
+__all__ = ["AuthKey", "encrypt_data_v2", "decrypt_data_v2"]

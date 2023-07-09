@@ -19,5 +19,9 @@ class AuthKey:
     def __bytes__(self) -> bytes:
         return self.data
 
-    def calc_new_nonce_hash(self, new_nonce: bytes, number: int) -> bytes:
-        return sha1(new_nonce + bytes((number,)) + self.aux_hash).digest()[4:]
+    def calc_new_nonce_hash(self, new_nonce: int, number: int) -> int:
+        return int.from_bytes(
+            sha1(new_nonce.to_bytes(32) + number.to_bytes(1) + self.aux_hash).digest()[
+                4:
+            ]
+        )

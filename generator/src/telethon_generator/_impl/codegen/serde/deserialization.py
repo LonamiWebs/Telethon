@@ -6,8 +6,15 @@ from ....tl_parser import Definition, NormalParameter, Parameter, Type
 from ..fakefs import SourceWriter
 from .common import inner_type_fmt, is_trivial, to_class_name, trivial_struct_fmt
 
+# Some implementations choose to create these types by hand.
+# For consistency, we instead special-case the generator.
+SPECIAL_CASED_OBJECT_READS = {
+    0xF35C6D01: "reader.read_remaining()",  # rpc_result
+    0x5BB8E511: "reader.read(_bytes)",  # message
+}
 
-def reader_read_fmt(ty: Type) -> Tuple[str, Optional[str]]:
+
+def reader_read_fmt(ty: Type, constructor_id: int) -> Tuple[str, Optional[str]]:
     if is_trivial(NormalParameter(ty=ty, flag=None)):
         fmt = trivial_struct_fmt(NormalParameter(ty=ty, flag=None))
         size = struct.calcsize(f"<{fmt}")
@@ -17,17 +24,22 @@ def reader_read_fmt(ty: Type) -> Tuple[str, Optional[str]]:
     elif ty.name == "bytes":
         return f"reader.read_bytes()", None
     elif ty.name == "int128":
-        return f"int.from_bytes(reader.read(16), 'little', signed=True)", None
+        return f"int.from_bytes(reader.read(16))", None
     elif ty.name == "int256":
-        return f"int.from_bytes(reader.read(32), 'little', signed=True)", None
+        return f"int.from_bytes(reader.read(32))", None
     elif ty.bare:
         return f"{to_class_name(ty.name)}._read_from(reader)", None
+    elif ty.name == "Object":
+        try:
+            return SPECIAL_CASED_OBJECT_READS[constructor_id], None
+        except KeyError:
+            raise NotImplementedError("missing special case for object read")
     else:
         return f"reader.read_serializable({inner_type_fmt(ty)})", "type-abstract"
 
 
 def generate_normal_param_read(
-    writer: SourceWriter, name: str, param: NormalParameter
+    writer: SourceWriter, name: str, param: NormalParameter, constructor_id: int
 ) -> None:
     flag_check = f"_{param.flag.name} & {1 << param.flag.index}" if param.flag else None
     if param.ty.name == "true":
@@ -59,7 +71,7 @@ def generate_normal_param_read(
                 fmt = trivial_struct_fmt(generic)
                 size = struct.calcsize(f"<{fmt}")
                 writer.write(
-                    f"_{name} = reader.read_fmt(f'<{{__len}}{fmt}', __len * {size})[0]"
+                    f"_{name} = [*reader.read_fmt(f'<{{__len}}{fmt}', __len * {size})]"
                 )
                 if param.ty.generic_arg.name == "Bool":
                     writer.write(
@@ -67,11 +79,13 @@ def generate_normal_param_read(
                     )
                     writer.write(f"_{name} = [_{name} == 0x997275b5]")
             else:
-                fmt_read, type_ignore = reader_read_fmt(param.ty.generic_arg)
+                fmt_read, type_ignore = reader_read_fmt(
+                    param.ty.generic_arg, constructor_id
+                )
                 comment = f"  # type: ignore [{type_ignore}]" if type_ignore else ""
                 writer.write(f"_{name} = [{fmt_read} for _ in range(__len)]{comment}")
         else:
-            fmt_read, type_ignore = reader_read_fmt(param.ty)
+            fmt_read, type_ignore = reader_read_fmt(param.ty, constructor_id)
             comment = f"  # type: ignore [{type_ignore}]" if type_ignore else ""
             writer.write(f"_{name} = {fmt_read}{comment}")
 
@@ -97,4 +111,4 @@ def generate_read(writer: SourceWriter, defn: Definition) -> None:
             for param in iter:
                 if not isinstance(param.ty, NormalParameter):
                     raise RuntimeError("FlagsParameter should be considered trivial")
-                generate_normal_param_read(writer, param.name, param.ty)
+                generate_normal_param_read(writer, param.name, param.ty, defn.id)

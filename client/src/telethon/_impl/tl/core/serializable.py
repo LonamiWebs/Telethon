@@ -35,7 +35,12 @@ class Serializable(abc.ABC):
         return bytes(buffer)
 
     def __repr__(self) -> str:
-        attrs = ", ".join(repr(getattr(self, attr)) for attr in self.__slots__)
+        fields = ((attr, getattr(self, attr)) for attr in self.__slots__)
+        fields = (
+            (name, bytes(field) if isinstance(field, memoryview) else field)
+            for name, field in fields
+        )
+        attrs = ", ".join(f"{name}={field!r}" for name, field in fields)
         return f"{self.__class__.__name__}({attrs})"
 
     def __eq__(self, other: object) -> bool:

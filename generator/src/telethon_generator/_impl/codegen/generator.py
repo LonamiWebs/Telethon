@@ -37,6 +37,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     generated_types = {
         "True",
         "Bool",
+        "Object",
     }  # initial set is considered to be "compiler built-ins"
 
     ignored_types = {"true", "boolTrue", "boolFalse"}  # also "compiler built-ins"
@@ -91,7 +92,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write(f"import struct")
             writer.write(f"from typing import List, Optional, Self")
             writer.write(f"from .. import abcs")
-            writer.write(f"from ..core import Reader, serialize_bytes_to")
+            writer.write(f"from ..core import Reader, Serializable, serialize_bytes_to")
 
         ns = f"{typedef.namespace[0]}." if typedef.namespace else ""
         generated_type_names.add(f"{ns}{to_class_name(typedef.name)}")
@@ -160,8 +161,11 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write(f"from ..core import Request, serialize_bytes_to")
 
         #   def name(params, ...)
-        params = ", ".join(f"{p.name}: {param_type_fmt(p.ty)}" for p in required_params)
-        writer.write(f"def {to_method_name(functiondef.name)}({params}) -> Request:")
+        params = "".join(f", {p.name}: {param_type_fmt(p.ty)}" for p in required_params)
+        star = "*" if params else ""
+        writer.write(
+            f"def {to_method_name(functiondef.name)}({star}{params}) -> Request:"
+        )
         writer.indent(2)
         generate_function(writer, functiondef)
         writer.dedent(2)

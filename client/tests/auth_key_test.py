@@ -5,8 +5,8 @@ def get_auth_key() -> AuthKey:
     return AuthKey.from_bytes(bytes(range(256)))
 
 
-def get_new_nonce() -> bytes:
-    return bytes(range(32))
+def get_new_nonce() -> int:
+    return int.from_bytes(bytes(range(32)))
 
 
 def test_auth_key_aux_hash() -> None:
@@ -28,7 +28,7 @@ def test_calc_new_nonce_hash1() -> None:
     new_nonce = get_new_nonce()
     assert (
         auth_key.calc_new_nonce_hash(new_nonce, 1)
-        == b"\xc2\xce\xd2\xb3>Y:U\xd2\x7fJ]\xab\xee|g"
+        == 258944117842285651226187582903746985063
     )
 
 
@@ -37,7 +37,7 @@ def test_calc_new_nonce_hash2() -> None:
     new_nonce = get_new_nonce()
     assert (
         auth_key.calc_new_nonce_hash(new_nonce, 2)
-        == b"\xf41\x8e\x85\xbd/\xf3\xbe\x84\xd9\xfe\xfc\xe3\xdc\xe3\x9f"
+        == 324588944215647649895949797213421233055
     )
 
 
@@ -46,5 +46,5 @@ def test_calc_new_nonce_hash3() -> None:
     new_nonce = get_new_nonce()
     assert (
         auth_key.calc_new_nonce_hash(new_nonce, 3)
-        == b"K\xf9\xd7\xb3}\xb4\x13\xeeC\x1d(Qv1\xcb="
+        == 100989356540453064705070297823778556733
     )

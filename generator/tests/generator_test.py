@@ -79,4 +79,24 @@ def test_recursive_vec() -> None:
         """
     )
     result = gen_py_code(typedefs=definitions)
-    assert "value: List[abcs.JSONObjectValue]" in result
+    assert "value: List[abcs.JsonObjectValue]" in result
+
+
+def test_object_blob_special_case() -> None:
+    definitions = get_definitions(
+        """
+        rpc_result#f35c6d01 req_msg_id:long result:Object = RpcResult;
+        """
+    )
+    result = gen_py_code(typedefs=definitions)
+    assert "reader.read_remaining()" in result
+
+
+def test_object_blob_with_prefix_special_case() -> None:
+    definitions = get_definitions(
+        """
+        message msg_id:long seqno:int bytes:int body:Object = Message;
+        """
+    )
+    result = gen_py_code(typedefs=definitions)
+    assert "reader.read(_bytes)" in result

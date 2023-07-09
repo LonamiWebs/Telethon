@@ -37,7 +37,7 @@ def iterate(contents: str) -> Iterator[TypeDef | FunctionDef | Exception]:
                 definition = definition[len(FUNCTIONS_SEP) :].strip()
             elif definition.startswith(TYPES_SEP):
                 cls = TypeDef
-                definition = definition[len(FUNCTIONS_SEP) :].strip()
+                definition = definition[len(TYPES_SEP) :].strip()
             else:
                 raise ValueError("bad separator")
 
