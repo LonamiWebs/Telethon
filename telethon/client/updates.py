@@ -9,6 +9,7 @@ import typing
 import logging
 import warnings
 from collections import deque
+import sqlite3
 
 from .. import events, utils, errors
 from ..events.common import EventBuilder, EventCommon
@@ -319,7 +320,7 @@ class UpdateMethods:
                             await self.disconnect()
                             break
                         continue
-                    except errors.TypeNotFoundError as e:
+                    except (errors.TypeNotFoundError, sqlite3.OperationalError) as e:
                         # User is likely doing weird things with their account or session and Telegram gets confused as to what layer they use
                         self._log[__name__].warning('Cannot get difference since the account is likely misusing the session: %s', e)
                         self._message_box.end_difference()
@@ -361,7 +362,7 @@ class UpdateMethods:
                             await self.disconnect()
                             break
                         continue
-                    except errors.TypeNotFoundError as e:
+                    except (errors.TypeNotFoundError, sqlite3.OperationalError) as e:
                         self._log[__name__].warning(
                             'Cannot get difference for channel %s since the account is likely misusing the session: %s',
                             get_diff.channel.channel_id, e
