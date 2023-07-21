@@ -158,7 +158,7 @@ class InlineResult:
             background=background,
             clear_draft=clear_draft,
             hide_via=hide_via,
-            reply_to=types.InputReplyToMessage(reply_id)
+            reply_to=None if reply_id is None else types.InputReplyToMessage(reply_id)
         )
         return self._client._get_response_message(
             req, await self._client(req), entity)
