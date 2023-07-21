@@ -741,6 +741,9 @@ class DownloadMethods:
 
     @staticmethod
     def _get_thumb(thumbs, thumb):
+        if not thumbs:
+            return None
+
         # Seems Telegram has changed the order and put `PhotoStrippedSize`
         # last while this is the smallest (layer 116). Ensure we have the
         # sizes sorted correctly with a custom function.
