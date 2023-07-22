@@ -886,6 +886,9 @@ class DownloadMethods:
         else:
             file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
             size = self._get_thumb(document.thumbs, thumb)
+            if not size or isinstance(size, types.PhotoSizeEmpty):
+                return
+
             if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
                 return self._download_cached_photo_size(size, file)
 
