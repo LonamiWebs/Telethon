@@ -13,6 +13,43 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+More bug fixing (v1.29)
+=======================
+
++------------------------+
+| Scheme layer used: 160 |
++------------------------+
+
+This layer introduces the necessary raw API methods to work with stories.
+
+The library is aiming to be "feature-frozen" for as long as v1 is active,
+so friendly client methods are not implemented, but example code to use
+stories can be found in the GitHub wiki of the project.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Removed client-side checks for methods dealing with chat permissions.
+  In particular, this means you can now ban channels.
+* Improved some error messages and added new classes for more RPC errors.
+* The client-side check for valid usernames has been loosened, so that
+  very short premium usernames are no longer considered invalid.
+
+Bug fixes
+~~~~~~~~~
+
+* Attempting to download a thumbnail from documnets without one would fail,
+  rather than do nothing (since nothing can be downloaded if there is no thumb).
+* More errors are caught in the update handling loop.
+* HTML ``.text`` should now "unparse" any message contents correctly.
+* Fixed some problems related to logging.
+* ``comment_to`` should now work as expected with albums.
+* ``asyncio.CancelledError`` should now correctly propagate from the update loop.
+* Removed some absolute imports in favour of relative imports.
+* ``UserUpdate.last_seen`` should now behave correctly.
+* Fixed a rare ``ValueError`` during ``connect`` if the session cache was bad.
+
+
 New Layer and housekeeping (v1.28)
 ==================================
 
