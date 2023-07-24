@@ -496,7 +496,7 @@ class UploadMethods:
 
         # Now we can construct the multi-media request
         request = functions.messages.SendMultiMediaRequest(
-            entity, reply_to=types.InputReplyToMessage(reply_to), multi_media=media,
+            entity, reply_to=None if reply_to is None else types.InputReplyToMessage(reply_to), multi_media=media,
             silent=silent, schedule_date=schedule, clear_draft=clear_draft,
             background=background
         )
