@@ -505,8 +505,8 @@ class MTProtoSender:
                 body = await self._connection.recv()
             except asyncio.CancelledError:
                 raise  # bypass except Exception
-            except IOError as e:
-                self._log.info('Connection closed while receiving data')
+            except (IOError, asyncio.IncompleteReadError) as e:
+                self._log.info('Connection closed while receiving data: %s', e)
                 self._start_reconnect(e)
                 return
             except InvalidBufferError as e:
