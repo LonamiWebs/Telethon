@@ -51,6 +51,7 @@ class MTProtoSender:
         self._loggers = loggers
         self._log = loggers[__name__]
         self._retries = retries
+        self._retry_unknown_error = retries
         self._delay = delay
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
@@ -519,6 +520,9 @@ class MTProtoSender:
                 return
             except Exception as e:
                 self._log.exception('Unhandled error while receiving data')
+                self._retry_unknown_error = self._retry_unknown_error - 1
+                if self._retry_unknown_error < 0:
+                    raise
                 self._start_reconnect(e)
                 return
 
