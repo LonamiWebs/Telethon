@@ -464,6 +464,7 @@ TTL_MEDIA_INVALID,400,The provided media cannot be used with a TTL
 TTL_PERIOD_INVALID,400,The provided TTL Period is invalid
 TYPES_EMPTY,400,The types field is empty
 TYPE_CONSTRUCTOR_INVALID,400,The type constructor is invalid
+Timedout,-503,Timeout while fetching data
 Timeout,-503,Timeout while fetching data
 UNKNOWN_ERROR,400,
 UNKNOWN_METHOD,500,The method you tried to call cannot be called on non-CDN DCs

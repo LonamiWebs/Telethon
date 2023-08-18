@@ -80,7 +80,7 @@ class _DirectDownloadIter(RequestIter):
             else:
                 return result.bytes
 
-        except errors.TimeoutError as e:
+        except errors.TimedOutError as e:
             if self._timed_out:
                 self.client._log[__name__].warning('Got two timeouts in a row while downloading file')
                 raise

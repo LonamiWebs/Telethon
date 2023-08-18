@@ -308,7 +308,7 @@ class UpdateMethods:
                         diff = await self(get_diff)
                     except (
                         errors.ServerError,
-                        errors.TimeoutError,
+                        errors.TimedOutError,
                         errors.FloodWaitError,
                         ValueError
                     ) as e:
@@ -384,7 +384,7 @@ class UpdateMethods:
                         errors.PersistentTimestampOutdatedError,
                         errors.PersistentTimestampInvalidError,
                         errors.ServerError,
-                        errors.TimeoutError,
+                        errors.TimedOutError,
                         errors.FloodWaitError,
                         ValueError
                     ) as e:
