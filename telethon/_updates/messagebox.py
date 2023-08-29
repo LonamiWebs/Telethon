@@ -470,27 +470,32 @@ class MessageBox:
                 raise GapError
             # else apply
 
-            self.date = date
-            if seq != NO_SEQ:
-                self.seq = seq
-
         def _sort_gaps(update):
             pts = PtsInfo.from_update(update)
             return pts.pts - pts.pts_count if pts else 0
 
-        # Telegram can send updates out of order (e.g. ReadChannelInbox first
-        # and then NewChannelMessage, both with the same pts, but the count is
-        # 0 and 1 respectively).
-        #
-        # We can't know beforehand if this would cause issues (i.e. if any of
-        # the updates is the first one we get to know about a specific channel)
-        # (other than doing a pre-scan to check if any has info about an entry
-        # we lack), so instead we sort preemptively. As a bonus there's less
-        # likelyhood of "possible gaps" by doing this.
-        # TODO give this more thought, perhaps possible gaps can't happen at all
-        #      (not ones which would be resolved by sorting anyway)
+        any_pts_applied = [False]  # using a list to pass "by reference"
+
         result.extend(filter(None, (
-            self.apply_pts_info(u, reset_deadline=True) for u in sorted(updates, key=_sort_gaps))))
+            self.apply_pts_info(u, reset_deadline=True, any_pts_applied=any_pts_applied)
+            # Telegram can send updates out of order (e.g. ReadChannelInbox first
+            # and then NewChannelMessage, both with the same pts, but the count is
+            # 0 and 1 respectively), so we sort them first.
+            for u in sorted(updates, key=_sort_gaps))))
+
+        # > If the updates were applied, local *Updates* state must be updated
+        # > with `seq` (unless it's 0) and `date` from the constructor.
+        #
+        # By "were applied", we assume it means "some other pts was applied".
+        # Updates which can be applied in any order, such as `UpdateChat`,
+        # should not cause `seq` to be updated (or upcoming updates such as
+        # `UpdateChatParticipant` could be missed).
+        if any_pts_applied[0]:
+            if __debug__:
+                self._trace('Updating seq as local pts was updated too')
+            self.date = date
+            if seq != NO_SEQ:
+                self.seq = seq
 
         self.apply_deadlines_reset()
 
@@ -530,6 +535,7 @@ class MessageBox:
         update,
         *,
         reset_deadline,
+        any_pts_applied=[True],  # mutable default is fine as it's write-only
     ):
         # This update means we need to call getChannelDifference to get the updates from the channel
         if isinstance(update, tl.UpdateChannelTooLong):
@@ -581,6 +587,7 @@ class MessageBox:
                 return None
             else:
                 # Apply
+                any_pts_applied[0] = True
                 if __debug__:
                     self._trace('Applying update pts since local pts %r = %r: %s', local_pts, pts, update)
 
