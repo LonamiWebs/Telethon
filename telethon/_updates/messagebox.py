@@ -210,7 +210,7 @@ class MessageBox:
         # it when using `python -O`. Probably unnecessary, but it's nice to avoid
         # paying the cost for something that is not used.
         self._log.log(LOG_LEVEL_TRACE, 'Current MessageBox state: seq = %r, date = %s, map = %r',
-                      self.seq, self.date.isoformat(), self.map)
+                      self.seq, self.date.isoformat() if self.date and isinstance(self.date, datetime.datetime) else None, self.map)
         self._log.log(LOG_LEVEL_TRACE, msg, *args, **kwargs)
 
     # region Creation, querying, and setting base state.
@@ -423,7 +423,7 @@ class MessageBox:
 
         if __debug__:
             self._trace('Processing updates with seq = %r, seq_start = %r, date = %s: %s',
-                        seq, seq_start, date.isoformat() if date else None, updates)
+                        seq, seq_start, date.isoformat() if date and isinstance(date, datetime.datetime) else None, updates)
 
         if date is None:
             # updatesTooLong is the only one with no date (we treat it as a gap)
