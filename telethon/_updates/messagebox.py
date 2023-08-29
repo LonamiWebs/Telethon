@@ -166,7 +166,7 @@ class PossibleGap:
 #
 # See https://core.telegram.org/api/updates#message-related-event-sequences.
 class MessageBox:
-    __slots__ = ('_log', 'map', 'date', 'seq', 'next_deadline', 'possible_gaps', 'getting_diff_for', 'reset_deadlines_for')
+    __slots__ = ('_log', 'map', 'date', 'seq', 'next_deadline', 'possible_gaps', 'getting_diff_for')
 
     def __init__(
         self,
@@ -192,10 +192,6 @@ class MessageBox:
 
         # For which entries are we currently getting difference.
         getting_diff_for: set = _sentinel,  # entry
-
-        # Temporarily stores which entries should have their update deadline reset.
-        # Stored in the message box in order to reuse the allocation.
-        reset_deadlines_for: set = _sentinel  # entry
     ):
         self._log = log
         self.map = {} if map is _sentinel else map
@@ -204,7 +200,6 @@ class MessageBox:
         self.next_deadline = next_deadline
         self.possible_gaps = {} if possible_gaps is _sentinel else possible_gaps
         self.getting_diff_for = set() if getting_diff_for is _sentinel else getting_diff_for
-        self.reset_deadlines_for = set() if reset_deadlines_for is _sentinel else reset_deadlines_for
 
         if __debug__:
             self._trace('MessageBox initialized')
@@ -297,38 +292,27 @@ class MessageBox:
 
         return deadline
 
-    # Reset the deadline for the periods without updates for a given entry.
+    # Reset the deadline for the periods without updates for the given entries.
     #
     # It also updates the next deadline time to reflect the new closest deadline.
-    def reset_deadline(self, entry, deadline):
-        if entry not in self.map:
-            raise RuntimeError('Called reset_deadline on an entry for which we do not have state')
-        self.map[entry].deadline = deadline
+    def reset_deadlines(self, entries, deadline):
+        for entry in entries:
+            if entry not in self.map:
+                raise RuntimeError('Called reset_deadline on an entry for which we do not have state')
+            self.map[entry].deadline = deadline
 
-        if self.next_deadline == entry:
+        if self.next_deadline in entries:
             # If the updated deadline was the closest one, recalculate the new minimum.
             self.next_deadline = min(self.map.items(), key=lambda entry_state: entry_state[1].deadline)[0]
         elif self.next_deadline in self.map and deadline < self.map[self.next_deadline].deadline:
             # If the updated deadline is smaller than the next deadline, change the next deadline to be the new one.
+            # Any entry will do, so the one from the last iteration is fine.
             self.next_deadline = entry
         # else an unrelated deadline was updated, so the closest one remains unchanged.
 
     # Convenience to reset a channel's deadline, with optional timeout.
     def reset_channel_deadline(self, channel_id, timeout):
-        self.reset_deadline(channel_id, get_running_loop().time() + (timeout or NO_UPDATES_TIMEOUT))
-
-    # Reset all the deadlines in `reset_deadlines_for` and then empty the set.
-    def apply_deadlines_reset(self):
-        next_deadline = next_updates_deadline()
-
-        reset_deadlines_for = self.reset_deadlines_for
-        self.reset_deadlines_for = set()  # "move" the set to avoid self.reset_deadline() from touching it during iter
-
-        for entry in reset_deadlines_for:
-            self.reset_deadline(entry, next_deadline)
-
-        reset_deadlines_for.clear()  # reuse allocation, the other empty set was a temporary dummy value
-        self.reset_deadlines_for = reset_deadlines_for
+        self.reset_deadlines({channel_id}, get_running_loop().time() + (timeout or NO_UPDATES_TIMEOUT))
 
     # Sets the update state.
     #
@@ -398,7 +382,7 @@ class MessageBox:
         except KeyError:
             raise RuntimeError('Called end_get_diff on an entry which was not getting diff for')
 
-        self.reset_deadline(entry, next_updates_deadline())
+        self.reset_deadlines({entry}, next_updates_deadline())
         assert entry not in self.possible_gaps, "gaps shouldn't be created while getting difference"
 
     # endregion Creation, querying, and setting base state.
@@ -474,10 +458,11 @@ class MessageBox:
             pts = PtsInfo.from_update(update)
             return pts.pts - pts.pts_count if pts else 0
 
+        reset_deadlines = set()  # temporary buffer
         any_pts_applied = [False]  # using a list to pass "by reference"
 
         result.extend(filter(None, (
-            self.apply_pts_info(u, reset_deadline=True, any_pts_applied=any_pts_applied)
+            self.apply_pts_info(u, reset_deadlines=reset_deadlines, any_pts_applied=any_pts_applied)
             # Telegram can send updates out of order (e.g. ReadChannelInbox first
             # and then NewChannelMessage, both with the same pts, but the count is
             # 0 and 1 respectively), so we sort them first.
@@ -497,7 +482,7 @@ class MessageBox:
             if seq != NO_SEQ:
                 self.seq = seq
 
-        self.apply_deadlines_reset()
+        self.reset_deadlines(reset_deadlines, next_updates_deadline())
 
         if self.possible_gaps:
             if __debug__:
@@ -512,7 +497,7 @@ class MessageBox:
 
                     # If this fails to apply, it will get re-inserted at the end.
                     # All should fail, so the order will be preserved (it would've cycled once).
-                    update = self.apply_pts_info(update, reset_deadline=False)
+                    update = self.apply_pts_info(update, reset_deadlines=None)
                     if update:
                         result.append(update)
                         if __debug__:
@@ -534,7 +519,7 @@ class MessageBox:
         self,
         update,
         *,
-        reset_deadline,
+        reset_deadlines,
         any_pts_applied=[True],  # mutable default is fine as it's write-only
     ):
         # This update means we need to call getChannelDifference to get the updates from the channel
@@ -555,8 +540,8 @@ class MessageBox:
         # Build the `HashSet` to avoid calling `reset_deadline` more than once for the same entry.
         #
         # By the time this method returns, self.map will have an entry for which we can reset its deadline.
-        if reset_deadline:
-            self.reset_deadlines_for.add(pts.entry)
+        if reset_deadlines:
+            reset_deadlines.add(pts.entry)
 
         if pts.entry in self.getting_diff_for:
             # Note: early returning here also prevents gap from being inserted (which they should
