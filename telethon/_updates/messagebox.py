@@ -284,8 +284,8 @@ class MessageBox:
         # timeout for updates several times (it also makes sense to get difference if now is the deadline).
         if now >= deadline:
             # Check all expired entries and add them to the list that needs getting difference.
-            self.getting_diff_for.update(entry for entry, gap in self.possible_gaps.items() if now > gap.deadline)
-            self.getting_diff_for.update(entry for entry, state in self.map.items() if now > state.deadline)
+            self.getting_diff_for.update(entry for entry, gap in self.possible_gaps.items() if now >= gap.deadline)
+            self.getting_diff_for.update(entry for entry, state in self.map.items() if now >= state.deadline)
 
             if __debug__:
                 self._trace('Deadlines met, now getting diff for %r', self.getting_diff_for)
