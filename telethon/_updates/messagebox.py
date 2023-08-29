@@ -798,7 +798,7 @@ class MessageBox:
                 updates=diff.other_updates,
                 users=diff.users,
                 chats=diff.chats,
-                date=1,  # anything not-None
+                date=epoch(),
                 seq=NO_SEQ,  # this way date is not used
             ), chat_hashes, updates)
 
