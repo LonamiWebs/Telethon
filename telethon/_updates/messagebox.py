@@ -495,6 +495,9 @@ class MessageBox:
         self.apply_deadlines_reset()
 
         if self.possible_gaps:
+            if __debug__:
+                self._trace('Trying to re-apply %r possible gaps', len(self.possible_gaps))
+
             # For each update in possible gaps, see if the gap has been resolved already.
             for key in list(self.possible_gaps.keys()):
                 self.possible_gaps[key].updates.sort(key=_sort_gaps)
@@ -536,6 +539,8 @@ class MessageBox:
         pts = PtsInfo.from_update(update)
         if not pts:
             # No pts means that the update can be applied in any order.
+            if __debug__:
+                self._trace('No pts in update, so it can be applied in any order: %s', update)
             return update
 
         # As soon as we receive an update of any form related to messages (has `PtsInfo`),
@@ -550,6 +555,8 @@ class MessageBox:
         if pts.entry in self.getting_diff_for:
             # Note: early returning here also prevents gap from being inserted (which they should
             # not be while getting difference).
+            if __debug__:
+                self._trace('Skipping update with %r as its difference is being fetched', pts)
             return None
 
         if pts.entry in self.map:
@@ -557,15 +564,13 @@ class MessageBox:
             if local_pts + pts.pts_count > pts.pts:
                 # Ignore
                 if __debug__:
-                    self._trace('Skipping update since local pts %r + %r > %r: %s',
-                                local_pts, pts.pts_count, pts.pts, update)
+                    self._trace('Skipping update since local pts %r > %r: %s', local_pts, pts, update)
                 return None
             elif local_pts + pts.pts_count < pts.pts:
                 # Possible gap
                 # TODO store chats too?
                 if __debug__:
-                    self._trace('Adding update as possible gap since local pts %r + %r < %r: %s',
-                                local_pts, pts.pts_count, pts.pts, update)
+                    self._trace('Possible gap since local pts %r < %r: %s', local_pts, pts, update)
                 if pts.entry not in self.possible_gaps:
                     self.possible_gaps[pts.entry] = PossibleGap(
                         deadline=get_running_loop().time() + POSSIBLE_GAP_TIMEOUT,
@@ -576,7 +581,8 @@ class MessageBox:
                 return None
             else:
                 # Apply
-                pass
+                if __debug__:
+                    self._trace('Applying update pts since local pts %r = %r: %s', local_pts, pts, update)
 
         # In a channel, we may immediately receive:
         # * ReadChannelInbox (pts = X, pts_count = 0)
