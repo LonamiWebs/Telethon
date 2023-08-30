@@ -1,6 +1,6 @@
 import struct
 
-from .abcs import Transport
+from .abcs import MissingBytes, Transport
 
 
 class Abridged(Transport):
@@ -36,23 +36,22 @@ class Abridged(Transport):
             output += struct.pack("<i", 0x7F | (length << 8))
         output += input
 
-    def unpack(self, input: bytes, output: bytearray) -> None:
+    def unpack(self, input: bytes, output: bytearray) -> int:
         if not input:
-            raise ValueError("missing bytes, expected: 1, got: 0")
+            raise MissingBytes(expected=1, got=0)
 
         length = input[0]
         if length < 127:
             header_len = 1
         elif len(input) < 4:
-            raise ValueError(f"missing bytes, expected: 4, got: {len(input)}")
+            raise MissingBytes(expected=4, got=len(input))
         else:
             header_len = 4
             length = struct.unpack_from("<i", input)[0] >> 8
 
         length *= 4
         if len(input) < header_len + length:
-            raise ValueError(
-                f"missing bytes, expected: {header_len + length}, got: {len(input)}"
-            )
+            raise MissingBytes(expected=header_len + length, got=len(input))
 
         output += memoryview(input)[header_len : header_len + length]
+        return header_len + length

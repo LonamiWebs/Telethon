@@ -1,7 +1,7 @@
 import struct
 from zlib import crc32
 
-from .abcs import Transport
+from .abcs import MissingBytes, Transport
 
 
 class Full(Transport):
@@ -33,16 +33,17 @@ class Full(Transport):
         output += struct.pack("<i", crc32(memoryview(output)[-(length - 4) :]))
         self._send_seq += 1
 
-    def unpack(self, input: bytes, output: bytearray) -> None:
+    def unpack(self, input: bytes, output: bytearray) -> int:
         if len(input) < 4:
-            raise ValueError(f"missing bytes, expected: 4, got: {len(input)}")
+            raise MissingBytes(expected=4, got=len(input))
 
         length = struct.unpack_from("<i", input)[0]
+        assert isinstance(length, int)
         if length < 12:
             raise ValueError(f"bad length, expected > 12, got: {length}")
 
         if len(input) < length:
-            raise ValueError(f"missing bytes, expected: {length}, got: {len(input)}")
+            raise MissingBytes(expected=length, got=len(input))
 
         seq = struct.unpack_from("<i", input, 4)[0]
         if seq != self._recv_seq:
@@ -55,3 +56,4 @@ class Full(Transport):
 
         self._recv_seq += 1
         output += memoryview(input)[8:-4]
+        return length

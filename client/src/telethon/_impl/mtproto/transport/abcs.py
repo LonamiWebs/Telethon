@@ -7,5 +7,10 @@ class Transport(ABC):
         pass
 
     @abstractmethod
-    def unpack(self, input: bytes, output: bytearray) -> None:
+    def unpack(self, input: bytes, output: bytearray) -> int:
         pass
+
+
+class MissingBytes(ValueError):
+    def __init__(self, *, expected: int, got: int) -> None:
+        super().__init__(f"missing bytes, expected: {expected}, got: {got}")

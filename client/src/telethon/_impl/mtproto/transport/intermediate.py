@@ -1,6 +1,6 @@
 import struct
 
-from .abcs import Transport
+from .abcs import MissingBytes, Transport
 
 
 class Intermediate(Transport):
@@ -32,12 +32,14 @@ class Intermediate(Transport):
         output += struct.pack("<i", len(input))
         output += input
 
-    def unpack(self, input: bytes, output: bytearray) -> None:
+    def unpack(self, input: bytes, output: bytearray) -> int:
         if len(input) < 4:
-            raise ValueError(f"missing bytes, expected: {4}, got: {len(input)}")
+            raise MissingBytes(expected=4, got=len(input))
 
         length = struct.unpack_from("<i", input)[0]
+        assert isinstance(length, int)
         if len(input) < length:
-            raise ValueError(f"missing bytes, expected: {length}, got: {len(input)}")
+            raise MissingBytes(expected=length, got=len(input))
 
         output += memoryview(input)[4 : 4 + length]
+        return length + 4
