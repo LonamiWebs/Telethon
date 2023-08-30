@@ -107,8 +107,18 @@ def generate_read(writer: SourceWriter, defn: Definition) -> None:
             fmt = "".join(trivial_struct_fmt(param.ty) for param in group)
             size = struct.calcsize(f"<{fmt}")
             writer.write(f"{names}= reader.read_fmt('<{fmt}', {size})")
+            for param in group:
+                if isinstance(param.ty, NormalParameter) and param.ty.ty.name == "Bool":
+                    writer.write(f"assert _{param.name} in (0x997275b5, 0xbc799737)")
         else:
             for param in iter:
                 if not isinstance(param.ty, NormalParameter):
                     raise RuntimeError("FlagsParameter should be considered trivial")
                 generate_normal_param_read(writer, param.name, param.ty, defn.id)
+
+
+def param_value_fmt(param: Parameter) -> str:
+    if isinstance(param.ty, NormalParameter) and param.ty.ty.name == "Bool":
+        return f"_{param.name} == 0x997275b5"
+    else:
+        return f"_{param.name}"

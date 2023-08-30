@@ -100,3 +100,15 @@ def test_object_blob_with_prefix_special_case() -> None:
     )
     result = gen_py_code(typedefs=definitions)
     assert "reader.read(_bytes)" in result
+
+
+def test_bool_mapped_from_int() -> None:
+    definitions = get_definitions(
+        """
+        contact#145ade0b user_id:long mutual:Bool = Contact;
+        """
+    )
+    result = gen_py_code(typedefs=definitions)
+    assert "_mutual in (0x997275b5, 0xbc799737)" in result
+    assert "=_mutual == 0x997275b5" in result
+    assert "0x997275b5 if self.mutual else 0xbc799737" in result

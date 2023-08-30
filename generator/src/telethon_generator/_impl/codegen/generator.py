@@ -10,7 +10,7 @@ from .serde.common import (
     to_class_name,
     to_method_name,
 )
-from .serde.deserialization import generate_read
+from .serde.deserialization import generate_read, param_value_fmt
 from .serde.serialization import generate_function, generate_write
 
 
@@ -125,7 +125,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer.write(f"  def _read_from(cls, reader: Reader) -> Self:")
         writer.indent(2)
         generate_read(writer, typedef)
-        params = ", ".join(f"{p.name}=_{p.name}" for p in property_params)
+        params = ", ".join(f"{p.name}={param_value_fmt(p)}" for p in property_params)
         writer.write(f"return cls({params})")
         writer.dedent(2)
 
