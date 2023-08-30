@@ -1,9 +1,15 @@
 from abc import ABC, abstractmethod
+from typing import Callable
+
+
+OutFn = Callable[[bytes | bytearray | memoryview], None]
 
 
 class Transport(ABC):
+    # Python's stream writer has a synchronous write (buffer append) followed
+    # by drain. The buffer is externally managed, so `write` is used as input.
     @abstractmethod
-    def pack(self, input: bytes, output: bytearray) -> None:
+    def pack(self, input: bytes, write: OutFn) -> None:
         pass
 
     @abstractmethod

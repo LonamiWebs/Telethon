@@ -4,9 +4,16 @@ from pytest import raises
 from telethon._impl.mtproto.transport.intermediate import Intermediate
 
 
+class Output(bytearray):
+    __slots__ = ()
+
+    def __call__(self, data: bytes) -> None:
+        self += data
+
+
 def setup_pack(n: int) -> Tuple[Intermediate, bytes, bytearray]:
     input = bytes(x & 0xFF for x in range(n))
-    return Intermediate(), input, bytearray()
+    return Intermediate(), input, Output()
 
 
 def test_pack_empty() -> None:

@@ -1,6 +1,6 @@
 import struct
 
-from .abcs import MissingBytes, Transport
+from .abcs import MissingBytes, OutFn, Transport
 
 
 class Abridged(Transport):
@@ -22,19 +22,19 @@ class Abridged(Transport):
     def __init__(self) -> None:
         self._init = False
 
-    def pack(self, input: bytes, output: bytearray) -> None:
+    def pack(self, input: bytes, write: OutFn) -> None:
         assert len(input) % 4 == 0
 
         if not self._init:
-            output += b"\xef"
+            write(b"\xef")
             self._init = True
 
         length = len(input) // 4
         if length < 127:
-            output += struct.pack("<b", length)
+            write(struct.pack("<b", length))
         else:
-            output += struct.pack("<i", 0x7F | (length << 8))
-        output += input
+            write(struct.pack("<i", 0x7F | (length << 8)))
+        write(input)
 
     def unpack(self, input: bytes, output: bytearray) -> int:
         if not input:

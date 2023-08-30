@@ -4,9 +4,16 @@ from pytest import raises
 from telethon._impl.mtproto.transport.full import Full
 
 
+class Output(bytearray):
+    __slots__ = ()
+
+    def __call__(self, data: bytes) -> None:
+        self += data
+
+
 def setup_pack(n: int) -> Tuple[Full, bytes, bytearray]:
     input = bytes(x & 0xFF for x in range(n))
-    return Full(), input, bytearray()
+    return Full(), input, Output()
 
 
 def setup_unpack(n: int) -> Tuple[bytes, Full, bytes, bytearray]:

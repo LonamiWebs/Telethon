@@ -1,6 +1,6 @@
 import struct
 
-from .abcs import MissingBytes, Transport
+from .abcs import MissingBytes, OutFn, Transport
 
 
 class Intermediate(Transport):
@@ -22,15 +22,15 @@ class Intermediate(Transport):
     def __init__(self) -> None:
         self._init = False
 
-    def pack(self, input: bytes, output: bytearray) -> None:
+    def pack(self, input: bytes, write: OutFn) -> None:
         assert len(input) % 4 == 0
 
         if not self._init:
-            output += b"\xee\xee\xee\xee"
+            write(b"\xee\xee\xee\xee")
             self._init = True
 
-        output += struct.pack("<i", len(input))
-        output += input
+        write(struct.pack("<i", len(input)))
+        write(input)
 
     def unpack(self, input: bytes, output: bytearray) -> int:
         if len(input) < 4:

@@ -1,7 +1,7 @@
 import struct
 from zlib import crc32
 
-from .abcs import MissingBytes, Transport
+from .abcs import MissingBytes, OutFn, Transport
 
 
 class Full(Transport):
@@ -24,13 +24,15 @@ class Full(Transport):
         self._send_seq = 0
         self._recv_seq = 0
 
-    def pack(self, input: bytes, output: bytearray) -> None:
+    def pack(self, input: bytes, write: OutFn) -> None:
         assert len(input) % 4 == 0
 
         length = len(input) + 12
-        output += struct.pack("<ii", length, self._send_seq)
-        output += input
-        output += struct.pack("<i", crc32(memoryview(output)[-(length - 4) :]))
+        # Unfortunately there's no hasher that can be updated multiple times,
+        # so a temporary buffer must be used to hash it all in one go.
+        tmp = struct.pack("<ii", length, self._send_seq) + input
+        write(tmp)
+        write(struct.pack("<I", crc32(tmp)))
         self._send_seq += 1
 
     def unpack(self, input: bytes, output: bytearray) -> int:
