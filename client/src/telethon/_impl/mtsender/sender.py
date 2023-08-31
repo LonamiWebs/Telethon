@@ -102,7 +102,7 @@ class Sender:
         cls, transport: Transport, mtp: Mtp, addr: str
     ) -> Tuple[Self, Enqueuer]:
         reader, writer = await asyncio.open_connection(*addr.split(":"))
-        request_queue: Queue[object] = Queue()
+        request_queue: Queue[Request[object]] = Queue()
 
         return (
             cls(
@@ -128,12 +128,12 @@ class Sender:
         rx = self._enqueue_body(body)
         return await self._step_until_receive(rx)
 
-    def _enqueue_body(self, body: bytes) -> Future[object]:
+    def _enqueue_body(self, body: bytes) -> Future[bytes]:
         oneshot = asyncio.get_running_loop().create_future()
         self._requests.append(Request(body=body, state=NotSerialized(), result=oneshot))
         return oneshot
 
-    async def _step_until_receive(self, rx: Future[object]) -> bytes:
+    async def _step_until_receive(self, rx: Future[bytes]) -> bytes:
         while True:
             await self.step()
             if rx.done():
@@ -203,7 +203,7 @@ class Sender:
 
         self._read_buffer += read_buffer
 
-        updates = []
+        updates: List[Updates] = []
         while self._read_buffer:
             self._mtp_buffer.clear()
             try:
@@ -254,7 +254,7 @@ class Sender:
                     if isinstance(ret, bytes):
                         assert len(ret) >= 4
                     elif isinstance(ret, RpcError):
-                        ret.caused_by = req.body[:4]
+                        ret.caused_by = struct.unpack_from("<I", req.body)[0]
                         raise ret
                     elif isinstance(ret, BadMessage):
                         # TODO test that we resend the request
@@ -273,6 +273,8 @@ class Sender:
     def auth_key(self) -> Optional[bytes]:
         if isinstance(self._mtp, Encrypted):
             return self._mtp.auth_key
+        else:
+            return None
 
 
 async def connect(transport: Transport, addr: str) -> Tuple[Sender, Enqueuer]:
@@ -284,13 +286,13 @@ async def generate_auth_key(
     sender: Sender,
     enqueuer: Enqueuer,
 ) -> Tuple[Sender, Enqueuer]:
-    request, data = authentication.step1()
+    request, data1 = authentication.step1()
     response = await sender.send(request)
-    request, data = authentication.step2(data, response)
+    request, data2 = authentication.step2(data1, response)
     response = await sender.send(request)
-    request, data = authentication.step3(data, response)
+    request, data3 = authentication.step3(data2, response)
     response = await sender.send(request)
-    finished = authentication.create_key(data, response)
+    finished = authentication.create_key(data3, response)
     auth_key = finished.auth_key
     time_offset = finished.time_offset
     first_salt = finished.first_salt

@@ -10,7 +10,7 @@ class Request(bytes, Generic[Return]):
     @property
     def constructor_id(self) -> int:
         try:
-            cid = struct.unpack("<i", self[:4])[0]
+            cid = struct.unpack_from("<I", self)[0]
             assert isinstance(cid, int)
             return cid
         except struct.error:
