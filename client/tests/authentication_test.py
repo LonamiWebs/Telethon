@@ -1,7 +1,3 @@
-from contextlib import contextmanager
-from typing import Iterator
-
-from rsa import PublicKey
 from telethon._impl.crypto.auth_key import AuthKey
 from telethon._impl.mtproto.authentication import (
     CreatedKey,
@@ -12,46 +8,29 @@ from telethon._impl.mtproto.authentication import (
 )
 
 
-@contextmanager
-def old_rsa_keys() -> Iterator[None]:
-    import telethon._impl.mtproto.authentication
-
-    # Temporarily replace the imported global.
-    orig_rsa = telethon._impl.mtproto.authentication.RSA_KEYS  # type: ignore [attr-defined]
-    try:
-        telethon._impl.mtproto.authentication.RSA_KEYS = {  # type: ignore [attr-defined]
-            -4344800451088585951: PublicKey(
-                n=24403446649145068056824081744112065346446136066297307473868293895086332508101251964919587745984311372853053253457835208829824428441874946556659953519213382748319518214765985662663680818277989736779506318868003755216402538945900388706898101286548187286716959100102939636333452457308619454821845196109544157601096359148241435922125602449263164512290854366930013825808102403072317738266383237191313714482187326643144603633877219028262697593882410403273959074350849923041765639673335775605842311578109726403165298875058941765362622936097839775380070572921007586266115476975819175319995527916042178582540628652481530373407,
-                e=65537,
-            )
-        }
-        yield
-    finally:
-        telethon._impl.mtproto.authentication.RSA_KEYS = orig_rsa  # type: ignore [attr-defined]
-
-
 def test_successful_auth_key_gen_flow() -> None:
-    step1_random = b"\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1"
-    step1_request = b"\xf1\x8e~\xbe\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1"
-    step1_response = b"c$\x16\x05\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1\xe4\xb1\xfeR+vIQh\x91t#W\xc9j\x1a\x08 \xcd<\xb0X{\xddq\x00\x00\x00\x15\xc4\xb5\x1c\x02\x00\x00\x00\x02\x9fK\xa1m\x10\x92\x96!k\xe8l\x02+\xb4\xc3"
-    step2_random = b"\xc3\x94\x9bxu\xf2\xf6\x13\xadn\x01\x12%\x85\x1f\x84u\xa2\xe2{\x06\xd4~\xec\x94v(\xba\x15\xaazX{\xfe.\xd2\x92\x0b\xa6\xcd\xe7\x92\x84\x87\xcc\xf57\xee;\x9f\xc9c\xde\xbdE\xdc+\x85q\xa3\xbe\x83_@\x04W)\x16\xc5\xe7\xac`\xc4y\xd3lj\xba\xda\xe7\xb2\xd6os:\xd9F,\r4K\x86\x96\xfc\x95\xaag\x80)\xbf\x1a\x11\xad\xc8:^\xfcx)\xa1\xa3r\xcd\xda>)-\xf2\x87\x06\xee\x10U\x17\xd2\xd7\x9c\r\x9fB\x9ef\xd0\x8e3\xc0\x10\x06~\xca\x9b\x87\x83\x998#\xb4\x19mF\xf6\xd2\x10\x1a\x07\xf6\x83\x03\x07R\xef\x83\xab\xde\x98\xe8\xbd\xa3\xb8x\x84\xf6{+f\xeb\x031\xa5\x16A\xec\x1a\x90Xe(<\x8c\xb6\xbe\xcaNm\xe0\x8b\xf3\xf4\x83\x85\xfc=\xfdv8%\x9f50=\xb5\xca\xd9\x7f\xb3\x93\x8f\x00\xd9N\xaa\x1f\x88@<G\x1e\x13V(1;5\x9bg@\x94[\x82\xab\x9d\xa6\x1f\xfaz^\xec\x94jd\x869G\x91\xa0\x9c\n\xb9T\x0e\x01V\xb4\x1c\xfa\xbft\xf1G\x7f.\x92n6\x06\x928~\xba\x7f\xe9\x1f\x18\xf4a\xb63\x87"
-    step2_request = b'\xbe\xe4\x12\xd7\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1\xe4\xb1\xfeR+vIQh\x91t#W\xc9j\x1a\x04Z\x89\x9d\x9b\x00\x00\x00\x04\\\xbf\xa7\xe3\x00\x00\x00!k\xe8l\x02+\xb4\xc3\xfe\x00\x01\x00l\x0f\xb7\xdfb\xfd4\xfe!3\x07\xffx.b\x19\xc8\x98\x99\x7f\x81\xc05\xfa7cZ[XX\x91\x8a\xc9\x94\xad/wF\x18\x1f|9yBL\x1d\xdc\xe1|\x17N\x9d4\x01.I\'a\xe3B|\xce\x9b\x8e\xd0\xbd\xbcF*\xebS\xc6\x9d\x90/\x06\xa2\x1d\xac[\x99\xc1\xe3\xad\xaf\xc5\xa4\xc8\x1a?\x03\xc4fu\xe6\x1e\xd0\xbc$>6\x83\xccZ%\x0b\xa6\xff\xe2Yl\x9f\xbbkB\r>\xf0\x92\x00\x15\x1d\x83\xb4X\x98+\xe7\x80\xea\\F-6\x9b@\xfdi\xcf\x87\xb9\xf2\xfeW\xec\x03ck?\xf8\x05\x90\r\xb4\xd9<\x1f@R\xe7g\xd9\xba\xb0\x8b\x9b\x93\x0b\xa87UV\x08\xe5C>\xe33\xa8!\xc0\xd6\xe4\xa1\x11\xb8&x\xc1\x1fWt\xe0\x9f\xd2z@\t\xf3w\x9e\x04\x1ao\xff,\x85L\xd9\x8e\xe7\x1d\xf3=\x91h\xf3U~\xce\x17\x18!\xe5-\xb5qxU\x86\xb3\xd2k\x08\r\xa2\xf8E3E\xda\xc7\x0ch3F@\xfed"\x0e\x8ay\xe4\xf0"'
-    step2_response = b'\\\x07\xe8\xd0\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1\xe4\xb1\xfeR+vIQh\x91t#W\xc9j\x1a\xfeP\x02\x00:MC$\x99\x1b\xa8]\xf7\'[\x91\xe6\x01\xec\x04$\xa7`&Y1\xe5\x13PG\x1f3r\x05\xa0\x02\xf8+\xc7;\xd9\x1d\x84\x1ewo(\x1f\x16\xb4\x93I\xabpZ\xebVB\xce\xaf\xa9\x1c?\x8f\x18\xadq\x06\xa8=[\xe2\x9d\x187\xd8s\x0c\xf1\xa3\xfd\xdeSfw\x88$X\xbf\x14\x17\x14&\x04\xc0\xe4\x85\x00\x94\x186w2\xc6\xd0\xc7c\xe2S9<l\xb9C7}\xc1\xd8\xb5\x8eEy",\x90\xbfWd35\xdeV\xe1\xa4;\x89\x93\xd4\\\xdc\x17e\xdfsa|\xd9\xbb[*\xff\xdd;\xa7\x0b%\xe2F\x0e\xdf\xef\xaf\x80\xa1@\x05\x0c\xc4#\xb9\x10I\x0f)\xa6\x01f\xd9\xd8\xe8\xaa\xf2]\xfa\x9b\x85\xb3)Y\x1a\n\xa9\xd3\xe1\xdf\xc4s\xe1\xd3~t\xe3\xfe\xf9W\xbb\x0b5\xd2\xc3\xa3T\r\xb9\x92\xa6I\xc6\t\x91\xc5]a\x89\xd8P!\xf2\xa2\x0f\x16\tJ\x9e\x0b,\x88\xd0\xa5>\xc4\x05\xc7Ws\xf4/\xd8\x10\xfemK\x01dB\xd5q\x93T\xd6\x04\xcaW\x00\x19\x07\x92\xca8h\x13J\xf2\xae\xf9\x1d\xba\xc8\xcc\x8f\xdc\x82\xe6"^\x83\xd0\xa4\xd2\x9a\x99\x92<\x15\x1e#J \x88\x82Y\x11\xd6\x14>j\xcc\x10e\x9f1\xf3{~\xa8\xfb\xdd\x82\xd1\x81`,0LAN\x87\x8c\xcc\tZ2\x07\x18\x81\x9f\\h\x8c$\xc9\x1e^\n\rJ\x94,\xb6L\x06L\x9d\xd6\xed4}W\xb5\xcd\xbcu\xd2MI\x98\x03\xac\xa8\xebZ\xed\xc3#\x1c\x8e\xc2\x16\x89\xe3\xfc=\xd1x\x9cR\xf6\x1e\xe7\xb3\xbfS\xc0\xef\xf4!\xdeH:7SSi\x17Z\xc3-2B&\xa9\xd4,4%~@\x12\'j}p\xfay\x8bU\xab\xa1;\xb7\xfc\xf9\x9fM\xf6:\xc0\xfe\xa4T\xe2\xf2\xf1E}\x0e-\xc66\x00\x91\xd4\xf7\xd6\x0b6L\xc8\xd7\x07\xefQ\x18\xce=\xf1\x88\xdf\xd64\r\xfb\xce\xb4\xb0\xf3w~\xda\x80\xc0\xc5\xca\xa3\x02\xb2A\xd21\xbc\xefH\xf217\x00\xc1Z\x85p\xa1\x87V/\x88\xe0\x10y\x07bO"\xe1\xe0b@\x80\xf8\x9f\xe1cc5\xc2\xa8\xd0\xb0&\x97\xdb\x14<0.\xfa$B\x9a\xca\x0c\xef3\x01@+\xeeQ\x9a\xe1\x1d\x8b6\x02%\xe8\x1c\xa5\xb9N9\xc1\xce\x93\xcc\xe4\xde\xc8%\x9c\x14\xce\xf6\xaa\x02\x1a\xa1\xc3\xe3\xb5v\xd2n%=c\x0e\xa8\xbd\xfa(\xefE\xe8i\xcf\xeb'
-    step3_random = b'G\x92z\n\x1b\x15b\x91\x14,\xf8\xf7;\x03)\xa1\xccl\xde\x9f\xb6\xed\x89\x135\xaf\xfa\xc3>\x08:\x7f\xee\xda_o\xe9\xd5\xe1W\xe1\x9d\xc9\x13b<6\xcc\x1e\xd3\x87ac\x08\xe8\xf93\xf2\x07\x98\x98$|\xe9]\xf0+\xc4alt\x84)\x17\x18\xbc\xdd\x03\x94\x1bfR\xaf\xe2\x94_B\x1d\xd7C\xd5\x1fr\xe9\xae\xea\xcc\x0cu\xd9\x1fK2 \xcc\xc9\xda\xf5\xec=q\x8f^*\xf5_\x18"\xbd\x06\x1c\xee\xc1\xc0^H\xb0\t\xfe\x14\xba\x16\xb4\x84O\xa4!+\xca\xf1U]\x1fV[\xfa\x86-w\xfamL\xf4U\xf2]\xacS}\x05\xbbF\x83C-z\xec\xa8Mq?\xda"\xbe\xe3\x0b\xd6d\xbe\x8b9\x1e\x96\xf0\x9c,q\x92\xb6\x1d\xd1\xb2\xeb0\xc0\x06\x19S\xc2\x8cE\x0eob\x1ed\x93:\x13\xf9Ai\xe8\xa9N\n\xea\xda}\xb4\x0c\xb1\x01\xcfw\xa2`\xaeij\t\xa5n@\x9diq\x84m@\xe6\'\xec\x82\x18\x97\x89,\\\xef<\x14\xe3\x12+\x83\xb6 \x82\x16\x00Q\xff\xce\x93\xdb\xea]\xaf\x87\xd6\x1e'
-    step3_request = b"\x1f_\x04\xf5\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1\xe4\xb1\xfeR+vIQh\x91t#W\xc9j\x1a\xfeP\x01\x00%t5m\x89\x96p\x89\xb4\x92\xd8W\x97\xeb\x07J\xc0\x9c\xa9\xbcF\xe1\tbV\x98\x0fU\xa2\x1b\xf2\xe7\xe4\xbb$V\x97X7$\xc3\x0bx\xa2-N(\x1d&\xf7\xce\xfd\xd2\x0f\x13\xb4%\xd4\xca\xf9h>\x01\x0f\xf4y\xc2\xee\x87\x86\x8c\xaf\xc1\xf4u\\\xedee\x9ag\x8f\x0f'h\r`\xe9\x1f\x9a\x0f\x80?%d\xa5\xa7A\x9d\xd4{\xf1!\x82\xc6\xd4\x8c\xf9\xfaT\x9f\x89\x0f\x8ac\xaf\xfcpK\x07q\x05/H\x18\xd3\xe5\xd29\xe8\xbb\xf8`\x8e\\\xee\x9b\xef\xb2\xbcM\xd9\x0f\x17\xc0\x7f`\x8c\xae\xdfZN\\\xfe\x94\xffMvRN0\xcf\n\x02\x8a\x17\xe3q\xfb\xf5\xf7v\xe2\xf2\xf5\xf4\x07`#\xc3\r5\xd3\xb3\x7f\xc3\xb9\x03z@\xb6t\xdeg\xbc\xce\xb6J\x02^\xa1\x95\xa1\xf8\xad\\\xe1Y\xe9n}\x99\xac\x9cu\xd6\xfb\xebMn\x16\xe6\xb8\xe9\xda3\x0c%+\x0bd\xa4N\x19p\x83L\xd3cq\x16\xceS3\xa4\x05\x9b<S\xf8dGh\xbd\x8dr\xf8<\x06J\x97\x8d]\x88\xb3k\xb6N\x86>w\x05\x13e\x9b\xb8\x8d)D\xe9I\xffd\x87u\xe6\xee\xe7\x8d\xa2\xe1ve\xcc\xb6$\x9bwFx\xd3u\xad\xd9\xf0\x04\xc8\xaf\x97A\x03\xff4\x01\xd2\x12\x82\xc2\xbf\x1b\xf7\xc2\x8f\x98\xc3\xef\xac\xf1yVc\x14Y\xef\xe4\xc1"
-    step3_response = b"4\xf7\xcb;\x86\xd4%\xe6F\r\xe2\xa0H&3\x11_\x8fw\xf1\xe4\xb1\xfeR+vIQh\x91t#W\xc9j\x1a\x16G\x8884\xca{\xfd\xe2s\xa2N8\xc8\xc8\xb3"
-    expected_auth_key = b"\x0b\x1aJ\xd1\xb0\xa7\x91\x8bv?\xb7'<#\xca@\x08\xdc\x10z\x8c\x88\x8a}\xe7V\xeb\x93\x85\x03\x88\xe5\xc0R\xa0\xed6\x81fv\x84\xcc\x97|:\xf8\xf5\xc1\xbe+\xa2yT\xa0\x93\n:\xe3F330S\x82\xb8\x05\xc0\x87\x8a\xa7)\xcb+\xe4\xb6\x8br\t]\x96\xdc-5\xfa`R\xab\x98\xa5\xe7\x03\x04\xd8\x8dj\x96\x06\xe6$\xc5\xe6\xde\x84\x94\xad\x8b\x0eW\xc8\xb7\xc6b\x90\xd0\x1a\x9f\xfdm\x11o\xb7X^o\xf2\x05X\xfd\x9a@\x1b/\x92R\xf1\x9e\xf5\xe8J\xa3\x84\x8d\x1a\x9d\x10\x14P\x13\xa6v\x8c\xf8Q\xdf\xda\xe9\x00\xc7\xf51\x8e&#\xa8\xa9\xab\xcdo;\xe5\n\xa7\x8b\x9f\xd9@\xa4\x9d.\xfa\xc4=\xdd\x84\x9c\xd0&\xf6\x18V\xd0\x12\x1e\x13\x15\xd7\xc1\x91\xd2\xb3\nc\xdb\xed\x16\x0b_GNj\x8cpO\xf4L\xb9\x10\xd8\x97\x02\xd5\xcb\xd1\xe8\x82\x16\xedC\x15\n\xef\x0b\xaa\x89$\xb7\x1c6}\xacad\xd7\x9f0\x18\xf3\xdd\x06\x8e4\xbd\xb3\x12?\xe0"
+    # fmt: off
+    step1_random = bytes.fromhex("4e44b426241e8b839153122d44585ac6")
+    step1_request = bytes.fromhex("f18e7ebe4e44b426241e8b839153122d44585ac6")
+    step1_response = bytes.fromhex("632416054e44b426241e8b839153122d44585ac665ba0b393e1094329eda2c42d62833030819546f942a11278d00000015c4b51c0300000003268d20df9858b2029f4ba16d109296216be86c022bb4c3")
+    step2_random = bytes.fromhex("b9dce68b05ef760fa7edfefeff45aaa8afbac11dc3d333bc3132fd16ab816d63ed93c5bef9d0452add8164a2d5df5804277ee5a06fd4523372707ddbd8106d03766d76fb8bec672bdcddcd225f7766b83663b32a0fda1055175c5582edd10430937666be4fd15510ba5f19aa645973b6e4e9270efac25b58741635fe84dd0af07a4686f750bf34de1073f1e7fa24e9b01a76e537504bd52b8195e5b78c9af2baa982454e1a99eeae0f35944089ad12726d2433a2c18c9698a725364f9c4e939ce4f1aee3891e58b85de90c88cc2eaef5db1841a594c0edc13cb4b7480a7e564fe892f82282d03ed07eb5ceac6644247bb137241166fe194756dfcffd68c6c345696e9a94d85cd6ceb73a7927e7fdbec989ecef2bc1c3502759cca9e750955426")
+    step2_request = bytes.fromhex("bee412d74e44b426241e8b839153122d44585ac665ba0b393e1094329eda2c42d62833030444b2e50d000000045e63ac8100000003268d20df9858b2fe0001007ec37ca8a84aa1b26d21bc8ac28b261ffa57b44e29f0d6722261e9b436059cc80ae9768a3ae4fbefe46cfbb76b88a1f80a1ebd95ae5d17bf655ed1015755e04c483a01cf4094a0830864054a71a0ac8a5ec34d6b24a69bf66c9654b32a8c65b0302718351b28f72a9a49610d5259b6edb6da37acc5fedc47d1a09c58df2c7eccbfaf54dfe123ebc253d9069f74e8be128051e5d280b3c9a5e8d3c6da344cb7374a6d410d4e088cc0eda3d8b1108ba4f4a85d79fbd2758000723780bc5459f59fd1cea1b511b77cc1411781d3feb57b14a97726cf3d2146cf43e648a69ff9cb5d48a31f543bd5bc3a023cf382d86d36bbfbbcb5e4a136acee25fd8e3e597e714d")
+    step2_response = bytes.fromhex("5c07e8d04e44b426241e8b839153122d44585ac665ba0b393e1094329eda2c42d6283303fe500200fd064e91012ade621b26a48ac7dc8b2c8670ed67092a00fe8c936483e4b02822c3cc655aaffe00542e311df5abdaa645b1da85ca50a6c7b0e7cc7cb2b23d42c84e288bb3b5cfe313e1ebafe19833916df4d1f58dba62e0ac49cac17a31b8b0d57d43eefda546d67e80e311c4b213adec9635c73f75a18ffb26fb71391523bd5ddfcc8be51b36d6b2552394c511ec935d53811a981baca62a2b58cbfe96f1b35e118e5e17456994aea931839925c4578f281f3f129d28026ec80224617a9ca8c615a12fba9c53e774476567f07b01a59d2e6635e39c16dc0a54679f3b54b0482f1cbeac821147d93d7365f4e23fb5794eb5fd4ffdc6456638ea32f641f49ee705e7b0da71cb75753e2f4f80d5af07edb017948f332e34a9c5886b0c86281e0e7228d5a652a9faaf819f7686c099186169aaa377c136fac57b69b7f7b383aaece652f8dcb14e0dfb23e2a65330307a74c31c508cc504450fa208eee14d8bbead1c1f90ccfc183ae1d3345c62424ea3477776204e8fe69efbb6a27b168913d3babaca30aa1c9589d6655b2ad4cd59f67e9b3957ab3270d70afab9bd488a6c5f39ca739ca8947def00cdb8812152731710f5108235775a019d3b4986d6b720b05167b4ee731a10a29fc1e03c42e99d8ff5cf64f45070c2f5ce485ea5fddc281728b6e4d0dea561c9097e3f8a54b055b0c069a9f8207520f6429eb5225c985e3379f2cf6754f56d414fcd00d502e69223b911b915978e0890a9ef128715b828bf3fda3fee6c7b9b2621d971a6f7820f89f4c4c2ab29dec00007c3ec6cead64f7f5802d5e6a4a16a185cfbfced5351fa68380e")
+    step3_random = bytes.fromhex("8fc3605a4604cbb5461fdeff439c761150083cdd502550558e92c730d46c9caf0b1b2d64d2c264942c50d98694fff604fdd2bd87f2cafb719bc55e65a1f60b08809660a650721c40d56fc9c792df1d463aad1718c6924b7bdffbe395f14633d33fc38ce47c18a1561b83a5c66d29f9e292637127471c3baab0028ae42796b689e53a7f9ab5f0ee6d3fb658d847c1abca509fc4ed0d45edbb1c946488910d8d78fa0767255b57a7c3898da8d26625bde40c5a0e80b581408ecd95a17d396dc7574a8ed3cbc4c085197ffaad29c18e577eb292aa8b98caa92efd6f9536049b5a7defc861e270eca90c55b9585405cb96f3e6ea754850b09e7a59ba5fd92d357982915d39752aaa2ec16b6cbde6a6c33971")
+    step3_request = bytes.fromhex("1f5f04f54e44b426241e8b839153122d44585ac665ba0b393e1094329eda2c42d6283303fe500100def448d48c608480bab65df3f8990be8011f7b415a6f8113617bea749b8b0ea6a937987b18cc4dcce8197efdcf8d6ec6af7fc3364b4945df77e4a1ae9db7acea4abcd73247edb36bde20fc969c1d55717277afe0bc31a9ee99f7d822f91fa2dc69c868a19511b162d55e0814d0292b7708b67d57eb04569349d5a20ffe85c0141fc17e9bbbaf207bef56e66decda718c52c45273f868c2eff89bb06355cd515fbfe123d719b244234867d2889c9d0e4436ba644076e5014a78af60b2f0e1b30285f4f71539bcf8c506ccafd62cfcd1b040fe5e35bb30e519ad56d753100f604e3ea5d02409d74dd3ab0861227410f1e13591cf2a638347e6c6d0bcae14e0e8753313b51daee40a67407b5cc8b213856a290a0c7b6cda9ff9c58d69faaf6a748cff05512b69f1380f7a36843edecdc764048bc16d9808f353a9caf6d49ca8b717c8f6de037518a444931a7da2b80f16d0")
+    step3_response = bytes.fromhex("34f7cb3b4e44b426241e8b839153122d44585ac665ba0b393e1094329eda2c42d628330313b781a0de4ab6bc7ab414cbe13f9f86")
+    expected_auth_key = bytes.fromhex("7582e48ad36cd6eef7944ac9bd7027de9ee3202543b68850ac01e1221350f7174e6c3771c9d86b3075f777539c23d053e9da9a1510d49e8fa0ad76a016ce28bfe3543dde69959bc682dab762b95a36629a8438e65baa53cc79b551c23d555c7675a36f4ece90882ece497d28a903409b780a8a80516cb0f8534fee3a67530beb2b1929626e07c2a052c4870b18b0a626606ca05cb13668a65aee3fa32cbebf1b3a56532138cb22c017cac44a292021902eea9b9f906c6be19c9203c7bb3ebc5f1b2044d0a90cb008f7248c3ae4449e0895b6090abb04c24131c2948bd27d879ecb934e50a46671f987653385ab388e4fa1ddd4c95743111e08bf11fef1f8f739")
+    # fmt: on
 
     request, step1 = _do_step1(step1_random)
     assert request == step1_request
     response = step1_response
 
-    with old_rsa_keys():
-        request, step2 = _do_step2(step1, response, step2_random)
+    request, step2 = _do_step2(step1, response, step2_random)
     assert request == step2_request
     response = step2_response
 
-    step3_now = 1580236449
+    step3_now = 1693436740
     request, step3 = _do_step3(step2, response, step3_random, step3_now)
     assert request == step3_request
     response = step3_response
@@ -60,5 +39,5 @@ def test_successful_auth_key_gen_flow() -> None:
     assert finished == CreatedKey(
         auth_key=AuthKey.from_bytes(expected_auth_key),
         time_offset=0,
-        first_salt=4809708467028043047,
+        first_salt=4459407212920268508,
     )
