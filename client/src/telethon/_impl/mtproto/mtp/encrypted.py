@@ -4,6 +4,7 @@ import time
 from typing import List, Optional, Tuple, Union
 
 from ...crypto import AuthKey, decrypt_data_v2, encrypt_data_v2
+from ...tl.core.reader import Reader
 from ...tl.mtproto.abcs import BadMsgNotification as AbcBadMsgNotification
 from ...tl.mtproto.abcs import DestroySessionRes
 from ...tl.mtproto.abcs import MsgDetailedInfo as AbcMsgDetailedInfo
@@ -116,6 +117,7 @@ class Encrypted(Mtp):
             DestroySessionOk.constructor_id(): self._handle_destroy_session,
             DestroySessionNone.constructor_id(): self._handle_destroy_session,
             NewSessionCreated.constructor_id(): self._handle_new_session_created,
+            MsgContainer.constructor_id(): self._handle_container,
             GzipPacked.constructor_id(): self._handle_gzip_packed,
             HttpWait.constructor_id(): self._handle_http_wait,
         }
@@ -191,9 +193,9 @@ class Encrypted(Mtp):
         self._handlers.get(constructor_id, self._handle_update)(message)
 
     def _handle_rpc_result(self, message: Message) -> None:
-        assert isinstance(message.body, RpcResult)
-        req_msg_id = message.body.req_msg_id
-        result = message.body.result
+        rpc_result = RpcResult.from_bytes(message.body)
+        req_msg_id = rpc_result.req_msg_id
+        result = rpc_result.result
 
         msg_id = MsgId(req_msg_id)
         inner_constructor = struct.unpack_from("<I", result)[0]
@@ -401,7 +403,7 @@ class Encrypted(Mtp):
         if client_id != self._client_id:
             raise RuntimeError("wrong session id")
 
-        self._process_message(Message.from_bytes(memoryview(plaintext)[16:]))
+        self._process_message(Message._read_from(Reader(memoryview(plaintext)[16:])))
 
         result = Deserialization(rpc_results=self._rpc_results, updates=self._updates)
         self._rpc_results = []
