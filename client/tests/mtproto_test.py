@@ -1,6 +1,7 @@
 import struct
 
 from pytest import raises
+from telethon._impl.crypto.auth_key import AuthKey
 from telethon._impl.mtproto.mtp import Encrypted, Plain, RpcError
 from telethon._impl.tl.mtproto.types import RpcError as GeneratedRpcError
 
@@ -70,8 +71,8 @@ REQUEST = b"Hey!"
 REQUEST_B = b"Bye!"
 
 
-def auth_key() -> bytes:
-    return bytes(256)
+def auth_key() -> AuthKey:
+    return AuthKey.from_bytes(bytes(256))
 
 
 def ensure_buffer_is_message(buffer: bytes, body: bytes, seq_no: int) -> None:

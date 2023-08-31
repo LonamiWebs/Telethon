@@ -11,7 +11,7 @@ class Output(bytearray):
         self += data
 
 
-def setup_pack(n: int) -> Tuple[Intermediate, bytes, bytearray]:
+def setup_pack(n: int) -> Tuple[Intermediate, bytes, Output]:
     input = bytes(x & 0xFF for x in range(n))
     return Intermediate(), input, Output()
 

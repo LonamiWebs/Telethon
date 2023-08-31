@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from pytest import LogCaptureFixture
 from telethon._impl.mtproto.transport.full import Full
 from telethon._impl.mtsender.sender import connect
 
@@ -11,13 +12,13 @@ TELEGRAM_DEFAULT_TEST_DC = TELEGRAM_TEST_DC_2
 TEST_TIMEOUT = 10000
 
 
-def test_invoke_encrypted_method(caplog) -> None:
+def test_invoke_encrypted_method(caplog: LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
 
-    async def func():
+    async def func() -> None:
         deadline = asyncio.get_running_loop().time() + TEST_TIMEOUT
 
-        def timeout():
+        def timeout() -> float:
             return deadline - asyncio.get_running_loop().time()
 
         sender, enqueuer = await asyncio.wait_for(

@@ -287,7 +287,7 @@ class Sender:
             return self._mtp.auth_key
 
 
-async def connect(transport, addr):
+async def connect(transport: Transport, addr: str) -> Tuple[Sender, Enqueuer]:
     sender, enqueuer = await Sender.connect(transport, Plain(), addr)
     return await generate_auth_key(sender, enqueuer)
 
