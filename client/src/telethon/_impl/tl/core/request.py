@@ -1,7 +1,10 @@
 import struct
+from typing import Generic, TypeVar
+
+Return = TypeVar("Return")
 
 
-class Request(bytes):
+class Request(bytes, Generic[Return]):
     __slots__ = ()
 
     @property

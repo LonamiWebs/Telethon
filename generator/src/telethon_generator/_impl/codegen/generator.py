@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Set
 
+from ..tl_parser.tl.parameter_type import NormalParameter
 from .fakefs import FakeFs, SourceWriter
 from .loader import ParsedTl
 from .serde.common import (
@@ -139,8 +140,6 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write(f"    pass")
 
     for functiondef in tl.functiondefs:
-        required_params = [p for p in functiondef.params if not is_computed(p.ty)]
-
         if len(functiondef.namespace) >= 2:
             raise NotImplementedError("nested function-namespaces are not supported")
         elif len(functiondef.namespace) == 1:
@@ -161,10 +160,12 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write(f"from ..core import Request, serialize_bytes_to")
 
         #   def name(params, ...)
+        required_params = [p for p in functiondef.params if not is_computed(p.ty)]
         params = "".join(f", {p.name}: {param_type_fmt(p.ty)}" for p in required_params)
         star = "*" if params else ""
+        return_ty = param_type_fmt(NormalParameter(ty=functiondef.ty, flag=None))
         writer.write(
-            f"def {to_method_name(functiondef.name)}({star}{params}) -> Request:"
+            f"def {to_method_name(functiondef.name)}({star}{params}) -> Request[{return_ty}]:"
         )
         writer.indent(2)
         generate_function(writer, functiondef)
