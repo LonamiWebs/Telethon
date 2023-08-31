@@ -9,8 +9,8 @@ from .common import inner_type_fmt, is_trivial, to_class_name, trivial_struct_fm
 # Some implementations choose to create these types by hand.
 # For consistency, we instead special-case the generator.
 SPECIAL_CASED_OBJECT_READS = {
-    0xF35C6D01: "reader.read_remaining()",  # rpc_result
-    0x5BB8E511: "reader.read(_bytes)",  # message
+    0xF35C6D01: "b'' + reader.read_remaining()",  # rpc_result
+    0x5BB8E511: "b'' + reader.read(_bytes)",  # message
 }
 
 
@@ -22,7 +22,7 @@ def reader_read_fmt(ty: Type, constructor_id: int) -> Tuple[str, Optional[str]]:
     elif ty.name == "string":
         return f"str(reader.read_bytes(), 'utf-8', 'replace')", None
     elif ty.name == "bytes":
-        return f"reader.read_bytes()", None
+        return f"b'' + reader.read_bytes()", None
     elif ty.name == "int128":
         return f"int.from_bytes(reader.read(16))", None
     elif ty.name == "int256":

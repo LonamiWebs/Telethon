@@ -36,10 +36,6 @@ class Serializable(abc.ABC):
 
     def __repr__(self) -> str:
         fields = ((attr, getattr(self, attr)) for attr in self.__slots__)
-        fields = (
-            (name, bytes(field) if isinstance(field, memoryview) else field)
-            for name, field in fields
-        )
         attrs = ", ".join(f"{name}={field!r}" for name, field in fields)
         return f"{self.__class__.__name__}({attrs})"
 

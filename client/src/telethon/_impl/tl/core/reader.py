@@ -31,17 +31,17 @@ def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
 class Reader:
     __slots__ = ("_view", "_pos", "_len")
 
-    def __init__(self, buffer: bytes) -> None:
+    def __init__(self, buffer: bytes | memoryview) -> None:
         self._view = (
             memoryview(buffer) if not isinstance(buffer, memoryview) else buffer
         )
         self._pos = 0
         self._len = len(self._view)
 
-    def read_remaining(self) -> bytes:
+    def read_remaining(self) -> memoryview:
         return self.read(self._len - self._pos)
 
-    def read(self, n: int) -> bytes:
+    def read(self, n: int) -> memoryview:
         self._pos += n
         assert self._pos <= self._len
         return self._view[self._pos - n : self._pos]
@@ -52,7 +52,7 @@ class Reader:
         assert self._pos <= self._len
         return struct.unpack(fmt, self._view[self._pos - size : self._pos])
 
-    def read_bytes(self) -> bytes:
+    def read_bytes(self) -> memoryview:
         if self._view[self._pos] == 254:
             self._pos += 4
             length = struct.unpack("<i", self._view[self._pos - 4 : self._pos])[0] >> 8
