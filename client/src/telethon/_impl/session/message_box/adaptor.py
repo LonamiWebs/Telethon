@@ -1,8 +1,8 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 from ...tl import abcs, types
 from ..chat.hash_cache import ChatHashCache
-from .defs import ACCOUNT_WIDE, NO_SEQ, SECRET_CHATS, Gap
+from .defs import ENTRY_ACCOUNT, ENTRY_SECRET, NO_SEQ, Gap, PtsInfo
 
 
 def updates_(updates: types.Updates) -> types.UpdatesCombined:
@@ -180,64 +180,64 @@ def message_channel_id(message: abcs.Message) -> Optional[int]:
     return peer.channel_id if isinstance(peer, types.PeerChannel) else None
 
 
-def pts_info_from_update(update: abcs.Update) -> Optional[Tuple[int | str, int, int]]:
+def pts_info_from_update(update: abcs.Update) -> Optional[PtsInfo]:
     if isinstance(update, types.UpdateNewMessage):
         assert not isinstance(message_peer(update.message), types.PeerChannel)
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateDeleteMessages):
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateNewEncryptedMessage):
-        return SECRET_CHATS, update.qts, 1
+        return PtsInfo(ENTRY_SECRET, update.qts, 1)
     elif isinstance(update, types.UpdateReadHistoryInbox):
         assert not isinstance(update.peer, types.PeerChannel)
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateReadHistoryOutbox):
         assert not isinstance(update.peer, types.PeerChannel)
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateWebPage):
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateReadMessagesContents):
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateChannelTooLong):
         if update.pts is not None:
-            return update.channel_id, update.pts, 0
+            return PtsInfo(update.channel_id, update.pts, 0)
         else:
             return None
     elif isinstance(update, types.UpdateNewChannelMessage):
         channel_id = message_channel_id(update.message)
         if channel_id is not None:
-            return channel_id, update.pts, update.pts_count
+            return PtsInfo(channel_id, update.pts, update.pts_count)
         else:
             return None
     elif isinstance(update, types.UpdateReadChannelInbox):
-        return update.channel_id, update.pts, 0
+        return PtsInfo(update.channel_id, update.pts, 0)
     elif isinstance(update, types.UpdateDeleteChannelMessages):
-        return update.channel_id, update.pts, update.pts_count
+        return PtsInfo(update.channel_id, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateEditChannelMessage):
         channel_id = message_channel_id(update.message)
         if channel_id is not None:
-            return channel_id, update.pts, update.pts_count
+            return PtsInfo(channel_id, update.pts, update.pts_count)
         else:
             return None
     elif isinstance(update, types.UpdateEditMessage):
         assert not isinstance(message_peer(update.message), types.PeerChannel)
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateChannelWebPage):
-        return update.channel_id, update.pts, update.pts_count
+        return PtsInfo(update.channel_id, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateFolderPeers):
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdatePinnedMessages):
         assert not isinstance(update.peer, types.PeerChannel)
-        return ACCOUNT_WIDE, update.pts, update.pts_count
+        return PtsInfo(ENTRY_ACCOUNT, update.pts, update.pts_count)
     elif isinstance(update, types.UpdatePinnedChannelMessages):
-        return update.channel_id, update.pts, update.pts_count
+        return PtsInfo(update.channel_id, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateChatParticipant):
-        return SECRET_CHATS, update.qts, 0
+        return PtsInfo(ENTRY_SECRET, update.qts, 0)
     elif isinstance(update, types.UpdateChannelParticipant):
-        return SECRET_CHATS, update.qts, 0
+        return PtsInfo(ENTRY_SECRET, update.qts, 0)
     elif isinstance(update, types.UpdateBotStopped):
-        return SECRET_CHATS, update.qts, 0
+        return PtsInfo(ENTRY_SECRET, update.qts, 0)
     elif isinstance(update, types.UpdateBotChatInviteRequester):
-        return SECRET_CHATS, update.qts, 0
+        return PtsInfo(ENTRY_SECRET, update.qts, 0)
     else:
         return None
