@@ -1,10 +1,10 @@
-import os
 import struct
-from hashlib import sha1
+from hashlib import sha1, sha256
 
-from rsa import PublicKey, encrypt
+from rsa import PublicKey
 
 from ..tl.core import serialize_bytes_to
+from .aes import ige_encrypt
 
 
 def compute_fingerprint(key: PublicKey) -> int:
@@ -16,12 +16,49 @@ def compute_fingerprint(key: PublicKey) -> int:
     return fingerprint
 
 
-def encrypt_hashed(data: bytes, key: PublicKey, random_data: bytes) -> bytes:
-    # Cannot use `rsa.encrypt` because it's not deterministic and requires its own padding.
-    padding_length = 235 - len(data)
-    assert padding_length >= 0 and len(random_data) >= padding_length
-    to_encrypt = sha1(data).digest() + data + random_data[:padding_length]
-    payload = int.from_bytes(to_encrypt)
+def encrypt_hashed(data: bytes, key: PublicKey, random_bytes: bytes) -> bytes:
+    # https://core.telegram.org/mtproto/auth_key#41-rsa-paddata-server-public-key-mentioned-above-is-implemented-as-follows
+
+    # data_with_padding := data + random_padding_bytes; -- where random_padding_bytes are chosen so that the resulting length of data_with_padding is precisely 192 bytes, and data is the TL-serialized data to be encrypted as before. One has to check that data is not longer than 144 bytes.
+    if len(data) > 144:
+        raise ValueError("data must be 144 bytes at most")
+
+    data_with_padding = data + random_bytes[: 192 - len(data)]
+
+    # data_pad_reversed := BYTE_REVERSE(data_with_padding); -- is obtained from data_with_padding by reversing the byte order.
+    data_pad_reversed = data_with_padding[::-1]
+
+    attempt = 0
+    while 192 + 32 * attempt + 32 <= len(random_bytes):
+        # a random 32-byte temp_key is generated.
+        temp_key = random_bytes[192 + 32 * attempt : 192 + 32 * attempt + 32]
+
+        # data_with_hash := data_pad_reversed + SHA256(temp_key + data_with_padding); -- after this assignment, data_with_hash is exactly 224 bytes long.
+        data_with_hash = (
+            data_pad_reversed + sha256(temp_key + data_with_padding).digest()
+        )
+
+        # aes_encrypted := AES256_IGE(data_with_hash, temp_key, 0); -- AES256-IGE encryption with zero IV.
+        aes_encrypted = ige_encrypt(data_with_hash, temp_key, bytes(32))
+
+        # temp_key_xor := temp_key XOR SHA256(aes_encrypted); -- adjusted key, 32 bytes
+        temp_key_xor = bytes(
+            a ^ b for a, b in zip(temp_key, sha256(aes_encrypted).digest())
+        )
+
+        # key_aes_encrypted := temp_key_xor + aes_encrypted; -- exactly 256 bytes (2048 bits) long
+        key_aes_encrypted = temp_key_xor + aes_encrypted
+
+        # The value of key_aes_encrypted is compared with the RSA-modulus of server_pubkey as a big-endian 2048-bit (256-byte) unsigned integer. If key_aes_encrypted turns out to be greater than or equal to the RSA modulus, the previous steps starting from the generation of new random temp_key are repeated. Otherwise the final step is performed:
+        if int.from_bytes(key_aes_encrypted) < key.n:
+            break
+
+        attempt += 1
+    else:
+        raise RuntimeError("ran out of entropy")
+
+    # encrypted_data := RSA(key_aes_encrypted, server_pubkey); -- 256-byte big-endian integer is elevated to the requisite power from the RSA public key modulo the RSA modulus, and the result is stored as a big-endian integer consisting of exactly 256 bytes (with leading zero bytes if required).
+    payload = int.from_bytes(key_aes_encrypted)
     encrypted = pow(payload, key.e, key.n)
     return encrypted.to_bytes(256)
 
@@ -53,41 +90,3 @@ j4WcDuXc2CTHgH8gFTNhp/Y8/SpDOhvn9QIDAQAB
 RSA_KEYS = {
     compute_fingerprint(key): key for key in (PRODUCTION_RSA_KEY, TESTMODE_RSA_KEY)
 }
-
-RSA_KEYS.clear()
-for pub in (
-    """-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6
-lyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS
-an9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw
-Efzk2DWgkBluml8OREmvfraX3bkHZJTKX4EQSjBbbdJ2ZXIsRrYOXfaA+xayEGB+
-8hdlLmAjbCVfaigxX0CDqWeR1yFL9kwd9P0NsZRPsmoqVwMbMu7mStFai6aIhc3n
-Slv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB
------END RSA PUBLIC KEY-----""",
-    """-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAxq7aeLAqJR20tkQQMfRn+ocfrtMlJsQ2Uksfs7Xcoo77jAid0bRt
-ksiVmT2HEIJUlRxfABoPBV8wY9zRTUMaMA654pUX41mhyVN+XoerGxFvrs9dF1Ru
-vCHbI02dM2ppPvyytvvMoefRoL5BTcpAihFgm5xCaakgsJ/tH5oVl74CdhQw8J5L
-xI/K++KJBUyZ26Uba1632cOiq05JBUW0Z2vWIOk4BLysk7+U9z+SxynKiZR3/xdi
-XvFKk01R3BHV+GUKM2RYazpS/P8v7eyKhAbKxOdRcFpHLlVwfjyM1VlDQrEZxsMp
-NTLYXb6Sce1Uov0YtNx5wEowlREH1WOTlwIDAQAB
------END RSA PUBLIC KEY-----""",
-    """-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAsQZnSWVZNfClk29RcDTJQ76n8zZaiTGuUsi8sUhW8AS4PSbPKDm+
-DyJgdHDWdIF3HBzl7DHeFrILuqTs0vfS7Pa2NW8nUBwiaYQmPtwEa4n7bTmBVGsB
-1700/tz8wQWOLUlL2nMv+BPlDhxq4kmJCyJfgrIrHlX8sGPcPA4Y6Rwo0MSqYn3s
-g1Pu5gOKlaT9HKmE6wn5Sut6IiBjWozrRQ6n5h2RXNtO7O2qCDqjgB2vBxhV7B+z
-hRbLbCmW0tYMDsvPpX5M8fsO05svN+lKtCAuz1leFns8piZpptpSCFn7bWxiA9/f
-x5x17D7pfah3Sy2pA+NDXyzSlGcKdaUmwQIDAQAB
------END RSA PUBLIC KEY-----""",
-    """-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAwqjFW0pi4reKGbkc9pK83Eunwj/k0G8ZTioMMPbZmW99GivMibwa
-xDM9RDWabEMyUtGoQC2ZcDeLWRK3W8jMP6dnEKAlvLkDLfC4fXYHzFO5KHEqF06i
-qAqBdmI1iBGdQv/OQCBcbXIWCGDY2AsiqLhlGQfPOI7/vvKc188rTriocgUtoTUc
-/n/sIUzkgwTqRyvWYynWARWzQg0I9olLBBC2q5RQJJlnYXZwyTL3y9tdb7zOHkks
-WV9IMQmZmyZh/N7sMbGWQpt4NMchGpPGeJ2e5gHBjDnlIf2p1yZOYeUYrdbwcS0t
-UiggS4UeE8TzIuXFQxw7fzEIlmhIaq3FnwIDAQAB
------END RSA PUBLIC KEY-----""",
-):
-    key = PublicKey.load_pkcs1(pub.encode("ascii"))
-    RSA_KEYS[compute_fingerprint(key)] = key
