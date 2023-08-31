@@ -48,5 +48,5 @@ class Plain(Mtp):
             )
 
         return Deserialization(
-            rpc_results=[(MsgId(0), payload[20 : 20 + length])], updates=[]
+            rpc_results=[(MsgId(0), bytes(payload[20 : 20 + length]))], updates=[]
         )

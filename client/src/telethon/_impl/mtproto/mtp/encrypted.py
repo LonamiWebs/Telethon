@@ -77,13 +77,13 @@ CONTAINER_HEADER_LEN = (8 + 4 + 4) + (4 + 4)  # msg_id, seq_no, size, constructo
 class Encrypted(Mtp):
     def __init__(
         self,
-        auth_key: bytes,
+        auth_key: AuthKey,
         *,
         time_offset: Optional[int] = None,
         first_salt: Optional[int] = None,
         compression_threshold: Optional[int] = DEFAULT_COMPRESSION_THRESHOLD,
     ) -> None:
-        self._auth_key: AuthKey = AuthKey.from_bytes(auth_key)
+        self._auth_key = auth_key
         self._time_offset: int = time_offset or 0
         self._salts: List[FutureSalt] = [
             FutureSalt(valid_since=0, valid_until=0x7FFFFFFF, salt=first_salt or 0)

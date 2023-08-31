@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-
 OutFn = Callable[[bytes | bytearray | memoryview], None]
 
 
