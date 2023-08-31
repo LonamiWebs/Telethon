@@ -8,12 +8,6 @@ from ...tl.mtproto.types import RpcError as GeneratedRpcError
 MsgId = NewType("MsgId", int)
 
 
-@dataclass
-class Deserialization:
-    rpc_results: List[Tuple[MsgId, Union[bytes, ValueError]]]
-    updates: List[bytes]
-
-
 class RpcError(ValueError):
     def __init__(
         self,
@@ -59,6 +53,33 @@ class RpcError(ValueError):
             and self.name == other.name
             and self.value == other.value
         )
+
+
+class BadMessage(ValueError):
+    def __init__(
+        self,
+        *,
+        code: int,
+        caused_by: Optional[int] = None,
+    ) -> None:
+        super().__init__(f"bad msg: {code}")
+
+        self.code = code
+        self.caused_by = caused_by
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.code == other.code
+
+
+RpcResult = bytes | RpcError | BadMessage
+
+
+@dataclass
+class Deserialization:
+    rpc_results: List[Tuple[MsgId, RpcResult]]
+    updates: List[bytes]
 
 
 # https://core.telegram.org/mtproto/description

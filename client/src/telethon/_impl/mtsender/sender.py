@@ -10,7 +10,7 @@ from ..crypto.auth_key import AuthKey
 from ..mtproto import authentication
 from ..mtproto.mtp.encrypted import Encrypted
 from ..mtproto.mtp.plain import Plain
-from ..mtproto.mtp.types import MsgId, Mtp
+from ..mtproto.mtp.types import BadMessage, MsgId, Mtp, RpcError
 from ..mtproto.transport.abcs import MissingBytes, Transport
 from ..tl.abcs import Updates
 from ..tl.core.request import Request as RemoteCall
@@ -253,14 +253,8 @@ class Sender:
                     found = True
                     if isinstance(ret, bytes):
                         assert len(ret) >= 4
-                    elif isinstance(ret, Exception):
-                        raise NotImplementedError
                     elif isinstance(ret, RpcError):
                         ret.caused_by = req.body[:4]
-                        raise ret
-                    elif isinstance(ret, Dropped):
-                        raise ret
-                    elif isinstance(ret, Deserialize):
                         raise ret
                     elif isinstance(ret, BadMessage):
                         # TODO test that we resend the request

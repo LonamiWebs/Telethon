@@ -34,7 +34,7 @@ from ...tl.mtproto.types import (
     RpcAnswerUnknown,
 )
 from ...tl.mtproto.types import RpcError as GeneratedRpcError
-from ...tl.mtproto.types import RpcResult
+from ...tl.mtproto.types import RpcResult as GeneratedRpcResult
 from ...tl.types import (
     Updates,
     UpdatesCombined,
@@ -54,7 +54,7 @@ from ..utils import (
     gzip_decompress,
     message_requires_ack,
 )
-from .types import Deserialization, MsgId, Mtp, RpcError
+from .types import BadMessage, Deserialization, MsgId, Mtp, RpcError, RpcResult
 
 NUM_FUTURE_SALTS = 64
 
@@ -95,13 +95,13 @@ class Encrypted(Mtp):
         self._last_msg_id: int = 0
         self._pending_ack: List[int] = []
         self._compression_threshold = compression_threshold
-        self._rpc_results: List[Tuple[MsgId, Union[bytes, ValueError]]] = []
+        self._rpc_results: List[Tuple[MsgId, RpcResult]] = []
         self._updates: List[bytes] = []
         self._buffer = bytearray()
         self._msg_count: int = 0
 
         self._handlers = {
-            RpcResult.constructor_id(): self._handle_rpc_result,
+            GeneratedRpcResult.constructor_id(): self._handle_rpc_result,
             MsgsAck.constructor_id(): self._handle_ack,
             BadMsgNotification.constructor_id(): self._handle_bad_notification,
             BadServerSalt.constructor_id(): self._handle_bad_notification,
@@ -193,7 +193,7 @@ class Encrypted(Mtp):
         self._handlers.get(constructor_id, self._handle_update)(message)
 
     def _handle_rpc_result(self, message: Message) -> None:
-        rpc_result = RpcResult.from_bytes(message.body)
+        rpc_result = GeneratedRpcResult.from_bytes(message.body)
         req_msg_id = rpc_result.req_msg_id
         result = rpc_result.result
 
@@ -231,13 +231,12 @@ class Encrypted(Mtp):
         MsgsAck.from_bytes(message.body)
 
     def _handle_bad_notification(self, message: Message) -> None:
-        # TODO notify about this somehow
         bad_msg = AbcBadMsgNotification.from_bytes(message.body)
         if isinstance(bad_msg, BadServerSalt):
             self._rpc_results.append(
                 (
                     MsgId(bad_msg.bad_msg_id),
-                    ValueError(f"bad msg: {bad_msg.error_code}"),
+                    BadMessage(code=bad_msg.error_code),
                 )
             )
 
@@ -253,7 +252,7 @@ class Encrypted(Mtp):
 
         assert isinstance(bad_msg, BadMsgNotification)
         self._rpc_results.append(
-            (MsgId(bad_msg.bad_msg_id), ValueError(f"bad msg: {bad_msg.error_code}"))
+            (MsgId(bad_msg.bad_msg_id), BadMessage(code=bad_msg.error_code))
         )
 
         if bad_msg.error_code in (16, 17):
