@@ -78,6 +78,8 @@ def _do_step2(data: Step1, response: bytes, random_bytes: bytes) -> Tuple[bytes,
     nonce = data.nonce
     res_pq = ResPq.from_bytes(response)
 
+    check_nonce(res_pq.nonce, nonce)
+
     if len(res_pq.pq) != 8:
         raise ValueError(f"invalid pq size: {len(res_pq.pq)}")
 
