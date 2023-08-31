@@ -71,11 +71,8 @@ class Request(Generic[Return]):
 class Enqueuer:
     __slots__ = ("_queue",)
 
-    def __init__(
-        self,
-    ) -> None:
-        # TODO use a bound
-        self._queue: Queue[Request[object]] = Queue()
+    def __init__(self, queue: Queue[Request[object]]) -> None:
+        self._queue = queue
 
     def enqueue(self, request: RemoteCall[Return]) -> Future[Return]:
         body = bytes(request)
@@ -95,7 +92,6 @@ class Sender:
     _mtp: Mtp
     _mtp_buffer: bytearray
     _requests: List[Request[object]]
-    _request_tx: Queue[Request[object]]
     _request_rx: Queue[Request[object]]
     _next_ping: float
     _read_buffer: bytearray
@@ -106,8 +102,7 @@ class Sender:
         cls, transport: Transport, mtp: Mtp, addr: str
     ) -> Tuple[Self, Enqueuer]:
         reader, writer = await asyncio.open_connection(*addr.split(":"))
-        tx: Queue[object] = Queue()
-        rx = tx
+        request_queue: Queue[object] = Queue()
 
         return (
             cls(
@@ -117,13 +112,12 @@ class Sender:
                 _mtp=mtp,
                 _mtp_buffer=bytearray(),
                 _requests=[],
-                _request_tx=tx,
-                _request_rx=rx,
+                _request_rx=request_queue,
                 _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
                 _read_buffer=bytearray(),
                 _write_drain_pending=False,
             ),
-            Enqueuer(),
+            Enqueuer(request_queue),
         )
 
     async def invoke(self, request: RemoteCall[Return]) -> bytes:
@@ -315,7 +309,6 @@ async def generate_auth_key(
             _mtp=Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt),
             _mtp_buffer=sender._mtp_buffer,
             _requests=sender._requests,
-            _request_tx=sender._request_tx,
             _request_rx=sender._request_rx,
             _next_ping=time.time() + PING_DELAY,
             _read_buffer=sender._read_buffer,
