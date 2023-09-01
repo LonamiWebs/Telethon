@@ -11,7 +11,11 @@ from .serde.common import (
     to_class_name,
     to_method_name,
 )
-from .serde.deserialization import generate_read, param_value_fmt
+from .serde.deserialization import (
+    function_deserializer_fmt,
+    generate_read,
+    param_value_fmt,
+)
 from .serde.serialization import generate_function, generate_write
 
 
@@ -178,8 +182,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     )
 
     writer = fs.open(Path("layer.py"))
-    writer.write(f"from . import types")
-    writer.write(f"from .core import Serializable, Reader")
+    writer.write(f"from . import abcs, types")
+    writer.write(
+        f"from .core import Serializable, Reader, deserialize_bool, deserialize_i32_list, deserialize_i64_list, deserialize_identity, single_deserializer, list_deserializer"
+    )
     writer.write(f"from typing import cast, Tuple, Type")
     writer.write(f"LAYER = {tl.layer!r}")
     writer.write(
@@ -188,4 +194,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     for name in sorted(generated_type_names):
         writer.write(f"  types.{name},")
     writer.write("))}")
-    writer.write(f"__all__ = ['LAYER', 'TYPE_MAPPING']")
+    writer.write("RESPONSE_MAPPING = {")
+    for functiondef in tl.functiondefs:
+        writer.write(
+            f"  {hex(functiondef.id)}: {function_deserializer_fmt(functiondef)},"
+        )
+    writer.write("}")
+    writer.write(f"__all__ = ['LAYER', 'TYPE_MAPPING', 'RESPONSE_MAPPING']")

@@ -122,3 +122,43 @@ def param_value_fmt(param: Parameter) -> str:
         return f"_{param.name} == 0x997275b5"
     else:
         return f"_{param.name}"
+
+
+def function_deserializer_fmt(defn: Definition) -> str:
+    if defn.ty.generic_arg:
+        if defn.ty.name != ("Vector"):
+            raise NotImplementedError(
+                "generic_arg return for non-boxed-vectors not implemented"
+            )
+        elif defn.ty.generic_ref:
+            raise NotImplementedError(
+                "return for generic refs inside vector not implemented"
+            )
+        elif is_trivial(NormalParameter(ty=defn.ty.generic_arg, flag=None)):
+            if defn.ty.generic_arg.name == "int":
+                return "deserialize_i32_list"
+            elif defn.ty.generic_arg.name == "long":
+                return "deserialize_i64_list"
+            else:
+                raise NotImplementedError(
+                    f"return for trivial arg {defn.ty.generic_arg} not implemented"
+                )
+        elif defn.ty.generic_arg.bare:
+            raise NotImplementedError(
+                "return for non-boxed serializables inside a vector not implemented"
+            )
+        else:
+            return f"list_deserializer({inner_type_fmt(defn.ty.generic_arg)})"
+    elif defn.ty.generic_ref:
+        return "deserialize_identity"
+    elif is_trivial(NormalParameter(ty=defn.ty, flag=None)):
+        if defn.ty.name == "Bool":
+            return "deserialize_bool"
+        else:
+            raise NotImplementedError(
+                f"return for trivial arg {defn.ty} not implemented"
+            )
+    elif defn.ty.bare:
+        raise NotImplementedError("return for non-boxed serializables not implemented")
+    else:
+        return f"single_deserializer({inner_type_fmt(defn.ty)})"
