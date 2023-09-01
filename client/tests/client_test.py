@@ -1,5 +1,6 @@
 import os
 import random
+from pytest import mark
 
 from telethon._impl.client.client.client import Client
 from telethon._impl.client.client.net import Config
@@ -7,6 +8,8 @@ from telethon._impl.session.message_box.defs import Session
 from telethon._impl.tl.mtproto import functions, types
 
 
+@mark.api
+@mark.net
 async def test_ping_pong() -> None:
     api_id = os.getenv("TG_ID")
     api_hash = os.getenv("TG_HASH")
