@@ -1,4 +1,3 @@
-import asyncio
 import os
 import random
 
@@ -8,30 +7,27 @@ from telethon._impl.session.message_box.defs import Session
 from telethon._impl.tl.mtproto import functions, types
 
 
-def test_ping_pong() -> None:
-    async def func() -> None:
-        api_id = os.getenv("TG_ID")
-        api_hash = os.getenv("TG_HASH")
-        assert api_id and api_id.isdigit()
-        assert api_hash
-        client = Client(
-            Config(
-                session=Session(
-                    dcs=[],
-                    user=None,
-                    state=None,
-                ),
-                api_id=int(api_id),
-                api_hash=api_hash,
-            )
+async def test_ping_pong() -> None:
+    api_id = os.getenv("TG_ID")
+    api_hash = os.getenv("TG_HASH")
+    assert api_id and api_id.isdigit()
+    assert api_hash
+    client = Client(
+        Config(
+            session=Session(
+                dcs=[],
+                user=None,
+                state=None,
+            ),
+            api_id=int(api_id),
+            api_hash=api_hash,
         )
-        assert not client.connected
-        await client.connect()
-        assert client.connected
+    )
+    assert not client.connected
+    await client.connect()
+    assert client.connected
 
-        ping_id = random.randrange(-(2**63), 2**63)
-        pong = await client(functions.ping(ping_id=ping_id))
-        assert isinstance(pong, types.Pong)
-        assert pong.ping_id == ping_id
-
-    asyncio.run(func())
+    ping_id = random.randrange(-(2**63), 2**63)
+    pong = await client(functions.ping(ping_id=ping_id))
+    assert isinstance(pong, types.Pong)
+    assert pong.ping_id == ping_id

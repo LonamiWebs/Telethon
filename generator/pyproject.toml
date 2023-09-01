@@ -21,6 +21,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+dev = ["pytest~=7.3"]
+
 [project.urls]
 "Homepage" = "https://telethon.dev/"
 "Source" = "https://telethon.dev/code/"

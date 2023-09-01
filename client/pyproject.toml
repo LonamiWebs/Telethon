@@ -27,6 +27,10 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 cryptg = ["cryptg~=0.4"]
+dev = [
+  "pytest~=7.3",
+  "pytest-asyncio~=0.21",
+]
 
 [project.urls]
 "Homepage" = "https://telethon.dev/"
