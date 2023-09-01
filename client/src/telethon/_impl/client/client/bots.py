@@ -100,7 +100,7 @@ class InlineResult(metaclass=NoPublicConstructor):
             peer = self._default_peer
 
         random_id = generate_random_id()
-        return self._client._find_updates_message(
+        return self._client._build_message_map(
             await self._client(
                 functions.messages.send_inline_bot_result(
                     silent=False,
@@ -117,9 +117,8 @@ class InlineResult(metaclass=NoPublicConstructor):
                     send_as=None,
                 )
             ),
-            random_id,
             peer,
-        )
+        ).with_random_id(random_id)
 
 
 async def inline_query(

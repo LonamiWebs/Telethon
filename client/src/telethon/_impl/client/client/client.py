@@ -1,7 +1,8 @@
 import asyncio
+import datetime
 from collections import deque
 from types import TracebackType
-from typing import Deque, Optional, Self, Type, TypeVar, Union
+from typing import Deque, List, Literal, Optional, Self, Type, TypeVar, Union
 
 from ...mtsender.sender import Sender
 from ...session.chat.hash_cache import ChatHashCache
@@ -10,6 +11,7 @@ from ...session.message_box.defs import Session
 from ...session.message_box.messagebox import MessageBox
 from ...tl import abcs
 from ...tl.core.request import Request
+from ..types.async_list import AsyncList
 from ..types.chat import ChatLike
 from ..types.chat.user import User
 from ..types.login_token import LoginToken
@@ -41,14 +43,17 @@ from .chats import (
 from .dialogs import conversation, delete_dialog, edit_folder, iter_dialogs, iter_drafts
 from .downloads import download_media, download_profile_photo, iter_download
 from .messages import (
+    MessageMap,
+    build_message_map,
     delete_messages,
     edit_message,
-    find_updates_message,
     forward_messages,
-    iter_messages,
+    get_messages,
+    get_messages_with_ids,
     pin_message,
+    search_all_messages,
+    search_messages,
     send_message,
-    send_read_acknowledge,
     unpin_message,
 )
 from .net import (
@@ -196,37 +201,112 @@ class Client:
     def iter_download(self) -> None:
         iter_download(self)
 
-    def iter_messages(self) -> None:
-        iter_messages(self)
+    async def send_message(
+        self,
+        chat: ChatLike,
+        *,
+        text: Optional[str] = None,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: Optional[bool] = None,
+    ) -> Message:
+        return await send_message(
+            self,
+            chat,
+            text=text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+        )
 
-    async def send_message(self) -> None:
-        await send_message(self)
+    async def edit_message(
+        self,
+        chat: ChatLike,
+        message_id: int,
+        *,
+        text: Optional[str] = None,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: Optional[bool] = None,
+    ) -> Message:
+        return await edit_message(
+            self,
+            chat,
+            message_id,
+            text=text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+        )
 
-    async def forward_messages(self) -> None:
-        await forward_messages(self)
+    async def delete_messages(
+        self, chat: ChatLike, message_ids: List[int], *, revoke: bool = True
+    ) -> int:
+        return await delete_messages(self, chat, message_ids, revoke=revoke)
 
-    async def edit_message(self) -> None:
-        await edit_message(self)
+    async def forward_messages(
+        self, target: ChatLike, message_ids: List[int], source: ChatLike
+    ) -> List[Message]:
+        return await forward_messages(self, target, message_ids, source)
 
-    async def delete_messages(self) -> None:
-        await delete_messages(self)
+    def get_messages(
+        self,
+        chat: ChatLike,
+        limit: Optional[int] = None,
+        *,
+        offset_id: Optional[int],
+        offset_date: Optional[datetime.datetime],
+    ) -> AsyncList[Message]:
+        return get_messages(
+            self, chat, limit, offset_id=offset_id, offset_date=offset_date
+        )
 
-    async def send_read_acknowledge(self) -> None:
-        await send_read_acknowledge(self)
+    def get_messages_with_ids(
+        self,
+        chat: ChatLike,
+        message_ids: List[int],
+    ) -> AsyncList[Message]:
+        return get_messages_with_ids(self, chat, message_ids)
 
-    async def pin_message(self) -> None:
-        await pin_message(self)
+    def search_messages(
+        self,
+        chat: ChatLike,
+        limit: Optional[int] = None,
+        *,
+        query: Optional[str] = None,
+        offset_id: int,
+        offset_date: datetime.datetime,
+    ) -> AsyncList[Message]:
+        return search_messages(
+            self, chat, limit, query=query, offset_id=offset_id, offset_date=offset_date
+        )
 
-    async def unpin_message(self) -> None:
-        await unpin_message(self)
+    def search_all_messages(
+        self,
+        limit: Optional[int] = None,
+        *,
+        query: Optional[str] = None,
+        offset_id: int,
+        offset_date: datetime.datetime,
+    ) -> AsyncList[Message]:
+        return search_all_messages(
+            self, limit, query=query, offset_id=offset_id, offset_date=offset_date
+        )
 
-    def _find_updates_message(
+    async def pin_message(self, chat: ChatLike, message_id: int) -> Message:
+        return await pin_message(self, chat, message_id)
+
+    async def unpin_message(
+        self, chat: ChatLike, message_id: Union[int, Literal["all"]]
+    ) -> None:
+        return await unpin_message(self, chat, message_id)
+
+    def _build_message_map(
         self,
         result: abcs.Updates,
-        random_id: int,
-        chat: Optional[abcs.InputPeer],
-    ) -> Message:
-        return find_updates_message(self, result, random_id, chat)
+        peer: Optional[abcs.InputPeer],
+    ) -> MessageMap:
+        return build_message_map(self, result, peer)
 
     async def set_receive_updates(self) -> None:
         await set_receive_updates(self)
