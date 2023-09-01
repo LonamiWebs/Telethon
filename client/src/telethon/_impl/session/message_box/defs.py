@@ -6,12 +6,11 @@ from ...tl import abcs
 
 
 class DataCenter:
-    __slots__ = ("id", "ip", "port", "auth")
+    __slots__ = ("id", "addr", "auth")
 
-    def __init__(self, *, id: int, ip: str, port: int, auth: Optional[bytes]) -> None:
+    def __init__(self, *, id: int, addr: str, auth: Optional[bytes]) -> None:
         self.id = id
-        self.ip = ip
-        self.port = port
+        self.addr = addr
         self.auth = auth
 
 
