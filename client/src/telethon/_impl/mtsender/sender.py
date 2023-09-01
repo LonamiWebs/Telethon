@@ -120,6 +120,10 @@ class Sender:
             Enqueuer(request_queue),
         )
 
+    async def disconnect(self):
+        self._writer.close()
+        await self._writer.wait_closed()
+
     async def invoke(self, request: RemoteCall[Return]) -> bytes:
         rx = self._enqueue_body(bytes(request))
         return await self._step_until_receive(rx)
