@@ -125,7 +125,10 @@ async def connect(self: Client) -> None:
     if self._message_box.is_empty() and self._config.session.user:
         try:
             await self(functions.updates.get_state())
-        except Exception:
+        except RpcError as e:
+            if e.code == 401:
+                self._config.session.user = None
+        except Exception as e:
             pass
 
 
