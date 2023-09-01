@@ -12,6 +12,7 @@ from ...tl.core.request import Request
 from ..types.chat import ChatLike
 from ..types.chat.user import User
 from ..types.login_token import LoginToken
+from ..types.message import Message
 from ..types.password_token import PasswordToken
 from .account import edit_2fa, end_takeout, takeout
 from .auth import (
@@ -40,6 +41,7 @@ from .downloads import download_media, download_profile_photo, iter_download
 from .messages import (
     delete_messages,
     edit_message,
+    find_updates_message,
     forward_messages,
     iter_messages,
     pin_message,
@@ -204,6 +206,14 @@ class Client:
 
     async def unpin_message(self) -> None:
         await unpin_message(self)
+
+    def _find_updates_message(
+        self,
+        result: abcs.Updates,
+        random_id: int,
+        chat: Optional[abcs.InputPeer],
+    ) -> Message:
+        return find_updates_message(self, result, random_id, chat)
 
     async def set_receive_updates(self) -> None:
         await set_receive_updates(self)
