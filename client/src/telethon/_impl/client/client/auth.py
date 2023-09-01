@@ -28,7 +28,7 @@ async def is_authorized(self: Client) -> bool:
 async def complete_login(self: Client, auth: abcs.auth.Authorization) -> User:
     assert isinstance(auth, types.auth.Authorization)
     assert isinstance(auth.user, types.User)
-    user = User(auth.user)
+    user = User._from_raw(auth.user)
     self._config.session.user = SessionUser(
         id=user.id,
         dc=self._dc_id,
@@ -67,7 +67,7 @@ async def bot_sign_in(self: Client, token: str) -> User:
     try:
         result = await self(request)
     except RpcError as e:
-        if e.name == "USER_MIGRATE":
+        if e.code == 303:
             await handle_migrate(self, e.value)
             result = await self(request)
         else:
@@ -96,7 +96,7 @@ async def request_login_code(self: Client, phone: str) -> LoginToken:
     try:
         result = await self(request)
     except RpcError as e:
-        if e.name == "USER_MIGRATE":
+        if e.code == 303:
             await handle_migrate(self, e.value)
             result = await self(request)
         else:
