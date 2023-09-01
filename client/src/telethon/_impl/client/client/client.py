@@ -6,6 +6,7 @@ from typing import Deque, Optional, Self, Type, TypeVar, Union
 from ...mtsender.sender import Sender
 from ...session.chat.hash_cache import ChatHashCache
 from ...session.chat.packed import PackedChat
+from ...session.message_box.defs import Session
 from ...session.message_box.messagebox import MessageBox
 from ...tl import abcs
 from ...tl.core.request import Request
@@ -20,6 +21,7 @@ from .auth import (
     check_password,
     is_authorized,
     request_login_code,
+    session,
     sign_in,
     sign_out,
 )
@@ -125,6 +127,15 @@ class Client:
 
     async def sign_out(self) -> None:
         await sign_out(self)
+
+    @property
+    def session(self) -> Session:
+        """
+        Up-to-date session state, useful for persisting it to storage.
+
+        Mutating the returned object may cause the library to misbehave.
+        """
+        return session(self)
 
     async def inline_query(
         self, bot: ChatLike, query: str, *, chat: Optional[ChatLike] = None

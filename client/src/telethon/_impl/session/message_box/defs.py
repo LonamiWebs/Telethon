@@ -1,6 +1,7 @@
+import base64
 import logging
 from enum import Enum
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Self, Union
 
 from ...tl import abcs
 
@@ -62,13 +63,80 @@ class Session:
     def __init__(
         self,
         *,
-        dcs: List[DataCenter],
-        user: Optional[User],
-        state: Optional[UpdateState],
+        dcs: Optional[List[DataCenter]] = None,
+        user: Optional[User] = None,
+        state: Optional[UpdateState] = None,
     ):
-        self.dcs = dcs
+        self.dcs = dcs or []
         self.user = user
         self.state = state
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "dcs": [
+                {
+                    "id": dc.id,
+                    "addr": dc.addr,
+                    "auth": base64.b64encode(dc.auth).decode("ascii")
+                    if dc.auth
+                    else None,
+                }
+                for dc in self.dcs
+            ],
+            "user": {
+                "id": self.user.id,
+                "dc": self.user.dc,
+                "bot": self.user.bot,
+            }
+            if self.user
+            else None,
+            "state": {
+                "pts": self.state.pts,
+                "qts": self.state.qts,
+                "date": self.state.date,
+                "seq": self.state.seq,
+                "channels": [
+                    {"id": channel.id, "pts": channel.pts}
+                    for channel in self.state.channels
+                ],
+            }
+            if self.state
+            else None,
+        }
+
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> Self:
+        return cls(
+            dcs=[
+                DataCenter(
+                    id=dc["id"],
+                    addr=dc["addr"],
+                    auth=base64.b64decode(dc["auth"])
+                    if dc["auth"] is not None
+                    else None,
+                )
+                for dc in dict["dcs"]
+            ],
+            user=User(
+                id=dict["user"]["id"],
+                dc=dict["user"]["dc"],
+                bot=dict["user"]["bot"],
+            )
+            if dict["user"]
+            else None,
+            state=UpdateState(
+                pts=dict["state"]["pts"],
+                qts=dict["state"]["qts"],
+                date=dict["state"]["date"],
+                seq=dict["state"]["seq"],
+                channels=[
+                    ChannelState(id=channel["id"], pts=channel["pts"])
+                    for channel in dict["state"]["channels"]
+                ],
+            )
+            if dict["state"]
+            else None,
+        )
 
 
 class PtsInfo:

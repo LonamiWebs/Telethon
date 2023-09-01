@@ -17,11 +17,7 @@ async def test_ping_pong() -> None:
     assert api_hash
     client = Client(
         Config(
-            session=Session(
-                dcs=[],
-                user=None,
-                state=None,
-            ),
+            session=Session(),
             api_id=int(api_id),
             api_hash=api_hash,
         )

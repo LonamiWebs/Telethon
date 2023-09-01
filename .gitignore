@@ -15,3 +15,5 @@ build/
 **/mtproto/abcs/
 **/mtproto/functions/
 **/mtproto/types/
+**/testbed.py
+*.session

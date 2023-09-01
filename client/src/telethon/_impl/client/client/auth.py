@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 
 from ...mtproto.mtp.types import RpcError
+from ...session.message_box.defs import Session
 from ...session.message_box.defs import User as SessionUser
 from ...tl import abcs, functions, types
 from ..types.chat.user import User
@@ -141,3 +142,8 @@ async def check_password(
 
 async def sign_out(self: Client) -> None:
     await self(functions.auth.log_out())
+
+
+def session(self: Client) -> Session:
+    self._config.session.state = self._message_box.session_state()
+    return self._config.session
