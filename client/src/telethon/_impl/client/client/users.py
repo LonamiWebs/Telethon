@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from ...session.chat.packed import PackedChat
+from ...session.chat.packed import PackedChat, PackedType
 from ...tl import abcs, types
 from ..types.chat import Channel, ChatLike, Group, User
 
@@ -46,6 +46,43 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
         if packed is None:
             raise ValueError("Cannot resolve chat")
         return packed
+
+    if isinstance(chat, abcs.InputPeer):
+        if isinstance(chat, types.InputPeerEmpty):
+            raise ValueError("Cannot resolve chat")
+        elif isinstance(chat, types.InputPeerSelf):
+            if not self._config.session.user:
+                raise ValueError("Cannot resolve chat")
+            return PackedChat(
+                ty=PackedType.BOT if self._config.session.user.bot else PackedType.USER,
+                id=self._config.session.user.id,
+                access_hash=0,
+            )
+        elif isinstance(chat, types.InputPeerChat):
+            return PackedChat(
+                ty=PackedType.CHAT,
+                id=chat.chat_id,
+                access_hash=None,
+            )
+        elif isinstance(chat, types.InputPeerUser):
+            return PackedChat(
+                ty=PackedType.USER,
+                id=chat.user_id,
+                access_hash=chat.access_hash,
+            )
+        elif isinstance(chat, types.InputPeerChannel):
+            return PackedChat(
+                ty=PackedType.BROADCAST,
+                id=chat.channel_id,
+                access_hash=chat.access_hash,
+            )
+        elif isinstance(chat, types.InputPeerUserFromMessage):
+            raise ValueError("Cannot resolve chat")
+        elif isinstance(chat, types.InputPeerChannelFromMessage):
+            raise ValueError("Cannot resolve chat")
+        else:
+            raise RuntimeError("unexpected case")
+
     raise ValueError("Cannot resolve chat")
 
 

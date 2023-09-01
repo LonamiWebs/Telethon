@@ -239,8 +239,8 @@ def get_messages(
     chat: ChatLike,
     limit: Optional[int] = None,
     *,
-    offset_id: Optional[int],
-    offset_date: Optional[datetime.datetime],
+    offset_id: Optional[int] = None,
+    offset_date: Optional[datetime.datetime] = None,
 ) -> AsyncList[Message]:
     return HistoryList(
         self,
@@ -355,8 +355,8 @@ def search_messages(
     limit: Optional[int] = None,
     *,
     query: Optional[str] = None,
-    offset_id: int,
-    offset_date: datetime.datetime,
+    offset_id: Optional[int] = None,
+    offset_date: Optional[datetime.datetime] = None,
 ) -> AsyncList[Message]:
     return SearchList(
         self,
@@ -423,8 +423,8 @@ def search_all_messages(
     limit: Optional[int] = None,
     *,
     query: Optional[str] = None,
-    offset_id: int,
-    offset_date: datetime.datetime,
+    offset_id: Optional[int] = None,
+    offset_date: Optional[datetime.datetime] = None,
 ) -> AsyncList[Message]:
     return GlobalSearchList(
         self,

@@ -254,8 +254,8 @@ class Client:
         chat: ChatLike,
         limit: Optional[int] = None,
         *,
-        offset_id: Optional[int],
-        offset_date: Optional[datetime.datetime],
+        offset_id: Optional[int] = None,
+        offset_date: Optional[datetime.datetime] = None,
     ) -> AsyncList[Message]:
         return get_messages(
             self, chat, limit, offset_id=offset_id, offset_date=offset_date
@@ -274,8 +274,8 @@ class Client:
         limit: Optional[int] = None,
         *,
         query: Optional[str] = None,
-        offset_id: int,
-        offset_date: datetime.datetime,
+        offset_id: Optional[int] = None,
+        offset_date: Optional[datetime.datetime] = None,
     ) -> AsyncList[Message]:
         return search_messages(
             self, chat, limit, query=query, offset_id=offset_id, offset_date=offset_date
@@ -286,8 +286,8 @@ class Client:
         limit: Optional[int] = None,
         *,
         query: Optional[str] = None,
-        offset_id: int,
-        offset_date: datetime.datetime,
+        offset_id: Optional[int] = None,
+        offset_date: Optional[datetime.datetime] = None,
     ) -> AsyncList[Message]:
         return search_all_messages(
             self, limit, query=query, offset_id=offset_id, offset_date=offset_date

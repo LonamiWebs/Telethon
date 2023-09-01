@@ -24,6 +24,10 @@ class Message(metaclass=NoPublicConstructor):
         return self._raw.id
 
     @property
+    def text(self) -> Optional[str]:
+        return getattr(self._raw, "message", None)
+
+    @property
     def date(self) -> Optional[datetime.datetime]:
         date = getattr(self._raw, "date", None)
         return (
