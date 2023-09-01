@@ -1,15 +1,25 @@
 import asyncio
 from collections import deque
 from types import TracebackType
-from typing import Deque, Optional, Self, Type, TypeVar
+from typing import Deque, Optional, Self, Type, TypeVar, Union
 
 from ...mtsender.sender import Sender
 from ...session.chat.hash_cache import ChatHashCache
 from ...session.message_box.messagebox import MessageBox
 from ...tl import abcs
 from ...tl.core.request import Request
+from ..types.chat.user import User
+from ..types.login_token import LoginToken
+from ..types.password_token import PasswordToken
 from .account import edit_2fa, end_takeout, takeout
-from .auth import log_out, qr_login, send_code_request, sign_in, sign_up, start
+from .auth import (
+    bot_sign_in,
+    check_password,
+    is_authorized,
+    request_login_code,
+    sign_in,
+    sign_out,
+)
 from .bots import inline_query
 from .buttons import build_reply_markup
 from .chats import (
@@ -54,14 +64,7 @@ from .updates import (
     set_receive_updates,
 )
 from .uploads import send_file, upload_file
-from .users import (
-    get_entity,
-    get_input_entity,
-    get_me,
-    get_peer_id,
-    is_bot,
-    is_user_authorized,
-)
+from .users import get_entity, get_input_entity, get_me, get_peer_id
 
 Return = TypeVar("Return")
 
@@ -92,23 +95,25 @@ class Client:
     async def edit_2fa(self) -> None:
         await edit_2fa(self)
 
-    def start(self) -> None:
-        start(self)
+    async def is_authorized(self) -> bool:
+        return await is_authorized(self)
 
-    async def sign_in(self) -> None:
-        await sign_in(self)
+    async def bot_sign_in(self, token: str) -> User:
+        return await bot_sign_in(self, token)
 
-    async def sign_up(self) -> None:
-        await sign_up(self)
+    async def request_login_code(self, phone: str) -> LoginToken:
+        return await request_login_code(self, phone)
 
-    async def send_code_request(self) -> None:
-        await send_code_request(self)
+    async def sign_in(self, token: LoginToken, code: str) -> Union[User, PasswordToken]:
+        return await sign_in(self, token, code)
 
-    async def qr_login(self) -> None:
-        await qr_login(self)
+    async def check_password(
+        self, token: PasswordToken, password: Union[str, bytes]
+    ) -> User:
+        return await check_password(self, token, password)
 
-    async def log_out(self) -> None:
-        await log_out(self)
+    async def sign_out(self) -> None:
+        await sign_out(self)
 
     async def inline_query(self) -> None:
         await inline_query(self)
@@ -217,12 +222,6 @@ class Client:
 
     async def get_me(self) -> None:
         await get_me(self)
-
-    async def is_bot(self) -> None:
-        await is_bot(self)
-
-    async def is_user_authorized(self) -> None:
-        await is_user_authorized(self)
 
     async def get_entity(self) -> None:
         await get_entity(self)

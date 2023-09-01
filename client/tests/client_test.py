@@ -1,7 +1,7 @@
 import os
 import random
-from pytest import mark
 
+from pytest import mark
 from telethon._impl.client.client.client import Client
 from telethon._impl.client.client.net import Config
 from telethon._impl.session.message_box.defs import Session
