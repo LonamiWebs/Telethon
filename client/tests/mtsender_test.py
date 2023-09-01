@@ -22,11 +22,11 @@ def test_invoke_encrypted_method(caplog: LogCaptureFixture) -> None:
         def timeout() -> float:
             return deadline - asyncio.get_running_loop().time()
 
-        sender, enqueuer = await asyncio.wait_for(
+        sender = await asyncio.wait_for(
             connect(Full(), TELEGRAM_DEFAULT_TEST_DC), timeout()
         )
 
-        rx = enqueuer.enqueue(
+        rx = sender.enqueue(
             functions.invoke_with_layer(
                 layer=LAYER,
                 query=functions.init_connection(
