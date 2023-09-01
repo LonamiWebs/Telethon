@@ -1,6 +1,13 @@
+import asyncio
+from collections import deque
 from types import TracebackType
-from typing import Optional, Type
+from typing import Deque, Optional, Self, Type, TypeVar
 
+from ...mtsender.sender import Sender
+from ...session.chat.hash_cache import ChatHashCache
+from ...session.message_box.messagebox import MessageBox
+from ...tl import abcs
+from ...tl.core.request import Request
 from .account import edit_2fa, end_takeout, takeout
 from .auth import log_out, qr_login, send_code_request, sign_in, sign_up, start
 from .bots import inline_query
@@ -29,13 +36,14 @@ from .messages import (
     unpin_message,
 )
 from .net import (
+    DEFAULT_DC,
+    Config,
     connect,
+    connected,
     disconnect,
-    disconnected,
-    flood_sleep_threshold,
-    is_connected,
-    loop,
-    set_proxy,
+    invoke_request,
+    run_until_disconnected,
+    step,
 )
 from .updates import (
     add_event_handler,
@@ -43,7 +51,6 @@ from .updates import (
     list_event_handlers,
     on,
     remove_event_handler,
-    run_until_disconnected,
     set_receive_updates,
 )
 from .uploads import send_file, upload_file
@@ -56,8 +63,26 @@ from .users import (
     is_user_authorized,
 )
 
+Return = TypeVar("Return")
+
 
 class Client:
+    def __init__(self, config: Config) -> None:
+        self._sender: Optional[Sender] = None
+        self._sender_lock = asyncio.Lock()
+        self._dc_id = DEFAULT_DC
+        self._config = config
+        self._message_box = MessageBox()
+        self._chat_hashes = ChatHashCache(None)
+        self._last_update_limit_warn = None
+        self._updates: Deque[abcs.Update] = deque(maxlen=config.update_queue_limit)
+        self._downloader_map = object()
+
+        if self_user := config.session.user:
+            self._dc_id = self_user.dc
+            if config.catch_up and config.session.state:
+                self._message_box.load(config.session.state)
+
     def takeout(self) -> None:
         takeout(self)
 
@@ -169,9 +194,6 @@ class Client:
     async def set_receive_updates(self) -> None:
         await set_receive_updates(self)
 
-    def run_until_disconnected(self) -> None:
-        run_until_disconnected(self)
-
     def on(self) -> None:
         on(self)
 
@@ -211,29 +233,31 @@ class Client:
     async def get_peer_id(self) -> None:
         await get_peer_id(self)
 
-    def loop(self) -> None:
-        loop(self)
-
-    def disconnected(self) -> None:
-        disconnected(self)
-
-    def flood_sleep_threshold(self) -> None:
-        flood_sleep_threshold(self)
-
     async def connect(self) -> None:
         await connect(self)
 
-    def is_connected(self) -> None:
-        is_connected(self)
+    async def disconnect(self) -> None:
+        await disconnect(self)
 
-    def disconnect(self) -> None:
-        disconnect(self)
+    async def __call__(self, request: Request[Return]) -> Return:
+        if not self._sender:
+            raise ConnectionError("not connected")
 
-    def set_proxy(self) -> None:
-        set_proxy(self)
+        return await invoke_request(self, self._sender, self._sender_lock, request)
 
-    async def __aenter__(self) -> None:
-        raise NotImplementedError
+    async def step(self) -> None:
+        await step(self)
+
+    async def run_until_disconnected(self) -> None:
+        await run_until_disconnected(self)
+
+    @property
+    def connected(self) -> bool:
+        return connected(self)
+
+    async def __aenter__(self) -> Self:
+        await self.connect()
+        return self
 
     async def __aexit__(
         self,
@@ -242,4 +266,4 @@ class Client:
         tb: Optional[TracebackType],
     ) -> None:
         exc_type, exc, tb
-        raise NotImplementedError
+        await self.disconnect()
