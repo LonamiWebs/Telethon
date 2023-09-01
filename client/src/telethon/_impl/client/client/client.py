@@ -5,9 +5,11 @@ from typing import Deque, Optional, Self, Type, TypeVar, Union
 
 from ...mtsender.sender import Sender
 from ...session.chat.hash_cache import ChatHashCache
+from ...session.chat.packed import PackedChat
 from ...session.message_box.messagebox import MessageBox
 from ...tl import abcs
 from ...tl.core.request import Request
+from ..types.chat import ChatLike
 from ..types.chat.user import User
 from ..types.login_token import LoginToken
 from ..types.password_token import PasswordToken
@@ -64,7 +66,14 @@ from .updates import (
     set_receive_updates,
 )
 from .uploads import send_file, upload_file
-from .users import get_entity, get_input_entity, get_me, get_peer_id
+from .users import (
+    get_entity,
+    get_input_entity,
+    get_me,
+    get_peer_id,
+    input_as_peer,
+    resolve_to_packed,
+)
 
 Return = TypeVar("Return")
 
@@ -228,6 +237,12 @@ class Client:
 
     async def get_input_entity(self) -> None:
         await get_input_entity(self)
+
+    async def _resolve_to_packed(self, chat: ChatLike) -> PackedChat:
+        return await resolve_to_packed(self, chat)
+
+    def _input_as_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
+        return input_as_peer(self, input)
 
     async def get_peer_id(self) -> None:
         await get_peer_id(self)

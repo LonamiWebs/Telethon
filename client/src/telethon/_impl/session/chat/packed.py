@@ -51,7 +51,7 @@ class PackedChat:
             PackedType.GIGAGROUP,
         )
 
-    def to_peer(self) -> abcs.Peer:
+    def _to_peer(self) -> abcs.Peer:
         if self.is_user():
             return types.PeerUser(user_id=self.id)
         elif self.is_chat():
@@ -61,7 +61,7 @@ class PackedChat:
         else:
             raise RuntimeError("unexpected case")
 
-    def to_input_peer(self) -> abcs.InputPeer:
+    def _to_input_peer(self) -> abcs.InputPeer:
         if self.is_user():
             return types.InputPeerUser(
                 user_id=self.id, access_hash=self.access_hash or 0
@@ -75,24 +75,25 @@ class PackedChat:
         else:
             raise RuntimeError("unexpected case")
 
-    def try_to_input_user(self) -> Optional[abcs.InputUser]:
+    def _to_input_user(self) -> types.InputUser:
         if self.is_user():
             return types.InputUser(user_id=self.id, access_hash=self.access_hash or 0)
         else:
-            return None
+            raise ValueError("chat is not user")
 
-    def to_input_user_lossy(self) -> abcs.InputUser:
-        return self.try_to_input_user() or types.InputUser(user_id=0, access_hash=0)
+    def _to_chat_id(self) -> int:
+        if self.is_chat():
+            return self.id
+        else:
+            raise ValueError("chat is not small group")
 
-    def try_to_chat_id(self) -> Optional[int]:
-        return self.id if self.is_chat() else None
-
-    def try_to_input_channel(self) -> Optional[abcs.InputChannel]:
-        return (
-            types.InputChannel(channel_id=self.id, access_hash=self.access_hash or 0)
-            if self.is_channel()
-            else None
-        )
+    def _to_input_channel(self) -> types.InputChannel:
+        if self.is_channel():
+            return types.InputChannel(
+                channel_id=self.id, access_hash=self.access_hash or 0
+            )
+        else:
+            raise ValueError("chat is not channel")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
