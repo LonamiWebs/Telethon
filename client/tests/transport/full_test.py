@@ -73,6 +73,17 @@ def test_unpack_normal() -> None:
     assert output == expected_output
 
 
+def test_unpack_two_at_once() -> None:
+    expected_output, transport, input, output = setup_unpack(128)
+    n = transport.unpack(input + input, output)
+    assert output == expected_output
+    assert n == len(input)
+    with raises(ValueError) as e:
+        transport.unpack(input, output)
+    e.match("bad seq")
+    assert output == expected_output
+
+
 def test_unpack_twice() -> None:
     transport, input, packed = setup_pack(128)
     unpacked = bytearray()

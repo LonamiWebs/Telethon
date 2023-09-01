@@ -50,3 +50,12 @@ def test_unpack_normal() -> None:
     transport.pack(input, packed)
     transport.unpack(packed[4:], unpacked)
     assert input == unpacked
+
+
+def test_unpack_two_at_once() -> None:
+    transport, input, packed = setup_pack(128)
+    unpacked = bytearray()
+    transport.pack(input, packed)
+    n = transport.unpack(packed[4:] + packed[4:], unpacked)
+    assert input == unpacked
+    assert n == len(packed[4:])

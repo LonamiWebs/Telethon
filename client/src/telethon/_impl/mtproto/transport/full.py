@@ -52,10 +52,10 @@ class Full(Transport):
             raise ValueError(f"bad seq, expected: {self._recv_seq}, got: {seq}")
 
         crc = struct.unpack_from("<I", input, length - 4)[0]
-        valid_crc = crc32(memoryview(input)[:-4])
+        valid_crc = crc32(memoryview(input)[: length - 4])
         if crc != valid_crc:
             raise ValueError(f"bad crc, expected: {valid_crc}, got: {crc}")
 
         self._recv_seq += 1
-        output += memoryview(input)[8:-4]
+        output += memoryview(input)[8 : length - 4]
         return length

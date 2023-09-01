@@ -59,6 +59,15 @@ def test_unpack_normal() -> None:
     assert input == unpacked
 
 
+def test_unpack_two_at_once() -> None:
+    transport, input, packed = setup_pack(128)
+    unpacked = bytearray()
+    transport.pack(input, packed)
+    n = transport.unpack(packed[1:] + packed[1:], unpacked)
+    assert input == unpacked
+    assert n == len(packed[1:])
+
+
 def unpack_large() -> None:
     transport, input, packed = setup_pack(1024)
     unpacked = bytearray()
