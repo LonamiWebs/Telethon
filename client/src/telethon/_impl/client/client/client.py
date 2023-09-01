@@ -126,8 +126,10 @@ class Client:
     async def sign_out(self) -> None:
         await sign_out(self)
 
-    async def inline_query(self) -> None:
-        await inline_query(self)
+    async def inline_query(
+        self, bot: ChatLike, query: str, *, chat: Optional[ChatLike] = None
+    ) -> None:
+        await inline_query(self, bot, query, chat=chat)
 
     def build_reply_markup(self) -> None:
         build_reply_markup(self)
