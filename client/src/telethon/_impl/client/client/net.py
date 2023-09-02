@@ -141,17 +141,17 @@ async def disconnect(self: Client) -> None:
 
 
 async def invoke_request(
-    self: Client,
+    client: Client,
     sender: Sender,
     lock: asyncio.Lock,
     request: Request[Return],
 ) -> Return:
     slept_flood = False
-    sleep_thresh = self._config.flood_sleep_threshold or 0
+    sleep_thresh = client._config.flood_sleep_threshold or 0
     rx = sender.enqueue(request)
     while True:
         while not rx.done():
-            await step_sender(self, sender, lock)
+            await step_sender(client, sender, lock)
         try:
             response = rx.result()
             break
@@ -171,25 +171,25 @@ async def invoke_request(
     return request.deserialize_response(response)
 
 
-async def step(self: Client) -> None:
-    if self._sender:
-        await step_sender(self, self._sender, self._sender_lock)
+async def step(client: Client) -> None:
+    if client._sender:
+        await step_sender(client, client._sender, client._sender_lock)
 
 
-async def step_sender(self: Client, sender: Sender, lock: asyncio.Lock) -> None:
+async def step_sender(client: Client, sender: Sender, lock: asyncio.Lock) -> None:
     if lock.locked():
         async with lock:
             pass
     else:
         async with lock:
             updates = await sender.step()
-            # self._process_socket_updates(updates)
+            # client._process_socket_updates(updates)
 
 
 async def run_until_disconnected(self: Client) -> None:
     while self.connected:
-        await self.step()
+        await step(self)
 
 
-def connected(self: Client) -> bool:
-    return self._sender is not None
+def connected(client: Client) -> bool:
+    return client._sender is not None

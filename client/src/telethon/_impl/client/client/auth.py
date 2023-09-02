@@ -25,35 +25,35 @@ async def is_authorized(self: Client) -> bool:
         raise
 
 
-async def complete_login(self: Client, auth: abcs.auth.Authorization) -> User:
+async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
     assert isinstance(auth, types.auth.Authorization)
     assert isinstance(auth.user, types.User)
     user = User._from_raw(auth.user)
-    self._config.session.user = SessionUser(
+    client._config.session.user = SessionUser(
         id=user.id,
-        dc=self._dc_id,
+        dc=client._dc_id,
         bot=user.bot,
     )
 
     packed = user.pack()
     assert packed is not None
-    self._chat_hashes.set_self_user(packed)
+    client._chat_hashes.set_self_user(packed)
 
     try:
-        state = await self(functions.updates.get_state())
-        self._message_box.set_state(state)
+        state = await client(functions.updates.get_state())
+        client._message_box.set_state(state)
     except Exception:
         pass
 
     return user
 
 
-async def handle_migrate(self: Client, dc_id: Optional[int]) -> None:
+async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
     assert dc_id is not None
-    sender = await connect_sender(dc_id, self._config)
-    async with self._sender_lock:
-        self._sender = sender
-    self._dc_id = dc_id
+    sender = await connect_sender(dc_id, client._config)
+    async with client._sender_lock:
+        client._sender = sender
+    client._dc_id = dc_id
 
 
 async def bot_sign_in(self: Client, token: str) -> User:
@@ -127,8 +127,8 @@ async def sign_in(
     return await complete_login(self, result)
 
 
-async def get_password_information(self: Client) -> PasswordToken:
-    result = self(functions.account.get_password())
+async def get_password_information(client: Client) -> PasswordToken:
+    result = client(functions.account.get_password())
     assert isinstance(result, types.account.Password)
     return PasswordToken._new(result)
 
@@ -144,6 +144,6 @@ async def sign_out(self: Client) -> None:
     await self(functions.auth.log_out())
 
 
-def session(self: Client) -> Session:
-    self._config.session.state = self._message_box.session_state()
-    return self._config.session
+def session(client: Client) -> Session:
+    client._config.session.state = client._message_box.session_state()
+    return client._config.session

@@ -1,8 +1,19 @@
 import asyncio
 import datetime
 from collections import deque
+from pathlib import Path
 from types import TracebackType
-from typing import Deque, List, Literal, Optional, Self, Type, TypeVar, Union
+from typing import (
+    AsyncIterator,
+    Deque,
+    List,
+    Literal,
+    Optional,
+    Self,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from ...mtsender.sender import Sender
 from ...session.chat.hash_cache import ChatHashCache
@@ -27,7 +38,7 @@ from .auth import (
     sign_in,
     sign_out,
 )
-from .bots import inline_query
+from .bots import InlineResult, inline_query
 from .buttons import build_reply_markup
 from .chats import (
     action,
@@ -42,6 +53,10 @@ from .chats import (
 )
 from .dialogs import conversation, delete_dialog, edit_folder, iter_dialogs, iter_drafts
 from .files import (
+    File,
+    InFileLike,
+    MediaLike,
+    OutFileLike,
     download,
     iter_download,
     send_audio,
@@ -71,7 +86,6 @@ from .net import (
     disconnect,
     invoke_request,
     run_until_disconnected,
-    step,
 )
 from .updates import (
     add_event_handler,
@@ -87,6 +101,8 @@ from .users import (
     get_me,
     get_peer_id,
     input_to_peer,
+    is_bot,
+    is_user_authorized,
     resolve_to_packed,
 )
 
@@ -110,177 +126,60 @@ class Client:
             if config.catch_up and config.session.state:
                 self._message_box.load(config.session.state)
 
-    def takeout(self) -> None:
-        takeout(self)
+    def action(self) -> None:
+        action(self)
 
-    async def end_takeout(self) -> None:
-        await end_takeout(self)
-
-    async def edit_2fa(self) -> None:
-        await edit_2fa(self)
-
-    async def is_authorized(self) -> bool:
-        return await is_authorized(self)
+    def add_event_handler(self) -> None:
+        add_event_handler(self)
 
     async def bot_sign_in(self, token: str) -> User:
         return await bot_sign_in(self, token)
 
-    async def request_login_code(self, phone: str) -> LoginToken:
-        return await request_login_code(self, phone)
+    def build_reply_markup(self) -> None:
+        build_reply_markup(self)
 
-    async def sign_in(self, token: LoginToken, code: str) -> Union[User, PasswordToken]:
-        return await sign_in(self, token, code)
+    async def catch_up(self) -> None:
+        await catch_up(self)
 
     async def check_password(
         self, token: PasswordToken, password: Union[str, bytes]
     ) -> User:
         return await check_password(self, token, password)
 
-    async def sign_out(self) -> None:
-        await sign_out(self)
-
-    @property
-    def session(self) -> Session:
-        """
-        Up-to-date session state, useful for persisting it to storage.
-
-        Mutating the returned object may cause the library to misbehave.
-        """
-        return session(self)
-
-    async def inline_query(
-        self, bot: ChatLike, query: str, *, chat: Optional[ChatLike] = None
-    ) -> None:
-        await inline_query(self, bot, query, chat=chat)
-
-    def build_reply_markup(self) -> None:
-        build_reply_markup(self)
-
-    def iter_participants(self) -> None:
-        iter_participants(self)
-
-    def iter_admin_log(self) -> None:
-        iter_admin_log(self)
-
-    def iter_profile_photos(self) -> None:
-        iter_profile_photos(self)
-
-    def action(self) -> None:
-        action(self)
-
-    async def edit_admin(self) -> None:
-        await edit_admin(self)
-
-    async def edit_permissions(self) -> None:
-        await edit_permissions(self)
-
-    async def kick_participant(self) -> None:
-        await kick_participant(self)
-
-    async def get_permissions(self) -> None:
-        await get_permissions(self)
-
-    async def get_stats(self) -> None:
-        await get_stats(self)
-
-    def iter_dialogs(self) -> None:
-        iter_dialogs(self)
-
-    def iter_drafts(self) -> None:
-        iter_drafts(self)
-
-    async def edit_folder(self) -> None:
-        await edit_folder(self)
-
-    async def delete_dialog(self) -> None:
-        await delete_dialog(self)
+    async def connect(self) -> None:
+        await connect(self)
 
     def conversation(self) -> None:
         conversation(self)
 
-    async def send_photo(self, *args, **kwargs) -> None:
-        """
-        Send a photo file.
+    async def delete_dialog(self) -> None:
+        await delete_dialog(self)
 
-        Exactly one of path, url or file must be specified.
-        A `File` can also be used as the second parameter.
+    async def delete_messages(
+        self, chat: ChatLike, message_ids: List[int], *, revoke: bool = True
+    ) -> int:
+        return await delete_messages(self, chat, message_ids, revoke=revoke)
 
-        By default, the server will be allowed to `compress` the image.
-        Only compressed images can be displayed as photos in applications.
-        Images that cannot be compressed will be sent as file documents,
-        with a thumbnail if possible.
+    async def disconnect(self) -> None:
+        await disconnect(self)
 
-        Unlike `send_file`, this method will attempt to guess the values for
-        width and height if they are not provided and the can't be compressed.
-        """
-        return send_photo(self, *args, **kwargs)
-
-    async def send_audio(self, *args, **kwargs) -> None:
-        """
-        Send an audio file.
-
-        Unlike `send_file`, this method will attempt to guess the values for
-        duration, title and performer if they are not provided.
-        """
-        return send_audio(self, *args, **kwargs)
-
-    async def send_video(self, *args, **kwargs) -> None:
-        """
-        Send a video file.
-
-        Unlike `send_file`, this method will attempt to guess the values for
-        duration, width and height if they are not provided.
-        """
-        return send_video(self, *args, **kwargs)
-
-    async def send_file(self, *args, **kwargs) -> None:
-        """
-        Send any type of file with any amount of attributes.
-
-        This method will not attempt to guess any of the file metadata such as
-        width, duration, title, etc. If you want to let the library attempt to
-        guess the file metadata, use the type-specific methods to send media:
-        `send_photo`, `send_audio` or `send_file`.
-
-        Unlike `send_photo`, image files will be sent as documents by default.
-
-        The parameters are used to construct a `File`. See the documentation
-        for `File.new` to learn what they do and when they are in effect.
-        """
-        return send_file(self, *args, **kwargs)
-
-    async def iter_download(self, *args, **kwargs) -> None:
-        """
-        Stream server media by iterating over its bytes in chunks.
-        """
-        return iter_download(self, *args, **kwargs)
-
-    async def download(self, *args, **kwargs) -> None:
+    async def download(self, media: MediaLike, file: OutFileLike) -> None:
         """
         Download a file.
 
         This is simply a more convenient method to `iter_download`,
         as it will handle dealing with the file chunks and writes by itself.
         """
-        return download(self, *args, **kwargs)
+        await download(self, media, file)
 
-    async def send_message(
-        self,
-        chat: ChatLike,
-        *,
-        text: Optional[str] = None,
-        markdown: Optional[str] = None,
-        html: Optional[str] = None,
-        link_preview: Optional[bool] = None,
-    ) -> Message:
-        return await send_message(
-            self,
-            chat,
-            text=text,
-            markdown=markdown,
-            html=html,
-            link_preview=link_preview,
-        )
+    async def edit_2fa(self) -> None:
+        await edit_2fa(self)
+
+    async def edit_admin(self) -> None:
+        await edit_admin(self)
+
+    async def edit_folder(self) -> None:
+        await edit_folder(self)
 
     async def edit_message(
         self,
@@ -302,15 +201,25 @@ class Client:
             link_preview=link_preview,
         )
 
-    async def delete_messages(
-        self, chat: ChatLike, message_ids: List[int], *, revoke: bool = True
-    ) -> int:
-        return await delete_messages(self, chat, message_ids, revoke=revoke)
+    async def edit_permissions(self) -> None:
+        await edit_permissions(self)
+
+    async def end_takeout(self) -> None:
+        await end_takeout(self)
 
     async def forward_messages(
         self, target: ChatLike, message_ids: List[int], source: ChatLike
     ) -> List[Message]:
         return await forward_messages(self, target, message_ids, source)
+
+    async def get_entity(self) -> None:
+        await get_entity(self)
+
+    async def get_input_entity(self) -> None:
+        await get_input_entity(self)
+
+    async def get_me(self) -> None:
+        await get_me(self)
 
     def get_messages(
         self,
@@ -325,11 +234,89 @@ class Client:
         )
 
     def get_messages_with_ids(
-        self,
-        chat: ChatLike,
-        message_ids: List[int],
+        self, chat: ChatLike, message_ids: List[int]
     ) -> AsyncList[Message]:
         return get_messages_with_ids(self, chat, message_ids)
+
+    async def get_peer_id(self) -> None:
+        await get_peer_id(self)
+
+    async def get_permissions(self) -> None:
+        await get_permissions(self)
+
+    async def get_stats(self) -> None:
+        await get_stats(self)
+
+    async def inline_query(
+        self, bot: ChatLike, query: str, *, chat: Optional[ChatLike] = None
+    ) -> AsyncIterator[InlineResult]:
+        return await inline_query(self, bot, query, chat=chat)
+
+    async def is_authorized(self) -> bool:
+        return await is_authorized(self)
+
+    async def is_bot(self) -> None:
+        await is_bot(self)
+
+    async def is_user_authorized(self) -> None:
+        await is_user_authorized(self)
+
+    def iter_admin_log(self) -> None:
+        iter_admin_log(self)
+
+    def iter_dialogs(self) -> None:
+        iter_dialogs(self)
+
+    async def iter_download(self) -> None:
+        """
+        Stream server media by iterating over its bytes in chunks.
+        """
+        await iter_download(self)
+
+    def iter_drafts(self) -> None:
+        iter_drafts(self)
+
+    def iter_participants(self) -> None:
+        iter_participants(self)
+
+    def iter_profile_photos(self) -> None:
+        iter_profile_photos(self)
+
+    async def kick_participant(self) -> None:
+        await kick_participant(self)
+
+    def list_event_handlers(self) -> None:
+        list_event_handlers(self)
+
+    def on(self) -> None:
+        on(self)
+
+    async def pin_message(self, chat: ChatLike, message_id: int) -> Message:
+        return await pin_message(self, chat, message_id)
+
+    def remove_event_handler(self) -> None:
+        remove_event_handler(self)
+
+    async def request_login_code(self, phone: str) -> LoginToken:
+        return await request_login_code(self, phone)
+
+    async def resolve_to_packed(self, chat: ChatLike) -> PackedChat:
+        return await resolve_to_packed(self, chat)
+
+    async def run_until_disconnected(self) -> None:
+        await run_until_disconnected(self)
+
+    def search_all_messages(
+        self,
+        limit: Optional[int] = None,
+        *,
+        query: Optional[str] = None,
+        offset_id: Optional[int] = None,
+        offset_date: Optional[datetime.datetime] = None,
+    ) -> AsyncList[Message]:
+        return search_all_messages(
+            self, limit, query=query, offset_id=offset_id, offset_date=offset_date
+        )
 
     def search_messages(
         self,
@@ -344,25 +331,230 @@ class Client:
             self, chat, limit, query=query, offset_id=offset_id, offset_date=offset_date
         )
 
-    def search_all_messages(
+    async def send_audio(
         self,
-        limit: Optional[int] = None,
+        chat: ChatLike,
+        path: Optional[Union[str, Path, File]] = None,
         *,
-        query: Optional[str] = None,
-        offset_id: Optional[int] = None,
-        offset_date: Optional[datetime.datetime] = None,
-    ) -> AsyncList[Message]:
-        return search_all_messages(
-            self, limit, query=query, offset_id=offset_id, offset_date=offset_date
+        url: Optional[str] = None,
+        file: Optional[InFileLike] = None,
+        size: Optional[int] = None,
+        name: Optional[str] = None,
+        duration: Optional[float] = None,
+        voice: bool = False,
+        title: Optional[str] = None,
+        performer: Optional[str] = None,
+    ) -> Message:
+        """
+        Send an audio file.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        duration, title and performer if they are not provided.
+        """
+        return await send_audio(
+            self,
+            chat,
+            path,
+            url=url,
+            file=file,
+            size=size,
+            name=name,
+            duration=duration,
+            voice=voice,
+            title=title,
+            performer=performer,
         )
 
-    async def pin_message(self, chat: ChatLike, message_id: int) -> Message:
-        return await pin_message(self, chat, message_id)
+    async def send_file(
+        self,
+        chat: ChatLike,
+        path: Optional[Union[str, Path, File]] = None,
+        *,
+        url: Optional[str] = None,
+        file: Optional[InFileLike] = None,
+        size: Optional[int] = None,
+        name: Optional[str] = None,
+        mime_type: Optional[str] = None,
+        compress: bool = False,
+        animated: bool = False,
+        duration: Optional[float] = None,
+        voice: bool = False,
+        title: Optional[str] = None,
+        performer: Optional[str] = None,
+        emoji: Optional[str] = None,
+        emoji_sticker: Optional[str] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        round: bool = False,
+        supports_streaming: bool = False,
+        muted: bool = False,
+        caption: Optional[str] = None,
+        caption_markdown: Optional[str] = None,
+        caption_html: Optional[str] = None,
+    ) -> Message:
+        """
+        Send any type of file with any amount of attributes.
+
+        This method will not attempt to guess any of the file metadata such as
+        width, duration, title, etc. If you want to let the library attempt to
+        guess the file metadata, use the type-specific methods to send media:
+        `send_photo`, `send_audio` or `send_file`.
+
+        Unlike `send_photo`, image files will be sent as documents by default.
+
+        The parameters are used to construct a `File`. See the documentation
+        for `File.new` to learn what they do and when they are in effect.
+        """
+        return await send_file(
+            self,
+            chat,
+            path,
+            url=url,
+            file=file,
+            size=size,
+            name=name,
+            mime_type=mime_type,
+            compress=compress,
+            animated=animated,
+            duration=duration,
+            voice=voice,
+            title=title,
+            performer=performer,
+            emoji=emoji,
+            emoji_sticker=emoji_sticker,
+            width=width,
+            height=height,
+            round=round,
+            supports_streaming=supports_streaming,
+            muted=muted,
+            caption=caption,
+            caption_markdown=caption_markdown,
+            caption_html=caption_html,
+        )
+
+    async def send_message(
+        self,
+        chat: ChatLike,
+        *,
+        text: Optional[str] = None,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: Optional[bool] = None,
+    ) -> Message:
+        return await send_message(
+            self,
+            chat,
+            text=text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+        )
+
+    async def send_photo(
+        self,
+        chat: ChatLike,
+        path: Optional[Union[str, Path, File]] = None,
+        *,
+        url: Optional[str] = None,
+        file: Optional[InFileLike] = None,
+        size: Optional[int] = None,
+        name: Optional[str] = None,
+        compress: bool = True,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+    ) -> Message:
+        """
+        Send a photo file.
+
+        Exactly one of path, url or file must be specified.
+        A `File` can also be used as the second parameter.
+
+        By default, the server will be allowed to `compress` the image.
+        Only compressed images can be displayed as photos in applications.
+        Images that cannot be compressed will be sent as file documents,
+        with a thumbnail if possible.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        width and height if they are not provided and the can't be compressed.
+        """
+        return await send_photo(
+            self,
+            chat,
+            path,
+            url=url,
+            file=file,
+            size=size,
+            name=name,
+            compress=compress,
+            width=width,
+            height=height,
+        )
+
+    async def send_video(
+        self,
+        chat: ChatLike,
+        path: Optional[Union[str, Path, File]] = None,
+        *,
+        url: Optional[str] = None,
+        file: Optional[InFileLike] = None,
+        size: Optional[int] = None,
+        name: Optional[str] = None,
+        duration: Optional[float] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        round: bool = False,
+        supports_streaming: bool = False,
+    ) -> Message:
+        """
+        Send a video file.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        duration, width and height if they are not provided.
+        """
+        return await send_video(
+            self,
+            chat,
+            path,
+            url=url,
+            file=file,
+            size=size,
+            name=name,
+            duration=duration,
+            width=width,
+            height=height,
+            round=round,
+            supports_streaming=supports_streaming,
+        )
+
+    async def set_receive_updates(self) -> None:
+        await set_receive_updates(self)
+
+    async def sign_in(self, token: LoginToken, code: str) -> Union[User, PasswordToken]:
+        return await sign_in(self, token, code)
+
+    async def sign_out(self) -> None:
+        await sign_out(self)
+
+    def takeout(self) -> None:
+        takeout(self)
 
     async def unpin_message(
         self, chat: ChatLike, message_id: Union[int, Literal["all"]]
     ) -> None:
-        return await unpin_message(self, chat, message_id)
+        await unpin_message(self, chat, message_id)
+
+    @property
+    def connected(self) -> bool:
+        return connected(self)
+
+    @property
+    def session(self) -> Session:
+        """
+        Up-to-date session state, useful for persisting it to storage.
+
+        Mutating the returned object may cause the library to misbehave.
+        """
+        return session(self)
 
     def _build_message_map(
         self,
@@ -371,63 +563,17 @@ class Client:
     ) -> MessageMap:
         return build_message_map(self, result, peer)
 
-    async def set_receive_updates(self) -> None:
-        await set_receive_updates(self)
-
-    def on(self) -> None:
-        on(self)
-
-    def add_event_handler(self) -> None:
-        add_event_handler(self)
-
-    def remove_event_handler(self) -> None:
-        remove_event_handler(self)
-
-    def list_event_handlers(self) -> None:
-        list_event_handlers(self)
-
-    async def catch_up(self) -> None:
-        await catch_up(self)
-
-    async def get_me(self) -> None:
-        await get_me(self)
-
-    async def get_entity(self) -> None:
-        await get_entity(self)
-
-    async def get_input_entity(self) -> None:
-        await get_input_entity(self)
-
     async def _resolve_to_packed(self, chat: ChatLike) -> PackedChat:
         return await resolve_to_packed(self, chat)
 
     def _input_to_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
         return input_to_peer(self, input)
 
-    async def get_peer_id(self) -> None:
-        await get_peer_id(self)
-
-    async def connect(self) -> None:
-        await connect(self)
-
-    async def disconnect(self) -> None:
-        await disconnect(self)
-
     async def __call__(self, request: Request[Return]) -> Return:
         if not self._sender:
             raise ConnectionError("not connected")
 
         return await invoke_request(self, self._sender, self._sender_lock, request)
-
-    async def step(self) -> None:
-        await step(self)
-
-    async def run_until_disconnected(self) -> None:
-        await run_until_disconnected(self)
-
-    @property
-    def connected(self) -> bool:
-        return connected(self)
 
     async def __aenter__(self) -> Self:
         await self.connect()

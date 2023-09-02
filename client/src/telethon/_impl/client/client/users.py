@@ -86,15 +86,17 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
     raise ValueError("Cannot resolve chat")
 
 
-def input_to_peer(self: Client, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
+def input_to_peer(
+    client: Client, input: Optional[abcs.InputPeer]
+) -> Optional[abcs.Peer]:
     if input is None:
         return None
     elif isinstance(input, types.InputPeerEmpty):
         return None
     elif isinstance(input, types.InputPeerSelf):
         return (
-            types.PeerUser(user_id=self._config.session.user.id)
-            if self._config.session.user
+            types.PeerUser(user_id=client._config.session.user.id)
+            if client._config.session.user
             else None
         )
     elif isinstance(input, types.InputPeerChat):

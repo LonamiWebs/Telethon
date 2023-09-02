@@ -11,11 +11,6 @@ async def set_receive_updates(self: Client) -> None:
     raise NotImplementedError
 
 
-def run_until_disconnected(self: Client) -> None:
-    self
-    raise NotImplementedError
-
-
 def on(self: Client) -> None:
     self
     raise NotImplementedError

@@ -414,7 +414,7 @@ async def send_file(
 
 
 async def upload(
-    self: Client,
+    client: Client,
     file: File,
 ) -> abcs.InputFile:
     file_id = generate_random_id()
@@ -442,7 +442,7 @@ async def upload(
                 continue
 
         if is_big:
-            await self(
+            await client(
                 functions.upload.save_big_file_part(
                     file_id=file_id,
                     file_part=part,
@@ -451,7 +451,7 @@ async def upload(
                 )
             )
         else:
-            await self(
+            await client(
                 functions.upload.save_file_part(
                     file_id=file_id, file_part=total_parts, bytes=to_store
                 )

@@ -502,7 +502,7 @@ class MessageMap:
 
 
 def build_message_map(
-    self: Client,
+    client: Client,
     result: abcs.Updates,
     peer: Optional[abcs.InputPeer],
 ) -> MessageMap:
@@ -514,7 +514,7 @@ def build_message_map(
         entities = {}
         raise NotImplementedError()
     else:
-        return MessageMap(self, peer, {}, {})
+        return MessageMap(client, peer, {}, {})
 
     random_id_to_id = {}
     id_to_message = {}
@@ -542,7 +542,7 @@ def build_message_map(
             raise NotImplementedError()
 
     return MessageMap(
-        self,
+        client,
         peer,
         random_id_to_id,
         id_to_message,
