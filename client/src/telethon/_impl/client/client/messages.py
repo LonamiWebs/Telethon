@@ -497,7 +497,7 @@ class MessageMap:
 
     def _empty(self, id: int = 0) -> Message:
         return Message._from_raw(
-            types.MessageEmpty(id=id, peer_id=self._client._input_as_peer(self._peer))
+            types.MessageEmpty(id=id, peer_id=self._client._input_to_peer(self._peer))
         )
 
 

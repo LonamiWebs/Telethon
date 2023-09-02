@@ -80,7 +80,7 @@ from .users import (
     get_input_entity,
     get_me,
     get_peer_id,
-    input_as_peer,
+    input_to_peer,
     resolve_to_packed,
 )
 
@@ -344,8 +344,8 @@ class Client:
     async def _resolve_to_packed(self, chat: ChatLike) -> PackedChat:
         return await resolve_to_packed(self, chat)
 
-    def _input_as_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
-        return input_as_peer(self, input)
+    def _input_to_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
+        return input_to_peer(self, input)
 
     async def get_peer_id(self) -> None:
         await get_peer_id(self)
