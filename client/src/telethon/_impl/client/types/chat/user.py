@@ -59,6 +59,9 @@ class User(metaclass=NoPublicConstructor):
                     premium=False,
                     attach_menu_enabled=False,
                     bot_can_edit=False,
+                    close_friend=False,
+                    stories_hidden=False,
+                    stories_unavailable=False,
                     id=user.id,
                     access_hash=None,
                     first_name=None,
@@ -73,6 +76,7 @@ class User(metaclass=NoPublicConstructor):
                     lang_code=None,
                     emoji_status=None,
                     usernames=None,
+                    stories_max_id=None,
                 )
             )
         elif isinstance(user, types.User):

@@ -18,7 +18,18 @@ from typing import (
 from ...mtsender import Sender
 from ...session import ChatHashCache, MessageBox, PackedChat, Session
 from ...tl import Request, abcs
-from ..types import AsyncList, ChatLike, LoginToken, Message, PasswordToken, User
+from ..types import (
+    AsyncList,
+    ChatLike,
+    File,
+    InFileLike,
+    LoginToken,
+    MediaLike,
+    Message,
+    OutFileLike,
+    PasswordToken,
+    User,
+)
 from .account import edit_2fa, end_takeout, takeout
 from .auth import (
     bot_sign_in,
@@ -44,10 +55,6 @@ from .chats import (
 )
 from .dialogs import conversation, delete_dialog, edit_folder, iter_dialogs, iter_drafts
 from .files import (
-    File,
-    InFileLike,
-    MediaLike,
-    OutFileLike,
     download,
     iter_download,
     send_audio,

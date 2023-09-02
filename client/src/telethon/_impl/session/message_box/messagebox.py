@@ -405,11 +405,13 @@ class MessageBox:
 
                 gd = functions.updates.get_difference(
                     pts=self.map[ENTRY_ACCOUNT].pts,
+                    pts_limit=None,
                     pts_total_limit=None,
                     date=int(self.date.timestamp()),
                     qts=self.map[ENTRY_SECRET].pts
                     if ENTRY_SECRET in self.map
                     else NO_SEQ,
+                    qts_limit=None,
                 )
                 if __debug__:
                     self._trace("Requesting account difference %s", gd)

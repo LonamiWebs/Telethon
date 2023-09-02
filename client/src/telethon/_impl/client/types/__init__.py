@@ -1,5 +1,6 @@
 from .async_list import AsyncList
 from .chat import Channel, Chat, ChatLike, Group, RestrictionReason, User
+from .file import File, InFileLike, MediaLike, OutFileLike
 from .login_token import LoginToken
 from .message import Message
 from .meta import NoPublicConstructor
@@ -13,6 +14,10 @@ __all__ = [
     "Group",
     "RestrictionReason",
     "User",
+    "File",
+    "InFileLike",
+    "MediaLike",
+    "OutFileLike",
     "LoginToken",
     "Message",
     "NoPublicConstructor",
