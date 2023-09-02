@@ -41,7 +41,14 @@ from .chats import (
     kick_participant,
 )
 from .dialogs import conversation, delete_dialog, edit_folder, iter_dialogs, iter_drafts
-from .downloads import download_media, download_profile_photo, iter_download
+from .files import (
+    download,
+    iter_download,
+    send_audio,
+    send_file,
+    send_photo,
+    send_video,
+)
 from .messages import (
     MessageMap,
     build_message_map,
@@ -74,7 +81,6 @@ from .updates import (
     remove_event_handler,
     set_receive_updates,
 )
-from .uploads import send_file, upload_file
 from .users import (
     get_entity,
     get_input_entity,
@@ -192,14 +198,71 @@ class Client:
     def conversation(self) -> None:
         conversation(self)
 
-    async def download_profile_photo(self) -> None:
-        await download_profile_photo(self)
+    async def send_photo(self, *args, **kwargs) -> None:
+        """
+        Send a photo file.
 
-    async def download_media(self) -> None:
-        await download_media(self)
+        Exactly one of path, url or file must be specified.
+        A `File` can also be used as the second parameter.
 
-    def iter_download(self) -> None:
-        iter_download(self)
+        By default, the server will be allowed to `compress` the image.
+        Only compressed images can be displayed as photos in applications.
+        Images that cannot be compressed will be sent as file documents,
+        with a thumbnail if possible.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        width and height if they are not provided and the can't be compressed.
+        """
+        return send_photo(self, *args, **kwargs)
+
+    async def send_audio(self, *args, **kwargs) -> None:
+        """
+        Send an audio file.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        duration, title and performer if they are not provided.
+        """
+        return send_audio(self, *args, **kwargs)
+
+    async def send_video(self, *args, **kwargs) -> None:
+        """
+        Send a video file.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        duration, width and height if they are not provided.
+        """
+        return send_video(self, *args, **kwargs)
+
+    async def send_file(self, *args, **kwargs) -> None:
+        """
+        Send any type of file with any amount of attributes.
+
+        This method will not attempt to guess any of the file metadata such as
+        width, duration, title, etc. If you want to let the library attempt to
+        guess the file metadata, use the type-specific methods to send media:
+        `send_photo`, `send_audio` or `send_file`.
+
+        Unlike `send_photo`, image files will be sent as documents by default.
+
+        The parameters are used to construct a `File`. See the documentation
+        for `File.new` to learn what they do and when they are in effect.
+        """
+        return send_file(self, *args, **kwargs)
+
+    async def iter_download(self, *args, **kwargs) -> None:
+        """
+        Stream server media by iterating over its bytes in chunks.
+        """
+        return iter_download(self, *args, **kwargs)
+
+    async def download(self, *args, **kwargs) -> None:
+        """
+        Download a file.
+
+        This is simply a more convenient method to `iter_download`,
+        as it will handle dealing with the file chunks and writes by itself.
+        """
+        return download(self, *args, **kwargs)
 
     async def send_message(
         self,
@@ -325,12 +388,6 @@ class Client:
 
     async def catch_up(self) -> None:
         await catch_up(self)
-
-    async def send_file(self) -> None:
-        await send_file(self)
-
-    async def upload_file(self) -> None:
-        await upload_file(self)
 
     async def get_me(self) -> None:
         await get_me(self)
