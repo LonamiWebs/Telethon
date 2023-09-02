@@ -1,10 +1,11 @@
 from .encrypted import Encrypted
 from .plain import Plain
-from .types import Deserialization, MsgId, Mtp, RpcError
+from .types import BadMessage, Deserialization, MsgId, Mtp, RpcError
 
 __all__ = [
     "Encrypted",
     "Plain",
+    "BadMessage",
     "Deserialization",
     "MsgId",
     "Mtp",

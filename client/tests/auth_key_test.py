@@ -1,4 +1,4 @@
-from telethon._impl.crypto.auth_key import AuthKey
+from telethon._impl.crypto import AuthKey
 
 
 def get_auth_key() -> AuthKey:

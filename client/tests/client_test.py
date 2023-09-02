@@ -2,10 +2,8 @@ import os
 import random
 
 from pytest import mark
-from telethon._impl.client.client.client import Client
-from telethon._impl.client.client.net import Config
-from telethon._impl.session.message_box.defs import Session
-from telethon._impl.tl.mtproto import functions, types
+from telethon import Client, Config, Session
+from telethon import _tl as tl
 
 
 @mark.api
@@ -27,6 +25,6 @@ async def test_ping_pong() -> None:
     assert client.connected
 
     ping_id = random.randrange(-(2**63), 2**63)
-    pong = await client(functions.ping(ping_id=ping_id))
-    assert isinstance(pong, types.Pong)
+    pong = await client(tl.mtproto.functions.ping(ping_id=ping_id))
+    assert isinstance(pong, tl.mtproto.types.Pong)
     assert pong.ping_id == ping_id

@@ -1,4 +1,4 @@
-from telethon._impl.crypto.auth_key import AuthKey
+from telethon._impl.crypto import AuthKey
 from telethon._impl.mtproto.authentication import (
     CreatedKey,
     _do_step1,

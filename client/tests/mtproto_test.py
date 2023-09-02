@@ -1,8 +1,8 @@
 import struct
 
 from pytest import raises
-from telethon._impl.crypto.auth_key import AuthKey
-from telethon._impl.mtproto.mtp import Encrypted, Plain, RpcError
+from telethon._impl.crypto import AuthKey
+from telethon._impl.mtproto import Encrypted, Plain, RpcError
 from telethon._impl.tl.mtproto.types import RpcError as GeneratedRpcError
 
 

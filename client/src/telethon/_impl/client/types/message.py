@@ -1,8 +1,8 @@
 import datetime
 from typing import Optional, Self
 
-from ...client.types.chat import Chat
 from ...tl import abcs, types
+from .chat import Chat
 from .meta import NoPublicConstructor
 
 

@@ -1,10 +1,10 @@
 import os
 import struct
 import time
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from ...crypto import AuthKey, decrypt_data_v2, encrypt_data_v2
-from ...tl.core.reader import Reader
+from ...tl.core import Reader
 from ...tl.mtproto.abcs import BadMsgNotification as AbcBadMsgNotification
 from ...tl.mtproto.abcs import DestroySessionRes
 from ...tl.mtproto.abcs import MsgDetailedInfo as AbcMsgDetailedInfo

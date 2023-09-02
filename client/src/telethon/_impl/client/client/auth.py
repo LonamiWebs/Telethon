@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
-from ...mtproto.mtp.types import RpcError
-from ...session.message_box.defs import Session
-from ...session.message_box.defs import User as SessionUser
+from ...mtproto import RpcError
+from ...session import Session
+from ...session import User as SessionUser
 from ...tl import abcs, functions, types
-from ..types.chat.user import User
-from ..types.login_token import LoginToken
-from ..types.password_token import PasswordToken
+from ..types import LoginToken, PasswordToken, User
 from .net import connect_sender
 
 if TYPE_CHECKING:

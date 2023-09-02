@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
-from ...tl_parser import Definition, FunctionDef, TypeDef, parse_tl_file
+from ..tl_parser import Definition, FunctionDef, TypeDef, parse_tl_file
 
 
 @dataclass

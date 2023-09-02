@@ -4,9 +4,8 @@ import logging
 import time
 from typing import Dict, List, Optional, Set, Tuple
 
-from ...tl import abcs, functions, types
-from ...tl.core.request import Request
-from ..chat.hash_cache import ChatHashCache
+from ...tl import Request, abcs, functions, types
+from ..chat import ChatHashCache
 from .adaptor import adapt, pts_info_from_update
 from .defs import (
     BOT_CHANNEL_DIFF_LIMIT,

@@ -1,6 +1,6 @@
 from typing import Optional, Self, Union
 
-from ....session.chat.packed import PackedChat, PackedType
+from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
 

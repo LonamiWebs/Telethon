@@ -2,7 +2,7 @@ import struct
 from enum import Enum
 from typing import Optional, Self
 
-from telethon._impl.tl import abcs, types
+from ...tl import abcs, types
 
 
 class PackedType(Enum):

@@ -1,7 +1,7 @@
 from typing import Tuple
 
 from pytest import raises
-from telethon._impl.mtproto.transport.intermediate import Intermediate
+from telethon._impl.mtproto import Intermediate
 
 
 class Output(bytearray):

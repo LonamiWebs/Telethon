@@ -2,10 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Self, Union
 
-from ...._impl.tl import abcs, functions, types
-from ..types.chat import ChatLike
-from ..types.message import Message
-from ..types.meta import NoPublicConstructor
+from ...tl import abcs, functions, types
+from ..types import ChatLike, Message, NoPublicConstructor
 from ..utils import generate_random_id
 
 if TYPE_CHECKING:

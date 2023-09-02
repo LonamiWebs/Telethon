@@ -7,9 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Coroutine, List, Optional, Protocol, Self, Union
 
 from ...tl import abcs, functions, types
-from ..types.chat import ChatLike
-from ..types.message import Message
-from ..types.meta import NoPublicConstructor
+from ..types import ChatLike, Message, NoPublicConstructor
 from ..utils import generate_random_id
 from .messages import parse_message
 

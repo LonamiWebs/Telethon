@@ -15,19 +15,10 @@ from typing import (
     Union,
 )
 
-from ...mtsender.sender import Sender
-from ...session.chat.hash_cache import ChatHashCache
-from ...session.chat.packed import PackedChat
-from ...session.message_box.defs import Session
-from ...session.message_box.messagebox import MessageBox
-from ...tl import abcs
-from ...tl.core.request import Request
-from ..types.async_list import AsyncList
-from ..types.chat import ChatLike
-from ..types.chat.user import User
-from ..types.login_token import LoginToken
-from ..types.message import Message
-from ..types.password_token import PasswordToken
+from ...mtsender import Sender
+from ...session import ChatHashCache, MessageBox, PackedChat, Session
+from ...tl import Request, abcs
+from ..types import AsyncList, ChatLike, LoginToken, Message, PasswordToken, User
 from .account import edit_2fa, end_takeout, takeout
 from .auth import (
     bot_sign_in,

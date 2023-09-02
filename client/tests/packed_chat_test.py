@@ -1,4 +1,4 @@
-from telethon._impl.session.chat.packed import PackedChat, PackedType
+from telethon._impl.session import PackedChat, PackedType
 
 
 def test_hash_optional() -> None:

@@ -5,12 +5,16 @@ from dataclasses import dataclass
 from hashlib import sha1
 from typing import Tuple
 
-from telethon._impl.crypto import decrypt_ige, encrypt_ige, generate_key_data_from_nonce
-from telethon._impl.crypto.auth_key import AuthKey
-from telethon._impl.crypto.factorize import factorize
-from telethon._impl.crypto.rsa import RSA_KEYS, encrypt_hashed
-from telethon._impl.tl.core.reader import Reader
-
+from ..crypto import (
+    RSA_KEYS,
+    AuthKey,
+    decrypt_ige,
+    encrypt_hashed,
+    encrypt_ige,
+    factorize,
+    generate_key_data_from_nonce,
+)
+from ..tl.core import Reader
 from ..tl.mtproto.abcs import ServerDhInnerData as AbcServerDhInnerData
 from ..tl.mtproto.abcs import ServerDhParams, SetClientDhParamsAnswer
 from ..tl.mtproto.functions import req_dh_params, req_pq_multi, set_client_dh_params

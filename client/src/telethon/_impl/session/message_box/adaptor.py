@@ -1,7 +1,7 @@
 from typing import Optional
 
 from ...tl import abcs, types
-from ..chat.hash_cache import ChatHashCache
+from ..chat import ChatHashCache
 from .defs import ENTRY_ACCOUNT, ENTRY_SECRET, NO_SEQ, Gap, PtsInfo
 
 

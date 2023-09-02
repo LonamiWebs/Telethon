@@ -1,13 +1,13 @@
 from telethon._impl.crypto import (
+    AuthKey,
     Side,
-    _do_encrypt_data_v2,
     calc_key,
     decrypt_data_v2,
     decrypt_ige,
     encrypt_ige,
     generate_key_data_from_nonce,
 )
-from telethon._impl.crypto.auth_key import AuthKey
+from telethon._impl.crypto.crypto import _do_encrypt_data_v2
 
 
 def get_test_auth_key() -> AuthKey:

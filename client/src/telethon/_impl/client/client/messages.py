@@ -2,25 +2,12 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Coroutine,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 
-from telethon._impl.client.types.async_list import AsyncList
-from telethon._impl.session.chat.packed import PackedChat
-
+from ...session import PackedChat
 from ...tl import abcs, functions, types
 from ..parsers import parse_html_message, parse_markdown_message
-from ..types.chat import ChatLike
-from ..types.message import Message
+from ..types import AsyncList, ChatLike, Message
 from ..utils import generate_random_id
 
 if TYPE_CHECKING:

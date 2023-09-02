@@ -2,8 +2,8 @@ import asyncio
 import logging
 
 from pytest import LogCaptureFixture, mark
-from telethon._impl.mtproto.transport.full import Full
-from telethon._impl.mtsender.sender import connect
+from telethon._impl.mtproto import Full
+from telethon._impl.mtsender import connect
 from telethon._impl.tl import LAYER, abcs, functions, types
 
 TELEGRAM_TEST_DC_2 = "149.154.167.40:443"

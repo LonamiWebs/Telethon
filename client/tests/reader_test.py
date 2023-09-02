@@ -1,8 +1,7 @@
 import struct
 
 from pytest import mark
-from telethon._impl.tl.core import Reader
-from telethon._impl.tl.core.serializable import Serializable
+from telethon._impl.tl.core import Reader, Serializable
 from telethon._impl.tl.mtproto.types import BadServerSalt
 from telethon._impl.tl.types import GeoPoint
 

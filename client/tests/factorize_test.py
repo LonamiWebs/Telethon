@@ -1,4 +1,4 @@
-from telethon._impl.crypto.factorize import factorize
+from telethon._impl.crypto import factorize
 
 
 def test_factorization_1() -> None:

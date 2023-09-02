@@ -7,14 +7,12 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, TypeVar
 
 from ....version import __version__
-from ...mtproto.mtp.types import RpcError
-from ...mtproto.transport.full import Full
-from ...mtsender.sender import Sender
-from ...mtsender.sender import connect as connect_without_auth
-from ...mtsender.sender import connect_with_auth
-from ...session.message_box.defs import DataCenter, Session
-from ...tl import LAYER, functions
-from ...tl.core.request import Request
+from ...mtproto import Full, RpcError
+from ...mtsender import Sender
+from ...mtsender import connect as connect_without_auth
+from ...mtsender import connect_with_auth
+from ...session import DataCenter, Session
+from ...tl import LAYER, Request, functions
 
 if TYPE_CHECKING:
     from .client import Client

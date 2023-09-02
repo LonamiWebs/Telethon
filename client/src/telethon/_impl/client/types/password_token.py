@@ -1,7 +1,6 @@
 from typing import Self
 
-from telethon._impl.tl import types
-
+from ...tl import types
 from .meta import NoPublicConstructor
 
 

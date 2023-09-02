@@ -6,14 +6,20 @@ from asyncio import FIRST_COMPLETED, Event, Future, StreamReader, StreamWriter
 from dataclasses import dataclass
 from typing import Generic, List, Optional, Self, TypeVar
 
-from ..crypto.auth_key import AuthKey
-from ..mtproto import authentication
-from ..mtproto.mtp.encrypted import Encrypted
-from ..mtproto.mtp.plain import Plain
-from ..mtproto.mtp.types import BadMessage, MsgId, Mtp, RpcError
-from ..mtproto.transport.abcs import MissingBytes, Transport
+from ..crypto import AuthKey
+from ..mtproto import (
+    BadMessage,
+    Encrypted,
+    MissingBytes,
+    MsgId,
+    Mtp,
+    Plain,
+    RpcError,
+    Transport,
+    authentication,
+)
+from ..tl import Request as RemoteCall
 from ..tl.abcs import Updates
-from ..tl.core.request import Request as RemoteCall
 from ..tl.mtproto.functions import ping_delay_disconnect
 
 MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)

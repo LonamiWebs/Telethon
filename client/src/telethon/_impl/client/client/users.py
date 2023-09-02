@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from ...session.chat.packed import PackedChat, PackedType
+from ...session import PackedChat, PackedType
 from ...tl import abcs, types
-from ..types.chat import Channel, ChatLike, Group, User
+from ..types import Channel, ChatLike, Group, User
 
 if TYPE_CHECKING:
     from .client import Client
