@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-from collections import deque
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -8,7 +7,6 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
-    Deque,
     Dict,
     List,
     Literal,
@@ -38,7 +36,6 @@ from ..types import (
     PasswordToken,
     User,
 )
-from .account import edit_2fa, end_takeout, takeout
 from .auth import (
     bot_sign_in,
     check_password,
@@ -49,19 +46,10 @@ from .auth import (
     sign_out,
 )
 from .bots import InlineResult, inline_query
-from .buttons import build_reply_markup
 from .chats import (
-    action,
-    edit_admin,
-    edit_permissions,
-    get_permissions,
-    get_stats,
-    iter_admin_log,
-    iter_participants,
-    iter_profile_photos,
-    kick_participant,
+    get_participants,
 )
-from .dialogs import conversation, delete_dialog, edit_folder, iter_dialogs, iter_drafts
+from .dialogs import get_dialogs, delete_dialog
 from .files import (
     download,
     iter_download,
@@ -101,13 +89,8 @@ from .updates import (
     set_handler_filter,
 )
 from .users import (
-    get_entity,
-    get_input_entity,
     get_me,
-    get_peer_id,
     input_to_peer,
-    is_bot,
-    is_user_authorized,
     resolve_to_packed,
 )
 
@@ -138,8 +121,7 @@ class Client:
             if config.catch_up and config.session.state:
                 self._message_box.load(config.session.state)
 
-    def action(self) -> None:
-        action(self)
+    # ---
 
     def add_event_handler(
         self,
@@ -152,9 +134,6 @@ class Client:
     async def bot_sign_in(self, token: str) -> User:
         return await bot_sign_in(self, token)
 
-    def build_reply_markup(self) -> None:
-        build_reply_markup(self)
-
     async def check_password(
         self, token: PasswordToken, password: Union[str, bytes]
     ) -> User:
@@ -162,9 +141,6 @@ class Client:
 
     async def connect(self) -> None:
         await connect(self)
-
-    def conversation(self) -> None:
-        conversation(self)
 
     async def delete_dialog(self) -> None:
         await delete_dialog(self)
@@ -178,22 +154,7 @@ class Client:
         await disconnect(self)
 
     async def download(self, media: MediaLike, file: OutFileLike) -> None:
-        """
-        Download a file.
-
-        This is simply a more convenient method to `iter_download`,
-        as it will handle dealing with the file chunks and writes by itself.
-        """
         await download(self, media, file)
-
-    async def edit_2fa(self) -> None:
-        await edit_2fa(self)
-
-    async def edit_admin(self) -> None:
-        await edit_admin(self)
-
-    async def edit_folder(self) -> None:
-        await edit_folder(self)
 
     async def edit_message(
         self,
@@ -215,27 +176,18 @@ class Client:
             link_preview=link_preview,
         )
 
-    async def edit_permissions(self) -> None:
-        await edit_permissions(self)
-
-    async def end_takeout(self) -> None:
-        await end_takeout(self)
-
     async def forward_messages(
         self, target: ChatLike, message_ids: List[int], source: ChatLike
     ) -> List[Message]:
         return await forward_messages(self, target, message_ids, source)
 
-    async def get_entity(self) -> None:
-        await get_entity(self)
+    def get_dialogs(self) -> None:
+        get_dialogs(self)
 
     def get_handler_filter(
         self, handler: Callable[[Event], Awaitable[Any]]
     ) -> Optional[Filter]:
         return get_handler_filter(self, handler)
-
-    async def get_input_entity(self) -> None:
-        await get_input_entity(self)
 
     async def get_me(self) -> None:
         await get_me(self)
@@ -257,14 +209,8 @@ class Client:
     ) -> AsyncList[Message]:
         return get_messages_with_ids(self, chat, message_ids)
 
-    async def get_peer_id(self) -> None:
-        await get_peer_id(self)
-
-    async def get_permissions(self) -> None:
-        await get_permissions(self)
-
-    async def get_stats(self) -> None:
-        await get_stats(self)
+    def get_participants(self) -> None:
+        get_participants(self)
 
     async def inline_query(
         self, bot: ChatLike, query: str, *, chat: Optional[ChatLike] = None
@@ -274,35 +220,8 @@ class Client:
     async def is_authorized(self) -> bool:
         return await is_authorized(self)
 
-    async def is_bot(self) -> None:
-        await is_bot(self)
-
-    async def is_user_authorized(self) -> None:
-        await is_user_authorized(self)
-
-    def iter_admin_log(self) -> None:
-        iter_admin_log(self)
-
-    def iter_dialogs(self) -> None:
-        iter_dialogs(self)
-
     async def iter_download(self) -> None:
-        """
-        Stream server media by iterating over its bytes in chunks.
-        """
         await iter_download(self)
-
-    def iter_drafts(self) -> None:
-        iter_drafts(self)
-
-    def iter_participants(self) -> None:
-        iter_participants(self)
-
-    def iter_profile_photos(self) -> None:
-        iter_profile_photos(self)
-
-    async def kick_participant(self) -> None:
-        await kick_participant(self)
 
     def on(
         self, event_cls: Type[Event], filter: Optional[Filter] = None
@@ -365,12 +284,6 @@ class Client:
         title: Optional[str] = None,
         performer: Optional[str] = None,
     ) -> Message:
-        """
-        Send an audio file.
-
-        Unlike `send_file`, this method will attempt to guess the values for
-        duration, title and performer if they are not provided.
-        """
         return await send_audio(
             self,
             chat,
@@ -412,19 +325,6 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
     ) -> Message:
-        """
-        Send any type of file with any amount of attributes.
-
-        This method will not attempt to guess any of the file metadata such as
-        width, duration, title, etc. If you want to let the library attempt to
-        guess the file metadata, use the type-specific methods to send media:
-        `send_photo`, `send_audio` or `send_file`.
-
-        Unlike `send_photo`, image files will be sent as documents by default.
-
-        The parameters are used to construct a `File`. See the documentation
-        for `File.new` to learn what they do and when they are in effect.
-        """
         return await send_file(
             self,
             chat,
@@ -483,20 +383,6 @@ class Client:
         width: Optional[int] = None,
         height: Optional[int] = None,
     ) -> Message:
-        """
-        Send a photo file.
-
-        Exactly one of path, url or file must be specified.
-        A `File` can also be used as the second parameter.
-
-        By default, the server will be allowed to `compress` the image.
-        Only compressed images can be displayed as photos in applications.
-        Images that cannot be compressed will be sent as file documents,
-        with a thumbnail if possible.
-
-        Unlike `send_file`, this method will attempt to guess the values for
-        width and height if they are not provided and the can't be compressed.
-        """
         return await send_photo(
             self,
             chat,
@@ -525,12 +411,6 @@ class Client:
         round: bool = False,
         supports_streaming: bool = False,
     ) -> Message:
-        """
-        Send a video file.
-
-        Unlike `send_file`, this method will attempt to guess the values for
-        duration, width and height if they are not provided.
-        """
         return await send_video(
             self,
             chat,
@@ -559,13 +439,12 @@ class Client:
     async def sign_out(self) -> None:
         await sign_out(self)
 
-    def takeout(self) -> None:
-        takeout(self)
-
     async def unpin_message(
         self, chat: ChatLike, message_id: Union[int, Literal["all"]]
     ) -> None:
         await unpin_message(self, chat, message_id)
+
+    # ---
 
     @property
     def connected(self) -> bool:
