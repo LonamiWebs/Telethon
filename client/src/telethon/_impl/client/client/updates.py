@@ -1,36 +1,143 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import asyncio
+import logging
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
+
+from ...session import Gap
+from ...tl import abcs
+from ..events import Event as EventBase
+from ..events.filters import Filter
 
 if TYPE_CHECKING:
     from .client import Client
 
+Event = TypeVar("Event", bound=EventBase)
 
-async def set_receive_updates(self: Client) -> None:
-    self
-    raise NotImplementedError
-
-
-def on(self: Client) -> None:
-    self
-    raise NotImplementedError
+UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN = 300
 
 
-def add_event_handler(self: Client) -> None:
-    self
-    raise NotImplementedError
+def on(
+    self: Client, event_cls: Type[Event], filter: Optional[Filter] = None
+) -> Callable[[Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]]:
+    def wrapper(
+        handler: Callable[[Event], Awaitable[Any]]
+    ) -> Callable[[Event], Awaitable[Any]]:
+        add_event_handler(self, handler, event_cls, filter)
+        return handler
+
+    return wrapper
 
 
-def remove_event_handler(self: Client) -> None:
-    self
-    raise NotImplementedError
+def add_event_handler(
+    self: Client,
+    handler: Callable[[Event], Awaitable[Any]],
+    event_cls: Type[Event],
+    filter: Optional[Filter] = None,
+) -> None:
+    self._handlers.setdefault(event_cls, []).append((handler, filter))
 
 
-def list_event_handlers(self: Client) -> None:
-    self
-    raise NotImplementedError
+def remove_event_handler(
+    self: Client, handler: Callable[[Event], Awaitable[Any]]
+) -> None:
+    for event_cls, handlers in tuple(self._handlers.items()):
+        for i in reversed(range(len(handlers))):
+            if handlers[i][0] == handler:
+                handlers.pop(i)
+        if not handlers:
+            del self._handlers[event_cls]
 
 
-async def catch_up(self: Client) -> None:
-    self
-    raise NotImplementedError
+def get_handler_filter(
+    self: Client, handler: Callable[[Event], Awaitable[Any]]
+) -> Optional[Filter]:
+    for handlers in self._handlers.values():
+        for h, f in handlers:
+            if h == handler:
+                return f
+    return None
+
+
+def set_handler_filter(
+    self: Client,
+    handler: Callable[[Event], Awaitable[Any]],
+    filter: Optional[Filter] = None,
+) -> None:
+    for handlers in self._handlers.values():
+        for i, (h, _) in enumerate(handlers):
+            if h == handler:
+                handlers[i] = (h, filter)
+
+
+def process_socket_updates(client: Client, all_updates: List[abcs.Updates]) -> None:
+    if not all_updates:
+        return
+
+    for updates in all_updates:
+        try:
+            client._message_box.ensure_known_peer_hashes(updates, client._chat_hashes)
+        except Gap:
+            return
+
+        try:
+            result, users, chats = client._message_box.process_updates(
+                updates, client._chat_hashes
+            )
+        except Gap:
+            return
+
+        extend_update_queue(client, result, users, chats)
+
+
+def extend_update_queue(
+    client: Client,
+    updates: List[abcs.Update],
+    users: List[abcs.User],
+    chats: List[abcs.Chat],
+) -> None:
+    entities: Dict[int, Union[abcs.User, abcs.Chat]] = {
+        getattr(u, "id", None) or 0: u for u in users
+    }
+    entities.update({getattr(c, "id", None) or 0: c for c in chats})
+
+    for update in updates:
+        try:
+            client._updates.put_nowait((update, entities))
+        except asyncio.QueueFull:
+            now = asyncio.get_running_loop().time()
+            if client._last_update_limit_warn is None or (
+                now - client._last_update_limit_warn
+                > UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN
+            ):
+                # TODO warn
+                client._last_update_limit_warn = now
+            break
+
+
+async def dispatcher(client: Client) -> None:
+    while client.connected:
+        update, entities = await client._updates.get()
+        for event_cls, handlers in client._handlers.items():
+            if event := event_cls._try_from_update(client, update):
+                for handler, filter in handlers:
+                    if not filter or filter(event):
+                        try:
+                            await handler(event)
+                        except asyncio.CancelledError:
+                            raise
+                        except Exception:
+                            # TODO proper logger
+                            name = getattr(handler, "__name__", repr(handler))
+                            logging.exception("Unhandled exception on %s", name)

@@ -240,6 +240,7 @@ class MessageBox:
                 or pts_info_from_update(updates.update) is not None
             )
             if can_recover:
+                self.try_begin_get_diff(ENTRY_ACCOUNT, "missing hash")
                 raise Gap
 
     # https://core.telegram.org/api/updates

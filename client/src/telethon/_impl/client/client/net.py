@@ -13,6 +13,7 @@ from ...mtsender import connect as connect_without_auth
 from ...mtsender import connect_with_auth
 from ...session import DataCenter, Session
 from ...tl import LAYER, Request, functions
+from .updates import dispatcher, process_socket_updates
 
 if TYPE_CHECKING:
     from .client import Client
@@ -118,6 +119,9 @@ async def connect_sender(dc_id: int, config: Config) -> Sender:
 
 
 async def connect(self: Client) -> None:
+    if self._sender:
+        return
+
     self._sender = await connect_sender(self._dc_id, self._config)
 
     if self._message_box.is_empty() and self._config.session.user:
@@ -129,10 +133,17 @@ async def connect(self: Client) -> None:
         except Exception as e:
             pass
 
+    self._dispatcher = asyncio.create_task(dispatcher(self))
+
 
 async def disconnect(self: Client) -> None:
     if not self._sender:
         return
+
+    assert self._dispatcher
+    self._dispatcher.cancel()
+    await self._dispatcher
+    self._dispatcher = None
 
     await self._sender.disconnect()
     self._sender = None
@@ -181,7 +192,7 @@ async def step_sender(client: Client, sender: Sender, lock: asyncio.Lock) -> Non
     else:
         async with lock:
             updates = await sender.step()
-            # client._process_socket_updates(updates)
+        process_socket_updates(client, updates)
 
 
 async def run_until_disconnected(self: Client) -> None:

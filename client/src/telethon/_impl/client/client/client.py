@@ -4,12 +4,17 @@ from collections import deque
 from pathlib import Path
 from types import TracebackType
 from typing import (
+    Any,
     AsyncIterator,
+    Awaitable,
+    Callable,
     Deque,
+    Dict,
     List,
     Literal,
     Optional,
     Self,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -18,8 +23,11 @@ from typing import (
 from ...mtsender import Sender
 from ...session import ChatHashCache, MessageBox, PackedChat, Session
 from ...tl import Request, abcs
+from ..events import Event
+from ..events.filters import Filter
 from ..types import (
     AsyncList,
+    Chat,
     ChatLike,
     File,
     InFileLike,
@@ -87,11 +95,10 @@ from .net import (
 )
 from .updates import (
     add_event_handler,
-    catch_up,
-    list_event_handlers,
+    get_handler_filter,
     on,
     remove_event_handler,
-    set_receive_updates,
+    set_handler_filter,
 )
 from .users import (
     get_entity,
@@ -105,6 +112,7 @@ from .users import (
 )
 
 Return = TypeVar("Return")
+T = TypeVar("T")
 
 
 class Client:
@@ -115,9 +123,15 @@ class Client:
         self._config = config
         self._message_box = MessageBox()
         self._chat_hashes = ChatHashCache(None)
-        self._last_update_limit_warn = None
-        self._updates: Deque[abcs.Update] = deque(maxlen=config.update_queue_limit)
+        self._last_update_limit_warn: Optional[float] = None
+        self._updates: asyncio.Queue[
+            Tuple[abcs.Update, Dict[int, Union[abcs.User, abcs.Chat]]]
+        ] = asyncio.Queue(maxsize=config.update_queue_limit or 0)
+        self._dispatcher: Optional[asyncio.Task[None]] = None
         self._downloader_map = object()
+        self._handlers: Dict[
+            Type[Event], List[Tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
+        ] = {}
 
         if self_user := config.session.user:
             self._dc_id = self_user.dc
@@ -127,17 +141,19 @@ class Client:
     def action(self) -> None:
         action(self)
 
-    def add_event_handler(self) -> None:
-        add_event_handler(self)
+    def add_event_handler(
+        self,
+        handler: Callable[[Event], Awaitable[Any]],
+        event_cls: Type[Event],
+        filter: Optional[Filter] = None,
+    ) -> None:
+        add_event_handler(self, handler, event_cls, filter)
 
     async def bot_sign_in(self, token: str) -> User:
         return await bot_sign_in(self, token)
 
     def build_reply_markup(self) -> None:
         build_reply_markup(self)
-
-    async def catch_up(self) -> None:
-        await catch_up(self)
 
     async def check_password(
         self, token: PasswordToken, password: Union[str, bytes]
@@ -213,6 +229,11 @@ class Client:
     async def get_entity(self) -> None:
         await get_entity(self)
 
+    def get_handler_filter(
+        self, handler: Callable[[Event], Awaitable[Any]]
+    ) -> Optional[Filter]:
+        return get_handler_filter(self, handler)
+
     async def get_input_entity(self) -> None:
         await get_input_entity(self)
 
@@ -283,17 +304,18 @@ class Client:
     async def kick_participant(self) -> None:
         await kick_participant(self)
 
-    def list_event_handlers(self) -> None:
-        list_event_handlers(self)
-
-    def on(self) -> None:
-        on(self)
+    def on(
+        self, event_cls: Type[Event], filter: Optional[Filter] = None
+    ) -> Callable[
+        [Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]
+    ]:
+        return on(self, event_cls, filter)
 
     async def pin_message(self, chat: ChatLike, message_id: int) -> Message:
         return await pin_message(self, chat, message_id)
 
-    def remove_event_handler(self) -> None:
-        remove_event_handler(self)
+    def remove_event_handler(self, handler: Callable[[Event], Awaitable[Any]]) -> None:
+        remove_event_handler(self, handler)
 
     async def request_login_code(self, phone: str) -> LoginToken:
         return await request_login_code(self, phone)
@@ -524,8 +546,12 @@ class Client:
             supports_streaming=supports_streaming,
         )
 
-    async def set_receive_updates(self) -> None:
-        await set_receive_updates(self)
+    def set_handler_filter(
+        self,
+        handler: Callable[[Event], Awaitable[Any]],
+        filter: Optional[Filter] = None,
+    ) -> None:
+        set_handler_filter(self, handler, filter)
 
     async def sign_in(self, token: LoginToken, code: str) -> Union[User, PasswordToken]:
         return await sign_in(self, token, code)

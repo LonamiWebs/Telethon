@@ -55,8 +55,8 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
                 raise ValueError("Cannot resolve chat")
             return PackedChat(
                 ty=PackedType.BOT if self._config.session.user.bot else PackedType.USER,
-                id=self._config.session.user.id,
-                access_hash=0,
+                id=self._chat_hashes.self_id,
+                access_hash=0,  # TODO get hash
             )
         elif isinstance(chat, types.InputPeerChat):
             return PackedChat(
@@ -94,11 +94,7 @@ def input_to_peer(
     elif isinstance(input, types.InputPeerEmpty):
         return None
     elif isinstance(input, types.InputPeerSelf):
-        return (
-            types.PeerUser(user_id=client._config.session.user.id)
-            if client._config.session.user
-            else None
-        )
+        return types.PeerUser(user_id=client._chat_hashes.self_id)
     elif isinstance(input, types.InputPeerChat):
         return types.PeerChat(chat_id=input.chat_id)
     elif isinstance(input, types.InputPeerUser):
