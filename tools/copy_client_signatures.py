@@ -12,7 +12,6 @@ to avoid being included.
 """
 import ast
 import sys
-from _ast import AsyncFunctionDef, ClassDef
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -24,7 +23,7 @@ class FunctionMethodsVisitor(ast.NodeVisitor):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._try_add_def(node)
 
-    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> None:
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._try_add_def(node)
 
     def _try_add_def(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> None:
@@ -38,7 +37,7 @@ class MethodVisitor(ast.NodeVisitor):
         self._in_client = False
         self.method_docs: Dict[str, str] = {}
 
-    def visit_ClassDef(self, node: ClassDef) -> None:
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
         if node.name == "Client":
             assert not self._in_client
             self._in_client = True
@@ -49,7 +48,7 @@ class MethodVisitor(ast.NodeVisitor):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._try_add_doc(node)
 
-    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> None:
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._try_add_doc(node)
 
     def _try_add_doc(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> None:
@@ -62,7 +61,7 @@ class MethodVisitor(ast.NodeVisitor):
 
 
 def main() -> None:
-    client_root = Path.cwd() / sys.argv[1]
+    client_root = Path.cwd() / "client/src/telethon/_impl/client/client"
 
     fm_visitor = FunctionMethodsVisitor()
     m_visitor = MethodVisitor()
