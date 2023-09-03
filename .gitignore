@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 dist/
+dist-doc/
 build/
 **/tl/__init__.py
 **/tl/layer.py

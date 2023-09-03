@@ -2,12 +2,19 @@ Code generation:
 
 ```sh
 pip install -e generator/
-python -m telethon_generator.codegen api.tl client/src/telethon/_impl/tl
-python -m telethon_generator.codegen mtproto.tl client/src/telethon/_impl/tl/mtproto
+python tools/codegen.py
 ```
 
 Formatting, type-checking and testing:
 
+```sh
+pip install isort black mypy pytest pytest-asyncio
+python tools/check.py
 ```
-./check.sh
+
+Documentation:
+
+```sh
+pip install sphinx_rtd_theme
+python tools/docgen.py
 ```
