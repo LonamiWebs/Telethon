@@ -18,7 +18,6 @@ to get the difference.
 """
 import asyncio
 import datetime
-import time
 import logging
 from enum import Enum
 from .session import SessionState, ChannelState
@@ -72,7 +71,7 @@ def next_updates_deadline():
     return get_running_loop().time() + NO_UPDATES_TIMEOUT
 
 def epoch():
-    return datetime.datetime(*time.gmtime(0)[:6]).replace(tzinfo=datetime.timezone.utc)
+    return datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc)
 
 class GapError(ValueError):
     def __repr__(self):
