@@ -689,7 +689,7 @@ class MessageBox:
             updates=diff.other_updates,
             users=diff.users,
             chats=diff.chats,
-            date=epoch(),
+            date=epoch() + datetime.timedelta(seconds=1),
             seq=NO_SEQ,  # this way date is not used
         ), chat_hashes, updates)
 
@@ -798,7 +798,7 @@ class MessageBox:
                 updates=diff.other_updates,
                 users=diff.users,
                 chats=diff.chats,
-                date=epoch(),
+                date=epoch() + datetime.timedelta(seconds=1),
                 seq=NO_SEQ,  # this way date is not used
             ), chat_hashes, updates)
 
