@@ -784,12 +784,26 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
     async def edit(self, *args, **kwargs):
         """
-        Edits the message iff it's outgoing. Shorthand for
+        Edits the message if it's outgoing. Shorthand for
         `telethon.client.messages.MessageMethods.edit_message`
         with both ``entity`` and ``message`` already set.
 
-        Returns `None` if the message was incoming,
-        or the edited `Message` otherwise.
+        Returns
+            The edited `Message <telethon.tl.custom.message.Message>`,
+            unless `entity` was a :tl:`InputBotInlineMessageID` or :tl:`InputBotInlineMessageID64` in which
+            case this method returns a boolean.
+
+        Raises
+            ``MessageAuthorRequiredError`` if you're not the author of the
+            message but tried editing it anyway.
+
+            ``MessageNotModifiedError`` if the contents of the message were
+            not modified at all.
+
+            ``MessageIdInvalidError`` if the ID of the message is invalid
+            (the ID itself may be correct, but the message with that ID
+            cannot be edited). For example, when trying to edit messages
+            with a reply markup (or clear markup) this error will be raised.
 
         .. note::
 
@@ -803,9 +817,6 @@ class Message(ChatGetter, SenderGetter, TLObject):
             This is generally the most desired and convenient behaviour,
             and will work for link previews and message buttons.
         """
-        if self.fwd_from or not self.out or not self._client:
-            return None  # We assume self.out was patched for our chat
-
         if 'link_preview' not in kwargs:
             kwargs['link_preview'] = bool(self.web_preview)
 
