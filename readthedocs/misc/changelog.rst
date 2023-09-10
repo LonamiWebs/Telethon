@@ -13,6 +13,37 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Layer bump and small changes (v1.30)
+====================================
+
++------------------------+
+| Scheme layer used: 162 |
++------------------------+
+
+Some of the bug fixes were already present in patch versions of ``v1.29``, but
+the new layer necessitated a minor bump.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Removed client-side checks for editing messages.
+  This only affects ``Message.edit``, as ``client.edit_message`` already had
+  no checks.
+* Library should not understand more server-side errors during update handling
+  which should reduce crashes.
+* Client-side image compression should behave better now.
+
+Bug fixes
+~~~~~~~~~
+
+* Some updates such as ``UpdateChatParticipant`` were being missed due to the
+  order in which Telegram sent them. The library now more carefully checks for
+  the sequence and pts contained in them to avoid dropping them.
+* Fixed ``is_inline`` check for :tl:`KeyboardButtonWebView`.
+* Fixed some issues getting entity from cache by ID.
+* ``reply_to`` should now work when sending albums.
+
+
 More bug fixing (v1.29)
 =======================
 
