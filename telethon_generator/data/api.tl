@@ -1,33 +1,3 @@
-///////////////////////////////
-/////////////////// Layer cons
-///////////////////////////////
-
-//invokeAfterMsg#cb9f372d msg_id:long query:!X = X;
-//invokeAfterMsgs#3dc4b4f0 msg_ids:Vector<long> query:!X = X;
-//invokeWithLayer1#53835315 query:!X = X;
-//invokeWithLayer2#289dd1f6 query:!X = X;
-//invokeWithLayer3#b7475268 query:!X = X;
-//invokeWithLayer4#dea0d430 query:!X = X;
-//invokeWithLayer5#417a57ae query:!X = X;
-//invokeWithLayer6#3a64d54d query:!X = X;
-//invokeWithLayer7#a5be56d3 query:!X = X;
-//invokeWithLayer8#e9abd9fd query:!X = X;
-//invokeWithLayer9#76715a63 query:!X = X;
-//invokeWithLayer10#39620c41 query:!X = X;
-//invokeWithLayer11#a6b88fdf query:!X = X;
-//invokeWithLayer12#dda60d3c query:!X = X;
-//invokeWithLayer13#427c8ea2 query:!X = X;
-//invokeWithLayer14#2b9b08fa query:!X = X;
-//invokeWithLayer15#b4418b64 query:!X = X;
-//invokeWithLayer16#cf5f0987 query:!X = X;
-//invokeWithLayer17#50858a19 query:!X = X;
-//invokeWithLayer18#1c900537 query:!X = X;
-//invokeWithLayer#da9b0d0d layer:int query:!X = X; // after 18 layer
-
-///////////////////////////////
-///////// Main application API
-///////////////////////////////
-
 boolFalse#bc799737 = Bool;
 boolTrue#997275b5 = Bool;
 
@@ -180,7 +150,7 @@ messageActionPaymentSent#96163f56 flags:# recurring_init:flags.2?true recurring_
 messageActionPhoneCall#80e11a7f flags:# video:flags.2?true call_id:long reason:flags.0?PhoneCallDiscardReason duration:flags.1?int = MessageAction;
 messageActionScreenshotTaken#4792929b = MessageAction;
 messageActionCustomAction#fae69f56 message:string = MessageAction;
-messageActionBotAllowed#c516d679 flags:# attach_menu:flags.1?true domain:flags.0?string app:flags.2?BotApp = MessageAction;
+messageActionBotAllowed#c516d679 flags:# attach_menu:flags.1?true from_request:flags.3?true domain:flags.0?string app:flags.2?BotApp = MessageAction;
 messageActionSecureValuesSentMe#1b287353 values:Vector<SecureValue> credentials:SecureCredentialsEncrypted = MessageAction;
 messageActionSecureValuesSent#d95c6154 types:Vector<SecureValueType> = MessageAction;
 messageActionContactSignUp#f3f25f76 = MessageAction;
@@ -600,7 +570,7 @@ chatInviteExported#ab4a819 flags:# revoked:flags.0?true permanent:flags.5?true r
 chatInvitePublicJoinRequests#ed107ab7 = ExportedChatInvite;
 
 chatInviteAlready#5a686d7c chat:Chat = ChatInvite;
-chatInvite#300c44c1 flags:# channel:flags.0?true broadcast:flags.1?true public:flags.2?true megagroup:flags.3?true request_needed:flags.6?true title:string about:flags.5?string photo:Photo participants_count:int participants:flags.4?Vector<User> = ChatInvite;
+chatInvite#300c44c1 flags:# channel:flags.0?true broadcast:flags.1?true public:flags.2?true megagroup:flags.3?true request_needed:flags.6?true verified:flags.7?true scam:flags.8?true fake:flags.9?true title:string about:flags.5?string photo:Photo participants_count:int participants:flags.4?Vector<User> = ChatInvite;
 chatInvitePeek#61695cb0 chat:Chat expires:int = ChatInvite;
 
 inputStickerSetEmpty#ffb62b95 = InputStickerSet;
@@ -1558,7 +1528,7 @@ messagePeerVoteMultiple#4628f6e6 peer:Peer options:Vector<bytes> date:int = Mess
 
 sponsoredWebPage#3db8ec63 flags:# url:string site_name:string photo:flags.0?Photo = SponsoredWebPage;
 
-storyViews#c64c0b97 flags:# views_count:int reactions_count:int recent_viewers:flags.0?Vector<long> = StoryViews;
+storyViews#c64c0b97 flags:# has_viewers:flags.1?true views_count:int reactions_count:int recent_viewers:flags.0?Vector<long> = StoryViews;
 
 storyItemDeleted#51e6ee4f id:int = StoryItem;
 storyItemSkipped#ffadc913 flags:# close_friends:flags.8?true id:int date:int expire_date:int = StoryItem;
@@ -2047,6 +2017,9 @@ bots.setBotInfo#10cf3123 flags:# bot:flags.2?InputUser lang_code:string name:fla
 bots.getBotInfo#dcd914fd flags:# bot:flags.0?InputUser lang_code:string = bots.BotInfo;
 bots.reorderUsernames#9709b1c2 bot:InputUser order:Vector<string> = Bool;
 bots.toggleUsername#53ca973 bot:InputUser username:string active:Bool = Bool;
+bots.canSendMessage#1359f4e6 bot:InputUser = Bool;
+bots.allowSendMessage#f132e3ef bot:InputUser = Updates;
+bots.invokeWebViewCustomMethod#87fc5e7 bot:InputUser custom_method:string params:DataJSON = DataJSON;
 
 payments.getPaymentForm#37148dbb flags:# invoice:InputInvoice theme_params:flags.0?DataJSON = payments.PaymentForm;
 payments.getPaymentReceipt#2478d1cc peer:InputPeer msg_id:int = payments.PaymentReceipt;
@@ -2129,6 +2102,7 @@ chatlists.hideChatlistUpdates#66e486fb chatlist:InputChatlist = Bool;
 chatlists.getLeaveChatlistSuggestions#fdbcd714 chatlist:InputChatlist = Vector<Peer>;
 chatlists.leaveChatlist#74fae13a chatlist:InputChatlist peers:Vector<InputPeer> = Updates;
 
+stories.canSendStory#b100d45d = Bool;
 stories.sendStory#d455fcec flags:# pinned:flags.2?true noforwards:flags.4?true media:InputMedia media_areas:flags.5?Vector<MediaArea> caption:flags.0?string entities:flags.1?Vector<MessageEntity> privacy_rules:Vector<InputPrivacyRule> random_id:long period:flags.3?int = Updates;
 stories.editStory#a9b91ae4 flags:# id:int media:flags.0?InputMedia media_areas:flags.3?Vector<MediaArea> caption:flags.1?string entities:flags.1?Vector<MessageEntity> privacy_rules:flags.2?Vector<InputPrivacyRule> = Updates;
 stories.deleteStories#b5d501d7 id:Vector<int> = Vector<int>;
@@ -2149,4 +2123,4 @@ stories.report#c95be06a user_id:InputUser id:Vector<int> reason:ReportReason mes
 stories.activateStealthMode#57bbd166 flags:# past:flags.0?true future:flags.1?true = Updates;
 stories.sendReaction#49aaa9b3 flags:# add_to_recent:flags.0?true user_id:InputUser story_id:int reaction:Reaction = Updates;
 
-// LAYER 161
+// LAYER 162
