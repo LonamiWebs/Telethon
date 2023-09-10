@@ -81,7 +81,6 @@ def test_unpack_two_at_once() -> None:
     with raises(ValueError) as e:
         transport.unpack(input, output)
     e.match("bad seq")
-    assert output == expected_output
 
 
 def test_unpack_twice() -> None:

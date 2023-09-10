@@ -19,13 +19,20 @@ from typing import (
 )
 
 from ...mtsender import Sender
-from ...session import ChatHashCache, MessageBox, PackedChat, Session
+from ...session import (
+    ChatHashCache,
+    MemorySession,
+    MessageBox,
+    PackedChat,
+    Session,
+    SqliteSession,
+    Storage,
+)
 from ...tl import Request, abcs
 from ..events import Event
 from ..events.filters import Filter
 from ..types import (
     AsyncList,
-    Chat,
     ChatLike,
     File,
     InFileLike,
@@ -41,15 +48,12 @@ from .auth import (
     check_password,
     is_authorized,
     request_login_code,
-    session,
     sign_in,
     sign_out,
 )
 from .bots import InlineResult, inline_query
-from .chats import (
-    get_participants,
-)
-from .dialogs import get_dialogs, delete_dialog
+from .chats import get_participants
+from .dialogs import delete_dialog, get_dialogs
 from .files import (
     download,
     iter_download,
@@ -88,38 +92,49 @@ from .updates import (
     remove_event_handler,
     set_handler_filter,
 )
-from .users import (
-    get_me,
-    input_to_peer,
-    resolve_to_packed,
-)
+from .users import get_me, input_to_peer, resolve_to_packed
 
 Return = TypeVar("Return")
 T = TypeVar("T")
 
 
 class Client:
-    def __init__(self, config: Config) -> None:
+    def __init__(
+        self,
+        session: Optional[Union[str, Path, Storage]],
+        api_id: int,
+        api_hash: Optional[str] = None,
+    ) -> None:
         self._sender: Optional[Sender] = None
         self._sender_lock = asyncio.Lock()
         self._dc_id = DEFAULT_DC
-        self._config = config
+        if isinstance(session, Storage):
+            self._storage = session
+        elif session is None:
+            self._storage = MemorySession()
+        else:
+            self._storage = SqliteSession(session)
+        self._config = Config(
+            session=Session(),
+            api_id=api_id,
+            api_hash=api_hash or "",
+        )
         self._message_box = MessageBox()
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
         self._updates: asyncio.Queue[
             Tuple[abcs.Update, Dict[int, Union[abcs.User, abcs.Chat]]]
-        ] = asyncio.Queue(maxsize=config.update_queue_limit or 0)
+        ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._downloader_map = object()
         self._handlers: Dict[
             Type[Event], List[Tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
         ] = {}
 
-        if self_user := config.session.user:
+        if self_user := self._config.session.user:
             self._dc_id = self_user.dc
-            if config.catch_up and config.session.state:
-                self._message_box.load(config.session.state)
+            if self._config.catch_up and self._config.session.state:
+                self._message_box.load(self._config.session.state)
 
     # ---
 
@@ -449,15 +464,6 @@ class Client:
     @property
     def connected(self) -> bool:
         return connected(self)
-
-    @property
-    def session(self) -> Session:
-        """
-        Up-to-date session state, useful for persisting it to storage.
-
-        Mutating the returned object may cause the library to misbehave.
-        """
-        return session(self)
 
     def _build_message_map(
         self,

@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from ...tl import Request, abcs, functions, types
 from ..chat import ChatHashCache
+from ..session import ChannelState, UpdateState
 from .adaptor import adapt, pts_info_from_update
 from .defs import (
     BOT_CHANNEL_DIFF_LIMIT,
@@ -17,13 +18,11 @@ from .defs import (
     NO_UPDATES_TIMEOUT,
     POSSIBLE_GAP_TIMEOUT,
     USER_CHANNEL_DIFF_LIMIT,
-    ChannelState,
     Entry,
     Gap,
     PossibleGap,
     PrematureEndReason,
     State,
-    UpdateState,
 )
 
 

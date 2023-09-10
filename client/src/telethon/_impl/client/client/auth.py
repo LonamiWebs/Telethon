@@ -141,7 +141,4 @@ async def check_password(
 async def sign_out(self: Client) -> None:
     await self(functions.auth.log_out())
 
-
-def session(client: Client) -> Session:
-    client._config.session.state = client._message_box.session_state()
-    return client._config.session
+    await self._storage.delete()

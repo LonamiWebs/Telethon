@@ -13,13 +13,7 @@ async def test_ping_pong() -> None:
     api_hash = os.getenv("TG_HASH")
     assert api_id and api_id.isdigit()
     assert api_hash
-    client = Client(
-        Config(
-            session=Session(),
-            api_id=int(api_id),
-            api_hash=api_hash,
-        )
-    )
+    client = Client(None, int(api_id), api_hash)
     assert not client.connected
     await client.connect()
     assert client.connected

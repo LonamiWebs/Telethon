@@ -122,6 +122,8 @@ async def connect(self: Client) -> None:
     if self._sender:
         return
 
+    if session := await self._storage.load():
+        self._config.session = session
     self._sender = await connect_sender(self._dc_id, self._config)
 
     if self._message_box.is_empty() and self._config.session.user:
@@ -147,6 +149,9 @@ async def disconnect(self: Client) -> None:
 
     await self._sender.disconnect()
     self._sender = None
+
+    self._config.session.state = self._message_box.session_state()
+    await self._storage.save(self._config.session)
 
 
 async def invoke_request(
