@@ -485,7 +485,7 @@ class Client:
         return await invoke_request(self, self._sender, self._sender_lock, request)
 
     async def __aenter__(self) -> Self:
-        await self.connect()
+        await connect(self)
         return self
 
     async def __aexit__(
@@ -495,4 +495,4 @@ class Client:
         tb: Optional[TracebackType],
     ) -> None:
         exc_type, exc, tb
-        await self.disconnect()
+        await disconnect(self)

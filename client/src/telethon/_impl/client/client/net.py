@@ -141,14 +141,24 @@ async def connect(self: Client) -> None:
 async def disconnect(self: Client) -> None:
     if not self._sender:
         return
-
     assert self._dispatcher
-    self._dispatcher.cancel()
-    await self._dispatcher
-    self._dispatcher = None
 
-    await self._sender.disconnect()
-    self._sender = None
+    self._dispatcher.cancel()
+    try:
+        await self._dispatcher
+    except asyncio.CancelledError:
+        pass
+    except Exception:
+        pass  # TODO log
+    finally:
+        self._dispatcher = None
+
+    try:
+        await self._sender.disconnect()
+    except Exception:
+        pass  # TODO log
+    finally:
+        self._sender = None
 
     self._config.session.state = self._message_box.session_state()
     await self._storage.save(self._config.session)
