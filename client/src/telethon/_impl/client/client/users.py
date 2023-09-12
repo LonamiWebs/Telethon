@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from .client import Client
 
 
-async def get_me(self: Client) -> None:
+async def get_me(self: Client) -> User:
     self
     raise NotImplementedError
 

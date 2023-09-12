@@ -204,8 +204,8 @@ class Client:
     ) -> Optional[Filter]:
         return get_handler_filter(self, handler)
 
-    async def get_me(self) -> None:
-        await get_me(self)
+    async def get_me(self) -> User:
+        return await get_me(self)
 
     def get_messages(
         self,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import getpass
+import re
 from typing import TYPE_CHECKING, Optional, Union
 
 from ...mtproto import RpcError
@@ -123,6 +125,67 @@ async def sign_in(
             raise
 
     return await complete_login(self, result)
+
+
+async def interactive_login(self: Client) -> User:
+    try:
+        return await self.get_me()
+    except RpcError as e:
+        if e.code != 401:
+            raise
+
+    phone_or_token = ""
+    while not re.match(r"\+?[\s()]*\d", phone_or_token):
+        print("Please enter your phone (+1 23...) or bot token (12:abcd...)")
+        phone_or_token = input(": ").strip()
+
+    # Bot flow
+    if re.match(r"\d+:", phone_or_token):
+        user = await self.bot_sign_in(phone_or_token)
+        try:
+            print("Signed in as bot:", user.full_name)
+        except UnicodeEncodeError:
+            print("Signed in as bot")
+
+        return user
+
+    # User flow
+    login_token = await self.request_login_code(phone_or_token)
+
+    while True:
+        code = input("Please enter the code you received: ")
+        try:
+            user_or_token = await self.sign_in(login_token, code)
+        except RpcError as e:
+            if e.name.startswith("PHONE_CODE"):
+                print("Invalid code:", e)
+            else:
+                raise
+        else:
+            break
+
+    if isinstance(user_or_token, PasswordToken):
+        while True:
+            print("Please enter your password (prompt is hidden; type and press enter)")
+            password = getpass.getpass(": ")
+            try:
+                user = await self.check_password(user_or_token, password)
+            except RpcError as e:
+                if e.name.startswith("PASSWORD"):
+                    print("Invalid password:", e)
+                else:
+                    raise
+    else:
+        user = user_or_token
+
+    try:
+        print("Signed in as user:", user.full_name)
+    except UnicodeEncodeError:
+        print("Signed in as user")
+
+    print("Remember to not break the ToS or you will risk an account ban!")
+    print("https://telegram.org/tos & https://core.telegram.org/api/terms")
+    return user
 
 
 async def get_password_information(client: Client) -> PasswordToken:
