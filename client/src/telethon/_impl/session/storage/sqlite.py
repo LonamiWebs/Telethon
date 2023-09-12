@@ -113,7 +113,9 @@ class SqliteSession(Storage):
                 date=state[2],
                 seq=state[3],
                 channels=[ChannelState(id=id, pts=pts) for id, pts in channelstate],
-            ),
+            )
+            if state
+            else None,
         )
 
     @staticmethod
@@ -163,13 +165,14 @@ class SqliteSession(Storage):
         )
         if c.fetchone():
             c.execute("select version from version")
-            res = c.fetchone()[0]
-            assert isinstance(res, int)
-            return res
-        else:
-            SqliteSession._create_tables(c)
-            c.execute("insert into version values (?)", (CURRENT_VERSION,))
-            return CURRENT_VERSION
+            tup = c.fetchone()
+            if tup and isinstance(tup[0], int):
+                return tup[0]
+            SqliteSession._reset(c)
+
+        SqliteSession._create_tables(c)
+        c.execute("insert into version values (?)", (CURRENT_VERSION,))
+        return CURRENT_VERSION
 
     @staticmethod
     def _create_tables(c: sqlite3.Cursor) -> None:
