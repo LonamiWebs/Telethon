@@ -197,7 +197,7 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
     if not tlobject.real_args:
         return
 
-    if any(a.name in __builtins__ for a in tlobject.real_args):
+    if any(hasattr(__builtins__, a.name) for a in tlobject.real_args):
         builder.writeln('# noinspection PyShadowingBuiltins')
 
     builder.writeln("def __init__({}):", ', '.join(['self'] + args))
