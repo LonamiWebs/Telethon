@@ -1,6 +1,8 @@
 import asyncio
 import collections
 import struct
+import datetime
+import time
 
 from . import authenticator
 from ..extensions.messagepacker import MessagePacker
@@ -700,14 +702,17 @@ class MTProtoSender:
             elif obj.CONSTRUCTOR_ID in _update_like_ids:
                 # Ugly "hack" (?) - otherwise bots reliably detect gaps when deleting messages.
                 #
-                # Note: the `date` being `None` is used to check for `updatesTooLong`, so `0` is
-                # used instead. It is still not read, because `updateShort` has no `seq`.
+                # Note: the `date` being `None` is used to check for `updatesTooLong`, so epoch
+                # is used instead. It is still not read, because `updateShort` has no `seq`.
                 #
                 # Some requests, such as `readHistory`, also return these types. But the `pts_count`
                 # seems to be zero, so while this will produce some bogus `updateDeleteMessages`,
                 # it's still one of the "cleaner" approaches to handling the new `pts`.
                 # `updateDeleteMessages` is probably the "least-invasive" update that can be used.
-                upd = _tl.UpdateShort(_tl.UpdateDeleteMessages([], obj.pts, obj.pts_count), 0)
+                upd = _tl.UpdateShort(
+                    _tl.UpdateDeleteMessages([], obj.pts, obj.pts_count),
+                    datetime.datetime(*time.gmtime(0)[:6]).replace(tzinfo=datetime.timezone.utc)
+                )
                 upd._self_outgoing = True
                 self._updates_queue.put_nowait(upd)
         except AttributeError:
