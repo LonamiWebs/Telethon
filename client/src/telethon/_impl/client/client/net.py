@@ -124,6 +124,15 @@ async def connect(self: Client) -> None:
 
     if session := await self._storage.load():
         self._config.session = session
+
+    if user := self._config.session.user:
+        self._dc_id = user.dc
+    else:
+        for dc in self._config.session.dcs:
+            if dc.auth:
+                self._dc_id = dc.id
+                break
+
     self._sender = await connect_sender(self._dc_id, self._config)
 
     if self._message_box.is_empty() and self._config.session.user:
