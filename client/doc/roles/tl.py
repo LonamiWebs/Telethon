@@ -1,3 +1,4 @@
+# type: ignore
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
 

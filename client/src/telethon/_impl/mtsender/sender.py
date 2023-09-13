@@ -247,7 +247,7 @@ class Sender:
                     if isinstance(ret, bytes):
                         assert len(ret) >= 4
                     elif isinstance(ret, RpcError):
-                        ret.caused_by = struct.unpack_from("<I", req.body)[0]
+                        ret._caused_by = struct.unpack_from("<I", req.body)[0]
                         raise ret
                     elif isinstance(ret, BadMessage):
                         # TODO test that we resend the request
