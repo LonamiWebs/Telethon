@@ -1,8 +1,11 @@
 """
-Sort imports, format code, type-check and run offline tests.
+Check formatting, type-check and run offline tests.
 """
 import subprocess
 import sys
+import tempfile
+
+BLACK_IGNORE = r"tl/(abcs|functions|types)/\w+.py"
 
 
 def run(*args: str) -> int:
@@ -10,12 +13,14 @@ def run(*args: str) -> int:
 
 
 def main() -> None:
-    exit(
-        run("isort", ".", "--profile", "black", "--gitignore")
-        or run("black", ".", "--extend-exclude", r"tl/(abcs|functions|types)/\w+.py")
-        or run("mypy", "--strict", ".")
-        or run("pytest", ".", "-m", "not net")
-    )
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        exit(
+            run("isort", ".", "-c", "--profile", "black", "--gitignore")
+            or run("black", ".", "--check", "--extend-exclude", BLACK_IGNORE)
+            or run("mypy", "--strict", ".")
+            or run("sphinx", "-nW", "client/doc", tmp_dir)
+            or run("pytest", ".", "-m", "not net")
+        )
 
 
 if __name__ == "__main__":
