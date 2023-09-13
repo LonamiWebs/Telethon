@@ -7,7 +7,7 @@ from telethon._impl.tl.mtproto.types import RpcError as GeneratedRpcError
 
 
 def test_rpc_error_parsing() -> None:
-    assert RpcError.from_mtproto_error(
+    assert RpcError._from_mtproto_error(
         GeneratedRpcError(
             error_code=400,
             error_message="CHAT_INVALID",
@@ -19,7 +19,7 @@ def test_rpc_error_parsing() -> None:
         caused_by=None,
     )
 
-    assert RpcError.from_mtproto_error(
+    assert RpcError._from_mtproto_error(
         GeneratedRpcError(
             error_code=420,
             error_message="FLOOD_WAIT_31",
@@ -31,7 +31,7 @@ def test_rpc_error_parsing() -> None:
         caused_by=None,
     )
 
-    assert RpcError.from_mtproto_error(
+    assert RpcError._from_mtproto_error(
         GeneratedRpcError(
             error_code=500,
             error_message="INTERDC_2_CALL_ERROR",

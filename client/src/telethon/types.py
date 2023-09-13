@@ -1,3 +1,4 @@
+from ._impl.client.client import Config, InlineResult, InlineResults
 from ._impl.client.types import (
     AsyncList,
     Channel,
@@ -9,15 +10,17 @@ from ._impl.client.types import (
     LoginToken,
     MediaLike,
     Message,
-    NoPublicConstructor,
     OutFileLike,
     PasswordToken,
     RestrictionReason,
     User,
 )
-from ._impl.session import PackedChat
+from ._impl.session import PackedChat, PackedType
 
 __all__ = [
+    "Config",
+    "InlineResult",
+    "InlineResults",
     "AsyncList",
     "Channel",
     "Chat",
@@ -28,10 +31,10 @@ __all__ = [
     "LoginToken",
     "MediaLike",
     "Message",
-    "NoPublicConstructor",
     "OutFileLike",
     "PasswordToken",
     "RestrictionReason",
     "User",
     "PackedChat",
+    "PackedType",
 ]

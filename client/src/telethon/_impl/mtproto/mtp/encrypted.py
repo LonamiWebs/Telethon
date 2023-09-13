@@ -204,7 +204,7 @@ class Encrypted(Mtp):
             self._rpc_results.append(
                 (
                     msg_id,
-                    RpcError.from_mtproto_error(GeneratedRpcError.from_bytes(result)),
+                    RpcError._from_mtproto_error(GeneratedRpcError.from_bytes(result)),
                 )
             )
         elif inner_constructor == RpcAnswerUnknown.constructor_id():

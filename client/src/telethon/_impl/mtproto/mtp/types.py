@@ -38,7 +38,7 @@ class RpcError(ValueError):
         return self._value
 
     @classmethod
-    def from_mtproto_error(cls, error: GeneratedRpcError) -> Self:
+    def _from_mtproto_error(cls, error: GeneratedRpcError) -> Self:
         if m := re.search(r"-?\d+", error.error_message):
             name = re.sub(
                 r"_{2,}",
