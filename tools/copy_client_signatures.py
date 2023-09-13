@@ -79,6 +79,8 @@ def main() -> None:
 
     m_visitor.visit(ast.parse(contents))
 
+    class_body = []
+
     for function in sorted(fm_visitor.methods, key=lambda f: f.name):
         function.body = []
         if doc := m_visitor.method_docs.get(function.name):
@@ -105,8 +107,15 @@ def main() -> None:
                 call = ast.Return(value=call)
 
         function.body.append(call)
+        class_body.append(function)
 
-        print(ast.unparse(function))
+    print(
+        ast.unparse(
+            ast.ClassDef(
+                name="Client", bases=[], keywords=[], body=class_body, decorator_list=[]
+            )
+        )
+    )
 
 
 if __name__ == "__main__":
