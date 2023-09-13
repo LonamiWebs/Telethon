@@ -8,13 +8,15 @@ python tools/codegen.py
 Formatting, type-checking and testing:
 
 ```sh
-pip install isort black mypy pytest pytest-asyncio
+pip install -e client/[dev]
 python tools/check.py
 ```
 
-Documentation:
+Documentation (requires [sphinx](https://www.sphinx-doc.org) and [graphviz](https://www.graphviz.org)'s `dot`):
 
 ```sh
-pip install sphinx_rtd_theme
+pip install -e client/[doc]
 python tools/docgen.py
 ```
+
+Note that multiple optional dependency sets can be specified by separating them with a comma (`[dev,doc]`).

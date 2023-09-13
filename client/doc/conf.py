@@ -3,6 +3,11 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.curdir))  # for custom extensions
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -14,11 +19,21 @@ release = "2.0.0a0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-# extensions = []
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.graphviz",
+    "roles.tl",
+]
 
-templates_path = ["_templates"]
-# exclude_patterns = []
-
+intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
+tl_ref_url = "https://tl.telethon.dev"
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+}
+modindex_common_prefix = ["telethon."]
+graphviz_output_format = "svg"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

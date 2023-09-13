@@ -1,0 +1,4 @@
+Client
+======
+
+.. autoclass:: telethon.Client
