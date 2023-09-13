@@ -33,6 +33,7 @@ from ..events import Event
 from ..events.filters import Filter
 from ..types import (
     AsyncList,
+    Chat,
     ChatLike,
     File,
     InFileLike,
@@ -46,6 +47,7 @@ from ..types import (
 from .auth import (
     bot_sign_in,
     check_password,
+    interactive_login,
     is_authorized,
     request_login_code,
     sign_in,
@@ -92,7 +94,13 @@ from .updates import (
     remove_event_handler,
     set_handler_filter,
 )
-from .users import get_me, input_to_peer, resolve_to_packed
+from .users import (
+    get_contacts,
+    get_me,
+    input_to_peer,
+    resolve_to_packed,
+    resolve_username,
+)
 
 Return = TypeVar("Return")
 T = TypeVar("T")
@@ -169,6 +177,12 @@ class Client:
         await disconnect(self)
 
     async def download(self, media: MediaLike, file: OutFileLike) -> None:
+        """
+        Download a file.
+
+        This is simply a more convenient method to `iter_download`,
+        as it will handle dealing with the file chunks and writes by itself.
+        """
         await download(self, media, file)
 
     async def edit_message(
@@ -195,6 +209,9 @@ class Client:
         self, target: ChatLike, message_ids: List[int], source: ChatLike
     ) -> List[Message]:
         return await forward_messages(self, target, message_ids, source)
+
+    async def get_contacts(self) -> AsyncList[User]:
+        return await get_contacts(self)
 
     def get_dialogs(self) -> None:
         get_dialogs(self)
@@ -232,6 +249,9 @@ class Client:
     ) -> AsyncIterator[InlineResult]:
         return await inline_query(self, bot, query, chat=chat)
 
+    async def interactive_login(self) -> User:
+        return await interactive_login(self)
+
     async def is_authorized(self) -> bool:
         return await is_authorized(self)
 
@@ -256,6 +276,9 @@ class Client:
 
     async def resolve_to_packed(self, chat: ChatLike) -> PackedChat:
         return await resolve_to_packed(self, chat)
+
+    async def resolve_username(self) -> Chat:
+        return await resolve_username(self)
 
     async def run_until_disconnected(self) -> None:
         await run_until_disconnected(self)
@@ -299,6 +322,12 @@ class Client:
         title: Optional[str] = None,
         performer: Optional[str] = None,
     ) -> Message:
+        """
+        Send an audio file.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        duration, title and performer if they are not provided.
+        """
         return await send_audio(
             self,
             chat,
@@ -340,6 +369,19 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
     ) -> Message:
+        """
+        Send any type of file with any amount of attributes.
+
+        This method will not attempt to guess any of the file metadata such as
+        width, duration, title, etc. If you want to let the library attempt to
+        guess the file metadata, use the type-specific methods to send media:
+        `send_photo`, `send_audio` or `send_file`.
+
+        Unlike `send_photo`, image files will be sent as documents by default.
+
+        The parameters are used to construct a `File`. See the documentation
+        for `File.new` to learn what they do and when they are in effect.
+        """
         return await send_file(
             self,
             chat,
@@ -398,6 +440,20 @@ class Client:
         width: Optional[int] = None,
         height: Optional[int] = None,
     ) -> Message:
+        """
+        Send a photo file.
+
+        Exactly one of path, url or file must be specified.
+        A `File` can also be used as the second parameter.
+
+        By default, the server will be allowed to `compress` the image.
+        Only compressed images can be displayed as photos in applications.
+        Images that cannot be compressed will be sent as file documents,
+        with a thumbnail if possible.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        width and height if they are not provided and the can't be compressed.
+        """
         return await send_photo(
             self,
             chat,
@@ -426,6 +482,12 @@ class Client:
         round: bool = False,
         supports_streaming: bool = False,
     ) -> Message:
+        """
+        Send a video file.
+
+        Unlike `send_file`, this method will attempt to guess the values for
+        duration, width and height if they are not provided.
+        """
         return await send_video(
             self,
             chat,

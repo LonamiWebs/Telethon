@@ -20,10 +20,22 @@ class RpcError(ValueError):
         append_value = f" ({value})" if value else None
         super().__init__(f"rpc error {code}: {name}{append_value}")
 
-        self.code = code
-        self.name = name
-        self.value = value
-        self.caused_by = caused_by
+        self._code = code
+        self._name = name
+        self._value = value
+        self._caused_by = caused_by
+
+    @property
+    def code(self) -> int:
+        return self._code
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def value(self) -> Optional[int]:
+        return self._value
 
     @classmethod
     def from_mtproto_error(cls, error: GeneratedRpcError) -> Self:
@@ -49,9 +61,9 @@ class RpcError(ValueError):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return (
-            self.code == other.code
-            and self.name == other.name
-            and self.value == other.value
+            self._code == other._code
+            and self._name == other._name
+            and self._value == other._value
         )
 
 
@@ -64,13 +76,17 @@ class BadMessage(ValueError):
     ) -> None:
         super().__init__(f"bad msg: {code}")
 
-        self.code = code
-        self.caused_by = caused_by
+        self._code = code
+        self._caused_by = caused_by
+
+    @property
+    def code(self) -> int:
+        return self._code
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.code == other.code
+        return self._code == other._code
 
 
 RpcResult = bytes | RpcError | BadMessage

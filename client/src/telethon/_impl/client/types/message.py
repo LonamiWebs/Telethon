@@ -41,6 +41,10 @@ class Message(metaclass=NoPublicConstructor):
     def chat(self) -> Chat:
         raise NotImplementedError
 
+    @property
+    def sender(self) -> Chat:
+        raise NotImplementedError
+
     def _file(self) -> Optional[File]:
         return (
             File._try_from_raw(self._raw.media)

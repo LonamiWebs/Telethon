@@ -4,13 +4,23 @@ from typing import TYPE_CHECKING, Optional
 
 from ...session import PackedChat, PackedType
 from ...tl import abcs, types
-from ..types import Channel, ChatLike, Group, User
+from ..types import AsyncList, Channel, Chat, ChatLike, Group, User
 
 if TYPE_CHECKING:
     from .client import Client
 
 
 async def get_me(self: Client) -> User:
+    self
+    raise NotImplementedError
+
+
+async def get_contacts(self: Client) -> AsyncList[User]:
+    self
+    raise NotImplementedError
+
+
+async def resolve_username(self: Client) -> Chat:
     self
     raise NotImplementedError
 
