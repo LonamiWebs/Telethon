@@ -1,5 +1,6 @@
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Literal, Sequence, Tuple, Union
 
+from ...types import Channel, Group, User
 from ..event import Event
 
 Filter = Callable[[Event], bool]
@@ -51,3 +52,40 @@ class Senders:
         sender = getattr(event, "sender", None)
         id = getattr(sender, "id", None)
         return id in self._senders
+
+
+class ChatType:
+    """
+    Filter by chat type, either ``'user'``, ``'group'`` or ``'broadcast'``.
+    """
+
+    __slots__ = ("_type",)
+
+    def __init__(
+        self,
+        type: Union[Literal["user"], Literal["group"], Literal["broadcast"]],
+    ) -> None:
+        if type == "user":
+            self._type: Union[User, Group, Channel] = User
+        elif type == "group":
+            self._type = Group
+        elif type == "broadcast":
+            self._type = Channel
+        else:
+            raise TypeError(f"unrecognised chat type: {type}")
+
+    @property
+    def type(self) -> Union[Literal["user"], Literal["group"], Literal["broadcast"]]:
+        """
+        The chat type this filter is filtering on.
+        """
+        if self._type == User:
+            return "user"
+        elif self._type == Group:
+            return "group"
+        elif self._type == Channel:
+            return "broadcast"
+
+    def __call__(self, event: Event) -> bool:
+        sender = getattr(event, "chat", None)
+        return isinstance(sender, self._type)
