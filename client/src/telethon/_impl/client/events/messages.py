@@ -15,6 +15,16 @@ if TYPE_CHECKING:
 
 
 class NewMessage(Event, Message):
+    """
+    Occurs when a new message is sent or received.
+
+    .. warning::
+
+        Messages sent with the :class:`~telethon.Client` are also caught,
+        so be careful not to enter infinite loops!
+        This is true for all event types, including edits.
+    """
+
     @classmethod
     def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:
         if isinstance(update, (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
@@ -29,18 +39,30 @@ class NewMessage(Event, Message):
 
 
 class MessageEdited(Event):
+    """
+    Occurs when a new message is sent or received.
+    """
+
     @classmethod
     def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:
         raise NotImplementedError()
 
 
 class MessageDeleted(Event):
+    """
+    Occurs when one or more messages are deleted.
+    """
+
     @classmethod
     def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:
         raise NotImplementedError()
 
 
 class MessageRead(Event):
+    """
+    Occurs both when your messages are read by others, and when you read messages.
+    """
+
     @classmethod
     def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:
         raise NotImplementedError()

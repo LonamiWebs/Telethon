@@ -3,6 +3,14 @@ from typing import Any, Dict, List, Optional, Self
 
 
 class DataCenter:
+    """
+    Data-center information.
+
+    :var id: The DC identifier.
+    :var addr: The server address of the DC, in ``'ip:port'`` format.
+    :var auth: Authentication key to encrypt communication with.
+    """
+
     __slots__ = ("id", "addr", "auth")
 
     def __init__(self, *, id: int, addr: str, auth: Optional[bytes]) -> None:
@@ -12,6 +20,14 @@ class DataCenter:
 
 
 class User:
+    """
+    Information about the logged-in user.
+
+    :var id: User identifier.
+    :var dc: Data-center identifier of the user's "home" DC.
+    :var bot: :data:`True` if the user is from a bot account.
+    """
+
     __slots__ = ("id", "dc", "bot")
 
     def __init__(self, *, id: int, dc: int, bot: bool) -> None:
@@ -21,6 +37,13 @@ class User:
 
 
 class ChannelState:
+    """
+    Update state for a channel.
+
+    :var id: The channel identifier.
+    :var pts: The channel's partial sequence number.
+    """
+
     __slots__ = ("id", "pts")
 
     def __init__(self, *, id: int, pts: int) -> None:
@@ -29,6 +52,16 @@ class ChannelState:
 
 
 class UpdateState:
+    """
+    Update state for an account.
+
+    :var pts: The primary partial sequence number.
+    :var qts: The secondary partial sequence number.
+    :var date: Date of the latest update sequence.
+    :var seq: The sequence number.
+    :var channels: Update state for channels.
+    """
+
     __slots__ = (
         "pts",
         "qts",
@@ -55,9 +88,9 @@ class UpdateState:
 
 class Session:
     """
-    A Telethon session.
+    A Telethon :term:`session`.
 
-    A `Session` instance contains the required information to login into your
+    A session instance contains the required information to login into your
     Telegram account. **Never** give the saved session file to anyone else or
     make it public.
 

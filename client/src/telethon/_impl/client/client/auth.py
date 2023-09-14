@@ -128,11 +128,8 @@ async def sign_in(
 
 
 async def interactive_login(self: Client) -> User:
-    try:
-        return await self.get_me()
-    except RpcError as e:
-        if e.code != 401:
-            raise
+    if me := await self.get_me():
+        return me
 
     phone_or_token = ""
     while not re.match(r"\+?[\s()]*\d", phone_or_token):

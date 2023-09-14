@@ -1,4 +1,4 @@
-from ._impl.client.client import Config, InlineResult, InlineResults
+from ._impl.client.client import Config, InlineResult
 from ._impl.client.types import (
     AsyncList,
     Channel,
@@ -20,7 +20,6 @@ from ._impl.session import PackedChat, PackedType
 __all__ = [
     "Config",
     "InlineResult",
-    "InlineResults",
     "AsyncList",
     "Channel",
     "Chat",

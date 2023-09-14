@@ -15,9 +15,9 @@ class SqliteSession(Storage):
 
     SQLite is a reliable way to persist data to disk and offers file locking.
 
-    Paths without extension will have '.session' appended to them.
+    Paths without extension will have ``'.session'`` appended to them.
     This is by convention, and to make it harder to commit session files to
-    an VCS by accident (adding `*.session` to `.gitignore` will catch them).
+    an VCS by accident (adding ``*.session`` to ``.gitignore`` will catch them).
     """
 
     def __init__(self, file: Union[str, Path]):

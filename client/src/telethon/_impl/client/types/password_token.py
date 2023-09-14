@@ -5,6 +5,10 @@ from .meta import NoPublicConstructor
 
 
 class PasswordToken(metaclass=NoPublicConstructor):
+    """
+    Result of attempting to :meth:`~telethon.Client.sign_in` to a 2FA-protected account.
+    """
+
     __slots__ = ("_password",)
 
     def __init__(self, password: types.account.Password) -> None:

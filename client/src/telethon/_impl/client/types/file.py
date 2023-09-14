@@ -34,8 +34,8 @@ MediaLike = object
 
 class InFileLike(Protocol):
     """
-    [File-like object](https://docs.python.org/3/glossary.html#term-file-like-object)
-    used for input only, where the `read` method can be `async`.
+    A :term:`file-like object` used for input only.
+    The :meth:`read` method can be :keyword:`async`.
     """
 
     def read(self, n: int) -> Union[bytes, Coroutine[Any, Any, bytes]]:
@@ -44,8 +44,8 @@ class InFileLike(Protocol):
 
 class OutFileLike(Protocol):
     """
-    [File-like object](https://docs.python.org/3/glossary.html#term-file-like-object)
-    used for output only, where the `write` method can be `async`.
+    A :term:`file-like object` used for output only.
+    The :meth:`write` method can be :keyword:`async`.
     """
 
     def write(self, data: bytes) -> Union[Any, Coroutine[Any, Any, Any]]:

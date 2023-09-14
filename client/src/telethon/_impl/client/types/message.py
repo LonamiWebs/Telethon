@@ -8,6 +8,10 @@ from .meta import NoPublicConstructor
 
 
 class Message(metaclass=NoPublicConstructor):
+    """
+    A sent message.
+    """
+
     __slots__ = ("_raw",)
 
     def __init__(self, message: abcs.Message) -> None:
@@ -27,6 +31,14 @@ class Message(metaclass=NoPublicConstructor):
     @property
     def text(self) -> Optional[str]:
         return getattr(self._raw, "message", None)
+
+    @property
+    def html_text(self) -> Optional[str]:
+        raise NotImplementedError
+
+    @property
+    def markdown_text(self) -> Optional[str]:
+        raise NotImplementedError
 
     @property
     def date(self) -> Optional[datetime.datetime]:
@@ -80,3 +92,16 @@ class Message(metaclass=NoPublicConstructor):
             )
             else None
         )
+
+    @property
+    def file(self) -> Optional[File]:
+        return self._file()
+
+    async def delete(self) -> None:
+        raise NotImplementedError
+
+    async def edit(self) -> None:
+        raise NotImplementedError
+
+    async def forward_to(self) -> None:
+        raise NotImplementedError

@@ -9,6 +9,17 @@ MsgId = NewType("MsgId", int)
 
 
 class RpcError(ValueError):
+    """
+    A Remote Procedure Call Error.
+
+    Only occurs when the answer to a request sent to Telegram is not the expected result.
+    The library will never construct instances of this error by itself.
+
+    .. seealso::
+
+        :doc:`/concepts/errors`
+    """
+
     def __init__(
         self,
         *,

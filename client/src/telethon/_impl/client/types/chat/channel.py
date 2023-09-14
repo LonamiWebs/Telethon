@@ -6,6 +6,10 @@ from ..meta import NoPublicConstructor
 
 
 class Channel(metaclass=NoPublicConstructor):
+    """
+    A broadcast channel.
+    """
+
     __slots__ = ("_raw",)
 
     def __init__(
@@ -44,6 +48,10 @@ class Channel(metaclass=NoPublicConstructor):
     @property
     def title(self) -> str:
         return getattr(self._raw, "title", None) or ""
+
+    @property
+    def full_name(self) -> str:
+        return self.title
 
     @property
     def username(self) -> Optional[str]:

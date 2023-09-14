@@ -5,6 +5,10 @@ from ..session import Session
 
 
 class Storage(abc.ABC):
+    """
+    Interface declaring the required methods of a :term:`session` storage.
+    """
+
     @abc.abstractmethod
     async def load(self) -> Optional[Session]:
         """
@@ -27,4 +31,6 @@ class Storage(abc.ABC):
         Delete the saved `Session`.
 
         This method is called by the library post `log_out`.
+
+        Note that both :meth:`load` and :meth:`save` may still be called after.
         """

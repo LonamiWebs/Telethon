@@ -21,6 +21,7 @@ class AsyncList(abc.ABC, Generic[T]):
     The `len()` of the asynchronous list will be the "total count" reported
     by the server. It does not necessarily reflect how many items will
     actually be returned. This count can change as more items are fetched.
+    Note that this method cannot be awaited.
     """
 
     def __init__(self) -> None:

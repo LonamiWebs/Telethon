@@ -7,7 +7,7 @@ Filter = Callable[[Event], bool]
 
 class Chats:
     """
-    Filter by `event.chat.id`.
+    Filter by ``event.chat.id``, if the event has a chat.
     """
 
     __slots__ = ("_chats",)
@@ -31,7 +31,7 @@ class Chats:
 
 class Senders:
     """
-    Filter by `event.sender.id`.
+    Filter by ``event.sender.id``, if the event has a sender.
     """
 
     __slots__ = ("_senders",)

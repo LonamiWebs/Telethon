@@ -11,6 +11,9 @@ Glossary
 
         .. seealso:: The :doc:`../concepts/chats` concept.
 
+    yourself
+        The logged-in account, whether that represents a bot or a user with a phone number.
+
     Raw API
         Functions and types under ``telethon._tl`` that enable access to all of Telegram's API.
 

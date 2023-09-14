@@ -6,6 +6,10 @@ from ..meta import NoPublicConstructor
 
 
 class RestrictionReason(metaclass=NoPublicConstructor):
+    """
+    A restriction reason for :class:`telethon.types.User`.
+    """
+
     __slots__ = ("_raw",)
 
     def __init__(self, raw: types.RestrictionReason) -> None:
@@ -30,6 +34,10 @@ class RestrictionReason(metaclass=NoPublicConstructor):
 
 
 class User(metaclass=NoPublicConstructor):
+    """
+    A user, representing either a bot account or an account created with a phone number.
+    """
+
     __slots__ = ("_raw",)
 
     def __init__(self, raw: types.User) -> None:

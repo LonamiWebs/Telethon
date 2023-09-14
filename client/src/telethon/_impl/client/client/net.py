@@ -39,6 +39,12 @@ def default_system_version() -> str:
 
 @dataclass
 class Config:
+    """
+    Configuration used by the :class:`telethon.Client`.
+
+    See the parameters of :class:`~telethon.Client` for an explanation of the fields.
+    """
+
     session: Session
     api_id: int
     api_hash: str

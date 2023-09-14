@@ -6,6 +6,10 @@ from ..meta import NoPublicConstructor
 
 
 class Group(metaclass=NoPublicConstructor):
+    """
+    A small group or supergroup.
+    """
+
     __slots__ = ("_raw",)
 
     def __init__(
@@ -48,6 +52,10 @@ class Group(metaclass=NoPublicConstructor):
     @property
     def title(self) -> str:
         return getattr(self._raw, "title", None) or ""
+
+    @property
+    def full_name(self) -> str:
+        return self.title
 
     @property
     def username(self) -> Optional[str]:

@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 
 class Event(metaclass=NoPublicConstructor):
+    """
+    The base type of all events.
+    """
+
     @classmethod
     @abc.abstractmethod
     def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:

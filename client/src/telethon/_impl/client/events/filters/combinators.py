@@ -6,7 +6,7 @@ from .common import Filter
 
 class Any:
     """
-    Combine multiple filters, returning `True` if any of the filters pass.
+    Combine multiple filters, returning :data:`True` if any of the filters pass.
     """
 
     __slots__ = ("_filters",)
@@ -27,7 +27,7 @@ class Any:
 
 class All:
     """
-    Combine multiple filters, returning `True` if all of the filters pass.
+    Combine multiple filters, returning :data:`True` if all of the filters pass.
     """
 
     __slots__ = ("_filters",)
@@ -48,8 +48,7 @@ class All:
 
 class Not:
     """
-    Negate the output of a single filter, returning `True` if the nested
-    filter does *not* pass.
+    Negate the output of a single filter, returning :data:`True` if the nested filter does *not* pass.
     """
 
     __slots__ = ("_filter",)

@@ -6,6 +6,10 @@ from ...tl import abcs, types
 
 
 class PackedType(Enum):
+    """
+    The type of a :class:`PackedChat`.
+    """
+
     # bits: zero, has-access-hash, channel, broadcast, group, chat, user, bot
     USER = 0b0000_0010
     BOT = 0b0000_0011
@@ -16,6 +20,16 @@ class PackedType(Enum):
 
 
 class PackedChat:
+    """
+    A compact representation of a :term:`chat`.
+
+    You can reuse it as many times as you want.
+
+    .. seealso::
+
+        :doc:`/concepts/chats`
+    """
+
     __slots__ = ("ty", "id", "access_hash")
 
     def __init__(self, ty: PackedType, id: int, access_hash: Optional[int]) -> None:

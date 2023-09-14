@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 
 class InlineResults(metaclass=NoPublicConstructor):
+    """
+    :final:
+    """
+
     def __init__(
         self,
         client: Client,
@@ -119,7 +123,7 @@ class InlineResult(metaclass=NoPublicConstructor):
 
 
 async def inline_query(
-    self: Client, bot: ChatLike, query: str, *, chat: Optional[ChatLike] = None
+    self: Client, bot: ChatLike, query: str = "", *, chat: Optional[ChatLike] = None
 ) -> AsyncIterator[InlineResult]:
     packed_bot = await self._resolve_to_packed(bot)
     packed_chat = await self._resolve_to_packed(chat) if chat else None
