@@ -164,13 +164,13 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     text = add_surrogate(text)
     delimiters = {v: k for k, v in delimiters.items()}
     insert_at = []
-    for entity in entities:
+    for i, entity in enumerate(entities):
         s = entity.offset
         e = entity.offset + entity.length
         delimiter = delimiters.get(type(entity), None)
         if delimiter:
-            insert_at.append((s, delimiter))
-            insert_at.append((e, delimiter))
+            insert_at.append((s, i, delimiter))
+            insert_at.append((e, len(entities) - i, delimiter))
         else:
             url = None
             if isinstance(entity, MessageEntityTextUrl):
@@ -178,12 +178,12 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
             elif isinstance(entity, MessageEntityMentionName):
                 url = 'tg://user?id={}'.format(entity.user_id)
             if url:
-                insert_at.append((s, '['))
-                insert_at.append((e, ']({})'.format(url)))
+                insert_at.append((s, i, '['))
+                insert_at.append((e, len(entities) - i, ']({})'.format(url)))
 
-    insert_at.sort(key=lambda t: t[0])
+    insert_at.sort(key=lambda t: (t[0], t[1]))
     while insert_at:
-        at, what = insert_at.pop()
+        at, _, what = insert_at.pop()
 
         # If we are in the middle of a surrogate nudge the position by -1.
         # Otherwise we would end up with malformed text and fail to encode.
