@@ -27,6 +27,7 @@ Filtering events
 ----------------
 
 There is no way to tell Telegram to only send certain updates.
+Telegram sends all updates to connected active clients as they occur.
 Telethon must be received and process all updates to ensure correct ordering.
 
 Filters are not magic.

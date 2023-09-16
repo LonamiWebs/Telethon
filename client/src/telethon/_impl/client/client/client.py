@@ -384,6 +384,8 @@ class Client:
 
         :param file:
             The output file path or :term:`file-like object`.
+            Note that the extension is not automatically added to the path.
+            You can get the file extension with :attr:`telethon.types.File.ext`.
 
         .. rubric:: Example
 
@@ -1020,8 +1022,8 @@ class Client:
     async def send_message(
         self,
         chat: ChatLike,
-        *,
         text: Optional[str] = None,
+        *,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: Optional[bool] = None,
@@ -1046,7 +1048,7 @@ class Client:
         return await send_message(
             self,
             chat,
-            text=text,
+            text,
             markdown=markdown,
             html=html,
             link_preview=link_preview,

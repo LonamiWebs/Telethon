@@ -273,7 +273,7 @@ async def upload(
 
 
 async def iter_download(self: Client) -> None:
-    pass
+    raise NotImplementedError
     # result = self(
     #     functions.upload.get_file(
     #         precise=False,
@@ -291,4 +291,4 @@ async def iter_download(self: Client) -> None:
 
 
 async def download(self: Client, media: MediaLike, file: OutFileLike) -> None:
-    pass
+    raise NotImplementedError

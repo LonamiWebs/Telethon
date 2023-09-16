@@ -38,8 +38,8 @@ def parse_message(
 async def send_message(
     self: Client,
     chat: ChatLike,
-    *,
     text: Optional[str] = None,
+    *,
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: Optional[bool] = None,

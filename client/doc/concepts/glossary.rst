@@ -43,3 +43,20 @@ Glossary
         Mobile Transport Protocol used to interact with Telegram's API.
 
         .. seealso:: The :doc:`../concepts/botapi-vs-mtproto` concept.
+
+    login
+        Used to refer to the login process as a whole, as opposed to the action to :term:`sign in`.
+        The "login code" or "login token" get their name because they belong to the login process.
+
+    sign in
+        Used to refer to the action to sign into either a user or bot account, as opposed to the :term:`login` process.
+        Likewise, "sign out" is used to signify that the authorization should stop being valid.
+
+    layer
+        When Telegram releases new features, it does so by releasing a new "layer".
+        The different layers let Telegram know what a client is capable of and how it should respond to requests.
+
+    TL
+    Type Language
+        File format used by Telegram to define all the types and requests available in a :term:`layer`.
+        Telegram's site has an `Overview of the TL language <https://core.telegram.org/mtproto/TL>`_.

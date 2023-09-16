@@ -33,11 +33,11 @@ class Message(metaclass=NoPublicConstructor):
         return getattr(self._raw, "message", None)
 
     @property
-    def html_text(self) -> Optional[str]:
+    def text_html(self) -> Optional[str]:
         raise NotImplementedError
 
     @property
-    def markdown_text(self) -> Optional[str]:
+    def text_markdown(self) -> Optional[str]:
         raise NotImplementedError
 
     @property

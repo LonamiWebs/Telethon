@@ -38,7 +38,7 @@ Tests live under ``tests/``.
 
 The implementation consists of a parser and a code generator.
 
-The parser is able to read parse ``.tl`` files (Type-Language definition files).
+The parser is able to read parse ``.tl`` files (:term:`Type Language` definition files).
 It doesn't do anything with the files other than to represent the content as Python objects.
 
 The code generator uses the parsed definitions to generate Python code.

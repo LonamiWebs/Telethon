@@ -295,5 +295,9 @@ class File(metaclass=NoPublicConstructor):
             raw=None,
         )
 
+    @property
+    def ext(self):
+        raise NotImplementedError
+
     async def _read(self, n: int) -> bytes:
         raise NotImplementedError
