@@ -15,6 +15,8 @@ class RpcError(ValueError):
     Only occurs when the answer to a request sent to Telegram is not the expected result.
     The library will never construct instances of this error by itself.
 
+    This is the parent class of all :data:`telethon.errors` subtypes.
+
     .. seealso::
 
         :doc:`/concepts/errors`
