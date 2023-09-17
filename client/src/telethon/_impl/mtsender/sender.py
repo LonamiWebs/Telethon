@@ -144,9 +144,10 @@ class Sender:
             return_when=FIRST_COMPLETED,
         )
 
-        for task in pending:
-            task.cancel()
-        await asyncio.wait(pending)
+        if pending:
+            for task in pending:
+                task.cancel()
+            await asyncio.wait(pending)
 
         result = []
         if recv_req in done:
