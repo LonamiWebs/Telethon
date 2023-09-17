@@ -51,3 +51,16 @@ def ige_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
         plaintext += plaintext_block
 
     return bytes(plaintext)
+
+
+try:
+    import cryptg
+
+    ige_encrypt = lambda t, k, i: cryptg.encrypt_ige(
+        bytes(t) if not isinstance(t, bytes) else t, k, i
+    )
+    ige_decrypt = lambda t, k, i: cryptg.decrypt_ige(
+        bytes(t) if not isinstance(t, bytes) else t, k, i
+    )
+except ImportError:
+    pass
