@@ -2,27 +2,67 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from ...mtproto import RpcError
 from ...session import PackedChat, PackedType
-from ...tl import abcs, types
+from ...tl import abcs, functions, types
 from ..types import AsyncList, Channel, Chat, ChatLike, Group, User
+from ..utils import build_chat_map, peer_id
 
 if TYPE_CHECKING:
     from .client import Client
 
 
 async def get_me(self: Client) -> Optional[User]:
-    self
-    raise NotImplementedError
+    try:
+        result = await self(functions.users.get_users(id=[types.InputUserSelf()]))
+    except RpcError as e:
+        if e.code == 401:
+            return None
+        else:
+            raise
+
+    assert len(result) == 1
+    return User._from_raw(result[0])
 
 
-async def get_contacts(self: Client) -> AsyncList[User]:
-    self
-    raise NotImplementedError
+class ContactList(AsyncList[User]):
+    def __init__(self, client: Client):
+        super().__init__()
+        self._client = client
+
+    async def _fetch_next(self) -> None:
+        result = await self._client(functions.contacts.get_contacts(hash=0))
+        assert isinstance(result, types.contacts.Contacts)
+
+        self._buffer.extend(User._from_raw(u) for u in result.users)
+        self._total = len(self._buffer)
+        self._done = True
 
 
-async def resolve_username(self: Client) -> Chat:
-    self
-    raise NotImplementedError
+def get_contacts(self: Client) -> AsyncList[User]:
+    return ContactList(self)
+
+
+def resolved_peer_to_chat(resolved: abcs.contacts.ResolvedPeer) -> Chat:
+    assert isinstance(resolved, types.contacts.ResolvedPeer)
+
+    map = build_chat_map(resolved.users, resolved.chats)
+    if chat := map.get(peer_id(resolved.peer)):
+        return chat
+    else:
+        raise ValueError(f"no matching chat found in response")
+
+
+async def resolve_phone(client: Client, phone: str) -> Chat:
+    return resolved_peer_to_chat(
+        await client(functions.contacts.resolve_phone(phone=phone))
+    )
+
+
+async def resolve_username(self: Client, username: str) -> Chat:
+    return resolved_peer_to_chat(
+        await self(functions.contacts.resolve_username(username=username))
+    )
 
 
 async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
@@ -67,6 +107,24 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
             raise ValueError("Cannot resolve chat")
         else:
             raise RuntimeError("unexpected case")
+
+    if isinstance(chat, str):
+        if chat.startswith("+"):
+            resolved = await resolve_phone(self, chat)
+        elif chat == "me":
+            if me := self._config.session.user:
+                return PackedChat(
+                    ty=PackedType.BOT if me.bot else PackedType.USER,
+                    id=me.id,
+                    access_hash=0,
+                )
+            else:
+                resolved = None
+        else:
+            resolved = await resolve_username(self, username=chat)
+
+        if resolved and (packed := resolved.pack()) is not None:
+            return packed
 
     raise ValueError("Cannot resolve chat")
 

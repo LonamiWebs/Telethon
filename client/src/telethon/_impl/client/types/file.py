@@ -1,7 +1,10 @@
 import os
+from inspect import isawaitable
+from io import BufferedReader, BufferedWriter
 from mimetypes import guess_type
 from pathlib import Path
-from typing import Any, Coroutine, List, Optional, Protocol, Self, Union
+from types import TracebackType
+from typing import Any, Coroutine, List, Optional, Protocol, Self, Type, Union
 
 from ...tl import abcs, types
 from .meta import NoPublicConstructor
@@ -29,9 +32,6 @@ def photo_size_byte_count(size: abcs.PhotoSize) -> int:
         raise RuntimeError("unexpected case")
 
 
-MediaLike = object
-
-
 class InFileLike(Protocol):
     """
     A :term:`file-like object` used for input only.
@@ -50,6 +50,57 @@ class OutFileLike(Protocol):
 
     def write(self, data: bytes) -> Union[Any, Coroutine[Any, Any, Any]]:
         pass
+
+
+class InWrapper:
+    __slots__ = ("_fd", "_owned")
+
+    def __init__(self, file: Union[str, Path, InFileLike]):
+        if isinstance(file, str):
+            file = Path(file)
+
+        if isinstance(file, Path):
+            self._fd: Union[InFileLike, BufferedReader] = file.open("rb")
+            self._owned = True
+        else:
+            self._fd = file
+            self._owned = False
+
+    async def read(self, n: int) -> bytes:
+        ret = self._fd.read(n)
+        chunk = await ret if isawaitable(ret) else ret
+        assert isinstance(chunk, bytes)
+        return chunk
+
+    def close(self) -> None:
+        if self._owned:
+            assert hasattr(self._fd, "close")
+            self._fd.close()
+
+
+class OutWrapper:
+    __slots__ = ("_fd", "_owned")
+
+    def __init__(self, file: Union[str, Path, OutFileLike]):
+        if isinstance(file, str):
+            file = Path(file)
+
+        if isinstance(file, Path):
+            self._fd: Union[OutFileLike, BufferedWriter] = file.open("wb")
+            self._owned = True
+        else:
+            self._fd = file
+            self._owned = False
+
+    async def write(self, chunk: bytes) -> None:
+        ret = self._fd.write(chunk)
+        if isawaitable(ret):
+            await ret
+
+    def close(self) -> None:
+        if self._owned:
+            assert hasattr(self._fd, "close")
+            self._fd.close()
 
 
 class File(metaclass=NoPublicConstructor):
@@ -264,8 +315,6 @@ class File(metaclass=NoPublicConstructor):
                         preload_prefix_size=None,
                     )
                 )
-        else:
-            raise NotImplementedError("sticker")
 
         photo = compress and mime_type.startswith("image/")
 
@@ -296,8 +345,37 @@ class File(metaclass=NoPublicConstructor):
         )
 
     @property
-    def ext(self):
-        raise NotImplementedError
+    def ext(self) -> str:
+        return self._path.suffix if self._path else ""
 
-    async def _read(self, n: int) -> bytes:
-        raise NotImplementedError
+    def _open(self) -> InWrapper:
+        file = self._file or self._path
+        if file is None:
+            raise TypeError(f"cannot use file for uploading: {self}")
+        return InWrapper(file)
+
+    def _input_location(self) -> abcs.InputFileLocation:
+        if isinstance(self._input_media, types.InputMediaDocument):
+            assert isinstance(self._input_media.id, types.InputDocument)
+            return types.InputDocumentFileLocation(
+                id=self._input_media.id.id,
+                access_hash=self._input_media.id.access_hash,
+                file_reference=self._input_media.id.file_reference,
+                thumb_size="",
+            )
+        elif isinstance(self._input_media, types.InputMediaPhoto):
+            assert isinstance(self._input_media.id, types.InputPhoto)
+            assert isinstance(self._raw, types.MessageMediaPhoto)
+            assert isinstance(self._raw.photo, types.Photo)
+
+            size = max(self._raw.photo.sizes, key=photo_size_byte_count)
+            assert hasattr(size, "type")
+
+            return types.InputPhotoFileLocation(
+                id=self._input_media.id.id,
+                access_hash=self._input_media.id.access_hash,
+                file_reference=self._input_media.id.file_reference,
+                thumb_size=size.type,
+            )
+        else:
+            raise TypeError(f"cannot use file for downloading: {self}")

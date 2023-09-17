@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Sequence, Tuple, Union
+from typing import Callable, Literal, Sequence, Tuple, Type, Union
 
 from ...types import Channel, Group, User
 from ..event import Event
@@ -66,7 +66,7 @@ class ChatType:
         type: Union[Literal["user"], Literal["group"], Literal["broadcast"]],
     ) -> None:
         if type == "user":
-            self._type: Union[User, Group, Channel] = User
+            self._type: Union[Type[User], Type[Group], Type[Channel]] = User
         elif type == "group":
             self._type = Group
         elif type == "broadcast":
@@ -85,6 +85,8 @@ class ChatType:
             return "group"
         elif self._type == Channel:
             return "broadcast"
+        else:
+            raise RuntimeError("unexpected case")
 
     def __call__(self, event: Event) -> bool:
         sender = getattr(event, "chat", None)

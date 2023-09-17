@@ -19,6 +19,7 @@ from ...session import Gap
 from ...tl import abcs
 from ..events import Event as EventBase
 from ..events.filters import Filter
+from ..utils import build_chat_map
 
 if TYPE_CHECKING:
     from .client import Client
@@ -107,14 +108,11 @@ def extend_update_queue(
     users: List[abcs.User],
     chats: List[abcs.Chat],
 ) -> None:
-    entities: Dict[int, Union[abcs.User, abcs.Chat]] = {
-        getattr(u, "id", None) or 0: u for u in users
-    }
-    entities.update({getattr(c, "id", None) or 0: c for c in chats})
+    chat_map = build_chat_map(users, chats)
 
     for update in updates:
         try:
-            client._updates.put_nowait((update, entities))
+            client._updates.put_nowait((update, chat_map))
         except asyncio.QueueFull:
             now = asyncio.get_running_loop().time()
             if client._last_update_limit_warn is None or (
@@ -128,9 +126,9 @@ def extend_update_queue(
 
 async def dispatcher(client: Client) -> None:
     while client.connected:
-        update, entities = await client._updates.get()
+        update, chat_map = await client._updates.get()
         for event_cls, handlers in client._handlers.items():
-            if event := event_cls._try_from_update(client, update):
+            if event := event_cls._try_from_update(client, update, chat_map):
                 for handler, filter in handlers:
                     if not filter or filter(event):
                         try:

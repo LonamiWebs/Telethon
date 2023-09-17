@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 import re
-from typing import Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from ..event import Event
+
+if TYPE_CHECKING:
+    from ...client import Client
 
 
 class Text:
@@ -34,17 +39,46 @@ class Command:
     filter ``Command('/help')`` will match both ``"/help"`` and ``"/help@bot"``, but not
     ``"/list"`` or ``"/help@other"``.
 
-    Note that the leading forward-slash is not automatically added,
-    which allows for using a different prefix or no prefix at all.
+    .. note::
+
+        The leading forward-slash is not automatically added!
+        This allows for using a different prefix or no prefix at all.
+
+    .. note::
+
+        The username is taken from the :term:`session` to avoid network calls.
+        If a custom storage returns the incorrect username, the filter will misbehave.
+        If there is no username, then the ``"/help@other"`` syntax will be ignored.
     """
 
-    __slots__ = ("_cmd",)
+    __slots__ = ("_cmd", "_username")
 
     def __init__(self, command: str) -> None:
+        if re.match(r"\s", command):
+            raise ValueError(f"command cannot contain spaces: {command}")
+
         self._cmd = command
+        self._username: Optional[str] = None
 
     def __call__(self, event: Event) -> bool:
-        raise NotImplementedError
+        text: Optional[str] = getattr(event, "text", None)
+        if not text:
+            return False
+
+        if self._username is None:
+            self._username = ""
+            client: Optional[Client]
+            if (client := getattr(event, "_client", None)) is not None:
+                user = client._config.session.user
+                if user and user.username:
+                    self._username = user.username
+
+        cmd = text.split(maxsplit=1)[0]
+        if cmd == self._cmd:
+            return True
+        if self._username:
+            return cmd == f"{self._cmd}@{self._username}"
+        return False
 
 
 class Incoming:

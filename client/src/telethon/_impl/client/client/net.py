@@ -14,6 +14,7 @@ from ...mtsender import connect_with_auth
 from ...session import DataCenter, Session
 from ...session import User as SessionUser
 from ...tl import LAYER, Request, functions
+from ..errors import adapt_rpc
 from .updates import dispatcher, process_socket_updates
 
 if TYPE_CHECKING:
@@ -217,7 +218,7 @@ async def invoke_request(
                 rx = sender.enqueue(request)
                 continue
             else:
-                raise
+                raise adapt_rpc(e) from None
     return request.deserialize_response(response)
 
 

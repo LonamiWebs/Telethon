@@ -4,8 +4,8 @@ import getpass
 import re
 from typing import TYPE_CHECKING, Optional, Union
 
+from ...crypto import two_factor_auth
 from ...mtproto import RpcError
-from ...session import Session
 from ...session import User as SessionUser
 from ...tl import abcs, functions, types
 from ..types import LoginToken, PasswordToken, User
@@ -192,8 +192,46 @@ async def get_password_information(client: Client) -> PasswordToken:
 async def check_password(
     self: Client, token: PasswordToken, password: Union[str, bytes]
 ) -> User:
-    self, token, password
-    raise NotImplementedError
+    algo = token._password.current_algo
+    if not isinstance(
+        algo, types.PasswordKdfAlgoSha256Sha256Pbkdf2HmacshA512Iter100000Sha256ModPow
+    ):
+        raise RuntimeError("unrecognised 2FA algorithm")
+
+    if not two_factor_auth.check_p_and_g(algo.p, algo.g):
+        token = await get_password_information(self)
+        if not isinstance(
+            algo,
+            types.PasswordKdfAlgoSha256Sha256Pbkdf2HmacshA512Iter100000Sha256ModPow,
+        ):
+            raise RuntimeError("unrecognised 2FA algorithm")
+        if not two_factor_auth.check_p_and_g(algo.p, algo.g):
+            raise RuntimeError("failed to get correct password information")
+
+    assert token._password.srp_id is not None
+    assert token._password.srp_B is not None
+
+    two_fa = two_factor_auth.calculate_2fa(
+        salt1=algo.salt1,
+        salt2=algo.salt2,
+        g=algo.g,
+        p=algo.p,
+        g_b=token._password.srp_B,
+        a=token._password.secure_random,
+        password=password.encode("utf-8") if isinstance(password, str) else password,
+    )
+
+    result = await self(
+        functions.auth.check_password(
+            password=types.InputCheckPasswordSrp(
+                srp_id=token._password.srp_id,
+                A=two_fa.g_a,
+                M1=two_fa.m1,
+            )
+        )
+    )
+
+    return await complete_login(self, result)
 
 
 async def sign_out(self: Client) -> None:

@@ -35,12 +35,13 @@ from ..types import (
     AsyncList,
     Chat,
     ChatLike,
+    Dialog,
     File,
     InFileLike,
     LoginToken,
-    MediaLike,
     Message,
     OutFileLike,
+    Participant,
     PasswordToken,
     User,
 )
@@ -58,7 +59,7 @@ from .chats import get_participants
 from .dialogs import delete_dialog, get_dialogs
 from .files import (
     download,
-    iter_download,
+    get_file_bytes,
     send_audio,
     send_file,
     send_photo,
@@ -184,7 +185,7 @@ class Client:
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
         self._updates: asyncio.Queue[
-            Tuple[abcs.Update, Dict[int, Union[abcs.User, abcs.Chat]]]
+            Tuple[abcs.Update, Dict[int, Chat]]
         ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._downloader_map = object()
@@ -315,8 +316,29 @@ class Client:
         """
         await connect(self)
 
-    async def delete_dialog(self) -> None:
-        await delete_dialog(self)
+    async def delete_dialog(self, chat: ChatLike) -> None:
+        """
+        Delete a dialog.
+
+        This lets you leave a group, unsubscribe from a channel, or delete a one-to-one private conversation.
+
+        Note that the group or channel will not be deleted.
+
+        Note that bot accounts do not have dialogs, so this method will fail.
+
+        :param chat:
+            The :term:`chat` representing the dialog to delete.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for dialog in client.iter_dialogs():
+                if 'dog pictures' in dialog.chat.full_name:
+                    # You've realized you're more of a cat person
+                    await client.delete_dialog(dialog.chat)
+        """
+        await delete_dialog(self, chat)
 
     async def delete_messages(
         self, chat: ChatLike, message_ids: List[int], *, revoke: bool = True
@@ -374,18 +396,22 @@ class Client:
         """
         await disconnect(self)
 
-    async def download(self, media: MediaLike, file: OutFileLike) -> None:
+    async def download(self, media: File, file: Union[str, Path, OutFileLike]) -> None:
         """
         Download a file.
 
         :param media:
-            The media to download.
+            The media file to download.
             This will often come from :attr:`telethon.types.Message.file`.
 
         :param file:
             The output file path or :term:`file-like object`.
             Note that the extension is not automatically added to the path.
             You can get the file extension with :attr:`telethon.types.File.ext`.
+
+            .. warning::
+
+                If the file already exists, it will be overwritten!
 
         .. rubric:: Example
 
@@ -400,7 +426,7 @@ class Client:
 
         .. seealso::
 
-            :meth:`iter_download`, for fine-grained control over the download.
+            :meth:`get_file_bytes`, for more control over the download.
         """
         await download(self, media, file)
 
@@ -485,7 +511,7 @@ class Client:
         """
         return await forward_messages(self, target, message_ids, source)
 
-    async def get_contacts(self) -> AsyncList[User]:
+    def get_contacts(self) -> AsyncList[User]:
         """
         Get the users in your contact list.
 
@@ -498,10 +524,29 @@ class Client:
             async for user in client.get_contacts():
                 print(user.full_name, user.id)
         """
-        return await get_contacts(self)
+        return get_contacts(self)
 
-    def get_dialogs(self) -> None:
-        get_dialogs(self)
+    def get_dialogs(self) -> AsyncList[Dialog]:
+        """
+        Get the dialogs you're part of.
+
+        This list of includes the groups you've joined, channels you've subscribed to, and open one-to-one private conversations.
+
+        Note that bot accounts do not have dialogs, so this method will fail.
+
+        :return: Your dialogs.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for dialog in client.get_dialogs():
+                print(
+                    dialog.chat.full_name,
+                    dialog.last_message.text if dialog.last_message else ''
+                )
+        """
+        return get_dialogs(self)
 
     def get_handler_filter(
         self, handler: Callable[[Event], Awaitable[Any]]
@@ -564,8 +609,6 @@ class Client:
         """
         Get the message history from a :term:`chat`.
 
-        Edit a message.
-
         :param chat:
             The :term:`chat` where the message to edit is.
 
@@ -604,8 +647,24 @@ class Client:
     ) -> AsyncList[Message]:
         return get_messages_with_ids(self, chat, message_ids)
 
-    def get_participants(self) -> None:
-        get_participants(self)
+    def get_participants(self, chat: ChatLike) -> AsyncList[Participant]:
+        """
+        Get the participants in a group or channel, along with their permissions.
+
+        Note that Telegram is rather strict when it comes to fetching members.
+        It is very likely that you will not be able to fetch all the members.
+        There is no way to bypass this.
+
+        :return: The participants.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for participant in client.get_participants(chat):
+                print(participant.user.full_name)
+        """
+        return get_participants(self, chat)
 
     async def inline_query(
         self, bot: ChatLike, query: str = "", *, chat: Optional[ChatLike] = None
@@ -674,8 +733,31 @@ class Client:
         """
         return await is_authorized(self)
 
-    async def iter_download(self) -> None:
-        await iter_download(self)
+    def get_file_bytes(self, media: File) -> AsyncList[bytes]:
+        """
+        Get the contents of an uploaded media file as chunks of :class:`bytes`.
+
+        This lets you iterate over the chunks of a file and print progress while the download occurs.
+
+        If you just want to download a file to disk without printing progress, use :meth:`download` instead.
+
+        :param media:
+            The media file to download.
+            This will often come from :attr:`telethon.types.Message.file`.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            if file := message.file:
+                with open(f'media{file.ext}', 'wb') as fd:
+                    downloaded = 0
+                    async for chunk in client.get_file_bytes(file):
+                        downloaded += len(chunk)
+                        fd.write(chunk)
+                        print(f'Downloaded {downloaded // 1024}/{file.size // 1024} KiB')
+        """
+        return get_file_bytes(self, media)
 
     def on(
         self, event_cls: Type[Event], filter: Optional[Filter] = None
@@ -815,8 +897,8 @@ class Client:
         """
         return await resolve_to_packed(self, chat)
 
-    async def resolve_username(self) -> Chat:
-        return await resolve_username(self)
+    async def resolve_username(self, username: str) -> Chat:
+        return await resolve_username(self, username)
 
     async def run_until_disconnected(self) -> None:
         await run_until_disconnected(self)

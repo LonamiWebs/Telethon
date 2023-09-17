@@ -38,7 +38,9 @@ class SqliteSession(Storage):
                 if version == 7:
                     session = self._load_v7(c)
                 else:
-                    raise NotImplementedError
+                    raise ValueError(
+                        "only migration from sqlite session format 7 supported"
+                    )
 
                 self._reset(c)
                 self._get_or_init_version(c)

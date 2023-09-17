@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
+from functools import partial
+from inspect import isawaitable
+from io import BufferedWriter
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Coroutine, Optional, Tuple, Union
 
 from ...tl import abcs, functions, types
-from ..types import ChatLike, File, InFileLike, MediaLike, Message, OutFileLike
+from ..types import (
+    AsyncList,
+    ChatLike,
+    File,
+    InFileLike,
+    Message,
+    OutFileLike,
+    OutWrapper,
+)
 from ..utils import generate_random_id
 from .messages import parse_message
 
@@ -222,73 +234,102 @@ async def upload(
     hash_md5 = hashlib.md5()
     is_big = file._size > BIG_FILE_SIZE
 
-    while uploaded != file._size:
-        chunk = await file._read(MAX_CHUNK_SIZE - len(buffer))
-        if not chunk:
-            raise ValueError("unexpected end-of-file")
+    fd = file._open()
+    try:
+        while uploaded != file._size:
+            chunk = await fd.read(MAX_CHUNK_SIZE - len(buffer))
+            if not chunk:
+                raise ValueError("unexpected end-of-file")
 
-        if len(chunk) == MAX_CHUNK_SIZE or uploaded + len(chunk) == file._size:
-            to_store = chunk
-        else:
-            buffer += chunk
-            if len(buffer) == MAX_CHUNK_SIZE:
-                to_store = buffer
+            if len(chunk) == MAX_CHUNK_SIZE or uploaded + len(chunk) == file._size:
+                to_store = chunk
             else:
-                continue
+                buffer += chunk
+                if len(buffer) == MAX_CHUNK_SIZE:
+                    to_store = buffer
+                else:
+                    continue
 
-        if is_big:
-            await client(
-                functions.upload.save_big_file_part(
-                    file_id=file_id,
-                    file_part=part,
-                    file_total_parts=part,
-                    bytes=to_store,
+            if is_big:
+                await client(
+                    functions.upload.save_big_file_part(
+                        file_id=file_id,
+                        file_part=part,
+                        file_total_parts=part,
+                        bytes=to_store,
+                    )
                 )
-            )
-        else:
-            await client(
-                functions.upload.save_file_part(
-                    file_id=file_id, file_part=total_parts, bytes=to_store
+            else:
+                await client(
+                    functions.upload.save_file_part(
+                        file_id=file_id, file_part=total_parts, bytes=to_store
+                    )
                 )
-            )
-            hash_md5.update(to_store)
+                hash_md5.update(to_store)
 
-        buffer.clear()
-        part += 1
+            buffer.clear()
+            part += 1
+    finally:
+        fd.close()
 
     if file._size > BIG_FILE_SIZE:
-        types.InputFileBig(
+        return types.InputFileBig(
             id=file_id,
             parts=total_parts,
             name=file._name,
         )
     else:
-        types.InputFile(
+        return types.InputFile(
             id=file_id,
             parts=total_parts,
             name=file._name,
             md5_checksum=hash_md5.hexdigest(),
         )
-    raise NotImplementedError
 
 
-async def iter_download(self: Client) -> None:
-    raise NotImplementedError
-    # result = self(
-    #     functions.upload.get_file(
-    #         precise=False,
-    #         cdn_supported=False,
-    #         location=types.InputFileLocation(),
-    #         offset=0,
-    #         limit=MAX_CHUNK_SIZE,
-    #     )
-    # )
-    # assert isinstance(result, types.upload.File)
-    # if len(result.bytes) < MAX_CHUNK_SIZE:
-    #     done
-    # else:
-    #     offset += MAX_CHUNK_SIZE
+class FileBytesList(AsyncList[bytes]):
+    def __init__(
+        self,
+        client: Client,
+        file: File,
+    ):
+        super().__init__()
+        self._client = client
+        self._loc = file._input_location()
+        self._offset = 0
+
+    async def _fetch_next(self) -> None:
+        result = await self._client(
+            functions.upload.get_file(
+                precise=False,
+                cdn_supported=False,
+                location=self._loc,
+                offset=self._offset,
+                limit=MAX_CHUNK_SIZE,
+            )
+        )
+        assert isinstance(result, types.upload.File)
+
+        if result.bytes:
+            self._offset += MAX_CHUNK_SIZE
+            self._buffer.append(result.bytes)
+
+        self._done = len(result.bytes) < MAX_CHUNK_SIZE
 
 
-async def download(self: Client, media: MediaLike, file: OutFileLike) -> None:
-    raise NotImplementedError
+def get_file_bytes(self: Client, media: File) -> AsyncList[bytes]:
+    return FileBytesList(self, media)
+
+
+async def download(
+    self: Client, media: File, file: Union[str, Path, OutFileLike]
+) -> None:
+    fd = OutWrapper(file)
+    try:
+        async for chunk in get_file_bytes(self, media):
+            ret = fd.write(chunk)
+            if isawaitable(ret):
+                await ret
+
+    finally:
+        fd.close()

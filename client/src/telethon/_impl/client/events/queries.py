@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Self
+from typing import TYPE_CHECKING, Dict, Optional, Self
 
-from ...tl import abcs
+from ...tl import abcs, types
+from ..types import Chat
 from .event import Event
 
 if TYPE_CHECKING:
@@ -16,9 +17,17 @@ class CallbackQuery(Event):
     Only bot accounts can receive this event.
     """
 
+    def __init__(self, update: types.UpdateBotCallbackQuery):
+        self._update = update
+
     @classmethod
-    def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:
-        raise NotImplementedError()
+    def _try_from_update(
+        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+    ) -> Optional[Self]:
+        if isinstance(update, types.UpdateBotCallbackQuery):
+            return cls._create(update)
+        else:
+            return None
 
 
 class InlineQuery(Event):
@@ -28,6 +37,14 @@ class InlineQuery(Event):
     Only bot accounts can receive this event.
     """
 
+    def __init__(self, update: types.UpdateBotInlineQuery):
+        self._update = update
+
     @classmethod
-    def _try_from_update(cls, client: Client, update: abcs.Update) -> Optional[Self]:
-        raise NotImplementedError()
+    def _try_from_update(
+        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+    ) -> Optional[Self]:
+        if isinstance(update, types.UpdateBotInlineQuery):
+            return cls._create(update)
+        else:
+            return None

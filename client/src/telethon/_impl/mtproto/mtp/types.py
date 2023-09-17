@@ -30,7 +30,7 @@ class RpcError(ValueError):
         value: Optional[int] = None,
         caused_by: Optional[int] = None,
     ) -> None:
-        append_value = f" ({value})" if value else None
+        append_value = f" ({value})" if value else ""
         super().__init__(f"rpc error {code}: {name}{append_value}")
 
         self._code = code

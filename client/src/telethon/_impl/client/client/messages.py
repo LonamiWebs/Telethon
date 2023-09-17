@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 from ...session import PackedChat
 from ...tl import abcs, functions, types
 from ..parsers import parse_html_message, parse_markdown_message
-from ..types import AsyncList, ChatLike, Message
-from ..utils import generate_random_id
+from ..types import AsyncList, Chat, ChatLike, Message
+from ..utils import build_chat_map, generate_random_id, peer_id
 
 if TYPE_CHECKING:
     from .client import Client
@@ -147,30 +147,47 @@ async def forward_messages(
 
 
 class MessageList(AsyncList[Message]):
-    def _extend_buffer(self, client: Client, messages: abcs.messages.Messages) -> None:
+    def _extend_buffer(
+        self, client: Client, messages: abcs.messages.Messages
+    ) -> Dict[int, Chat]:
         if isinstance(messages, types.messages.Messages):
-            self._buffer.extend(Message._from_raw(m) for m in messages.messages)
+            chat_map = build_chat_map(messages.users, messages.chats)
+            self._buffer.extend(
+                Message._from_raw(client, m, chat_map) for m in messages.messages
+            )
             self._total = len(messages.messages)
             self._done = True
+            return chat_map
         elif isinstance(messages, types.messages.MessagesSlice):
-            self._buffer.extend(Message._from_raw(m) for m in messages.messages)
+            chat_map = build_chat_map(messages.users, messages.chats)
+            self._buffer.extend(
+                Message._from_raw(client, m, chat_map) for m in messages.messages
+            )
             self._total = messages.count
+            return chat_map
         elif isinstance(messages, types.messages.ChannelMessages):
-            self._buffer.extend(Message._from_raw(m) for m in messages.messages)
+            chat_map = build_chat_map(messages.users, messages.chats)
+            self._buffer.extend(
+                Message._from_raw(client, m, chat_map) for m in messages.messages
+            )
             self._total = messages.count
+            return chat_map
         elif isinstance(messages, types.messages.MessagesNotModified):
             self._total = messages.count
+            return {}
         else:
             raise RuntimeError("unexpected case")
 
-    def _last_non_empty_message(self) -> Message:
+    def _last_non_empty_message(
+        self,
+    ) -> Union[types.Message, types.MessageService, types.MessageEmpty]:
         return next(
             (
-                m
+                m._raw
                 for m in reversed(self._buffer)
                 if not isinstance(m._raw, types.MessageEmpty)
             ),
-            Message._from_raw(types.MessageEmpty(id=0, peer_id=None)),
+            types.MessageEmpty(id=0, peer_id=None),
         )
 
 
@@ -191,6 +208,8 @@ class HistoryList(MessageList):
         self._limit = limit
         self._offset_id = offset_id
         self._offset_date = offset_date
+
+        self._done = limit <= 0
 
     async def _fetch_next(self) -> None:
         if self._peer is None:
@@ -213,10 +232,11 @@ class HistoryList(MessageList):
 
         self._extend_buffer(self._client, result)
         self._limit -= len(self._buffer)
+        self._done = not self._limit
         if self._buffer:
             last = self._last_non_empty_message()
             self._offset_id = self._buffer[-1].id
-            if (date := getattr(last._raw, "date", None)) is not None:
+            if (date := getattr(last, "date", None)) is not None:
                 self._offset_date = date
 
 
@@ -331,7 +351,7 @@ class SearchList(MessageList):
         if self._buffer:
             last = self._last_non_empty_message()
             self._offset_id = self._buffer[-1].id
-            if (date := getattr(last._raw, "date", None)) is not None:
+            if (date := getattr(last, "date", None)) is not None:
                 self._offset_date = date
 
 
@@ -388,20 +408,21 @@ class GlobalSearchList(MessageList):
             )
         )
 
-        self._extend_buffer(self._client, result)
+        chat_map = self._extend_buffer(self._client, result)
         self._limit -= len(self._buffer)
         if self._buffer:
             last = self._last_non_empty_message()
-            last_packed = last.chat.pack()
 
             self._offset_id = self._buffer[-1].id
-            if (date := getattr(last._raw, "date", None)) is not None:
+            if (date := getattr(last, "date", None)) is not None:
                 self._offset_date = date
             if isinstance(result, types.messages.MessagesSlice):
                 self._offset_rate = result.next_rate or 0
-            self._offset_peer = (
-                last_packed._to_input_peer() if last_packed else types.InputPeerEmpty()
-            )
+
+            self._offset_peer = types.InputPeerEmpty()
+            if last.peer_id and (chat := chat_map.get(peer_id(last.peer_id))):
+                if packed := chat.pack():
+                    self._offset_peer = packed._to_input_peer()
 
 
 def search_all_messages(
@@ -483,7 +504,9 @@ class MessageMap:
 
     def _empty(self, id: int = 0) -> Message:
         return Message._from_raw(
-            types.MessageEmpty(id=id, peer_id=self._client._input_to_peer(self._peer))
+            self._client,
+            types.MessageEmpty(id=id, peer_id=self._client._input_to_peer(self._peer)),
+            {},
         )
 
 
@@ -492,13 +515,12 @@ def build_message_map(
     result: abcs.Updates,
     peer: Optional[abcs.InputPeer],
 ) -> MessageMap:
-    if isinstance(result, types.UpdateShort):
-        updates = [result.update]
-        entities: Dict[int, object] = {}
-    elif isinstance(result, (types.Updates, types.UpdatesCombined)):
+    if isinstance(result, (types.Updates, types.UpdatesCombined)):
         updates = result.updates
-        entities = {}
-        raise NotImplementedError()
+        chat_map = build_chat_map(result.users, result.chats)
+    elif isinstance(result, types.UpdateShort):
+        updates = [result.update]
+        chat_map = {}
     else:
         return MessageMap(client, peer, {}, {})
 
@@ -518,14 +540,8 @@ def build_message_map(
                 types.UpdateNewScheduledMessage,
             ),
         ):
-            assert isinstance(
-                update.message,
-                (types.Message, types.MessageService, types.MessageEmpty),
-            )
-            id_to_message[update.message.id] = Message._from_raw(update.message)
-
-        elif isinstance(update, types.UpdateMessagePoll):
-            raise NotImplementedError()
+            msg = Message._from_raw(client, update.message, chat_map)
+            id_to_message[msg.id] = msg
 
     return MessageMap(
         client,
