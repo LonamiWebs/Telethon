@@ -58,8 +58,8 @@ def generate_normal_param_write(
 
     if param.ty.generic_arg:
         if param.ty.name not in ("Vector", "vector"):
-            raise NotImplementedError(
-                "generic_arg deserialization for non-vectors not implemented"
+            raise ValueError(
+                "generic_arg deserialization for non-vectors is not supported"
             )
 
         if param.ty.bare:

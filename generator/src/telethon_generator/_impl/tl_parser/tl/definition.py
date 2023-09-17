@@ -72,7 +72,7 @@ class Definition:
             if isinstance(param.ty, FlagsParameter):
                 flag_defs.append(param.name)
             elif not isinstance(param.ty, NormalParameter):
-                raise NotImplementedError
+                raise TypeError(f"unrecognised subclass: {param.ty}")
             elif param.ty.ty.generic_ref and param.ty.ty.name not in type_defs:
                 raise ValueError("missing def")
             elif param.ty.flag and param.ty.flag.name not in flag_defs:

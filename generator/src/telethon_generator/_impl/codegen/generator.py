@@ -59,7 +59,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     for typedef in tl.typedefs:
         if typedef.ty.full_name not in generated_types:
             if len(typedef.ty.namespace) >= 2:
-                raise NotImplementedError("nested abc-namespaces are not supported")
+                raise ValueError("nested abc-namespaces are not supported")
             elif len(typedef.ty.namespace) == 1:
                 abc_namespaces.add(typedef.ty.namespace[0])
                 abc_path = (Path("abcs") / typedef.ty.namespace[0]).with_suffix(".py")
@@ -83,7 +83,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         property_params = [p for p in typedef.params if not is_computed(p.ty)]
 
         if len(typedef.namespace) >= 2:
-            raise NotImplementedError("nested type-namespaces are not supported")
+            raise ValueError("nested type-namespaces are not supported")
         elif len(typedef.namespace) == 1:
             type_namespaces.add(typedef.namespace[0])
             type_path = (Path("types") / typedef.namespace[0]).with_suffix(".py")
@@ -145,7 +145,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
 
     for functiondef in tl.functiondefs:
         if len(functiondef.namespace) >= 2:
-            raise NotImplementedError("nested function-namespaces are not supported")
+            raise ValueError("nested function-namespaces are not supported")
         elif len(functiondef.namespace) == 1:
             function_namespaces.add(functiondef.namespace[0])
             function_path = (Path("functions") / functiondef.namespace[0]).with_suffix(

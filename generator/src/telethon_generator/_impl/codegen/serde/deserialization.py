@@ -33,7 +33,7 @@ def reader_read_fmt(ty: Type, constructor_id: int) -> Tuple[str, Optional[str]]:
         try:
             return SPECIAL_CASED_OBJECT_READS[constructor_id], None
         except KeyError:
-            raise NotImplementedError("missing special case for object read")
+            raise ValueError("missing special case for object read")
     else:
         return f"reader.read_serializable({inner_type_fmt(ty)})", "type-abstract"
 
@@ -44,10 +44,10 @@ def generate_normal_param_read(
     flag_check = f"_{param.flag.name} & {1 << param.flag.index}" if param.flag else None
     if param.ty.name == "true":
         if not flag_check:
-            raise NotImplementedError("true parameter is expected to be a flag")
+            raise ValueError("true parameter is expected to be a flag")
         writer.write(f"_{name} = ({flag_check}) != 0")
     elif param.ty.generic_ref:
-        raise NotImplementedError("generic_ref deserialization not implemented")
+        raise ValueError("generic_ref deserialization is not supported")
     else:
         if flag_check:
             writer.write(f"if {flag_check}:")
@@ -55,8 +55,8 @@ def generate_normal_param_read(
 
         if param.ty.generic_arg:
             if param.ty.name not in ("Vector", "vector"):
-                raise NotImplementedError(
-                    "generic_arg deserialization for non-vectors not implemented"
+                raise ValueError(
+                    "generic_arg deserialization for non-vectors is not supported"
                 )
 
             if param.ty.bare:
@@ -127,25 +127,23 @@ def param_value_fmt(param: Parameter) -> str:
 def function_deserializer_fmt(defn: Definition) -> str:
     if defn.ty.generic_arg:
         if defn.ty.name != ("Vector"):
-            raise NotImplementedError(
-                "generic_arg return for non-boxed-vectors not implemented"
+            raise ValueError(
+                "generic_arg return for non-boxed-vectors is not supported"
             )
         elif defn.ty.generic_ref:
-            raise NotImplementedError(
-                "return for generic refs inside vector not implemented"
-            )
+            raise ValueError("return for generic refs inside vector is not supported")
         elif is_trivial(NormalParameter(ty=defn.ty.generic_arg, flag=None)):
             if defn.ty.generic_arg.name == "int":
                 return "deserialize_i32_list"
             elif defn.ty.generic_arg.name == "long":
                 return "deserialize_i64_list"
             else:
-                raise NotImplementedError(
-                    f"return for trivial arg {defn.ty.generic_arg} not implemented"
+                raise ValueError(
+                    f"return for trivial arg {defn.ty.generic_arg} is not supported"
                 )
         elif defn.ty.generic_arg.bare:
-            raise NotImplementedError(
-                "return for non-boxed serializables inside a vector not implemented"
+            raise ValueError(
+                "return for non-boxed serializables inside a vector is not supported"
             )
         else:
             return f"list_deserializer({inner_type_fmt(defn.ty.generic_arg)})"
@@ -155,10 +153,8 @@ def function_deserializer_fmt(defn: Definition) -> str:
         if defn.ty.name == "Bool":
             return "deserialize_bool"
         else:
-            raise NotImplementedError(
-                f"return for trivial arg {defn.ty} not implemented"
-            )
+            raise ValueError(f"return for trivial arg {defn.ty} is not supported")
     elif defn.ty.bare:
-        raise NotImplementedError("return for non-boxed serializables not implemented")
+        raise ValueError("return for non-boxed serializables is not supported")
     else:
         return f"single_deserializer({inner_type_fmt(defn.ty)})"

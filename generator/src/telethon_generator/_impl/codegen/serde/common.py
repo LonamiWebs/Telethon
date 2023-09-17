@@ -95,9 +95,7 @@ def param_type_fmt(ty: BaseParameter) -> str:
     inner_ty: Type
     if ty.ty.generic_arg:
         if ty.ty.name not in ("Vector", "vector"):
-            raise NotImplementedError(
-                "generic_arg type for non-vectors not implemented"
-            )
+            raise ValueError("generic_arg type for non-vectors are not supported")
 
         inner_ty = ty.ty.generic_arg
     else:
