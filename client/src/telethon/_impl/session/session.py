@@ -26,14 +26,16 @@ class User:
     :var id: User identifier.
     :var dc: Data-center identifier of the user's "home" DC.
     :var bot: :data:`True` if the user is from a bot account.
+    :var username: User's primary username.
     """
 
-    __slots__ = ("id", "dc", "bot")
+    __slots__ = ("id", "dc", "bot", "username")
 
-    def __init__(self, *, id: int, dc: int, bot: bool) -> None:
+    def __init__(self, *, id: int, dc: int, bot: bool, username: Optional[str]) -> None:
         self.id = id
         self.dc = dc
         self.bot = bot
+        self.username = username
 
 
 class ChannelState:
@@ -134,6 +136,7 @@ class Session:
                 "id": self.user.id,
                 "dc": self.user.dc,
                 "bot": self.user.bot,
+                "username": self.user.username,
             }
             if self.user
             else None,
@@ -174,6 +177,7 @@ class Session:
                 id=dict["user"]["id"],
                 dc=dict["user"]["dc"],
                 bot=dict["user"]["bot"],
+                username=dict["user"]["username"],
             )
             if dict["user"]
             else None,

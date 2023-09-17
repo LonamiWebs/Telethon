@@ -106,7 +106,9 @@ class SqliteSession(Storage):
                 DataCenter(id=id, addr=addr, auth=auth)
                 for (id, addr, auth) in datacenter
             ],
-            user=User(id=user[0], dc=user[1], bot=bool(user[2])) if user else None,
+            user=User(id=user[0], dc=user[1], bot=bool(user[2]), username=user[3])
+            if user
+            else None,
             state=UpdateState(
                 pts=state[0],
                 qts=state[1],

@@ -30,9 +30,7 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
     assert isinstance(auth.user, types.User)
     user = User._from_raw(auth.user)
     client._config.session.user = SessionUser(
-        id=user.id,
-        dc=client._dc_id,
-        bot=user.bot,
+        id=user.id, dc=client._dc_id, bot=user.bot, username=user.username
     )
 
     packed = user.pack()

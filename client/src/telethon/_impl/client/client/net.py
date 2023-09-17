@@ -12,6 +12,7 @@ from ...mtsender import Sender
 from ...mtsender import connect as connect_without_auth
 from ...mtsender import connect_with_auth
 from ...session import DataCenter, Session
+from ...session import User as SessionUser
 from ...tl import LAYER, Request, functions
 from .updates import dispatcher, process_socket_updates
 
@@ -149,6 +150,16 @@ async def connect(self: Client) -> None:
                 self._config.session.user = None
         except Exception as e:
             pass
+        else:
+            if not self._config.session.user:
+                me = await self.get_me()
+                assert me is not None
+                self._config.session.user = SessionUser(
+                    id=me.id, dc=self._dc_id, bot=me.bot, username=me.username
+                )
+                packed = me.pack()
+                assert packed is not None
+                self._chat_hashes.set_self_user(packed)
 
     self._dispatcher = asyncio.create_task(dispatcher(self))
 
