@@ -4,7 +4,6 @@ to convert between an entity like a User, Chat, etc. into its Input version)
 """
 import base64
 import binascii
-import imghdr
 import inspect
 import io
 import itertools
@@ -835,12 +834,6 @@ def _get_extension(file):
         return os.path.splitext(file)[-1]
     elif isinstance(file, pathlib.Path):
         return file.suffix
-    elif isinstance(file, bytes):
-        kind = imghdr.what(io.BytesIO(file))
-        return ('.' + kind) if kind else ''
-    elif isinstance(file, io.IOBase) and not isinstance(file, io.TextIOBase) and file.seekable():
-        kind = imghdr.what(file)
-        return ('.' + kind) if kind is not None else ''
     elif getattr(file, 'name', None):
         # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase`
         return _get_extension(file.name)
