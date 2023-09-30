@@ -39,7 +39,25 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def id(self) -> int:
+        """
+        The message identifier.
+
+        .. seealso::
+
+            :doc:`/concepts/messages`, which contains an in-depth explanation of message counters.
+        """
         return self._raw.id
+
+    @property
+    def grouped_id(self) -> Optional[int]:
+        """
+        If the message is grouped with others in an album, return the group identifier.
+
+        Messages with the same :attr:`grouped_id` will belong to the same album.
+
+        Note that there can be messages in-between that do not have a :attr:`grouped_id`.
+        """
+        return getattr(self._raw, "grouped_id", None)
 
     @property
     def text(self) -> Optional[str]:
@@ -91,7 +109,7 @@ class Message(metaclass=NoPublicConstructor):
 
     def _file(self) -> Optional[File]:
         return (
-            File._try_from_raw(self._raw.media)
+            File._try_from_raw_message_media(self._raw.media)
             if isinstance(self._raw, types.Message) and self._raw.media
             else None
         )

@@ -41,6 +41,30 @@ The implementation consists of a parser and a code generator.
 The parser is able to read parse ``.tl`` files (:term:`Type Language` definition files).
 It doesn't do anything with the files other than to represent the content as Python objects.
 
+.. admonition:: Type Language brief
+
+    TL-definitions are statements terminated with a semicolon ``;`` and often defined in a single line:
+
+    .. code-block::
+
+        geoPointEmpty#1117dd5f = GeoPoint;
+        geoPoint#b2a2f663 flags:# long:double lat:double access_hash:long accuracy_radius:flags.0?int = GeoPoint;
+
+    The first word is the name, optionally followed by the hash sign ``#`` and an hexadecimal number.
+    Every definition can have a constructor identifier inferred based on its own text representation.
+    The hexadecimal number will override the constructor identifier used for the definition.
+
+    What follows up to the equals-sign ``=`` are the fields of the definition.
+    They have a name and a type, separated by the colon ``:``.
+
+    The type ``#`` represents a bitflag.
+    Other fields can be conditionally serialized by prefixing the type with ``flag_name.bit_index?``.
+
+    After the equal-sign comes the name for the "base class".
+    This representation is known as "boxed", and it contains the constructor identifier to discriminate a definition.
+    If the definition name appears on its own, it will be "bare" and will not have the constructor identifier prefix.
+
+
 The code generator uses the parsed definitions to generate Python code.
 Most of the code to serialize and deserialize objects lives under ``serde/``.
 

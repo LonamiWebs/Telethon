@@ -11,6 +11,7 @@ Properties and private methods can use a different parameter name than `self`
 to avoid being included.
 """
 import ast
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Union
@@ -62,6 +63,7 @@ class MethodVisitor(ast.NodeVisitor):
 
 def main() -> None:
     client_root = Path.cwd() / "client/src/telethon/_impl/client/client"
+    client_py = client_root / "client.py"
 
     fm_visitor = FunctionMethodsVisitor()
     m_visitor = MethodVisitor()
@@ -74,7 +76,7 @@ def main() -> None:
 
         fm_visitor.visit(ast.parse(contents))
 
-    with (client_root / "client.py").open(encoding="utf-8") as fd:
+    with client_py.open(encoding="utf-8") as fd:
         contents = fd.read()
 
     m_visitor.visit(ast.parse(contents))
@@ -109,13 +111,22 @@ def main() -> None:
         function.body.append(call)
         class_body.append(function)
 
-    print(
-        ast.unparse(
-            ast.ClassDef(
-                name="Client", bases=[], keywords=[], body=class_body, decorator_list=[]
-            )
+    generated = ast.unparse(
+        ast.ClassDef(
+            name="Client", bases=[], keywords=[], body=class_body, decorator_list=[]
         )
-    )
+    )[len("class Client:") :].strip()
+
+    start_idx = contents.index("\n", contents.index("# Begin partially @generated"))
+    end_idx = contents.index("# End partially @generated")
+
+    with client_py.open("w", encoding="utf-8") as fd:
+        fd.write(
+            f"{contents[:start_idx]}\n\n    {generated}\n\n    {contents[end_idx:]}"
+        )
+
+    print("written @generated")
+    exit(subprocess.run((sys.executable, "-m", "black", str(client_py))).returncode)
 
 
 if __name__ == "__main__":

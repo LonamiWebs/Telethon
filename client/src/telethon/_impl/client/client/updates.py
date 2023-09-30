@@ -7,12 +7,10 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Dict,
     List,
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 
 from ...session import Gap

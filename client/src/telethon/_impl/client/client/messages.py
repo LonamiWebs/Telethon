@@ -319,6 +319,7 @@ class SearchList(MessageList):
         self._peer: Optional[abcs.InputPeer] = None
         self._limit = limit
         self._query = query
+        self._filter = types.InputMessagesFilterEmpty()
         self._offset_id = offset_id
         self._offset_date = offset_date
 
@@ -334,7 +335,7 @@ class SearchList(MessageList):
                 q=self._query,
                 from_id=None,
                 top_msg_id=None,
-                filter=types.InputMessagesFilterEmpty(),
+                filter=self._filter,
                 min_date=0,
                 max_date=self._offset_date,
                 offset_id=self._offset_id,

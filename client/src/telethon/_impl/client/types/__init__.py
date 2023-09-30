@@ -1,12 +1,14 @@
 from .async_list import AsyncList
 from .chat import Channel, Chat, ChatLike, Group, RestrictionReason, User
 from .dialog import Dialog
+from .draft import Draft
 from .file import File, InFileLike, InWrapper, OutFileLike, OutWrapper
 from .login_token import LoginToken
 from .message import Message
 from .meta import NoPublicConstructor
 from .participant import Participant
 from .password_token import PasswordToken
+from .recent_action import RecentAction
 
 __all__ = [
     "AsyncList",
@@ -17,6 +19,7 @@ __all__ = [
     "RestrictionReason",
     "User",
     "Dialog",
+    "Draft",
     "File",
     "InFileLike",
     "InWrapper",
@@ -27,4 +30,5 @@ __all__ = [
     "NoPublicConstructor",
     "Participant",
     "PasswordToken",
+    "RecentAction",
 ]

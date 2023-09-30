@@ -36,6 +36,7 @@ from ..types import (
     Chat,
     ChatLike,
     Dialog,
+    Draft,
     File,
     InFileLike,
     LoginToken,
@@ -43,6 +44,7 @@ from ..types import (
     OutFileLike,
     Participant,
     PasswordToken,
+    RecentAction,
     User,
 )
 from .auth import (
@@ -55,8 +57,15 @@ from .auth import (
     sign_out,
 )
 from .bots import InlineResult, inline_query
-from .chats import get_participants
-from .dialogs import delete_dialog, get_dialogs
+from .chats import (
+    get_admin_log,
+    get_participants,
+    get_profile_photos,
+    set_admin_rights,
+    set_banned_rights,
+    set_default_rights,
+)
+from .dialogs import delete_dialog, get_dialogs, get_drafts
 from .files import (
     download,
     get_file_bytes,
@@ -198,7 +207,7 @@ class Client:
             if self._config.catch_up and self._config.session.state:
                 self._message_box.load(self._config.session.state)
 
-    # ---
+    # Begin partially @generated
 
     def add_event_handler(
         self,
@@ -511,6 +520,29 @@ class Client:
         """
         return await forward_messages(self, target, message_ids, source)
 
+    def get_admin_log(self, chat: ChatLike) -> AsyncList[RecentAction]:
+        """
+        Get the recent actions from the administrator's log.
+
+        This method requires you to be an administrator in the :term:`chat`.
+
+        The returned actions are also known as "admin log events".
+
+        :param chat:
+            The :term:`chat` to fetch recent actions from.
+
+        :return: The recent actions.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for admin_log_event in client.get_admin_log(chat):
+                if message := admin_log_event.deleted_message:
+                    print('Deleted:', message.text)
+        """
+        return get_admin_log(self, chat)
+
     def get_contacts(self) -> AsyncList[User]:
         """
         Get the users in your contact list.
@@ -547,6 +579,47 @@ class Client:
                 )
         """
         return get_dialogs(self)
+
+    def get_drafts(self) -> AsyncList[Draft]:
+        """
+        Get all message drafts saved in any dialog.
+
+        :return: The existing message drafts.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for draft in client.get_drafts():
+                await draft.delete()
+        """
+        return get_drafts(self)
+
+    def get_file_bytes(self, media: File) -> AsyncList[bytes]:
+        """
+        Get the contents of an uploaded media file as chunks of :class:`bytes`.
+
+        This lets you iterate over the chunks of a file and print progress while the download occurs.
+
+        If you just want to download a file to disk without printing progress, use :meth:`download` instead.
+
+        :param media:
+            The media file to download.
+            This will often come from :attr:`telethon.types.Message.file`.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            if file := message.file:
+                with open(f'media{file.ext}', 'wb') as fd:
+                    downloaded = 0
+                    async for chunk in client.get_file_bytes(file):
+                        downloaded += len(chunk)
+                        fd.write(chunk)
+                        print(f'Downloaded {downloaded // 1024}/{file.size // 1024} KiB')
+        """
+        return get_file_bytes(self, media)
 
     def get_handler_filter(
         self, handler: Callable[[Event], Awaitable[Any]]
@@ -666,6 +739,23 @@ class Client:
         """
         return get_participants(self, chat)
 
+    def get_profile_photos(self, chat: ChatLike) -> AsyncList[File]:
+        """
+        Get the profile pictures set in a chat, or user avatars.
+
+        :return: The photo files.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            i = 0
+            async for photo in client.get_profile_photos(chat):
+                await client.download(photo, f'{i}.jpg')
+                i += 1
+        """
+        return get_profile_photos(self, chat)
+
     async def inline_query(
         self, bot: ChatLike, query: str = "", *, chat: Optional[ChatLike] = None
     ) -> AsyncIterator[InlineResult]:
@@ -730,34 +820,15 @@ class Client:
         Check whether the client instance is authorized (i.e. logged-in).
 
         :return: :data:`True` if the client instance has signed-in.
-        """
-        return await is_authorized(self)
-
-    def get_file_bytes(self, media: File) -> AsyncList[bytes]:
-        """
-        Get the contents of an uploaded media file as chunks of :class:`bytes`.
-
-        This lets you iterate over the chunks of a file and print progress while the download occurs.
-
-        If you just want to download a file to disk without printing progress, use :meth:`download` instead.
-
-        :param media:
-            The media file to download.
-            This will often come from :attr:`telethon.types.Message.file`.
 
         .. rubric:: Example
 
         .. code-block:: python
 
-            if file := message.file:
-                with open(f'media{file.ext}', 'wb') as fd:
-                    downloaded = 0
-                    async for chunk in client.get_file_bytes(file):
-                        downloaded += len(chunk)
-                        fd.write(chunk)
-                        print(f'Downloaded {downloaded // 1024}/{file.size // 1024} KiB')
+            if not await client.is_authorized():
+                ...  # need to sign in
         """
-        return get_file_bytes(self, media)
+        return await is_authorized(self)
 
     def on(
         self, event_cls: Type[Event], filter: Optional[Filter] = None
@@ -934,6 +1005,13 @@ class Client:
             This means only messages sent before *offset_date* will be fetched.
 
         :return: The found messages.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for message in client.search_all_messages(query='hello'):
+                print(message.text)
         """
         return search_all_messages(
             self, limit, query=query, offset_id=offset_id, offset_date=offset_date
@@ -970,6 +1048,13 @@ class Client:
             This means only messages sent before *offset_date* will be fetched.
 
         :return: The found messages.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            async for message in client.search_messages(chat, query='hello'):
+                print(message.text)
         """
         return search_messages(
             self, chat, limit, query=query, offset_id=offset_id, offset_date=offset_date
@@ -988,6 +1073,9 @@ class Client:
         voice: bool = False,
         title: Optional[str] = None,
         performer: Optional[str] = None,
+        caption: Optional[str] = None,
+        caption_markdown: Optional[str] = None,
+        caption_html: Optional[str] = None,
     ) -> Message:
         """
         Send an audio file.
@@ -1002,6 +1090,12 @@ class Client:
             A local file path or :class:`~telethon.types.File` to send.
 
         The rest of parameters behave the same as they do in :meth:`send_file`.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            await client.send_audio(chat, 'file.ogg', voice=True)
         """
         return await send_audio(
             self,
@@ -1015,6 +1109,9 @@ class Client:
             voice=voice,
             title=title,
             performer=performer,
+            caption=caption,
+            caption_markdown=caption_markdown,
+            caption_html=caption_html,
         )
 
     async def send_file(
@@ -1072,7 +1169,16 @@ class Client:
         if *path* isn't a :class:`~telethon.types.File`.
         See the documentation of :meth:`~telethon.types.File.new` to learn what they do.
 
+        See the section on :doc:`/concepts/messages` to learn about message formatting.
+
         Note that only one *caption* parameter can be provided.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            login_token = await client.request_login_code('+1 23 456...')
+            print(login_token.timeout, 'seconds before code expires')
         """
         return await send_file(
             self,
@@ -1120,20 +1226,23 @@ class Client:
             Message text, with no formatting.
 
         :param text_markdown:
-            Message text, parsed as markdown.
+            Message text, parsed as CommonMark.
 
         :param text_html:
             Message text, parsed as HTML.
 
         Note that exactly one *text* parameter must be provided.
+
+        See the section on :doc:`/concepts/messages` to learn about message formatting.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            await client.send_message(chat, markdown='**Hello!**')
         """
         return await send_message(
-            self,
-            chat,
-            text,
-            markdown=markdown,
-            html=html,
-            link_preview=link_preview,
+            self, chat, text, markdown=markdown, html=html, link_preview=link_preview
         )
 
     async def send_photo(
@@ -1148,6 +1257,9 @@ class Client:
         compress: bool = True,
         width: Optional[int] = None,
         height: Optional[int] = None,
+        caption: Optional[str] = None,
+        caption_markdown: Optional[str] = None,
+        caption_html: Optional[str] = None,
     ) -> Message:
         """
         Send a photo file.
@@ -1166,6 +1278,12 @@ class Client:
             A local file path or :class:`~telethon.types.File` to send.
 
         The rest of parameters behave the same as they do in :meth:`send_file`.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            await client.send_photo(chat, 'photo.jpg', caption='Check this out!')
         """
         return await send_photo(
             self,
@@ -1178,6 +1296,9 @@ class Client:
             compress=compress,
             width=width,
             height=height,
+            caption=caption,
+            caption_markdown=caption_markdown,
+            caption_html=caption_html,
         )
 
     async def send_video(
@@ -1194,6 +1315,9 @@ class Client:
         height: Optional[int] = None,
         round: bool = False,
         supports_streaming: bool = False,
+        caption: Optional[str] = None,
+        caption_markdown: Optional[str] = None,
+        caption_html: Optional[str] = None,
     ) -> Message:
         """
         Send a video file.
@@ -1208,6 +1332,12 @@ class Client:
             A local file path or :class:`~telethon.types.File` to send.
 
         The rest of parameters behave the same as they do in :meth:`send_file`.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            await client.send_video(chat, 'video.mp4', caption_markdown='*I cannot believe this just happened*')
         """
         return await send_video(
             self,
@@ -1222,7 +1352,19 @@ class Client:
             height=height,
             round=round,
             supports_streaming=supports_streaming,
+            caption=caption,
+            caption_markdown=caption_markdown,
+            caption_html=caption_html,
         )
+
+    def set_admin_rights(self, chat: ChatLike, user: ChatLike) -> None:
+        set_admin_rights(self, chat, user)
+
+    def set_banned_rights(self, chat: ChatLike, user: ChatLike) -> None:
+        set_banned_rights(self, chat, user)
+
+    def set_default_rights(self, chat: ChatLike, user: ChatLike) -> None:
+        set_default_rights(self, chat, user)
 
     def set_handler_filter(
         self,
@@ -1314,7 +1456,7 @@ class Client:
         """
         await unpin_message(self, chat, message_id)
 
-    # ---
+    # End partially @generated
 
     @property
     def connected(self) -> bool:

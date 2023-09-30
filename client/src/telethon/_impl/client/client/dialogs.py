@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...tl import abcs, functions, types
-from ..types import AsyncList, ChatLike, Dialog, User
+from ...tl import functions, types
+from ..types import AsyncList, ChatLike, Dialog, Draft
 from ..utils import build_chat_map
 
 if TYPE_CHECKING:
@@ -78,3 +78,29 @@ async def delete_dialog(self: Client, chat: ChatLike) -> None:
                 max_date=None,
             )
         )
+
+
+class DraftList(AsyncList[Draft]):
+    def __init__(self, client: Client):
+        super().__init__()
+        self._client = client
+        self._offset = 0
+
+    async def _fetch_next(self) -> None:
+        result = await self._client(functions.messages.get_all_drafts())
+        assert isinstance(result, types.Updates)
+
+        chat_map = build_chat_map(result.users, result.chats)
+
+        self._buffer.extend(
+            Draft._from_raw(u, chat_map)
+            for u in result.updates
+            if isinstance(u, types.UpdateDraftMessage)
+        )
+
+        self._total = len(result.updates)
+        self._done = True
+
+
+def get_drafts(self: Client) -> AsyncList[Draft]:
+    return DraftList(self)

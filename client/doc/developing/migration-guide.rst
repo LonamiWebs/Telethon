@@ -37,6 +37,7 @@ I can guarantee you will into far less problems.
 
 Without further ado, let's take a look at the biggest changes.
 This list may not be exhaustive, but it should give you an idea on what to expect.
+If you feel like a major change is missing, please `open an issue <https://github.com/LonamiWebs/Telethon/>`_.
 
 
 Complete project restructure
@@ -52,6 +53,12 @@ The public modules under the ``telethon`` now make actual sense.
 * :data:`telethon.errors` is no longer a module.
   It's actually a factory object returning new error types on demand.
   This means you don't need to wait for new library versions to be released to catch them.
+
+.. note::
+
+    Be sure to check the documentation for :data:`telethon.errors` to learn about error changes.
+    Notably, errors such as ``FloodWaitError`` no longer have a ``.seconds`` field.
+    Instead, every value for every error type is always ``.value``.
 
 This was also a good opportunity to remove a lot of modules that were not supposed to public in their entirety:
 ``.crypto``, ``.extensions``, ``.network``, ``.custom``, ``.functions``, ``.helpers``, ``.hints``, ``.password``, ``.requestiter``, ``.sync``, ``.types``, ``.utils``.
@@ -86,14 +93,49 @@ Each of them can have an additional namespace (as seen above with ``account.``).
 
 * ``tl.functions`` contains every :term:`TL` definition treated as a function.
   The naming convention now follows Python's, and are ``snake_case``.
-  They're no longer a class with attributes.
-  They serialize the request immediately.
 * ``tl.abcs`` contains every abstract class, the "boxed" types from Telegram.
   You can use these for your type-hinting needs.
 * ``tl.types`` contains concrete instances, the "bare" types Telegram actually returns.
   You'll probably use these with :func:`isinstance` a lot.
-  All types use :term:`__slots__` to save space.
-  This means you can't add extra fields to these at runtime unless you subclass.
+
+
+Raw API has a reduced feature-set
+---------------------------------
+
+The string representation is now on :meth:`object.__repr__`, not :meth:`object.__str__`.
+
+All types use :term:`__slots__` to save space.
+This means you can't add extra fields to these at runtime unless you subclass.
+
+The ``.stringify()`` methods on all TL types no longer exists.
+Instead, you can use a library like `beauty-print <https://pypi.org/project/beauty-print/>`_.
+
+The ``.to_dict()`` method on all TL types no longer exists.
+The same is true for ``.to_json()``.
+Instead, you can use a library like `json-pickle <https://pypi.org/project/jsonpickle/>`_ or write your own:
+
+.. code-block:: python
+
+    def to_dict(obj):
+        if obj is None or isinstance(obj, (bool, int, bytes, str)): return obj
+        if isinstance(obj, list): return [to_dict(x) for x in obj]
+        if isinstance(obj, dict): return {k: to_dict(v) for k, v in obj.items()}
+        return {slot: to_dict(getattr(obj, slot)) for slot in obj.__slots__}
+
+Lesser-known methods such as ``TLObject.pretty_format``, ``serialize_bytes``, ``serialize_datetime`` and ``from_reader`` are also gone.
+The remaining methods are:
+
+* ``Serializable.constructor_id()`` class-method, to get the integer identifier of the corresponding type constructor.
+* ``Serializable.from_bytes()`` class-method, to convert serialized :class:`bytes` back into the class.
+* :meth:`object.__bytes__` instance-method, to serialize the instance into :class:`bytes` the way Telegram expects.
+
+Functions are no longer a class with attributes.
+They serialize the request immediately.
+This means you cannot create request instance and change it later.
+Consider using :func:`functools.partial` if you want to reuse parts of a request instead.
+
+Functions no longer have an asynchronous ``.resolve()``.
+This used to let you pass usernames and have them be resolved to :tl:`InputPeer` automatically (unless it was nested).
 
 
 Unified client iter and get methods
@@ -159,6 +201,66 @@ The simplest approach could be using a global ``states`` dictionary storing the 
         del states[event.sender.id]
 
 
+.. rubric:: No ``client.kick_participant()`` method.
+
+This is not a thing in Telegram.
+It was implemented by restricting and then removing the restriction.
+
+The old ``client.edit_permissions()`` was renamed to :meth:`Client.set_banned_rights`.
+This defines the rights a restricted participant has (bans them from doing other things).
+Revoking the right to view messages will kick them.
+This rename should avoid confusion, as it is now clear this is not to promote users to admin status.
+
+For administrators, ``client.edit_admin`` was renamed to :meth:`Client.set_admin_rights` for consistency.
+
+Note that a new method, :meth:`Client.set_default_rights`, must now be used to set a chat's default rights.
+
+.. rubric:: No ``client.download_profile_photo()`` method.
+
+You can simply use :meth:`Client.download` now.
+Note that :meth:`~Client.download` no longer supports downloading contacts as ``.vcard``.
+
+.. rubric:: No ``client.set_proxy()`` method.
+
+Proxy support is no longer built-in.
+They were never officially maintained.
+This doesn't mean you can't use them.
+You're now free to choose your own proxy library and pass a different connector to the :class:`Client` constructor.
+
+This should hopefully make it clear that most connection issues when using proxies do *not* come from Telethon.
+
+.. rubric:: No ``client.set_receive_updates`` method.
+
+It was not working as expected.
+
+.. rubric:: No ``client.catch_up()`` method.
+
+You can still configure it when creating the :class:`Client`, which was the only way to make it work anyway.
+
+.. rubric:: No ``client.action()`` method.
+
+.. rubric:: No ``client.takeout()`` method.
+
+.. rubric:: No ``client.qr_login()`` method.
+
+.. rubric:: No ``client.edit_2fa()`` method.
+
+.. rubric:: No ``client.get_stats()`` method.
+
+.. rubric:: No ``client.edit_folder()`` method.
+
+.. rubric:: No ``client.build_reply_markup()`` method.
+
+.. rubric:: No ``client.list_event_handlers()`` method.
+
+These are out of scope for the time being.
+They might be re-introduced in the future if there is a burning need for them and are not difficult to maintain.
+This doesn't mean you can't do these things anymore though, since the :term:`Raw API` is still available.
+
+Telethon v2 is committed to not exposing the raw API under any public API of the ``telethon`` package.
+This means any method returning data from Telegram must have a custom wrapper object and be maintained too.
+Because the standards are higher, the barrier of entry for new additions and features is higher too.
+
 
 No message.raw_text or message.message
 --------------------------------------
@@ -201,6 +303,57 @@ This means getting those identifiers is up to you, and you can handle it in a wa
     In-depth explanation for :doc:`/concepts/updates`.
 
 
+Behaviour changes in events
+---------------------------
+
+:class:`events.CallbackQuery` no longer also handles "inline bot callback queries".
+This was a hacky workaround.
+
+:class:`events.MessageRead` no longer triggers when the *contents* of a message are read, such as voice notes being played.
+
+Albums in Telegram are an illusion.
+There is no "album media".
+There is only separate messages pretending to be a single message.
+
+``events.Album`` was a hack that waited for a small amount of time to group messages sharing the same grouped identifier.
+If you want to wait for a full album, you will need to wait yourself:
+
+.. code-block:: python
+
+    pending_albums = {}  # global for simplicity
+    async def gather_album(event, handler):
+        if pending := pending_albums.get(event.grouped_id):
+            pending.append(event)
+        else:
+            pending_albums[event.grouped_id] = [event]
+            # Wait for other events to come in. Adjust delay to your needs.
+            # This will NOT work if sequential updates are enabled (spawn a task to do the rest instead).
+            await asyncio.sleep(1)
+            events = pending_albums.pop(grouped_id, [])
+            await handler(events)
+
+    @client.on(events.NewMessage)
+    async def handler(event):
+        if event.grouped_id:
+            await gather_album(event, handle_album)
+        else:
+            await handle_message(event)
+
+    async def handle_album(events):
+        ...  # do stuff with events
+
+    async def handle_message(event):
+        ...  # do stuff with event
+
+Note that the above code is not foolproof and will not handle more than one client.
+It might be possible for album events to be delayed for more than a second.
+
+Note that messages that do **not** belong to an album can be received in-between an album.
+
+Overall, it's probably better if you treat albums for what they really are:
+separate messages sharing a :attr:`~types.Message.grouped_id`.
+
+
 Streamlined chat, input_chat and chat_id
 ----------------------------------------
 
@@ -230,6 +383,13 @@ Overall, dealing with users, groups and channels should feel a lot more natural.
 .. seealso::
 
     In-depth explanation for :doc:`/concepts/chats`.
+
+
+Other methods like ``client.get_peer_id``, ``client.get_input_entity`` and ``client.get_entity`` are gone too.
+While not directly related, ``client.is_bot`` is gone as well.
+You can use :meth:`Client.get_me` or read it from the session instead.
+
+The ``telethon.utils`` package is gone entirely, so methods like ``utils.resolve_id`` no longer exist either.
 
 
 Session cache no longer exists
@@ -264,7 +424,7 @@ TelegramClient renamed to Client
 You can rename it with :keyword:`as` during import if you want to use the old name.
 
 Python allows using namespaces via packages and modules.
-Therefore, the full name :class:`telethon.Client` already indicates it's from ``telethon``, so the old name was redundant.
+Therefore, the full name :class:`telethon.Client` already indicates it's from ``telethon``, so the old ``Telegram`` prefix was redundant.
 
 
 Changes to start and client context-manager
@@ -283,8 +443,9 @@ It also means you can now use the context manager even with custom login flows.
 The old ``sign_in()`` method also sent the code, which was rather confusing.
 Instead, you must now :meth:`~Client.request_login_code` as a separate operation.
 
-The old ``log_out`` was also renamed to :meth:`~Client.sign_out` for consistency with :meth:`~Client.sign_in`.
+The old ``log_out()`` was also renamed to :meth:`~Client.sign_out` for consistency with :meth:`~Client.sign_in`.
 
+The old ``is_user_authorized()`` was renamed to :meth:`~Client.is_authorized` since it works for bot accounts too.
 
 No telethon.sync hack
 ---------------------

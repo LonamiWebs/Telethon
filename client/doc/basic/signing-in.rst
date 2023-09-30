@@ -56,8 +56,8 @@ Interactive login
 The library offers a method for "quick and dirty" scripts known as :meth:`~Client.interactive_login`.
 This method will first check whether the account was previously logged-in, and if not, ask for a phone number to be input.
 
-You can write the code in a file (such as ``hello.py``) and then run it, or use the built-in ``asyncio``-enabled REPL.
-For this tutorial, we'll be using the ``asyncio`` REPL:
+You can write the code in a file (such as ``hello.py``) and then run it, or use the built-in :mod:`asyncio`-enabled REPL.
+For this tutorial, we'll be using the :mod:`asyncio` REPL:
 
 .. code-block:: shell
 
@@ -209,3 +209,6 @@ Otherwise, you might run into errors such as tasks being destroyed while pending
     Once a :class:`Client` instance has been connected, you cannot change the :mod:`asyncio` event loop.
     Methods like :func:`asyncio.run` setup and tear-down a new event loop every time.
     If the loop changes, the client is likely to be "stuck" because its loop cannot advance.
+
+    If you want to learn how :mod:`asyncio` works under the hood or need an introduction,
+    you can read my own blog post `An Introduction to Asyncio <https://lonami.dev/blog/asyncio/>`_.

@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import hashlib
-from functools import partial
 from inspect import isawaitable
-from io import BufferedWriter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Coroutine, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from ...tl import abcs, functions, types
 from ..types import (
@@ -43,6 +40,9 @@ async def send_photo(
     compress: bool = True,
     width: Optional[int] = None,
     height: Optional[int] = None,
+    caption: Optional[str] = None,
+    caption_markdown: Optional[str] = None,
+    caption_html: Optional[str] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -55,6 +55,9 @@ async def send_photo(
         compress=compress,
         width=width,
         height=height,
+        caption=caption,
+        caption_markdown=caption_markdown,
+        caption_html=caption_html,
     )
 
 
@@ -71,6 +74,9 @@ async def send_audio(
     voice: bool = False,
     title: Optional[str] = None,
     performer: Optional[str] = None,
+    caption: Optional[str] = None,
+    caption_markdown: Optional[str] = None,
+    caption_html: Optional[str] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -84,6 +90,9 @@ async def send_audio(
         voice=voice,
         title=title,
         performer=performer,
+        caption=caption,
+        caption_markdown=caption_markdown,
+        caption_html=caption_html,
     )
 
 
@@ -101,6 +110,9 @@ async def send_video(
     height: Optional[int] = None,
     round: bool = False,
     supports_streaming: bool = False,
+    caption: Optional[str] = None,
+    caption_markdown: Optional[str] = None,
+    caption_html: Optional[str] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -115,6 +127,9 @@ async def send_video(
         height=height,
         round=round,
         supports_streaming=supports_streaming,
+        caption=caption,
+        caption_markdown=caption_markdown,
+        caption_html=caption_html,
     )
 
 

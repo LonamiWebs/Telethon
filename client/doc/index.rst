@@ -102,14 +102,15 @@ A more in-depth explanation of some of the concepts and words used in Telethon.
 
     concepts/chats
     concepts/updates
+    concepts/messages
     concepts/sessions
     concepts/errors
     concepts/botapi-vs-mtproto
     concepts/full-api
     concepts/glossary
 
-Developing
-==========
+Development resources
+=====================
 
 Tips and tricks to develop both with the library and for the library.
 
@@ -117,10 +118,11 @@ Tips and tricks to develop both with the library and for the library.
 
 .. toctree::
     :hidden:
-    :caption: Developing
+    :caption: Development resources
 
     developing/changelog
     developing/migration-guide
+    developing/faq
     developing/philosophy.rst
     developing/coding-style.rst
     developing/project-structure.rst

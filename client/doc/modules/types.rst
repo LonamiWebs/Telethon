@@ -31,6 +31,7 @@ Errors
         except errors.FloodWait as e:
             await asyncio.sleep(e.value)
 
+    Note how the :attr:`RpcError.value` field is still accessible, as it's a subclass of :class:`RpcError`.
     The code above is equivalent to the following:
 
     .. code-block:: python

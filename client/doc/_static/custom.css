@@ -1,0 +1,20 @@
+.underline {
+    text-decoration: underline;
+}
+
+.strikethrough {
+    text-decoration: line-through;
+}
+
+.spoiler {
+    border-radius: 5%;
+    padding: 0.1em;
+    background-color: gray;
+    color: gray;
+    transition: all 200ms;
+}
+
+.spoiler:hover {
+    background-color: unset;
+    color: unset;
+}

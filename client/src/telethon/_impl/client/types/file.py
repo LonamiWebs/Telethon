@@ -137,7 +137,7 @@ class File(metaclass=NoPublicConstructor):
         self._raw = raw
 
     @classmethod
-    def _try_from_raw(cls, raw: abcs.MessageMedia) -> Optional[Self]:
+    def _try_from_raw_message_media(cls, raw: abcs.MessageMedia) -> Optional[Self]:
         if isinstance(raw, types.MessageMediaDocument):
             if isinstance(raw.document, types.Document):
                 return cls._create(
@@ -176,27 +176,44 @@ class File(metaclass=NoPublicConstructor):
                     raw=raw,
                 )
         elif isinstance(raw, types.MessageMediaPhoto):
-            if isinstance(raw.photo, types.Photo):
-                return cls._create(
-                    path=None,
-                    file=None,
-                    attributes=[],
-                    size=max(map(photo_size_byte_count, raw.photo.sizes)),
-                    name="",
-                    mime="image/jpeg",
-                    photo=True,
-                    muted=False,
-                    input_media=types.InputMediaPhoto(
-                        spoiler=raw.spoiler,
-                        id=types.InputPhoto(
-                            id=raw.photo.id,
-                            access_hash=raw.photo.access_hash,
-                            file_reference=raw.photo.file_reference,
-                        ),
-                        ttl_seconds=raw.ttl_seconds,
-                    ),
-                    raw=raw,
+            if raw.photo:
+                return cls._try_from_raw_photo(
+                    raw.photo, spoiler=raw.spoiler, ttl_seconds=raw.ttl_seconds
                 )
+
+        return None
+
+    @classmethod
+    def _try_from_raw_photo(
+        cls,
+        raw: abcs.Photo,
+        *,
+        spoiler: bool = False,
+        ttl_seconds: Optional[int] = None,
+    ) -> Optional[Self]:
+        if isinstance(raw, types.Photo):
+            return cls._create(
+                path=None,
+                file=None,
+                attributes=[],
+                size=max(map(photo_size_byte_count, raw.sizes)),
+                name="",
+                mime="image/jpeg",
+                photo=True,
+                muted=False,
+                input_media=types.InputMediaPhoto(
+                    spoiler=spoiler,
+                    id=types.InputPhoto(
+                        id=raw.id,
+                        access_hash=raw.access_hash,
+                        file_reference=raw.file_reference,
+                    ),
+                    ttl_seconds=ttl_seconds,
+                ),
+                raw=types.MessageMediaPhoto(
+                    spoiler=spoiler, photo=raw, ttl_seconds=ttl_seconds
+                ),
+            )
 
         return None
 

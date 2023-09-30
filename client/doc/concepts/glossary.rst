@@ -44,6 +44,11 @@ Glossary
 
         .. seealso:: The :doc:`../concepts/botapi-vs-mtproto` concept.
 
+    HTTP Bot API
+        Telegram's simplified HTTP API to control bot accounts only.
+
+        .. seealso:: The :doc:`../concepts/botapi-vs-mtproto` concept.
+
     login
         Used to refer to the login process as a whole, as opposed to the action to :term:`sign in`.
         The "login code" or "login token" get their name because they belong to the login process.

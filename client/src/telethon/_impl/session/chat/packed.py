@@ -1,11 +1,11 @@
 import struct
-from enum import Enum
+from enum import IntFlag
 from typing import Optional, Self
 
 from ...tl import abcs, types
 
 
-class PackedType(Enum):
+class PackedType(IntFlag):
     """
     The type of a :class:`PackedChat`.
     """
@@ -52,6 +52,27 @@ class PackedChat:
         ty = PackedType(ty_byte & 0b0011_1111)
         return cls(ty, id, access_hash if has_hash else None)
 
+    @property
+    def hex(self) -> str:
+        """
+        Convenience property to convert to bytes and represent them as hexadecimal numbers:
+
+        .. code-block::
+
+            assert packed.hex == bytes(packed).hex()
+        """
+        return bytes(self).hex()
+
+    def from_hex(cls, hex: str) -> Self:
+        """
+        Convenience method to convert hexadecimal numbers into bytes then passed to :meth:`from_bytes`:
+
+        .. code-block::
+
+            assert PackedChat.from_hex(packed.hex) == packed
+        """
+        return cls.from_bytes(bytes.fromhex(hex))
+
     def is_user(self) -> bool:
         return self.ty in (PackedType.USER, PackedType.BOT)
 
@@ -93,13 +114,13 @@ class PackedChat:
         if self.is_user():
             return types.InputUser(user_id=self.id, access_hash=self.access_hash or 0)
         else:
-            raise ValueError("chat is not user")
+            raise TypeError("chat is not a user")
 
     def _to_chat_id(self) -> int:
         if self.is_chat():
             return self.id
         else:
-            raise ValueError("chat is not small group")
+            raise TypeError("chat is not a group")
 
     def _to_input_channel(self) -> types.InputChannel:
         if self.is_channel():
@@ -107,7 +128,7 @@ class PackedChat:
                 channel_id=self.id, access_hash=self.access_hash or 0
             )
         else:
-            raise ValueError("chat is not channel")
+            raise TypeError("chat is not a channel")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
