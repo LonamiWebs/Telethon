@@ -1,6 +1,6 @@
 from .combinators import All, Any, Not
 from .common import Chats, Filter, Senders
-from .messages import Command, Forward, Incoming, Outgoing, Reply, Text
+from .messages import Command, Forward, Incoming, Media, Outgoing, Reply, Text, TextOnly
 
 __all__ = [
     "All",
@@ -12,7 +12,9 @@ __all__ = [
     "Command",
     "Forward",
     "Incoming",
+    "Media",
     "Outgoing",
     "Reply",
     "Text",
+    "TextOnly",
 ]

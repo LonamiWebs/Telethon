@@ -125,14 +125,20 @@ async def sign_in(
     return await complete_login(self, result)
 
 
-async def interactive_login(self: Client) -> User:
+async def interactive_login(
+    self: Client,
+    phone_or_token: Optional[str] = None,
+    *,
+    password: Optional[str] = None,
+) -> User:
     if me := await self.get_me():
         return me
 
-    phone_or_token = ""
-    while not re.match(r"\+?[\s()]*\d", phone_or_token):
-        print("Please enter your phone (+1 23...) or bot token (12:abcd...)")
-        phone_or_token = input(": ").strip()
+    if not phone_or_token:
+        phone_or_token = ""
+        while not re.match(r"\+?[\s()]*\d", phone_or_token):
+            print("Please enter your phone (+1 23...) or bot token (12:abcd...)")
+            phone_or_token = input(": ").strip()
 
     # Bot flow
     if re.match(r"\d+:", phone_or_token):
@@ -160,16 +166,21 @@ async def interactive_login(self: Client) -> User:
             break
 
     if isinstance(user_or_token, PasswordToken):
-        while True:
-            print("Please enter your password (prompt is hidden; type and press enter)")
-            password = getpass.getpass(": ")
-            try:
-                user = await self.check_password(user_or_token, password)
-            except RpcError as e:
-                if e.name.startswith("PASSWORD"):
-                    print("Invalid password:", e)
-                else:
-                    raise
+        if password:
+            user = await self.check_password(user_or_token, password)
+        else:
+            while True:
+                print(
+                    "Please enter your password (prompt is hidden; type and press enter)"
+                )
+                password = getpass.getpass(": ")
+                try:
+                    user = await self.check_password(user_or_token, password)
+                except RpcError as e:
+                    if e.name.startswith("PASSWORD"):
+                        print("Invalid password:", e)
+                    else:
+                        raise
     else:
         user = user_or_token
 

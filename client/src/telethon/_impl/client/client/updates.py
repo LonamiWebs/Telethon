@@ -124,16 +124,21 @@ def extend_update_queue(
 
 async def dispatcher(client: Client) -> None:
     while client.connected:
-        update, chat_map = await client._updates.get()
-        for event_cls, handlers in client._handlers.items():
-            if event := event_cls._try_from_update(client, update, chat_map):
-                for handler, filter in handlers:
-                    if not filter or filter(event):
-                        try:
-                            await handler(event)
-                        except asyncio.CancelledError:
-                            raise
-                        except Exception:
-                            # TODO proper logger
-                            name = getattr(handler, "__name__", repr(handler))
-                            logging.exception("Unhandled exception on %s", name)
+        try:
+            await dispatch_next(client)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            # TODO proper logger
+            logging.exception("Unhandled exception in event handler")
+
+
+async def dispatch_next(client: Client) -> None:
+    update, chat_map = await client._updates.get()
+    for event_cls, handlers in client._handlers.items():
+        if event := event_cls._try_from_update(client, update, chat_map):
+            for handler, filter in handlers:
+                if not filter or filter(event):
+                    await handler(event)
+                    if client._shortcircuit_handlers:
+                        return

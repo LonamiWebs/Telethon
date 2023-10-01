@@ -3,7 +3,7 @@ Telethon
 
 .. epigraph::
 
-  ⭐️ Thanks **everyone** who has starred the project, it means a lot!
+    ⭐️ Thanks **everyone** who has starred the project, it means a lot!
 
 |logo| **Telethon** is an asyncio_ **Python 3**
 MTProto_ library to interact with Telegram_'s API
@@ -31,7 +31,7 @@ Installing
 
 .. code-block:: sh
 
-  pip install telethon
+    pip install telethon
 
 
 Creating a client
@@ -47,7 +47,7 @@ Creating a client
     api_hash = '0123456789abcdef0123456789abcdef'
 
     async with TelegramClient('session_name', api_id, api_hash) as client:
-       ...
+        await client.interactive_login()
 
 
 Doing stuff
@@ -58,7 +58,7 @@ Doing stuff
     print(await client.get_me())
 
     await client.send_message('username', 'Hello! Talking to you from Telethon')
-    await client.send_message('username', photo='/home/myself/Pictures/holidays.jpg')
+    await client.send_photo('username', '/home/myself/Pictures/holidays.jpg')
 
     async for message in client.get_messages('username', 1):
         path = await message.download_media()

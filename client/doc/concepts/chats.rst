@@ -43,10 +43,10 @@ In the schema definitions, there are two boxed types, :tl:`User` and :tl:`Chat`.
 A boxed :tl:`User` can only be the bare :tl:`user`, but the boxed :tl:`Chat` can be either a bare :tl:`chat` or a bare :tl:`channel`.
 
 A bare :tl:`chat` always refers to small groups.
-A bare :tl:`channel` can have either the ``broadcast`` or the ``megagroup`` flag set to ``True``.
+A bare :tl:`channel` can have either the ``broadcast`` or the ``megagroup`` flag set to :data:`True`.
 
-A bare :tl:`channel` with the ``broadcast`` flag set to ``True`` is known as a broadcast channel.
-A bare :tl:`channel` with the ``megagroup`` flag set to ``True`` is known as a supergroup.
+A bare :tl:`channel` with the ``broadcast`` flag set to :data:`True` is known as a broadcast channel.
+A bare :tl:`channel` with the ``megagroup`` flag set to :data:`True` is known as a supergroup.
 
 A bare :tl:`chat` with has less features than a bare :tl:`channel` ``megagroup``.
 Official clients are very good at hiding this difference.

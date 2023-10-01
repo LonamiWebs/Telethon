@@ -45,7 +45,7 @@ For this reason, filters cannot be asynchronous.
 This reduces the chance a filter will do slow IO and potentially fail.
 
 A filter is simply a callable function that takes an event as input and returns a boolean.
-If the filter returns ``True``, the handler will be called.
+If the filter returns :data:`True`, the handler will be called.
 Using this knowledge, you can create custom filters too.
 If you need state, you can use a class with a ``__call__`` method defined:
 
@@ -74,3 +74,39 @@ You can use :func:`isinstance` if your filter can only deal with certain types o
 
 If you need to perform asynchronous operations, you can't use a filter.
 Instead, manually check for those conditions inside your handler.
+
+
+Setting priority on handlers
+----------------------------
+
+There is no explicit way to define a different priority for different handlers.
+
+Instead, the library will call all your handlers in the order you added them.
+This means that, if you want a "catch-all" handler, it should be registered last.
+
+By default, the library will stop calling the rest of handlers after one is called:
+
+.. code-block:: python
+
+    @client.on(events.NewMessage)
+    async def first(event):
+        print('This is always called on new messages!')
+
+    @client.on(events.NewMessage)
+    async def second(event):
+        print('This will never be called, because "first" already ran.')
+
+This is often the desired behaviour if you're using filters.
+
+If you have more complicated filters executed *inside* the handler,
+Telethon believes your handler completed and will stop calling the rest.
+If that's the case, you can instruct Telethon to check all your handlers:
+
+.. code-block:: python
+
+    client = Client(..., check_all_handlers=True)
+    #                    ^^^^^^^^^^^^^^^^^^^^^^^
+    # Now the code above will call both handlers
+
+If you need a more complicated setup, consider sorting all your handlers beforehand.
+Then, use :meth:`Client.add_event_handler` on all of them to ensure the correct order.

@@ -15,11 +15,13 @@ from .._impl.client.events.filters import (
     Filter,
     Forward,
     Incoming,
+    Media,
     Not,
     Outgoing,
     Reply,
     Senders,
     Text,
+    TextOnly,
 )
 
 __all__ = [
@@ -30,9 +32,11 @@ __all__ = [
     "Filter",
     "Forward",
     "Incoming",
+    "Media",
     "Not",
     "Outgoing",
     "Reply",
     "Senders",
     "Text",
+    "TextOnly",
 ]

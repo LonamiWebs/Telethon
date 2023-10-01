@@ -306,6 +306,20 @@ This means getting those identifiers is up to you, and you can handle it in a wa
 Behaviour changes in events
 ---------------------------
 
+Events produced by the client itself will now also be received as updates.
+This means, for example, that your :class:`events.NewMessage` handlers will run when you use :meth:`Client.send_message`.
+This is needed to properly handle updates.
+
+In v1, there was a backwards-compatibility hack that flagged results from the client as their "own".
+But in some rare cases, it was possible to still receive messages sent by the client itself in v1.
+The hack has been removed so now the library will consistently deliver all updates.
+
+``events.StopPropagation`` no longer exists.
+In v1, all handlers were always called.
+Now handlers are called in order until the filter for one returns :data:`True`.
+The default behaviour is that handlers after that one are not called.
+This behaviour can be changed with the ``check_all_handlers`` flag in :class:`Client` constructor.
+
 :class:`events.CallbackQuery` no longer also handles "inline bot callback queries".
 This was a hacky workaround.
 

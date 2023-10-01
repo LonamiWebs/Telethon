@@ -15,6 +15,13 @@ class Event(metaclass=NoPublicConstructor):
     The base type of all events.
     """
 
+    @property
+    def client(self) -> Client:
+        """
+        The :class:`~telethon.Client` that received this update.
+        """
+        return self._client
+
     @classmethod
     @abc.abstractmethod
     def _try_from_update(

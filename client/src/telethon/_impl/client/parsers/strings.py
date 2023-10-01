@@ -21,7 +21,7 @@ def del_surrogate(text: str) -> str:
 
 def within_surrogate(text: str, index: int, *, length: Optional[int] = None) -> bool:
     """
-    `True` if ``index`` is within a surrogate (before and after it, not at!).
+    :data:`True` if ``index`` is within a surrogate (before and after it, not at!).
     """
     if length is None:
         length = len(text)

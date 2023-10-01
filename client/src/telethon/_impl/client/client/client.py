@@ -168,6 +168,14 @@ class Client:
 
     :param update_queue_limit:
         Maximum amount of updates to keep in memory before dropping them.
+
+    :param check_all_handlers:
+        Whether to always check all event handlers or stop early.
+
+        The library will call event handlers in the order they were added.
+        By default, the library stops checking handlers as soon as a filter returns :data:`True`.
+
+        By setting ``check_all_handlers=True``, the library will keep calling handlers after the first match.
     """
 
     def __init__(
@@ -175,6 +183,7 @@ class Client:
         session: Optional[Union[str, Path, Storage]],
         api_id: int,
         api_hash: Optional[str] = None,
+        check_all_handlers: bool = False,
     ) -> None:
         self._sender: Optional[Sender] = None
         self._sender_lock = asyncio.Lock()
@@ -190,6 +199,7 @@ class Client:
             api_id=api_id,
             api_hash=api_hash or "",
         )
+
         self._message_box = MessageBox()
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
@@ -197,10 +207,10 @@ class Client:
             Tuple[abcs.Update, Dict[int, Chat]]
         ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
         self._dispatcher: Optional[asyncio.Task[None]] = None
-        self._downloader_map = object()
         self._handlers: Dict[
             Type[Event], List[Tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
         ] = {}
+        self._shortcircuit_handlers = not check_all_handlers
 
         if self_user := self._config.session.user:
             self._dc_id = self_user.dc
@@ -795,10 +805,18 @@ class Client:
         """
         return await inline_query(self, bot, query, chat=chat)
 
-    async def interactive_login(self) -> User:
+    async def interactive_login(
+        self, phone_or_token: Optional[str] = None, *, password: Optional[str] = None
+    ) -> User:
         """
         Begin an interactive login if needed.
         If the account was already logged-in, this method simply returns :term:`yourself`.
+
+        :param phone_or_token:
+            Bypass the phone number or bot token prompt, and use this value instead.
+
+        :param password:
+            Bypass the 2FA password prompt, and use this value instead.
 
         :return: The user corresponding to :term:`yourself`.
 
@@ -809,11 +827,14 @@ class Client:
             me = await client.interactive_login()
             print('Logged in as:', me.full_name)
 
+            # or, to make sure you're logged-in as a bot
+            await client.interactive_login('1234:ab56cd78ef90)
+
         .. seealso::
 
             In-depth explanation for :doc:`/basic/signing-in`.
         """
-        return await interactive_login(self)
+        return await interactive_login(self, phone_or_token, password=password)
 
     async def is_authorized(self) -> bool:
         """
@@ -1210,7 +1231,7 @@ class Client:
     async def send_message(
         self,
         chat: ChatLike,
-        text: Optional[str] = None,
+        text: Optional[Union[str, Message]] = None,
         *,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
@@ -1224,6 +1245,8 @@ class Client:
 
         :param text:
             Message text, with no formatting.
+
+            When given a :class:`Message` instance, a copy of the message will be sent.
 
         :param text_markdown:
             Message text, parsed as CommonMark.

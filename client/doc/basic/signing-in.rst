@@ -97,6 +97,15 @@ Do as the prompts say on the terminal, and you will have successfully logged-in!
 
 Once you're done, make sure to :meth:`~Client.disconnect` for a graceful shutdown.
 
+To summarize:
+
+.. code-block:: python
+
+    from telethon import Client
+    client = Client('name', 12345, '0123456789abcdef0123456789abcdef')
+    await client.connect()
+    await client.interactive_login()
+
 
 Manual login
 ------------

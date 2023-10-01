@@ -44,6 +44,7 @@ Glossary
 
         .. seealso:: The :doc:`../concepts/botapi-vs-mtproto` concept.
 
+    Bot API
     HTTP Bot API
         Telegram's simplified HTTP API to control bot accounts only.
 
