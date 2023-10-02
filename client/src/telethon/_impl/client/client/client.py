@@ -1235,7 +1235,8 @@ class Client:
         *,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
-        link_preview: Optional[bool] = None,
+        link_preview: bool = False,
+        reply_to: Optional[int] = None,
     ) -> Message:
         """
         Send a message.
@@ -1254,6 +1255,17 @@ class Client:
         :param text_html:
             Message text, parsed as HTML.
 
+        :param link_preview:
+            Whether the link preview is allowed.
+
+            Setting this to :data:`True` does not guarantee a preview.
+            Telegram must be able to generate a preview from the first link in the message text.
+
+            To regenerate the preview, send the link to `@WebpageBot <https://t.me/WebpageBot>`_.
+
+        :param reply_to:
+            The message identifier of the message to reply to.
+
         Note that exactly one *text* parameter must be provided.
 
         See the section on :doc:`/concepts/messages` to learn about message formatting.
@@ -1265,7 +1277,13 @@ class Client:
             await client.send_message(chat, markdown='**Hello!**')
         """
         return await send_message(
-            self, chat, text, markdown=markdown, html=html, link_preview=link_preview
+            self,
+            chat,
+            text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+            reply_to=reply_to,
         )
 
     async def send_photo(

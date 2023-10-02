@@ -356,6 +356,7 @@ Migrating from aiogram
 Using one of the examples from their v3 documentation with logging and comments removed:
 
 .. code-block:: python
+
     import asyncio
 
     from aiogram import Bot, Dispatcher, types
@@ -389,6 +390,7 @@ We can see a specific handler for the ``/start`` command and a catch-all echo ha
 In Telethon:
 
 .. code-block:: python
+
     import asyncio, html
 
     from telethon import Client, RpcError, types, events

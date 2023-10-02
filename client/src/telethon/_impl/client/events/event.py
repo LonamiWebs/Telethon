@@ -20,7 +20,7 @@ class Event(metaclass=NoPublicConstructor):
         """
         The :class:`~telethon.Client` that received this update.
         """
-        return self._client
+        return getattr(self, "_client")  # type: ignore [no-any-return]
 
     @classmethod
     @abc.abstractmethod

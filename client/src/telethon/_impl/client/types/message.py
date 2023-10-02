@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Self
+from typing import TYPE_CHECKING, Dict, Optional, Self, Union
 
 from ...tl import abcs, types
 from ..parsers import generate_html_message, generate_markdown_message
@@ -109,7 +109,7 @@ class Message(metaclass=NoPublicConstructor):
 
     def _file(self) -> Optional[File]:
         return (
-            File._try_from_raw_message_media(self._raw.media)
+            File._try_from_raw_message_media(self._client, self._raw.media)
             if isinstance(self._raw, types.Message) and self._raw.media
             else None
         )
@@ -147,13 +147,80 @@ class Message(metaclass=NoPublicConstructor):
     def file(self) -> Optional[File]:
         return self._file()
 
-    async def delete(self, *, revoke: bool = True) -> int:
+    @property
+    def replied_message_id(self) -> Optional[int]:
+        """
+        Get the message identifier of the replied message.
+
+        .. seealso::
+
+            :meth:`get_reply_message`
+        """
+        if header := getattr(self._raw, "reply_to", None):
+            return getattr(header, "reply_to_msg_id", None)
+
+        return None
+
+    async def get_reply_message(self) -> Optional[Message]:
+        """
+        Alias for :meth:`telethon.Client.get_messages_with_ids`.
+
+        If all you want is to check whether this message is a reply, use :attr:`replied_message_id`.
+        """
+        if self.replied_message_id is not None:
+            from ..client.messages import CherryPickedList
+
+            lst = CherryPickedList(self._client, self.chat, [])
+            lst._ids.append(types.InputMessageReplyTo(id=self.id))
+            return (await lst)[0]
+        return None
+
+    async def respond(
+        self,
+        text: Optional[Union[str, Message]] = None,
+        *,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: bool = False,
+    ) -> Message:
+        """
+        Alias for :meth:`telethon.Client.send_message`.
+
+        See the documentation of :meth:`~telethon.Client.send_message` for an explanation of the parameters.
+        """
+        return await self._client.send_message(
+            self.chat, text, markdown=markdown, html=html, link_preview=link_preview
+        )
+
+    async def reply(
+        self,
+        text: Optional[Union[str, Message]] = None,
+        *,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: bool = False,
+    ) -> Message:
+        """
+        Alias for :meth:`telethon.Client.send_message` with the ``reply_to`` parameter set to this message.
+
+        See the documentation of :meth:`~telethon.Client.send_message` for an explanation of the parameters.
+        """
+        return await self._client.send_message(
+            self.chat,
+            text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+            reply_to=self.id,
+        )
+
+    async def delete(self, *, revoke: bool = True) -> None:
         """
         Alias for :meth:`telethon.Client.delete_messages`.
 
         See the documentation of :meth:`~telethon.Client.delete_messages` for an explanation of the parameters.
         """
-        return await self._client.delete_messages(self.chat, [self.id], revoke=revoke)
+        await self._client.delete_messages(self.chat, [self.id], revoke=revoke)
 
     async def edit(
         self,
@@ -176,10 +243,92 @@ class Message(metaclass=NoPublicConstructor):
             link_preview=link_preview,
         )
 
-    async def forward_to(self, target: ChatLike) -> Message:
+    async def forward(self, target: ChatLike) -> Message:
         """
         Alias for :meth:`telethon.Client.forward_messages`.
 
         See the documentation of :meth:`~telethon.Client.forward_messages` for an explanation of the parameters.
         """
         return (await self._client.forward_messages(target, [self.id], self.chat))[0]
+
+    async def mark_read(self) -> None:
+        pass
+
+    async def pin(self, *, notify: bool = False, pm_oneside: bool = False) -> None:
+        pass
+
+    async def unpin(self) -> None:
+        pass
+
+    # ---
+
+    @property
+    def forward_info(self) -> None:
+        pass
+
+    @property
+    def buttons(self) -> None:
+        pass
+
+    @property
+    def web_preview(self) -> None:
+        pass
+
+    @property
+    def voice(self) -> None:
+        pass
+
+    @property
+    def video_note(self) -> None:
+        pass
+
+    @property
+    def gif(self) -> None:
+        pass
+
+    @property
+    def sticker(self) -> None:
+        pass
+
+    @property
+    def contact(self) -> None:
+        pass
+
+    @property
+    def game(self) -> None:
+        pass
+
+    @property
+    def geo(self) -> None:
+        pass
+
+    @property
+    def invoice(self) -> None:
+        pass
+
+    @property
+    def poll(self) -> None:
+        pass
+
+    @property
+    def venue(self) -> None:
+        pass
+
+    @property
+    def dice(self) -> None:
+        pass
+
+    @property
+    def via_bot(self) -> None:
+        pass
+
+    @property
+    def silent(self) -> bool:
+        return getattr(self._raw, "silent", None) or False
+
+    @property
+    def can_forward(self) -> bool:
+        if isinstance(self._raw, types.Message):
+            return not self._raw.noforwards
+        else:
+            return False

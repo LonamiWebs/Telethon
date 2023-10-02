@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
 
 from ..event import Event
 
@@ -144,7 +144,7 @@ class TextOnly:
     """
 
 
-MediaTypes = Union[Literal["photo"], Literal["audio"], Literal["video"]]
+MediaType = Union[Literal["photo"], Literal["audio"], Literal["video"]]
 
 
 class Media:
@@ -166,15 +166,15 @@ class Media:
 
     __slots__ = "_types"
 
-    def __init__(self, types: Optional[MediaTypes] = None) -> None:
-        self._types = types
+    def __init__(self, *types: MediaType) -> None:
+        self._types = types or None
 
     @property
-    def types(self) -> MediaTypes:
+    def types(self) -> Tuple[MediaType, ...]:
         """
         The media types being checked.
         """
-        return self._types
+        return self._types or ()
 
     def __call__(self, event: Event) -> bool:
         if self._types is None:

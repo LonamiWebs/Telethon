@@ -41,7 +41,7 @@ class AsyncList(abc.ABC, Generic[T]):
 
     async def _collect(self) -> List[T]:
         prev = -1
-        while prev != len(self._buffer):
+        while not self._done and prev != len(self._buffer):
             prev = len(self._buffer)
             await self._fetch_next()
         return list(self._buffer)

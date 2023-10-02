@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
@@ -16,11 +16,15 @@ if TYPE_CHECKING:
 
 def parse_message(
     *,
-    text: Optional[str] = None,
-    markdown: Optional[str] = None,
-    html: Optional[str] = None,
-) -> Tuple[str, Optional[List[abcs.MessageEntity]]]:
-    if sum((text is not None, markdown is not None, html is not None)) != 1:
+    text: Optional[Union[str, Message]],
+    markdown: Optional[str],
+    html: Optional[str],
+    allow_empty: bool,
+) -> Tuple[Union[str, Message], Optional[List[abcs.MessageEntity]]]:
+    cnt = sum((text is not None, markdown is not None, html is not None))
+    if cnt != 1:
+        if cnt == 0 and allow_empty:
+            return "", None
         raise ValueError("must specify exactly one of text, markdown or html")
 
     if text is not None:
@@ -38,14 +42,17 @@ def parse_message(
 async def send_message(
     self: Client,
     chat: ChatLike,
-    text: Optional[str] = None,
+    text: Optional[Union[str, Message]] = None,
     *,
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: Optional[bool] = None,
+    reply_to: Optional[int] = None,
 ) -> Message:
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
-    message, entities = parse_message(text=text, markdown=markdown, html=html)
+    message, entities = parse_message(
+        text=text, markdown=markdown, html=html, allow_empty=False
+    )
     random_id = generate_random_id()
     return self._build_message_map(
         await self(
@@ -57,11 +64,36 @@ async def send_message(
                 noforwards=False,
                 update_stickersets_order=False,
                 peer=peer,
-                reply_to=None,
+                reply_to=types.InputReplyToMessage(
+                    reply_to_msg_id=reply_to, top_msg_id=None
+                )
+                if reply_to
+                else None,
                 message=message,
                 random_id=random_id,
                 reply_markup=None,
                 entities=entities,
+                schedule_date=None,
+                send_as=None,
+            )
+            if isinstance(message, str)
+            else functions.messages.send_message(
+                no_webpage=not message.web_preview,
+                silent=message.silent,
+                background=False,
+                clear_draft=False,
+                noforwards=not message.can_forward,
+                update_stickersets_order=False,
+                peer=peer,
+                reply_to=types.InputReplyToMessage(
+                    reply_to_msg_id=message.replied_message_id, top_msg_id=None
+                )
+                if message.replied_message_id
+                else None,
+                message=message.text or "",
+                random_id=random_id,
+                reply_markup=getattr(message._raw, "reply_markup", None),
+                entities=getattr(message._raw, "entities", None) or None,
                 schedule_date=None,
                 send_as=None,
             )
@@ -81,7 +113,10 @@ async def edit_message(
     link_preview: Optional[bool] = None,
 ) -> Message:
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
-    message, entities = parse_message(text=text, markdown=markdown, html=html)
+    message, entities = parse_message(
+        text=text, markdown=markdown, html=html, allow_empty=False
+    )
+    assert isinstance(message, str)
     return self._build_message_map(
         await self(
             functions.messages.edit_message(
@@ -232,8 +267,8 @@ class HistoryList(MessageList):
 
         self._extend_buffer(self._client, result)
         self._limit -= len(self._buffer)
-        self._done = not self._limit
-        if self._buffer:
+        self._done |= not self._limit
+        if self._buffer and not self._done:
             last = self._last_non_empty_message()
             self._offset_id = self._buffer[-1].id
             if (date := getattr(last, "date", None)) is not None:
@@ -268,7 +303,7 @@ class CherryPickedList(MessageList):
         self._client = client
         self._chat = chat
         self._packed: Optional[PackedChat] = None
-        self._ids = ids
+        self._ids: List[abcs.InputMessage] = [types.InputMessageId(id=id) for id in ids]
 
     async def _fetch_next(self) -> None:
         if not self._ids:
@@ -279,15 +314,12 @@ class CherryPickedList(MessageList):
         if self._packed.is_channel():
             result = await self._client(
                 functions.channels.get_messages(
-                    channel=self._packed._to_input_channel(),
-                    id=[types.InputMessageId(id=id) for id in self._ids[:100]],
+                    channel=self._packed._to_input_channel(), id=self._ids[:100]
                 )
             )
         else:
             result = await self._client(
-                functions.messages.get_messages(
-                    id=[types.InputMessageId(id=id) for id in self._ids[:100]]
-                )
+                functions.messages.get_messages(id=self._ids[:100])
             )
 
         self._extend_buffer(self._client, result)

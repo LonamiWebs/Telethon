@@ -134,7 +134,8 @@ class SqliteSession(Storage):
         )
         if user := session.user:
             c.execute(
-                "insert into user values (?, ?, ?)", (user.id, user.dc, int(user.bot))
+                "insert into user values (?, ?, ?, ?)",
+                (user.id, user.dc, int(user.bot), user.username),
             )
         if state := session.state:
             c.execute(
@@ -193,7 +194,8 @@ class SqliteSession(Storage):
             create table user(
                 id integer primary key,
                 dc integer not null,
-                bot integer not null
+                bot integer not null,
+                username text
             );
             create table state(
                 pts integer not null,

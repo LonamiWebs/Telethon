@@ -158,17 +158,19 @@ class ProfilePhotoList(AsyncList[File]):
             )
 
             if isinstance(result, types.photos.Photos):
-                self._buffer.extend(
-                    filter(None, (File._try_from_raw_photo(p) for p in result.photos))
-                )
+                photos = result.photos
                 self._total = len(result.photos)
             elif isinstance(result, types.photos.PhotosSlice):
-                self._buffer.extend(
-                    filter(None, (File._try_from_raw_photo(p) for p in result.photos))
-                )
+                photos = result.photos
                 self._total = result.count
             else:
                 raise RuntimeError("unexpected case")
+
+            self._buffer.extend(
+                filter(
+                    None, (File._try_from_raw_photo(self._client, p) for p in photos)
+                )
+            )
 
 
 def get_profile_photos(self: Client, chat: ChatLike) -> AsyncList[File]:

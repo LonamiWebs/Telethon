@@ -15,6 +15,7 @@ from ..types import (
     OutFileLike,
     OutWrapper,
 )
+from ..types.file import expand_stripped_size
 from ..utils import generate_random_id
 from .messages import parse_message
 
@@ -182,8 +183,9 @@ async def send_file(
         muted=muted,
     )
     message, entities = parse_message(
-        text=caption, markdown=caption_markdown, html=caption_html
+        text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
     )
+    assert isinstance(message, str)
 
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
 
@@ -312,6 +314,9 @@ class FileBytesList(AsyncList[bytes]):
         self._client = client
         self._loc = file._input_location()
         self._offset = 0
+        if isinstance(file._thumb, types.PhotoStrippedSize):
+            self._buffer.append(expand_stripped_size(file._thumb.bytes))
+            self._done = True
 
     async def _fetch_next(self) -> None:
         result = await self._client(

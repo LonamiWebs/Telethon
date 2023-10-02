@@ -98,6 +98,8 @@ Each of them can have an additional namespace (as seen above with ``account.``).
 * ``tl.types`` contains concrete instances, the "bare" types Telegram actually returns.
   You'll probably use these with :func:`isinstance` a lot.
 
+Most custom :mod:`types` will also have a private ``_raw`` attribute with the original value from Telegram.
+
 
 Raw API has a reduced feature-set
 ---------------------------------
@@ -262,10 +264,10 @@ This means any method returning data from Telegram must have a custom wrapper ob
 Because the standards are higher, the barrier of entry for new additions and features is higher too.
 
 
-No message.raw_text or message.message
---------------------------------------
+Removed or renamed message properties and methods
+-------------------------------------------------
 
-Messages no longer have ``.raw_text`` or ``.message`` properties.
+Messages no longer have ``raw_text`` or ``message`` properties.
 
 Instead, you can access the :attr:`types.Message.text`,
 :attr:`~types.Message.text_markdown` or :attr:`~types.Message.text_html`.
@@ -278,6 +280,25 @@ Those coming from the raw API had no client, so ``text`` couldn't know how to fo
 
 Overall, the old design made the parse mode be pretty hidden.
 This was not very intuitive and also made it very awkward to combine multiple parse modes.
+
+The ``forward`` property is now :attr:`~types.Message.forward_info`.
+The ``forward_to`` method is now simply :meth:`~types.Message.forward`.
+This makes it more consistent with the rest of message methods.
+
+The ``is_reply``, ``reply_to_msg_id`` and ``reply_to`` properties are now :attr:`~types.Message.replied_message_id`.
+The ``get_reply_message`` method is now :meth:`~types.Message.get_replied_message`.
+This should make it clear that you are not getting a reply to the current message, but rather the message it replied to.
+
+The ``to_id``, ``via_input_bot``, ``action_entities``, ``button_count`` properties are also gone.
+Some were kept for backwards-compatibility, some were redundant.
+
+The ``click`` method no longer exists in the message.
+Instead, find the right :attr:`~types.Message.buttons` to click on.
+
+The ``download`` method no longer exists in the message.
+Instead, use :attr:`~types.File.download` on the message's :attr:`~types.Message.file`.
+
+HMMMM WEB_PREVIEW VS LINK_PREVIEW... probs use link. we're previewing a link not the web
 
 
 Event and filters are now separate
