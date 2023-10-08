@@ -76,10 +76,10 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
         if isinstance(chat, types.InputPeerEmpty):
             raise ValueError("Cannot resolve chat")
         elif isinstance(chat, types.InputPeerSelf):
-            if not self._config.session.user:
+            if not self._session.user:
                 raise ValueError("Cannot resolve chat")
             return PackedChat(
-                ty=PackedType.BOT if self._config.session.user.bot else PackedType.USER,
+                ty=PackedType.BOT if self._session.user.bot else PackedType.USER,
                 id=self._chat_hashes.self_id,
                 access_hash=0,  # TODO get hash
             )
@@ -112,7 +112,7 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
         if chat.startswith("+"):
             resolved = await resolve_phone(self, chat)
         elif chat == "me":
-            if me := self._config.session.user:
+            if me := self._session.user:
                 return PackedChat(
                     ty=PackedType.BOT if me.bot else PackedType.USER,
                     id=me.id,

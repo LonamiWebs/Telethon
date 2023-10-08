@@ -18,6 +18,9 @@ from typing import (
     Union,
 )
 
+from telethon._impl.session.session import DataCenter
+
+from ....version import __version__ as default_version
 from ...mtsender import Sender
 from ...session import (
     ChatHashCache,
@@ -93,6 +96,8 @@ from .net import (
     Config,
     connect,
     connected,
+    default_device_model,
+    default_system_version,
     disconnect,
     invoke_request,
     run_until_disconnected,
@@ -137,8 +142,12 @@ class Client:
     :param api_id:
         The API ID. See :doc:`/basic/signing-in` to learn how to obtain it.
 
+        This is required to initialize the connection.
+
     :param api_hash:
         The API hash. See :doc:`/basic/signing-in` to learn how to obtain it.
+
+        This is required to sign in, and can be omitted otherwise.
 
     :param device_model:
         Device model.
@@ -158,8 +167,8 @@ class Client:
     :param catch_up:
         Whether to "catch up" on updates that occured while the client was not connected.
 
-    :param server_addr:
-        Override the server address ``'ip:port'`` pair to connect to.
+    :param datacenter:
+        Override the datacenter to connect to.
         Useful to connect to one of Telegram's test servers.
 
     :param flood_sleep_threshold:
@@ -183,22 +192,44 @@ class Client:
         session: Optional[Union[str, Path, Storage]],
         api_id: int,
         api_hash: Optional[str] = None,
+        *,
+        device_model: Optional[str] = None,
+        system_version: Optional[str] = None,
+        app_version: Optional[str] = None,
+        system_lang_code: Optional[str] = None,
+        lang_code: Optional[str] = None,
+        catch_up: Optional[bool] = None,
+        datacenter: Optional[DataCenter] = None,
+        flood_sleep_threshold: Optional[int] = None,
+        update_queue_limit: Optional[int] = None,
         check_all_handlers: bool = False,
     ) -> None:
         self._sender: Optional[Sender] = None
         self._sender_lock = asyncio.Lock()
-        self._dc_id = DEFAULT_DC
         if isinstance(session, Storage):
             self._storage = session
         elif session is None:
             self._storage = MemorySession()
         else:
             self._storage = SqliteSession(session)
+
         self._config = Config(
-            session=Session(),
             api_id=api_id,
             api_hash=api_hash or "",
+            device_model=device_model or default_device_model(),
+            system_version=system_version or default_system_version(),
+            app_version=app_version or default_version,
+            system_lang_code=system_lang_code or "en",
+            lang_code=lang_code or "en",
+            catch_up=catch_up or False,
+            datacenter=datacenter,
+            flood_sleep_threshold=60
+            if flood_sleep_threshold is None
+            else flood_sleep_threshold,
+            update_queue_limit=update_queue_limit,
         )
+
+        self._session = Session()
 
         self._message_box = MessageBox()
         self._chat_hashes = ChatHashCache(None)
@@ -212,10 +243,8 @@ class Client:
         ] = {}
         self._shortcircuit_handlers = not check_all_handlers
 
-        if self_user := self._config.session.user:
-            self._dc_id = self_user.dc
-            if self._config.catch_up and self._config.session.state:
-                self._message_box.load(self._config.session.state)
+        if self._session.user and self._config.catch_up and self._session.state:
+            self._message_box.load(self._session.state)
 
     # Begin partially @generated
 
@@ -468,7 +497,10 @@ class Client:
         :param message_id:
             The identifier of the message to edit.
 
-        The rest of parameters behave the same as they do in `send_message` or `send_file`.
+        :param text: See :ref:`formatting `.
+        :param markdown: See :ref:`formatting `.
+        :param html: See :ref:`formatting `.
+        :param link_preview: See :ref:`formatting `.
 
         :return: The edited message.
 
@@ -728,6 +760,27 @@ class Client:
     def get_messages_with_ids(
         self, chat: ChatLike, message_ids: List[int]
     ) -> AsyncList[Message]:
+        """
+        Get the full message objects from the corresponding message identifiers.
+
+        :param chat:
+            The :term:`chat` where the message to fetch is.
+
+        :param message_ids:
+            The message identifiers of the messages to fetch.
+
+        :return:
+            The matching messages.
+            The order of the returned messages is *not* guaranteed to match the input.
+            The method may return less messages than requested when some are missing.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            # Get the first message (after "Channel created") of the chat
+            first_message = (await client.get_messages_with_ids(chat, [2]))[0]
+        """
         return get_messages_with_ids(self, chat, message_ids)
 
     def get_participants(self, chat: ChatLike) -> AsyncList[Participant]:
@@ -737,6 +790,9 @@ class Client:
         Note that Telegram is rather strict when it comes to fetching members.
         It is very likely that you will not be able to fetch all the members.
         There is no way to bypass this.
+
+        :param chat:
+            The :term:`chat` to fetch participants from.
 
         :return: The participants.
 
@@ -752,6 +808,9 @@ class Client:
     def get_profile_photos(self, chat: ChatLike) -> AsyncList[File]:
         """
         Get the profile pictures set in a chat, or user avatars.
+
+        :param chat:
+            The :term:`chat` to fetch the profile photo files from.
 
         :return: The photo files.
 
@@ -990,9 +1049,32 @@ class Client:
         return await resolve_to_packed(self, chat)
 
     async def resolve_username(self, username: str) -> Chat:
+        """
+        Resolve a username into a :term:`chat`.
+
+        This method is rather expensive to call.
+        It is recommended to use it once and then ``chat.pack()`` the result.
+        The packed chat can then be used (and re-fetched) more cheaply.
+
+        :param username:
+            The public "@username" to resolve.
+
+        :return: The matching chat.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            print(await client.resolve_username('@cat'))
+        """
         return await resolve_username(self, username)
 
     async def run_until_disconnected(self) -> None:
+        """
+        Keep running the library until a disconnection occurs.
+
+        Connection errors will be raised from this method if they occur.
+        """
         await run_until_disconnected(self)
 
     def search_all_messages(
@@ -1084,10 +1166,8 @@ class Client:
     async def send_audio(
         self,
         chat: ChatLike,
-        path: Optional[Union[str, Path, File]] = None,
+        file: Union[str, Path, InFileLike, File],
         *,
-        url: Optional[str] = None,
-        file: Optional[InFileLike] = None,
         size: Optional[int] = None,
         name: Optional[str] = None,
         duration: Optional[float] = None,
@@ -1105,12 +1185,18 @@ class Client:
         duration, title and performer if they are not provided.
 
         :param chat:
-            The :term:`chat` where the message will be sent to.
+            The :term:`chat` where the audio media will be sent to.
 
-        :param path:
-            A local file path or :class:`~telethon.types.File` to send.
-
-        The rest of parameters behave the same as they do in :meth:`send_file`.
+        :param file: See :meth:`send_file`.
+        :param size: See :meth:`send_file`.
+        :param name: See :meth:`send_file`.
+        :param duration: See :meth:`send_file`.
+        :param voice: See :meth:`send_file`.
+        :param title: See :meth:`send_file`.
+        :param performer: See :meth:`send_file`.
+        :param caption: See :ref:`formatting`.
+        :param caption_markdown: See :ref:`formatting`.
+        :param caption_html: See :ref:`formatting`.
 
         .. rubric:: Example
 
@@ -1121,9 +1207,7 @@ class Client:
         return await send_audio(
             self,
             chat,
-            path,
-            url=url,
-            file=file,
+            file,
             size=size,
             name=name,
             duration=duration,
@@ -1138,10 +1222,8 @@ class Client:
     async def send_file(
         self,
         chat: ChatLike,
-        path: Optional[Union[str, Path, File]] = None,
+        file: Union[str, Path, InFileLike, File],
         *,
-        url: Optional[str] = None,
-        file: Optional[InFileLike] = None,
         size: Optional[int] = None,
         name: Optional[str] = None,
         mime_type: Optional[str] = None,
@@ -1152,7 +1234,6 @@ class Client:
         title: Optional[str] = None,
         performer: Optional[str] = None,
         emoji: Optional[str] = None,
-        emoji_sticker: Optional[str] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
         round: bool = False,
@@ -1169,7 +1250,7 @@ class Client:
         If you want to let the library attempt to guess the file metadata, use the type-specific methods to send media:
         `send_photo`, `send_audio` or `send_file`.
 
-        Unlike `send_photo`, image files will be sent as documents by default.
+        Unlike :meth:`send_photo`, image files will be sent as documents by default.
 
         :param chat:
             The :term:`chat` where the message will be sent to.
@@ -1177,36 +1258,121 @@ class Client:
         :param path:
             A local file path or :class:`~telethon.types.File` to send.
 
-        :param caption:
-            Caption text to display under the media, with no formatting.
+        :param file:
+            The file to send.
 
-        :param caption_markdown:
-            Caption text to display under the media, parsed as markdown.
+            This can be a path, relative or absolute, to a local file, as either a :class:`str` or :class:`pathlib.Path`.
 
-        :param caption_html:
-            Caption text to display under the media, parsed as HTML.
+            It can also be a file opened for reading in binary mode, with its ``read`` method optionally being ``async``.
+            Note that the file descriptor will *not* be seeked back to the start before sending it.
 
-        The rest of parameters are passed to :meth:`telethon.types.File.new`
-        if *path* isn't a :class:`~telethon.types.File`.
-        See the documentation of :meth:`~telethon.types.File.new` to learn what they do.
+            If you wrote to an in-memory file, you probably want to ``file.seek(0)`` first.
+            If you want to send :class:`bytes`, wrap them in :class:`io.BytesIO` first.
 
-        See the section on :doc:`/concepts/messages` to learn about message formatting.
+            You can also pass any :class:`~telethon.types.File` that was previously sent in Telegram to send a copy.
+            This will not download and re-upload the file, but will instead reuse the original without forwarding it.
 
-        Note that only one *caption* parameter can be provided.
+            Last, a URL can also be specified.
+            For the library to detect it as a URL, the string *must* start with either ``http://` or ``https://``.
+            Telethon will *not* download and upload the file, but will instead pass the URL to Telegram.
+            If Telegram is unable to access the media, is too large, or is invalid, the method will fail.
+
+            When using URLs, it is recommended to explicitly pass either a name or define the mime-type.
+            To make sure the URL is interpreted as an image, use `send_photo`.
+
+        :param size:
+            The size of the local file to send.
+
+            This parameter **must** be specified when sending a previously-opened or in-memory files.
+            The library will not ``seek`` the file to attempt to determine the size.
+
+            This can be less than the real file size, in which case only ``size`` bytes will be sent.
+            This can be useful if you have a single buffer with multiple files.
+
+        :param name:
+            Override for the default file name.
+
+            When given a string or path, the :attr:`pathlib.Path.name` will be used by default only if this parameter is omitted.
+
+            This parameter **must** be specified when sending a previously-opened or in-memory files.
+            The library will not attempt to read any ``name`` attributes the object may have.
+
+        :param mime_type:
+            Override for the default mime-type.
+
+            By default, the library will use :func:`mimetypes.guess_type` on the name.
+
+            If no mime-type is registered for the name's extension, ``application/octet-stream`` will be used.
+
+        :param compress:
+            Whether the image file is allowed to be compressed by Telegram.
+
+            If not, image files will be sent as document.
+
+        :param animated:
+            Whether the sticker is animated (not a static image).
+
+        :param duration:
+            Duration, in seconds, of the audio or video.
+
+            This field should be specified when sending audios or videos from local files.
+
+            The floating-point value will be rounded to an integer.
+
+        :param voice:
+            Whether the audio is a live recording, often recorded right before sending it.
+
+        :param title:
+            Title of the song in the audio file.
+
+        :param performer:
+            Artist or main performer of the song in the audio file.
+
+        :param emoji:
+            Alternative text for the sticker.
+
+        :param width:
+            Width, in pixels, of the image or video.
+
+            This field should be specified when sending images or videos from local files.
+
+        :param height:
+            Height, in pixels, of the image or video.
+
+            This field should be specified when sending images or videos from local files.
+
+        :param round:
+            Whether the video should be displayed as a round video.
+
+        :param supports_streaming:
+            Whether clients are allowed to stream the video having to wait for a full download.
+
+            Note that the file format of the video must have streaming support.
+
+        :param muted:
+            Whether the sound of the video is or should be missing.
+
+            This is often used for short animations or "GIFs".
+
+        :param caption: See :ref:`formatting`.
+        :param caption_markdown: See :ref:`formatting`.
+        :param caption_html: See :ref:`formatting`.
 
         .. rubric:: Example
 
         .. code-block:: python
 
-            login_token = await client.request_login_code('+1 23 456...')
-            print(login_token.timeout, 'seconds before code expires')
+            await client.send_file(chat, 'picture.jpg')
+
+            # Sending in-memory bytes
+            import io
+            data = b'my in-memory document'
+            cawait client.send_file(chat, io.BytesIO(data), size=len(data), name='doc.txt')
         """
         return await send_file(
             self,
             chat,
-            path,
-            url=url,
-            file=file,
+            file,
             size=size,
             name=name,
             mime_type=mime_type,
@@ -1217,7 +1383,6 @@ class Client:
             title=title,
             performer=performer,
             emoji=emoji,
-            emoji_sticker=emoji_sticker,
             width=width,
             height=height,
             round=round,
@@ -1244,16 +1409,9 @@ class Client:
         :param chat:
             The :term:`chat` where the message will be sent to.
 
-        :param text:
-            Message text, with no formatting.
-
-            When given a :class:`Message` instance, a copy of the message will be sent.
-
-        :param text_markdown:
-            Message text, parsed as CommonMark.
-
-        :param text_html:
-            Message text, parsed as HTML.
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
 
         :param link_preview:
             Whether the link preview is allowed.
@@ -1265,10 +1423,6 @@ class Client:
 
         :param reply_to:
             The message identifier of the message to reply to.
-
-        Note that exactly one *text* parameter must be provided.
-
-        See the section on :doc:`/concepts/messages` to learn about message formatting.
 
         .. rubric:: Example
 
@@ -1289,10 +1443,8 @@ class Client:
     async def send_photo(
         self,
         chat: ChatLike,
-        path: Optional[Union[str, Path, File]] = None,
+        file: Union[str, Path, InFileLike, File],
         *,
-        url: Optional[str] = None,
-        file: Optional[InFileLike] = None,
         size: Optional[int] = None,
         name: Optional[str] = None,
         compress: bool = True,
@@ -1309,16 +1461,21 @@ class Client:
         Only compressed images can be displayed as photos in applications.
         If *compress* is set to :data:`False`, the image will be sent as a file document.
 
-        Unlike `send_file`, this method will attempt to guess the values for
+        Unlike :meth:`send_file`, this method will attempt to guess the values for
         width and height if they are not provided.
 
         :param chat:
-            The :term:`chat` where the message will be sent to.
+            The :term:`chat` where the photo media will be sent to.
 
-        :param path:
-            A local file path or :class:`~telethon.types.File` to send.
-
-        The rest of parameters behave the same as they do in :meth:`send_file`.
+        :param file: See :meth:`send_file`.
+        :param size: See :meth:`send_file`.
+        :param name: See :meth:`send_file`.
+        :param compress: See :meth:`send_file`.
+        :param width: See :meth:`send_file`.
+        :param height: See :meth:`send_file`.
+        :param caption: See :ref:`formatting`.
+        :param caption_markdown: See :ref:`formatting`.
+        :param caption_html: See :ref:`formatting`.
 
         .. rubric:: Example
 
@@ -1329,9 +1486,7 @@ class Client:
         return await send_photo(
             self,
             chat,
-            path,
-            url=url,
-            file=file,
+            file,
             size=size,
             name=name,
             compress=compress,
@@ -1345,10 +1500,8 @@ class Client:
     async def send_video(
         self,
         chat: ChatLike,
-        path: Optional[Union[str, Path, File]] = None,
+        file: Union[str, Path, InFileLike, File],
         *,
-        url: Optional[str] = None,
-        file: Optional[InFileLike] = None,
         size: Optional[int] = None,
         name: Optional[str] = None,
         duration: Optional[float] = None,
@@ -1363,16 +1516,23 @@ class Client:
         """
         Send a video file.
 
-        Unlike `send_file`, this method will attempt to guess the values for
+        Unlike :meth:`send_file`, this method will attempt to guess the values for
         duration, width and height if they are not provided.
 
         :param chat:
             The :term:`chat` where the message will be sent to.
 
-        :param path:
-            A local file path or :class:`~telethon.types.File` to send.
-
-        The rest of parameters behave the same as they do in :meth:`send_file`.
+        :param file: See :meth:`send_file`.
+        :param size: See :meth:`send_file`.
+        :param name: See :meth:`send_file`.
+        :param duration: See :meth:`send_file`.
+        :param width: See :meth:`send_file`.
+        :param height: See :meth:`send_file`.
+        :param round: See :meth:`send_file`.
+        :param supports_streaming: See :meth:`send_file`.
+        :param caption: See :ref:`formatting`.
+        :param caption_markdown: See :ref:`formatting`.
+        :param caption_html: See :ref:`formatting`.
 
         .. rubric:: Example
 
@@ -1383,9 +1543,7 @@ class Client:
         return await send_video(
             self,
             chat,
-            path,
-            url=url,
-            file=file,
+            file,
             size=size,
             name=name,
             duration=duration,
@@ -1441,6 +1599,10 @@ class Client:
 
         :param token:
             The login token returned from :meth:`request_login_code`.
+
+        :param code:
+            The login code sent by Telegram to a previously-authorized device.
+            This should be a short string of digits.
 
         :return:
             The user corresponding to :term:`yourself`, or a password token if the account has 2FA enabled.

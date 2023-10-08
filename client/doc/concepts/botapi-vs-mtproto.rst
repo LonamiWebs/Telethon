@@ -352,7 +352,8 @@ For the most part, it's a 1-to-1 translation and the result is idiomatic Teletho
 
 
 Migrating from aiogram
-``````````````````````
+^^^^^^^^^^^^^^^^^^^^^^
+
 Using one of the examples from their v3 documentation with logging and comments removed:
 
 .. code-block:: python

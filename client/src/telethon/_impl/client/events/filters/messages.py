@@ -72,7 +72,7 @@ class Command:
             self._username = ""
             client: Optional[Client]
             if (client := getattr(event, "_client", None)) is not None:
-                user = client._config.session.user
+                user = client._session.user
                 if user and user.username:
                     self._username = user.username
 

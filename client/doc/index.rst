@@ -123,6 +123,4 @@ Tips and tricks to develop both with the library and for the library.
     developing/changelog
     developing/migration-guide
     developing/faq
-    developing/philosophy.rst
-    developing/coding-style.rst
-    developing/project-structure.rst
+    developing/contributing

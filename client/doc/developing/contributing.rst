@@ -1,5 +1,50 @@
-Project Structure
-=================
+Contributing
+============
+
+Telethon welcomes all new contributions, whether it's reporting bugs or sending code patches.
+
+Please keep both the philosophy and coding style below in mind.
+
+Be mindful when adding new features.
+Every new feature must be understood by the maintainer, or otherwise it will probably rot.
+The *usefulness : maintenance-cost* ratio must be high enough to warrant being built-in.
+Consider whether your new features could be a separate add-on project entirely.
+
+
+Philosophy
+----------
+
+* Dependencies should only be added when absolutely necessary.
+* Dependencies written in anything other than Python cannot be mandatory.
+* The library must work correctly with no system dependencies other than Python 3.
+* Strict type-checking is required to pass everywhere in the library to make upgrades easier.
+* The code structure must make use of hard and clear boundaries to keep the different parts decoupled.
+* The API should cover only the most commonly used features to avoid bloat and reduce maintenance costs.
+* Documentation must be a pleasure to use and contain plenty of code examples.
+
+
+Coding style
+------------
+
+Knowledge of Python is a obviously a must to develop a Python library.
+A good online resource is `Dive Into Python 3 <http://www.diveintopython3.net/>`_.
+
+Telethon uses multiple tools to automatically format the code and check for linting rules.
+This means you can simply ignore formatting and let the tools handle it for you.
+You can find these tools under the ``tools/`` folder.
+See :ref:`tools` below for an explanation.
+
+The documentation is written with mostly a newline after every period.
+This is not a hard rule.
+Lines can be cut earlier if they become too long to be comfortable.
+
+Commit messages should be short and descriptive.
+They should start with an action in the present ("Fix" and not "Fixed").
+This saves a few characters and represents what the commit will "do" after applied.
+
+
+Project structure
+-----------------
 
 .. currentmodule:: telethon
 
@@ -7,29 +52,61 @@ The repository contains several folders, each with their own "package".
 
 
 benches/
---------
+^^^^^^^^
 
 This folder contains different benchmarks.
 Pretty straightforward.
 
 
 stubs/
-------
+^^^^^^
 
 If a dependency doesn't support typing, files here must work around that.
 
+.. _tools:
 
 tools/
-------
+^^^^^^
 
 Various utility scripts.
 Each script should have a "comment" at the top explaining what they are for.
 
-See ``DEVELOPING.md`` in the repository root to learn how to use some of the tools.
+Code generation
+"""""""""""""""
 
+This will take ``api.tl`` and ``mtproto.tl`` files and generate ``client/_impl/tl``.
+
+.. code-block:: sh
+
+    pip install -e generator/
+    python tools/codegen.py
+
+Linting
+"""""""
+
+This includes format checks, type-checking and testing.
+
+.. code-block:: sh
+
+    pip install -e client/[dev]
+    python tools/check.py
+
+Documentation
+"""""""""""""
+
+Requires `sphinx <https://www.sphinx-doc.org>`_ and `graphviz <https://www.graphviz.org>`_'s ``dot``.
+
+.. code-block:: sh
+
+    pip install -e client/[doc]
+    python tools/docgen.py
+
+Note that multiple optional dependency sets can be specified by separating them with a comma (``[dev,doc]``).
+
+.. _tl-brief:
 
 generator/
-----------
+^^^^^^^^^^
 
 A package that should not be published and is only used when developing the library.
 The implementation is private and exists under the ``src/*/_impl/`` folder.
@@ -72,11 +149,11 @@ An in-memory "filesystem" structure is kept before writing all files to disk.
 This makes it possible to execute most of the process in a sans-io manner.
 Once the code generation finishes, all files are written to disk at once.
 
-See ``DEVELOPING.md`` in the repository root to learn how to generate code.
+See :ref:`tools` above to learn how to generate code.
 
 
 client/
--------
+^^^^^^^
 
 The Telethon client library and documentation lives here.
 This is the package that gets published.

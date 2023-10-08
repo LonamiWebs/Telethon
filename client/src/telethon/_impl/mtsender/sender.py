@@ -76,6 +76,8 @@ class Request(Generic[Return]):
 
 @dataclass
 class Sender:
+    dc_id: int
+    addr: str
     _reader: StreamReader
     _writer: StreamWriter
     _transport: Transport
@@ -88,10 +90,14 @@ class Sender:
     _write_drain_pending: bool
 
     @classmethod
-    async def connect(cls, transport: Transport, mtp: Mtp, addr: str) -> Self:
+    async def connect(
+        cls, transport: Transport, mtp: Mtp, dc_id: int, addr: str
+    ) -> Self:
         reader, writer = await asyncio.open_connection(*addr.split(":"))
 
         return cls(
+            dc_id=dc_id,
+            addr=addr,
             _reader=reader,
             _writer=writer,
             _transport=transport,
@@ -271,8 +277,8 @@ class Sender:
             return None
 
 
-async def connect(transport: Transport, addr: str) -> Sender:
-    sender = await Sender.connect(transport, Plain(), addr)
+async def connect(transport: Transport, dc_id: int, addr: str) -> Sender:
+    sender = await Sender.connect(transport, Plain(), dc_id, addr)
     return await generate_auth_key(sender)
 
 
@@ -289,6 +295,8 @@ async def generate_auth_key(sender: Sender) -> Sender:
     first_salt = finished.first_salt
 
     return Sender(
+        dc_id=sender.dc_id,
+        addr=sender.addr,
         _reader=sender._reader,
         _writer=sender._writer,
         _transport=sender._transport,
@@ -304,9 +312,10 @@ async def generate_auth_key(sender: Sender) -> Sender:
 
 async def connect_with_auth(
     transport: Transport,
+    dc_id: int,
     addr: str,
     auth_key: bytes,
 ) -> Sender:
     return await Sender.connect(
-        transport, Encrypted(AuthKey.from_bytes(auth_key)), addr
+        transport, Encrypted(AuthKey.from_bytes(auth_key)), dc_id, addr
     )

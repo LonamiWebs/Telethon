@@ -23,6 +23,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.graphviz",
+    "sphinx.ext.coverage",
     "roles.tl",
 ]
 
@@ -31,7 +32,9 @@ tl_ref_url = "https://tl.telethon.dev"
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,
+    "show-inheritance": True,
 }
+autodoc_typehints = "description"
 modindex_common_prefix = ["telethon."]
 graphviz_output_format = "svg"
 

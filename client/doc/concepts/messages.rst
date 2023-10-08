@@ -15,6 +15,8 @@ Messages
 Messages are at the heart of a messaging platform.
 In Telethon, you will be using the :class:`~types.Message` class to interact with them.
 
+.. _formatting:
+
 Formatting messages
 -------------------
 

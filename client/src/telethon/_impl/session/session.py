@@ -6,62 +6,71 @@ class DataCenter:
     """
     Data-center information.
 
-    :var id: The DC identifier.
-    :var addr: The server address of the DC, in ``'ip:port'`` format.
-    :var auth: Authentication key to encrypt communication with.
+    :param id: See below.
+    :param addr: See below.
+    :param auth: See below.
     """
 
     __slots__ = ("id", "addr", "auth")
 
     def __init__(self, *, id: int, addr: str, auth: Optional[bytes]) -> None:
         self.id = id
+        "The DC identifier."
         self.addr = addr
+        "The server address of the DC, in ``'ip:port'`` format."
         self.auth = auth
+        "Authentication key to encrypt communication with."
 
 
 class User:
     """
     Information about the logged-in user.
 
-    :var id: User identifier.
-    :var dc: Data-center identifier of the user's "home" DC.
-    :var bot: :data:`True` if the user is from a bot account.
-    :var username: User's primary username.
+    :param id: See below.
+    :param dc: See below.
+    :param bot: See below.
+    :param username: See below.
     """
 
     __slots__ = ("id", "dc", "bot", "username")
 
     def __init__(self, *, id: int, dc: int, bot: bool, username: Optional[str]) -> None:
         self.id = id
+        "User identifier."
         self.dc = dc
+        'Data-center identifier of the user\'s "home" DC.'
         self.bot = bot
+        ":data:`True` if the user is from a bot account."
         self.username = username
+        "User's primary username."
 
 
 class ChannelState:
     """
     Update state for a channel.
 
-    :var id: The channel identifier.
-    :var pts: The channel's partial sequence number.
+    :param id: See below.
+    :param pts: See below.
     """
 
     __slots__ = ("id", "pts")
 
     def __init__(self, *, id: int, pts: int) -> None:
         self.id = id
+        "The channel identifier."
         self.pts = pts
+        "The channel's partial sequence number."
 
 
 class UpdateState:
     """
     Update state for an account.
 
-    :var pts: The primary partial sequence number.
-    :var qts: The secondary partial sequence number.
-    :var date: Date of the latest update sequence.
-    :var seq: The sequence number.
-    :var channels: Update state for channels.
+    :param pts: See below.
+    :param qts: See below.
+    :param date: See below.
+    :param seq: See below.
+    :param channels: See below.
     """
 
     __slots__ = (
@@ -82,10 +91,15 @@ class UpdateState:
         channels: List[ChannelState],
     ) -> None:
         self.pts = pts
+        "The primary partial sequence number."
         self.qts = qts
+        "The secondary partial sequence number."
         self.date = date
+        "Date of the latest update sequence."
         self.seq = seq
+        "The sequence number."
         self.channels = channels
+        "Update state for channels."
 
 
 class Session:
@@ -102,9 +116,18 @@ class Session:
 
     If you think the session has been compromised, immediately terminate all
     sessions through an official Telegram client to revoke the authorization.
+
+    :param dcs: See below.
+    :param user: See below.
+    :param state: See below.
     """
 
     VERSION = 1
+    """
+    Current version.
+
+    Will be incremented if new fields are added.
+    """
 
     __slots__ = ("dcs", "user", "state")
 
@@ -116,81 +139,8 @@ class Session:
         state: Optional[UpdateState] = None,
     ):
         self.dcs = dcs or []
+        "List of known data-centers."
         self.user = user
+        "Information about the logged-in user."
         self.state = state
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "v": self.VERSION,
-            "dcs": [
-                {
-                    "id": dc.id,
-                    "addr": dc.addr,
-                    "auth": base64.b64encode(dc.auth).decode("ascii")
-                    if dc.auth
-                    else None,
-                }
-                for dc in self.dcs
-            ],
-            "user": {
-                "id": self.user.id,
-                "dc": self.user.dc,
-                "bot": self.user.bot,
-                "username": self.user.username,
-            }
-            if self.user
-            else None,
-            "state": {
-                "pts": self.state.pts,
-                "qts": self.state.qts,
-                "date": self.state.date,
-                "seq": self.state.seq,
-                "channels": [
-                    {"id": channel.id, "pts": channel.pts}
-                    for channel in self.state.channels
-                ],
-            }
-            if self.state
-            else None,
-        }
-
-    @classmethod
-    def from_dict(cls, dict: Dict[str, Any]) -> Self:
-        version = dict["v"]
-        if version != cls.VERSION:
-            raise ValueError(
-                f"cannot parse session format version {version} (expected {cls.VERSION})"
-            )
-
-        return cls(
-            dcs=[
-                DataCenter(
-                    id=dc["id"],
-                    addr=dc["addr"],
-                    auth=base64.b64decode(dc["auth"])
-                    if dc["auth"] is not None
-                    else None,
-                )
-                for dc in dict["dcs"]
-            ],
-            user=User(
-                id=dict["user"]["id"],
-                dc=dict["user"]["dc"],
-                bot=dict["user"]["bot"],
-                username=dict["user"]["username"],
-            )
-            if dict["user"]
-            else None,
-            state=UpdateState(
-                pts=dict["state"]["pts"],
-                qts=dict["state"]["qts"],
-                date=dict["state"]["date"],
-                seq=dict["state"]["seq"],
-                channels=[
-                    ChannelState(id=channel["id"], pts=channel["pts"])
-                    for channel in dict["state"]["channels"]
-                ],
-            )
-            if dict["state"]
-            else None,
-        )
+        "Update state."

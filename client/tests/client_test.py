@@ -2,7 +2,7 @@ import os
 import random
 
 from pytest import mark
-from telethon import Client, Config, Session
+from telethon import Client
 from telethon import _tl as tl
 
 
@@ -22,3 +22,5 @@ async def test_ping_pong() -> None:
     pong = await client(tl.mtproto.functions.ping(ping_id=ping_id))
     assert isinstance(pong, tl.mtproto.types.Pong)
     assert pong.ping_id == ping_id
+
+    await client.disconnect()

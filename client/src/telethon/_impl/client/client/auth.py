@@ -9,7 +9,7 @@ from ...mtproto import RpcError
 from ...session import User as SessionUser
 from ...tl import abcs, functions, types
 from ..types import LoginToken, PasswordToken, User
-from .net import connect_sender
+from .net import connect_sender, datacenter_for_id
 
 if TYPE_CHECKING:
     from .client import Client
@@ -26,11 +26,12 @@ async def is_authorized(self: Client) -> bool:
 
 
 async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
+    assert client._sender
     assert isinstance(auth, types.auth.Authorization)
     assert isinstance(auth.user, types.User)
     user = User._from_raw(auth.user)
-    client._config.session.user = SessionUser(
-        id=user.id, dc=client._dc_id, bot=user.bot, username=user.username
+    client._session.user = SessionUser(
+        id=user.id, dc=client._sender.dc_id, bot=user.bot, username=user.username
     )
 
     packed = user.pack()
@@ -48,10 +49,11 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
 
 async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
     assert dc_id is not None
-    sender = await connect_sender(dc_id, client._config)
+    sender, client._session.dcs = await connect_sender(
+        client._config, datacenter_for_id(client, dc_id)
+    )
     async with client._sender_lock:
         client._sender = sender
-    client._dc_id = dc_id
 
 
 async def bot_sign_in(self: Client, token: str) -> User:

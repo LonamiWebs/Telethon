@@ -12,17 +12,22 @@ class Storage(abc.ABC):
     @abc.abstractmethod
     async def load(self) -> Optional[Session]:
         """
-        Load the `Session` instance, if any.
+        Load the :class:`Session` instance, if any.
 
         This method is called by the library prior to `connect`.
+
+        :return: The previously-saved session.
         """
 
     @abc.abstractmethod
     async def save(self, session: Session) -> None:
         """
-        Save the `Session` instance to persistent storage.
+        Save the :class:`Session` instance to persistent storage.
 
         This method is called by the library post `disconnect`.
+
+        :param session:
+            The session information that should be persisted.
         """
 
     @abc.abstractmethod

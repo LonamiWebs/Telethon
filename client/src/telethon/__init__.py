@@ -1,8 +1,10 @@
+"""
+The main package for the Telethon library.
+"""
 from ._impl import tl as _tl
-from ._impl.client import Client, Config
+from ._impl.client import Client
 from ._impl.client.errors import errors
 from ._impl.mtproto import RpcError
-from ._impl.session import Session
 from .version import __version__
 
-__all__ = ["_tl", "Client", "Config", "errors", "RpcError", "Session"]
+__all__ = ["_tl", "Client", "errors", "RpcError"]

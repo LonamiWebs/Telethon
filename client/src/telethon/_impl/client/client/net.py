@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 import platform
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, List, Optional, Tuple, TypeVar
 
 from ....version import __version__
 from ...mtproto import Full, RpcError
@@ -13,7 +14,7 @@ from ...mtsender import connect as connect_without_auth
 from ...mtsender import connect_with_auth
 from ...session import DataCenter, Session
 from ...session import User as SessionUser
-from ...tl import LAYER, Request, functions
+from ...tl import LAYER, Request, functions, types
 from ..errors import adapt_rpc
 from .updates import dispatcher, process_socket_updates
 
@@ -41,13 +42,6 @@ def default_system_version() -> str:
 
 @dataclass
 class Config:
-    """
-    Configuration used by the :class:`telethon.Client`.
-
-    See the parameters of :class:`~telethon.Client` for an explanation of the fields.
-    """
-
-    session: Session
     api_id: int
     api_hash: str
     device_model: str = field(default_factory=default_device_model)
@@ -56,54 +50,33 @@ class Config:
     system_lang_code: str = "en"
     lang_code: str = "en"
     catch_up: bool = False
-    server_addr: Optional[str] = None
+    datacenter: Optional[DataCenter] = None
     flood_sleep_threshold: Optional[int] = 60
     update_queue_limit: Optional[int] = None
 
 
-# dc_id to IPv4 and port pair
-DC_ADDRESSES = [
-    "0.0.0.0:0",
-    "149.154.175.53:443",
-    "149.154.167.51:443",
-    "149.154.175.100:443",
-    "149.154.167.92:443",
-    "91.108.56.190:443",
+KNOWN_DC = [
+    DataCenter(id=1, addr="149.154.175.53:443", auth=None),
+    DataCenter(id=2, addr="149.154.167.51:443", auth=None),
+    DataCenter(id=3, addr="149.154.175.100:443", auth=None),
+    DataCenter(id=4, addr="149.154.167.92:443", auth=None),
+    DataCenter(id=5, addr="91.108.56.190:443", auth=None),
 ]
 
 DEFAULT_DC = 2
 
 
-async def connect_sender(dc_id: int, config: Config) -> Sender:
+async def connect_sender(
+    config: Config, dc: DataCenter
+) -> Tuple[Sender, List[DataCenter]]:
     transport = Full()
 
-    if config.server_addr:
-        addr = config.server_addr
+    if dc.auth:
+        sender = await connect_with_auth(transport, dc.id, dc.addr, dc.auth)
     else:
-        addr = DC_ADDRESSES[dc_id]
-
-    auth_key: Optional[bytes] = None
-    for dc in config.session.dcs:
-        if dc.id == dc_id:
-            if dc.auth:
-                auth_key = dc.auth
-            break
-
-    if auth_key:
-        sender = await connect_with_auth(transport, addr, auth_key)
-    else:
-        sender = await connect_without_auth(transport, addr)
-        for dc in config.session.dcs:
-            if dc.id == dc_id:
-                dc.auth = sender.auth_key
-                break
-        else:
-            config.session.dcs.append(
-                DataCenter(id=dc_id, addr=addr, auth=sender.auth_key)
-            )
+        sender = await connect_without_auth(transport, dc.id, dc.addr)
 
     # TODO handle -404 (we had a previously-valid authkey, but server no longer knows about it)
-    # TODO all up-to-date server addresses should be stored in the session for future initial connections
     remote_config = await sender.invoke(
         functions.invoke_with_layer(
             layer=LAYER,
@@ -121,9 +94,29 @@ async def connect_sender(dc_id: int, config: Config) -> Sender:
             ),
         )
     )
-    remote_config
 
-    return sender
+    latest_dcs = []
+    append_current = True
+    for opt in types.Config.from_bytes(remote_config).dc_options:
+        assert isinstance(opt, types.DcOption)
+        latest_dcs.append(
+            DataCenter(
+                id=opt.id,
+                addr=opt.ip_address,
+                auth=sender.auth_key if sender.dc_id == opt.id else None,
+            )
+        )
+        if sender.dc_id == opt.id:
+            append_current = False
+
+    if append_current:
+        # Current config has no DC with current ID.
+        # Append it to preserve the authorization key.
+        latest_dcs.append(
+            DataCenter(id=sender.dc_id, addr=sender.addr, auth=sender.auth_key)
+        )
+
+    return sender, latest_dcs
 
 
 async def connect(self: Client) -> None:
@@ -131,38 +124,61 @@ async def connect(self: Client) -> None:
         return
 
     if session := await self._storage.load():
-        self._config.session = session
+        self._session = session
 
-    if user := self._config.session.user:
-        self._dc_id = user.dc
+    if dc := self._config.datacenter:
+        # Datacenter override, reusing the session's auth-key unless already present.
+        datacenter = (
+            dc
+            if dc.auth
+            else DataCenter(
+                id=dc.id,
+                addr=dc.addr,
+                auth=next(
+                    (d.auth for d in self._session.dcs if d.id == dc.id and d.auth),
+                    None,
+                ),
+            )
+        )
     else:
-        for dc in self._config.session.dcs:
-            if dc.auth:
-                self._dc_id = dc.id
-                break
+        # Reuse the session's datacenter, falling back to defaults if not found.
+        datacenter = datacenter_for_id(
+            self, self._session.user.dc if self._session.user else DEFAULT_DC
+        )
 
-    self._sender = await connect_sender(self._dc_id, self._config)
+    self._sender, self._session.dcs = await connect_sender(self._config, datacenter)
 
-    if self._message_box.is_empty() and self._config.session.user:
+    if self._message_box.is_empty() and self._session.user:
         try:
             await self(functions.updates.get_state())
         except RpcError as e:
             if e.code == 401:
-                self._config.session.user = None
+                self._session.user = None
         except Exception as e:
             pass
         else:
-            if not self._config.session.user:
+            if not self._session.user:
                 me = await self.get_me()
                 assert me is not None
-                self._config.session.user = SessionUser(
-                    id=me.id, dc=self._dc_id, bot=me.bot, username=me.username
+                self._session.user = SessionUser(
+                    id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username
                 )
                 packed = me.pack()
                 assert packed is not None
                 self._chat_hashes.set_self_user(packed)
 
     self._dispatcher = asyncio.create_task(dispatcher(self))
+
+
+def datacenter_for_id(client: Client, dc_id: int) -> DataCenter:
+    try:
+        return next(
+            dc
+            for dc in itertools.chain(client._session.dcs, KNOWN_DC)
+            if dc.id == dc_id
+        )
+    except StopIteration:
+        raise ValueError(f"no datacenter found for id: {dc_id}") from None
 
 
 async def disconnect(self: Client) -> None:
@@ -173,8 +189,6 @@ async def disconnect(self: Client) -> None:
     self._dispatcher.cancel()
     try:
         await self._dispatcher
-    except asyncio.CancelledError:
-        pass
     except Exception:
         pass  # TODO log
     finally:
@@ -187,8 +201,8 @@ async def disconnect(self: Client) -> None:
     finally:
         self._sender = None
 
-    self._config.session.state = self._message_box.session_state()
-    await self._storage.save(self._config.session)
+    self._session.state = self._message_box.session_state()
+    await self._storage.save(self._session)
 
 
 async def invoke_request(

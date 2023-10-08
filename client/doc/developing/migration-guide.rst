@@ -64,6 +64,21 @@ This was also a good opportunity to remove a lot of modules that were not suppos
 ``.crypto``, ``.extensions``, ``.network``, ``.custom``, ``.functions``, ``.helpers``, ``.hints``, ``.password``, ``.requestiter``, ``.sync``, ``.types``, ``.utils``.
 
 
+TelegramClient renamed to Client
+--------------------------------
+
+You can rename it with :keyword:`as` during import if you want to use the old name.
+
+Python allows using namespaces via packages and modules.
+Therefore, the full name :class:`telethon.Client` already indicates it's from ``telethon``, so the old ``Telegram`` prefix was redundant.
+
+
+No telethon.sync hack
+---------------------
+
+You can no longer ``import telethon.sync`` to have most calls wrapped in :meth:`asyncio.loop.run_until_complete` for you.
+
+
 Raw API is now private
 ----------------------
 
@@ -138,6 +153,27 @@ Consider using :func:`functools.partial` if you want to reuse parts of a request
 
 Functions no longer have an asynchronous ``.resolve()``.
 This used to let you pass usernames and have them be resolved to :tl:`InputPeer` automatically (unless it was nested).
+
+
+Changes to start and client context-manager
+-------------------------------------------
+
+You can no longer ``start()`` the client.
+
+Instead, you will need to first :meth:`~Client.connect` and then start the :meth:`~Client.interactive_login`.
+
+In v1, the when using the client as a context-manager, ``start()`` was called.
+Since that method no longer exists, it now instead only :meth:`~Client.connect` and :meth:`~Client.disconnect`.
+
+This means you won't get annoying prompts in your terminal if the session was not authorized.
+It also means you can now use the context manager even with custom login flows.
+
+The old ``sign_in()`` method also sent the code, which was rather confusing.
+Instead, you must now :meth:`~Client.request_login_code` as a separate operation.
+
+The old ``log_out()`` was also renamed to :meth:`~Client.sign_out` for consistency with :meth:`~Client.sign_in`.
+
+The old ``is_user_authorized()`` was renamed to :meth:`~Client.is_authorized` since it works for bot accounts too.
 
 
 Unified client iter and get methods
@@ -451,38 +487,3 @@ StringSession no longer exists
 If you need to serialize the session data to a string, you can use something like `jsonpickle <https://pypi.org/project/jsonpickle/>`_.
 Or even the built-in :mod:`pickle` followed by :mod:`base64` or just :meth:`bytes.hex`.
 But be aware that these approaches probably will not be compatible with additions to the :class:`~session.Session`.
-
-
-TelegramClient renamed to Client
---------------------------------
-
-You can rename it with :keyword:`as` during import if you want to use the old name.
-
-Python allows using namespaces via packages and modules.
-Therefore, the full name :class:`telethon.Client` already indicates it's from ``telethon``, so the old ``Telegram`` prefix was redundant.
-
-
-Changes to start and client context-manager
--------------------------------------------
-
-You can no longer ``start()`` the client.
-
-Instead, you will need to first :meth:`~Client.connect` and then start the :meth:`~Client.interactive_login`.
-
-In v1, the when using the client as a context-manager, ``start()`` was called.
-Since that method no longer exists, it now instead only :meth:`~Client.connect` and :meth:`~Client.disconnect`.
-
-This means you won't get annoying prompts in your terminal if the session was not authorized.
-It also means you can now use the context manager even with custom login flows.
-
-The old ``sign_in()`` method also sent the code, which was rather confusing.
-Instead, you must now :meth:`~Client.request_login_code` as a separate operation.
-
-The old ``log_out()`` was also renamed to :meth:`~Client.sign_out` for consistency with :meth:`~Client.sign_in`.
-
-The old ``is_user_authorized()`` was renamed to :meth:`~Client.is_authorized` since it works for bot accounts too.
-
-No telethon.sync hack
----------------------
-
-You can no longer ``import telethon.sync`` to have most calls wrapped in :meth:`asyncio.loop.run_until_complete` for you.

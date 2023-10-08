@@ -44,7 +44,7 @@ stripped_size_header = bytes.fromhex(
 stripped_size_footer = bytes.fromhex("FFD9")
 
 
-def expand_stripped_size(data: bytes) -> bytearray:
+def expand_stripped_size(data: bytes) -> bytes:
     header = bytearray(stripped_size_header)
     header[164] = data[1]
     header[166] = data[2]
@@ -77,7 +77,12 @@ class InFileLike(Protocol):
     """
 
     def read(self, n: int) -> Union[bytes, Coroutine[Any, Any, bytes]]:
-        pass
+        """
+        Read from the file or buffer.
+
+        :param n:
+            Maximum amount of bytes that should be returned.
+        """
 
 
 class OutFileLike(Protocol):
@@ -87,33 +92,12 @@ class OutFileLike(Protocol):
     """
 
     def write(self, data: bytes) -> Union[Any, Coroutine[Any, Any, Any]]:
-        pass
+        """
+        Write all the data into the file or buffer.
 
-
-class InWrapper:
-    __slots__ = ("_fd", "_owned")
-
-    def __init__(self, file: Union[str, Path, InFileLike]):
-        if isinstance(file, str):
-            file = Path(file)
-
-        if isinstance(file, Path):
-            self._fd: Union[InFileLike, BufferedReader] = file.open("rb")
-            self._owned = True
-        else:
-            self._fd = file
-            self._owned = False
-
-    async def read(self, n: int) -> bytes:
-        ret = self._fd.read(n)
-        chunk = await ret if isawaitable(ret) else ret
-        assert isinstance(chunk, bytes)
-        return chunk
-
-    def close(self) -> None:
-        if self._owned:
-            assert hasattr(self._fd, "close")
-            self._fd.close()
+        :param data:
+            Data that must be written to the buffer entirely.
+        """
 
 
 class OutWrapper:
@@ -143,30 +127,24 @@ class OutWrapper:
 
 class File(metaclass=NoPublicConstructor):
     """
-    File information of uploaded media.
-
-    It is used both when sending files or accessing media in a `Message`.
+    File information of media sent to Telegram that can be downloaded.
     """
 
     def __init__(
         self,
         *,
-        path: Optional[Path],
-        file: Optional[InFileLike],
         attributes: List[abcs.DocumentAttribute],
         size: int,
         name: str,
         mime: str,
         photo: bool,
         muted: bool,
-        input_media: Optional[abcs.InputMedia],
+        input_media: abcs.InputMedia,
         thumb: Optional[abcs.PhotoSize],
         thumbs: Optional[List[abcs.PhotoSize]],
         raw: Optional[Union[abcs.MessageMedia, abcs.Photo, abcs.Document]],
         client: Optional[Client],
     ):
-        self._path = path
-        self._file = file
         self._attributes = attributes
         self._size = size
         self._name = name
@@ -226,8 +204,6 @@ class File(metaclass=NoPublicConstructor):
     ) -> Optional[Self]:
         if isinstance(raw, types.Document):
             return cls._create(
-                path=None,
-                file=None,
                 attributes=raw.attributes,
                 size=raw.size,
                 name=next(
@@ -279,8 +255,6 @@ class File(metaclass=NoPublicConstructor):
         if isinstance(raw, types.Photo):
             largest_thumb = max(raw.sizes, key=photo_size_byte_count)
             return cls._create(
-                path=None,
-                file=None,
                 attributes=[],
                 size=photo_size_byte_count(largest_thumb),
                 name="",
@@ -304,165 +278,29 @@ class File(metaclass=NoPublicConstructor):
 
         return None
 
-    @classmethod
-    def new(
-        cls,
-        path: Optional[Union[str, Path, Self]] = None,
-        *,
-        url: Optional[str] = None,
-        file: Optional[InFileLike] = None,
-        size: Optional[int] = None,
-        name: Optional[str] = None,
-        mime_type: Optional[str] = None,
-        compress: bool = False,
-        animated: bool = False,
-        duration: Optional[float] = None,
-        voice: bool = False,
-        title: Optional[str] = None,
-        performer: Optional[str] = None,
-        emoji: Optional[str] = None,
-        emoji_sticker: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        round: bool = False,
-        supports_streaming: bool = False,
-        muted: bool = False,
-    ) -> Self:
+    @property
+    def name(self) -> Optional[str]:
         """
-        Create file information that can later be sent as media.
-
-        If the path is a `File`, the rest of parameters are ignored, and
-        this existing instance is returned instead (the method is a no-op).
-
-        Only one of path, url or file must be specified.
-
-        If a local file path is not given, size and name must be specified.
-
-        The mime_type will be inferred from the name if it is omitted.
-
-        The rest of parameters are only used depending on the mime_type:
-
-        * For image/:
-        * width (required), in pixels, of the media.
-        * height (required), in pixels, of the media.
-        * For audio/:
-        * duration (required), in seconds, of the media. This will be rounded.
-        * voice, if it's a live recording.
-        * title, of the song.
-        * performer, with the name of the artist.
-        * For video/:
-        * duration (required), in seconds, of the media. This will be rounded.
-        * width (required), in pixels, of the media.
-        * height (required), in pixels, of the media.
-        * round, if it should be displayed as a round video.
-        * supports_streaming, if clients are able to stream the video.
-        * muted, if the sound from the video is or should be missing.
-        * For sticker:
-        * animated, if it's not a static image.
-        * emoji, as the alternative text for the sticker.
-        * stickerset, to which the sticker belongs.
-
-        If any of the required fields are missing, the attribute will not be sent.
+        The file name, if known.
         """
-        if isinstance(path, cls):
-            return path
-        assert not isinstance(path, File)
+        for attr in self._attributes:
+            if isinstance(attr, types.DocumentAttributeFilename):
+                return attr.file_name
 
-        attributes: List[abcs.DocumentAttribute] = []
-
-        if sum((path is not None, url is not None, file is not None)) != 1:
-            raise ValueError("must specify exactly one of path, markdown or html")
-
-        if path is not None:
-            size = os.path.getsize(path)
-            name = os.path.basename(path)
-
-        if size is None:
-            raise ValueError("must specify size")
-        if name is None:
-            raise ValueError("must specify name")
-
-        if mime_type is None:
-            mime_type, _ = guess_type(name, strict=False)
-        if mime_type is None:
-            raise ValueError("must specify mime_type")
-
-        if sum((path is not None, url is not None, file is not None)) != 1:
-            raise ValueError("must specify exactly one of path, markdown or html")
-
-        attributes.append(types.DocumentAttributeFilename(file_name=name))
-
-        if mime_type.startswith("image/"):
-            if width is not None and height is not None:
-                attributes.append(types.DocumentAttributeImageSize(w=width, h=height))
-        elif mime_type.startswith("audio/"):
-            if duration is not None:
-                attributes.append(
-                    types.DocumentAttributeAudio(
-                        voice=voice,
-                        duration=int(math_round(duration)),
-                        title=title,
-                        performer=performer,
-                        waveform=None,
-                    )
-                )
-        elif mime_type.startswith("video/"):
-            if duration is not None and width is not None and height is not None:
-                attributes.append(
-                    types.DocumentAttributeVideo(
-                        round_message=round,
-                        supports_streaming=supports_streaming,
-                        nosound=muted,
-                        duration=int(math_round(duration)),
-                        w=width,
-                        h=height,
-                        preload_prefix_size=None,
-                    )
-                )
-
-        photo = compress and mime_type.startswith("image/")
-
-        input_media: Optional[abcs.InputMedia]
-        if url is not None:
-            if photo:
-                input_media = types.InputMediaPhotoExternal(
-                    spoiler=False, url=url, ttl_seconds=None
-                )
-            else:
-                input_media = types.InputMediaDocumentExternal(
-                    spoiler=False, url=url, ttl_seconds=None
-                )
-        else:
-            input_media = None
-
-        return cls._create(
-            path=Path(path) if path is not None else None,
-            file=file,
-            attributes=attributes,
-            size=size,
-            name=name,
-            mime=mime_type,
-            photo=photo,
-            muted=muted,
-            input_media=input_media,
-            thumb=None,
-            thumbs=None,
-            raw=None,
-            client=None,
-        )
+        return None
 
     @property
     def ext(self) -> str:
         """
         The file extension, including the leading dot ``.``.
 
-        If the file does not represent and local file, the mimetype is used in :meth:`mimetypes.guess_extension`.
+        If the name is not known, the mime-type is used in :meth:`mimetypes.guess_extension`.
 
-        If no extension is known for the mimetype, the empty string will be returned.
+        If no extension is known for the mime-type, the empty string will be returned.
         This makes it safe to always append this property to a file name.
         """
-        if self._path:
-            return self._path.suffix
+        if name := self._name:
+            return Path(name).suffix
         else:
             return mimetypes.guess_extension(self._mime) or ""
 
@@ -477,8 +315,6 @@ class File(metaclass=NoPublicConstructor):
         """
         return [
             File._create(
-                path=None,
-                file=None,
                 attributes=[],
                 size=photo_size_byte_count(t),
                 name="",
@@ -530,21 +366,12 @@ class File(metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.download`.
 
-        The file must have been obtained from Telegram to be downloadable.
-        This means you cannot create local files, or files with an URL, and download them.
-
-        See the documentation of :meth:`~telethon.Client.download` for an explanation of the parameters.
+        :param file: See :meth:`~telethon.Client.download`.
         """
         if not self._client:
             raise ValueError("only files from Telegram can be downloaded")
 
         await self._client.download(self, file)
-
-    def _open(self) -> InWrapper:
-        file = self._file or self._path
-        if file is None:
-            raise TypeError(f"cannot use file for uploading: {self}")
-        return InWrapper(file)
 
     def _input_location(self) -> abcs.InputFileLocation:
         thumb_types = (

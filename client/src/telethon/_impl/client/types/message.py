@@ -186,7 +186,10 @@ class Message(metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.send_message`.
 
-        See the documentation of :meth:`~telethon.Client.send_message` for an explanation of the parameters.
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
+        :param link_preview: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.send_message(
             self.chat, text, markdown=markdown, html=html, link_preview=link_preview
@@ -203,7 +206,10 @@ class Message(metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.send_message` with the ``reply_to`` parameter set to this message.
 
-        See the documentation of :meth:`~telethon.Client.send_message` for an explanation of the parameters.
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
+        :param link_preview: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.send_message(
             self.chat,
@@ -218,7 +224,7 @@ class Message(metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.delete_messages`.
 
-        See the documentation of :meth:`~telethon.Client.delete_messages` for an explanation of the parameters.
+        :param revoke: See :meth:`~telethon.Client.delete_messages`.
         """
         await self._client.delete_messages(self.chat, [self.id], revoke=revoke)
 
@@ -232,7 +238,10 @@ class Message(metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.edit_message`.
 
-        See the documentation of :meth:`~telethon.Client.edit_message` for an explanation of the parameters.
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
+        :param link_preview: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.edit_message(
             self.chat,
@@ -247,17 +256,23 @@ class Message(metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.forward_messages`.
 
-        See the documentation of :meth:`~telethon.Client.forward_messages` for an explanation of the parameters.
+        :param target: See :meth:`~telethon.Client.forward_messages`.
         """
         return (await self._client.forward_messages(target, [self.id], self.chat))[0]
 
     async def mark_read(self) -> None:
         pass
 
-    async def pin(self, *, notify: bool = False, pm_oneside: bool = False) -> None:
+    async def pin(self) -> None:
+        """
+        Alias for :meth:`telethon.Client.pin_message`.
+        """
         pass
 
     async def unpin(self) -> None:
+        """
+        Alias for :meth:`telethon.Client.unpin_message`.
+        """
         pass
 
     # ---

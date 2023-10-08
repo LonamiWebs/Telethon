@@ -67,6 +67,9 @@ class PackedChat:
         """
         Convenience method to convert hexadecimal numbers into bytes then passed to :meth:`from_bytes`:
 
+        :param hex:
+            Hexadecimal numbers to convert from.
+
         .. code-block::
 
             assert PackedChat.from_hex(packed.hex) == packed

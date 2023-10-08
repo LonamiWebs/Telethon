@@ -66,3 +66,5 @@ Glossary
     Type Language
         File format used by Telegram to define all the types and requests available in a :term:`layer`.
         Telegram's site has an `Overview of the TL language <https://core.telegram.org/mtproto/TL>`_.
+
+        .. seealso:: :ref:`Type Language brief <tl-brief>`.

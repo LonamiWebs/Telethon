@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import math
+import mimetypes
+import urllib.parse
 from inspect import isawaitable
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from ...tl import abcs, functions, types
 from ..types import (
@@ -28,14 +31,15 @@ MAX_CHUNK_SIZE = 512 * 1024
 FILE_MIGRATE_ERROR = 303
 BIG_FILE_SIZE = 10 * 1024 * 1024
 
+# ``round`` parameter would make this more annoying to access otherwise.
+math_round = round
+
 
 async def send_photo(
     self: Client,
     chat: ChatLike,
-    path: Optional[Union[str, Path, File]] = None,
+    file: Union[str, Path, InFileLike, File],
     *,
-    url: Optional[str] = None,
-    file: Optional[InFileLike] = None,
     size: Optional[int] = None,
     name: Optional[str] = None,
     compress: bool = True,
@@ -48,9 +52,7 @@ async def send_photo(
     return await send_file(
         self,
         chat,
-        path,
-        url=url,
-        file=file,
+        file,
         size=size,
         name=name,
         compress=compress,
@@ -65,10 +67,8 @@ async def send_photo(
 async def send_audio(
     self: Client,
     chat: ChatLike,
-    path: Optional[Union[str, Path, File]] = None,
+    file: Union[str, Path, InFileLike, File],
     *,
-    url: Optional[str] = None,
-    file: Optional[InFileLike] = None,
     size: Optional[int] = None,
     name: Optional[str] = None,
     duration: Optional[float] = None,
@@ -82,9 +82,7 @@ async def send_audio(
     return await send_file(
         self,
         chat,
-        path,
-        url=url,
-        file=file,
+        file,
         size=size,
         name=name,
         duration=duration,
@@ -100,10 +98,8 @@ async def send_audio(
 async def send_video(
     self: Client,
     chat: ChatLike,
-    path: Optional[Union[str, Path, File]] = None,
+    file: Union[str, Path, InFileLike, File],
     *,
-    url: Optional[str] = None,
-    file: Optional[InFileLike] = None,
     size: Optional[int] = None,
     name: Optional[str] = None,
     duration: Optional[float] = None,
@@ -118,9 +114,7 @@ async def send_video(
     return await send_file(
         self,
         chat,
-        path,
-        url=url,
-        file=file,
+        file,
         size=size,
         name=name,
         duration=duration,
@@ -134,13 +128,20 @@ async def send_video(
     )
 
 
+def try_get_url_path(maybe_url: Union[str, Path, InFileLike]) -> Optional[str]:
+    if not isinstance(maybe_url, str):
+        return None
+    lowercase = maybe_url.lower()
+    if lowercase.startswith("http://") or lowercase.startswith("https://"):
+        return urllib.parse.urlparse(maybe_url).path
+    return None
+
+
 async def send_file(
     self: Client,
     chat: ChatLike,
-    path: Optional[Union[str, Path, File]] = None,
+    file: Union[str, Path, InFileLike, File],
     *,
-    url: Optional[str] = None,
-    file: Optional[InFileLike] = None,
     size: Optional[int] = None,
     name: Optional[str] = None,
     mime_type: Optional[str] = None,
@@ -161,61 +162,127 @@ async def send_file(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
 ) -> Message:
-    file_info = File.new(
-        path,
-        url=url,
-        file=file,
-        size=size,
-        name=name,
-        mime_type=mime_type,
-        compress=compress,
-        animated=animated,
-        duration=duration,
-        voice=voice,
-        title=title,
-        performer=performer,
-        emoji=emoji,
-        emoji_sticker=emoji_sticker,
-        width=width,
-        height=height,
-        round=round,
-        supports_streaming=supports_streaming,
-        muted=muted,
-    )
     message, entities = parse_message(
         text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
     )
     assert isinstance(message, str)
 
-    peer = (await self._resolve_to_packed(chat))._to_input_peer()
+    # Re-send existing file.
+    if isinstance(file, File):
+        return await do_send_file(self, chat, file._input_media, message, entities)
 
-    if file_info._input_media is None:
-        if file_info._input_file is None:
-            file_info._input_file = await upload(self, file_info)
-        file_info._input_media = (
-            types.InputMediaUploadedPhoto(
-                spoiler=False,
-                file=file_info._input_file,
-                stickers=None,
-                ttl_seconds=None,
+    # URLs are handled early as they can't use any other attributes either.
+    input_media: abcs.InputMedia
+    if (url_path := try_get_url_path(file)) is not None:
+        assert isinstance(file, str)
+        if compress:
+            if mime_type is None:
+                if name is None:
+                    name = Path(url_path).name
+                mime_type, _ = mimetypes.guess_type(name, strict=False)
+            as_photo = mime_type and mime_type.startswith("image/")
+        else:
+            as_photo = False
+        if as_photo:
+            input_media = types.InputMediaPhotoExternal(
+                spoiler=False, url=file, ttl_seconds=None
             )
-            if file_info._photo
-            else types.InputMediaUploadedDocument(
-                nosound_video=file_info._muted,
-                force_file=False,
-                spoiler=False,
-                file=file_info._input_file,
-                thumb=None,
-                mime_type=file_info._mime,
-                attributes=file_info._attributes,
-                stickers=None,
-                ttl_seconds=None,
+        else:
+            input_media = types.InputMediaDocumentExternal(
+                spoiler=False, url=file, ttl_seconds=None
             )
+        return await do_send_file(self, chat, input_media, message, entities)
+
+    # Paths are opened and closed by us. Anything else is *only* read, not closed.
+    if isinstance(file, (str, Path)):
+        path = Path(file) if isinstance(file, str) else file
+        if size is None:
+            size = path.stat().st_size
+        if name is None:
+            name = path.name
+        with path.open("rb") as fd:
+            input_file = await upload(self, fd, size, name)
+    else:
+        if size is None:
+            raise ValueError("size must be set when sending file-like objects")
+        if name is None:
+            raise ValueError("name must be set when sending file-like objects")
+        input_file = await upload(self, file, size, name)
+
+    # Mime is mandatory for documents, but we also use it to determine whether to send as photo.
+    if mime_type is None:
+        mime_type, _ = mimetypes.guess_type(name, strict=False)
+        if mime_type is None:
+            mime_type = "application/octet-stream"
+
+    as_photo = compress and mime_type.startswith("image/")
+    if as_photo:
+        input_media = types.InputMediaUploadedPhoto(
+            spoiler=False,
+            file=input_file,
+            stickers=None,
+            ttl_seconds=None,
         )
-    random_id = generate_random_id()
 
-    return self._build_message_map(
-        await self(
+    # Only bother to calculate attributes when sending documents.
+    else:
+        attributes: List[abcs.DocumentAttribute] = []
+        attributes.append(types.DocumentAttributeFilename(file_name=name))
+
+        if mime_type.startswith("image/"):
+            if width is not None and height is not None:
+                attributes.append(types.DocumentAttributeImageSize(w=width, h=height))
+        elif mime_type.startswith("audio/"):
+            if duration is not None:
+                attributes.append(
+                    types.DocumentAttributeAudio(
+                        voice=voice,
+                        duration=int(math_round(duration)),
+                        title=title,
+                        performer=performer,
+                        waveform=None,
+                    )
+                )
+        elif mime_type.startswith("video/"):
+            if duration is not None and width is not None and height is not None:
+                attributes.append(
+                    types.DocumentAttributeVideo(
+                        round_message=round,
+                        supports_streaming=supports_streaming,
+                        nosound=muted,
+                        duration=int(math_round(duration)),
+                        w=width,
+                        h=height,
+                        preload_prefix_size=None,
+                    )
+                )
+
+        input_media = types.InputMediaUploadedDocument(
+            nosound_video=muted,
+            force_file=False,
+            spoiler=False,
+            file=input_file,
+            thumb=None,
+            mime_type=mime_type,
+            attributes=attributes,
+            stickers=None,
+            ttl_seconds=None,
+        )
+
+    return await do_send_file(self, chat, input_media, message, entities)
+
+
+async def do_send_file(
+    client: Client,
+    chat: ChatLike,
+    input_media: abcs.InputMedia,
+    message: str,
+    entities: Optional[List[abcs.MessageEntity]],
+) -> Message:
+    peer = (await client._resolve_to_packed(chat))._to_input_peer()
+    random_id = generate_random_id()
+    return client._build_message_map(
+        await client(
             functions.messages.send_media(
                 silent=False,
                 background=False,
@@ -224,7 +291,7 @@ async def send_file(
                 update_stickersets_order=False,
                 peer=peer,
                 reply_to=None,
-                media=file_info._input_media,
+                media=input_media,
                 message=message,
                 random_id=random_id,
                 reply_markup=None,
@@ -239,67 +306,67 @@ async def send_file(
 
 async def upload(
     client: Client,
-    file: File,
+    fd: InFileLike,
+    size: int,
+    name: str,
 ) -> abcs.InputFile:
     file_id = generate_random_id()
 
     uploaded = 0
     part = 0
-    total_parts = (file._size + MAX_CHUNK_SIZE - 1) // MAX_CHUNK_SIZE
+    total_parts = (size + MAX_CHUNK_SIZE - 1) // MAX_CHUNK_SIZE
     buffer = bytearray()
     to_store: Union[bytearray, bytes] = b""
     hash_md5 = hashlib.md5()
-    is_big = file._size > BIG_FILE_SIZE
+    is_big = size > BIG_FILE_SIZE
 
-    fd = file._open()
-    try:
-        while uploaded != file._size:
-            chunk = await fd.read(MAX_CHUNK_SIZE - len(buffer))
-            if not chunk:
-                raise ValueError("unexpected end-of-file")
+    while uploaded != size:
+        ret = fd.read(MAX_CHUNK_SIZE - len(buffer))
+        chunk = await ret if isawaitable(ret) else ret
+        assert isinstance(chunk, bytes)
+        if not chunk:
+            raise ValueError("unexpected end-of-file")
 
-            if len(chunk) == MAX_CHUNK_SIZE or uploaded + len(chunk) == file._size:
-                to_store = chunk
+        if len(chunk) == MAX_CHUNK_SIZE or uploaded + len(chunk) == size:
+            to_store = chunk
+        else:
+            buffer += chunk
+            if len(buffer) == MAX_CHUNK_SIZE:
+                to_store = buffer
             else:
-                buffer += chunk
-                if len(buffer) == MAX_CHUNK_SIZE:
-                    to_store = buffer
-                else:
-                    continue
+                continue
 
-            if is_big:
-                await client(
-                    functions.upload.save_big_file_part(
-                        file_id=file_id,
-                        file_part=part,
-                        file_total_parts=part,
-                        bytes=to_store,
-                    )
+        if is_big:
+            await client(
+                functions.upload.save_big_file_part(
+                    file_id=file_id,
+                    file_part=part,
+                    file_total_parts=part,
+                    bytes=to_store,
                 )
-            else:
-                await client(
-                    functions.upload.save_file_part(
-                        file_id=file_id, file_part=total_parts, bytes=to_store
-                    )
+            )
+        else:
+            await client(
+                functions.upload.save_file_part(
+                    file_id=file_id, file_part=total_parts, bytes=to_store
                 )
-                hash_md5.update(to_store)
+            )
+            hash_md5.update(to_store)
 
-            buffer.clear()
-            part += 1
-    finally:
-        fd.close()
+        buffer.clear()
+        part += 1
 
-    if file._size > BIG_FILE_SIZE:
+    if is_big:
         return types.InputFileBig(
             id=file_id,
             parts=total_parts,
-            name=file._name,
+            name=name,
         )
     else:
         return types.InputFile(
             id=file_id,
             parts=total_parts,
-            name=file._name,
+            name=name,
             md5_checksum=hash_md5.hexdigest(),
         )
 

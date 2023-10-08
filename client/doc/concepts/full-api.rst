@@ -55,7 +55,7 @@ To check for a concrete type, you can use :func:`isinstance`:
     if isinstance(invite, tl.types.ChatInviteAlready):
         print(invite.chat)
 
-The ``telethon._tl`` module is not documented here because it would result in tens of megabytes.
+The ``telethon._tl`` module is not documented here because it would greatly bloat the documentation and make search harder.
 Instead, there are multiple alternatives:
 
 * Use Telethon's separate site to search in the `Telethon Raw API <https://tl.telethon.dev/>`_.

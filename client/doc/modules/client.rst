@@ -1,4 +1,1 @@
-Client
-======
-
 .. autoclass:: telethon.Client
