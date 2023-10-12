@@ -94,10 +94,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer = fs.open(type_path)
 
         if type_path not in fs:
-            writer.write(f"import struct")
-            writer.write(f"from typing import List, Optional, Self")
-            writer.write(f"from .. import abcs")
-            writer.write(f"from ..core import Reader, Serializable, serialize_bytes_to")
+            writer.write("import struct")
+            writer.write("from typing import List, Optional, Self")
+            writer.write("from .. import abcs")
+            writer.write("from ..core import Reader, Serializable, serialize_bytes_to")
 
         ns = f"{typedef.namespace[0]}." if typedef.namespace else ""
         generated_type_names.add(f"{ns}{to_class_name(typedef.name)}")
@@ -112,8 +112,8 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer.write(f"  __slots__ = ({slots})")
 
         #   def constructor_id()
-        writer.write(f"  @classmethod")
-        writer.write(f"  def constructor_id(_) -> int:")
+        writer.write("  @classmethod")
+        writer.write("  def constructor_id(_) -> int:")
         writer.write(f"    return {hex(typedef.id)}")
 
         #   def __init__()
@@ -126,8 +126,8 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
                 writer.write(f"    _s.{p.name} = {p.name}")
 
         #   def _read_from()
-        writer.write(f"  @classmethod")
-        writer.write(f"  def _read_from(cls, reader: Reader) -> Self:")
+        writer.write("  @classmethod")
+        writer.write("  def _read_from(cls, reader: Reader) -> Self:")
         writer.indent(2)
         generate_read(writer, typedef)
         params = ", ".join(f"{p.name}={param_value_fmt(p)}" for p in property_params)
@@ -135,13 +135,13 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer.dedent(2)
 
         #   def _write_to()
-        writer.write(f"  def _write_to(self, buffer: bytearray) -> None:")
+        writer.write("  def _write_to(self, buffer: bytearray) -> None:")
         if typedef.params:
             writer.indent(2)
             generate_write(writer, typedef)
             writer.dedent(2)
         else:
-            writer.write(f"    pass")
+            writer.write("    pass")
 
     for functiondef in tl.functiondefs:
         if len(functiondef.namespace) >= 2:
@@ -158,10 +158,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer = fs.open(function_path)
 
         if function_path not in fs:
-            writer.write(f"import struct")
-            writer.write(f"from typing import List, Optional, Self")
-            writer.write(f"from .. import abcs")
-            writer.write(f"from ..core import Request, serialize_bytes_to")
+            writer.write("import struct")
+            writer.write("from typing import List, Optional, Self")
+            writer.write("from .. import abcs")
+            writer.write("from ..core import Request, serialize_bytes_to")
 
         #   def name(params, ...)
         required_params = [p for p in functiondef.params if not is_computed(p.ty)]
@@ -182,11 +182,11 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     )
 
     writer = fs.open(Path("layer.py"))
-    writer.write(f"from . import abcs, types")
+    writer.write("from . import abcs, types")
     writer.write(
-        f"from .core import Serializable, Reader, deserialize_bool, deserialize_i32_list, deserialize_i64_list, deserialize_identity, single_deserializer, list_deserializer"
+        "from .core import Serializable, Reader, deserialize_bool, deserialize_i32_list, deserialize_i64_list, deserialize_identity, single_deserializer, list_deserializer"
     )
-    writer.write(f"from typing import cast, Tuple, Type")
+    writer.write("from typing import cast, Tuple, Type")
     writer.write(f"LAYER = {tl.layer!r}")
     writer.write(
         "TYPE_MAPPING = {t.constructor_id(): t for t in cast(Tuple[Type[Serializable]], ("
@@ -200,4 +200,4 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             f"  {hex(functiondef.id)}: {function_deserializer_fmt(functiondef)},"
         )
     writer.write("}")
-    writer.write(f"__all__ = ['LAYER', 'TYPE_MAPPING', 'RESPONSE_MAPPING']")
+    writer.write("__all__ = ['LAYER', 'TYPE_MAPPING', 'RESPONSE_MAPPING']")

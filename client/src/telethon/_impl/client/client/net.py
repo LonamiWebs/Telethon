@@ -12,7 +12,7 @@ from ...mtproto import Full, RpcError
 from ...mtsender import Sender
 from ...mtsender import connect as connect_without_auth
 from ...mtsender import connect_with_auth
-from ...session import DataCenter, Session
+from ...session import DataCenter
 from ...session import User as SessionUser
 from ...tl import LAYER, Request, functions, types
 from ..errors import adapt_rpc
@@ -154,7 +154,7 @@ async def connect(self: Client) -> None:
         except RpcError as e:
             if e.code == 401:
                 self._session.user = None
-        except Exception as e:
+        except Exception:
             pass
         else:
             if not self._session.user:

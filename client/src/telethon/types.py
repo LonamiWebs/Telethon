@@ -1,7 +1,7 @@
 """
 Classes for the various objects the library returns.
 """
-from ._impl.client.client import Config, InlineResult
+from ._impl.client.client import Config
 from ._impl.client.types import (
     AsyncList,
     Channel,
@@ -11,6 +11,7 @@ from ._impl.client.types import (
     File,
     Group,
     InFileLike,
+    InlineResult,
     LoginToken,
     Message,
     OutFileLike,

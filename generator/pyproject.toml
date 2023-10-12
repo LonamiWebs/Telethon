@@ -36,3 +36,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {attr = "telethon_generator.__version__"}
+
+[tool.ruff]
+ignore = [
+  "E501",  # formatter takes care of lines that are too long besides documentation
+]

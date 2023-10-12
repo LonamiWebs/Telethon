@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types

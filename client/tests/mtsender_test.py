@@ -4,7 +4,6 @@ import logging
 from pytest import LogCaptureFixture, mark
 from telethon._impl.mtproto import Full
 from telethon._impl.mtsender import connect
-from telethon._impl.session import DataCenter
 from telethon._impl.tl import LAYER, abcs, functions, types
 
 TELEGRAM_TEST_DC = 2, "149.154.167.40:443"

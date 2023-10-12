@@ -130,7 +130,7 @@ async def dispatcher(client: Client) -> None:
         except asyncio.CancelledError:
             return
         except Exception as e:
-            if isinstance(e, RuntimeError) and loop.is_closed:
+            if isinstance(e, RuntimeError) and loop.is_closed():
                 # User probably forgot to call disconnect.
                 logging.warning(
                     "client was not closed cleanly, make sure to call client.disconnect()! %s",

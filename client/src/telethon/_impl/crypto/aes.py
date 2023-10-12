@@ -56,11 +56,17 @@ def ige_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
 try:
     import cryptg
 
-    ige_encrypt = lambda t, k, i: cryptg.encrypt_ige(
-        bytes(t) if not isinstance(t, bytes) else t, k, i
-    )
-    ige_decrypt = lambda t, k, i: cryptg.decrypt_ige(
-        bytes(t) if not isinstance(t, bytes) else t, k, i
-    )
+    def ige_encrypt(plaintext: bytes, key: bytes, iv: bytes) -> bytes:  # noqa: F811
+        return cryptg.encrypt_ige(
+            bytes(plaintext) if not isinstance(plaintext, bytes) else plaintext, key, iv
+        )
+
+    def ige_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:  # noqa: F811
+        return cryptg.decrypt_ige(
+            bytes(ciphertext) if not isinstance(ciphertext, bytes) else ciphertext,
+            key,
+            iv,
+        )
+
 except ImportError:
     pass

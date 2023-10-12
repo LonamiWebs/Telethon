@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
+from ...tl import abcs, functions, types
 from ..utils import generate_random_id
-from ...tl import abcs, types, functions
 from .chat import ChatLike
-from .meta import NoPublicConstructor
 from .message import Message
+from .meta import NoPublicConstructor
 
 if TYPE_CHECKING:
     from ..client import Client

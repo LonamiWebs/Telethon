@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import mimetypes
-import os
 from inspect import isawaitable
-from io import BufferedReader, BufferedWriter
-from mimetypes import guess_type
+from io import BufferedWriter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Coroutine, List, Optional, Protocol, Self, Union
 

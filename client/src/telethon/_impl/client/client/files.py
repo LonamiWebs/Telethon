@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import math
 import mimetypes
 import urllib.parse
 from inspect import isawaitable

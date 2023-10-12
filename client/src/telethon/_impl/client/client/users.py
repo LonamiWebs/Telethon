@@ -50,7 +50,7 @@ def resolved_peer_to_chat(resolved: abcs.contacts.ResolvedPeer) -> Chat:
     if chat := map.get(peer_id(resolved.peer)):
         return chat
     else:
-        raise ValueError(f"no matching chat found in response")
+        raise ValueError("no matching chat found in response")
 
 
 async def resolve_phone(client: Client, phone: str) -> Chat:

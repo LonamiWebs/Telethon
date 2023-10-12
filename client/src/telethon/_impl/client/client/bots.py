@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Self
 
 from ...tl import abcs, functions, types
 from ..types import ChatLike, InlineResult, NoPublicConstructor
-from ..utils import generate_random_id
 
 if TYPE_CHECKING:
     from .client import Client

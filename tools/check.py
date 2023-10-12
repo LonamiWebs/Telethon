@@ -18,6 +18,7 @@ def main() -> None:
             run("isort", ".", "-c", "--profile", "black", "--gitignore")
             or run("black", ".", "--check", "--extend-exclude", BLACK_IGNORE)
             or run("mypy", "--strict", ".")
+            or run("ruff", "check", ".")
             or run("sphinx", "-M", "dummy", "client/doc", tmp_dir, "-n", "-W")
             or run("pytest", ".", "-m", "not net")
         )

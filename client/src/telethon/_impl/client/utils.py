@@ -2,17 +2,7 @@ import itertools
 import sys
 import time
 from collections import defaultdict
-from typing import (
-    Any,
-    Callable,
-    DefaultDict,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Union,
-    cast,
-)
+from typing import DefaultDict, Dict, List, Optional, Union
 
 from ..tl import abcs, types
 from .types import Channel, Chat, Group, User

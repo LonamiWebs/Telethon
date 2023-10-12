@@ -42,6 +42,7 @@ from ..types import (
     Draft,
     File,
     InFileLike,
+    InlineResult,
     LoginToken,
     Message,
     OutFileLike,
@@ -59,7 +60,7 @@ from .auth import (
     sign_in,
     sign_out,
 )
-from .bots import InlineResult, inline_query
+from .bots import inline_query
 from .chats import (
     get_admin_log,
     get_participants,
@@ -92,7 +93,6 @@ from .messages import (
     unpin_message,
 )
 from .net import (
-    DEFAULT_DC,
     Config,
     connect,
     connected,

@@ -1,6 +1,5 @@
-from typing import Dict, List, Optional, Self, Union
+from typing import Dict, Self, Union
 
-from ...session import PackedChat, PackedType
 from ...tl import abcs, types
 from .chat import Chat
 from .meta import NoPublicConstructor

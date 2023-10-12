@@ -20,13 +20,13 @@ def reader_read_fmt(ty: Type, constructor_id: int) -> Tuple[str, Optional[str]]:
         size = struct.calcsize(f"<{fmt}")
         return f"reader.read_fmt(f'<{fmt}', {size})[0]", None
     elif ty.name == "string":
-        return f"str(reader.read_bytes(), 'utf-8', 'replace')", None
+        return "str(reader.read_bytes(), 'utf-8', 'replace')", None
     elif ty.name == "bytes":
-        return f"b'' + reader.read_bytes()", None
+        return "b'' + reader.read_bytes()", None
     elif ty.name == "int128":
-        return f"int.from_bytes(reader.read(16))", None
+        return "int.from_bytes(reader.read(16))", None
     elif ty.name == "int256":
-        return f"int.from_bytes(reader.read(32))", None
+        return "int.from_bytes(reader.read(32))", None
     elif ty.bare:
         return f"{to_class_name(ty.name)}._read_from(reader)", None
     elif ty.name == "Object":
@@ -60,11 +60,11 @@ def generate_normal_param_read(
                 )
 
             if param.ty.bare:
-                writer.write(f"__len = reader.read_fmt('<i', 4)[0]")
-                writer.write(f"assert __len >= 0")
+                writer.write("__len = reader.read_fmt('<i', 4)[0]")
+                writer.write("assert __len >= 0")
             else:
-                writer.write(f"__vid, __len = reader.read_fmt('<ii', 8)")
-                writer.write(f"assert __vid == 0x1cb5c415 and __len >= 0")
+                writer.write("__vid, __len = reader.read_fmt('<ii', 8)")
+                writer.write("assert __vid == 0x1cb5c415 and __len >= 0")
 
             generic = NormalParameter(ty=param.ty.generic_arg, flag=None)
             if is_trivial(generic):
@@ -91,7 +91,7 @@ def generate_normal_param_read(
 
         if flag_check:
             writer.dedent()
-            writer.write(f"else:")
+            writer.write("else:")
             writer.write(f"  _{name} = None")
 
 
