@@ -17,6 +17,9 @@ if TYPE_CHECKING:
 class Message(metaclass=NoPublicConstructor):
     """
     A sent message.
+
+    You can get a message from :class:`telethon.events.NewMessage`,
+    or from methods such as :meth:`telethon.Client.get_messages`.
     """
 
     __slots__ = ("_client", "_raw", "_chat_map")
@@ -154,14 +157,14 @@ class Message(metaclass=NoPublicConstructor):
 
         .. seealso::
 
-            :meth:`get_reply_message`
+            :meth:`get_replied_message`
         """
         if header := getattr(self._raw, "reply_to", None):
             return getattr(header, "reply_to_msg_id", None)
 
         return None
 
-    async def get_reply_message(self) -> Optional[Message]:
+    async def get_replied_message(self) -> Optional[Message]:
         """
         Alias for :meth:`telethon.Client.get_messages_with_ids`.
 

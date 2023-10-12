@@ -12,6 +12,8 @@ class Dialog(metaclass=NoPublicConstructor):
     This represents an open conversation your chat list.
 
     This includes the groups you've joined, channels you've subscribed to, and open one-to-one private conversations.
+
+    You can obtain dialogs with methods such as :meth:`telethon.Client.get_dialogs`.
     """
 
     __slots__ = ("_raw", "_chat_map")

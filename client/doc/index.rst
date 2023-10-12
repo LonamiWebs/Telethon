@@ -30,7 +30,7 @@
     asyncio.run(main())
 
 * Are you new here? Jump straight into :doc:`basic/installation`!
-* Looking for the Client API reference? See :doc:`modules/client`.
+* Looking for the Client API reference? See the :doc:`Client class <modules/client>`.
 * Did you upgrade the library? Please read :doc:`developing/changelog`.
 * Coming from Bot API or want to create new bots? See :doc:`concepts/botapi-vs-mtproto`.
 * Used Telethon before v2.0? See :doc:`developing/migration-guide`.

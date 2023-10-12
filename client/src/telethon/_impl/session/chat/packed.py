@@ -25,6 +25,9 @@ class PackedChat:
 
     You can reuse it as many times as you want.
 
+    You can call ``chat.pack()`` on :class:`~telethon.types.User`,
+    :class:`~telethon.types.Group` or :class:`~telethon.types.Channel` to obtain it.
+
     .. seealso::
 
         :doc:`/concepts/chats`

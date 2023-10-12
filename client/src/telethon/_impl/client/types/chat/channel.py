@@ -8,6 +8,9 @@ from ..meta import NoPublicConstructor
 class Channel(metaclass=NoPublicConstructor):
     """
     A broadcast channel.
+
+    You can get a channel from messages via :attr:`telethon.types.Message.chat`,
+    or from methods such as :meth:`telethon.Client.resolve_username`.
     """
 
     __slots__ = ("_raw",)

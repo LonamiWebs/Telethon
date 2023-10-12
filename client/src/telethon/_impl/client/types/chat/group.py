@@ -8,6 +8,9 @@ from ..meta import NoPublicConstructor
 class Group(metaclass=NoPublicConstructor):
     """
     A small group or supergroup.
+
+    You can get a group from messages via :attr:`telethon.types.Message.chat`,
+    or from methods such as :meth:`telethon.Client.resolve_username`.
     """
 
     __slots__ = ("_raw",)

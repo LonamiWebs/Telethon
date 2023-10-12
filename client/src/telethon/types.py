@@ -1,13 +1,13 @@
 """
 Classes for the various objects the library returns.
 """
-from ._impl.client.client import Config
 from ._impl.client.types import (
     AsyncList,
     Channel,
     Chat,
     ChatLike,
     Dialog,
+    Draft,
     File,
     Group,
     InFileLike,
@@ -17,19 +17,20 @@ from ._impl.client.types import (
     OutFileLike,
     Participant,
     PasswordToken,
+    RecentAction,
     RestrictionReason,
     User,
 )
 from ._impl.session import PackedChat, PackedType
 
 __all__ = [
-    "Config",
     "InlineResult",
     "AsyncList",
     "Channel",
     "Chat",
     "ChatLike",
     "Dialog",
+    "Draft",
     "File",
     "Group",
     "InFileLike",
@@ -38,6 +39,7 @@ __all__ = [
     "OutFileLike",
     "Participant",
     "PasswordToken",
+    "RecentAction",
     "RestrictionReason",
     "User",
     "PackedChat",

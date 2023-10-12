@@ -36,6 +36,9 @@ class RestrictionReason(metaclass=NoPublicConstructor):
 class User(metaclass=NoPublicConstructor):
     """
     A user, representing either a bot account or an account created with a phone number.
+
+    You can get a user from messages via :attr:`telethon.types.Message.sender`,
+    or from methods such as :meth:`telethon.Client.resolve_username`.
     """
 
     __slots__ = ("_raw",)

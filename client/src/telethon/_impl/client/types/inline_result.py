@@ -47,7 +47,7 @@ class InlineResult(metaclass=NoPublicConstructor):
         :param chat:
             The chat where the inline result should be sent to.
 
-            This can be omitted if a chat was previously specified in the :meth:`~Client.inline_query`.
+            This can be omitted if a chat was previously specified in the :meth:`~telethon.Client.inline_query`.
 
         :return: The sent message.
         """

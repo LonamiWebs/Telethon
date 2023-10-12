@@ -497,10 +497,10 @@ class Client:
         :param message_id:
             The identifier of the message to edit.
 
-        :param text: See :ref:`formatting `.
-        :param markdown: See :ref:`formatting `.
-        :param html: See :ref:`formatting `.
-        :param link_preview: See :ref:`formatting `.
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
+        :param link_preview: See :ref:`formatting`.
 
         :return: The edited message.
 
@@ -558,7 +558,7 @@ class Client:
 
         .. seealso::
 
-            :meth:`telethon.types.Message.forward_to`
+            :meth:`telethon.types.Message.forward`
         """
         return await forward_messages(self, target, message_ids, source)
 
@@ -1292,7 +1292,7 @@ class Client:
         :param name:
             Override for the default file name.
 
-            When given a string or path, the :attr:`pathlib.Path.name` will be used by default only if this parameter is omitted.
+            When given a string or path, its :attr:`~pathlib.PurePath.name` will be used by default only if this parameter is omitted.
 
             This parameter **must** be specified when sending a previously-opened or in-memory files.
             The library will not attempt to read any ``name`` attributes the object may have.

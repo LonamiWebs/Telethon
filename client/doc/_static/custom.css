@@ -18,3 +18,7 @@
     background-color: unset;
     color: unset;
 }
+
+li {
+    list-style: circle;
+}

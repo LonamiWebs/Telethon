@@ -72,6 +72,9 @@ class InFileLike(Protocol):
     """
     A :term:`file-like object` used for input only.
     The :meth:`read` method can be :keyword:`async`.
+
+    This is never returned and should never be constructed.
+    It's only used in function parameters.
     """
 
     def read(self, n: int) -> Union[bytes, Coroutine[Any, Any, bytes]]:
@@ -87,6 +90,9 @@ class OutFileLike(Protocol):
     """
     A :term:`file-like object` used for output only.
     The :meth:`write` method can be :keyword:`async`.
+
+    This is never returned and should never be constructed.
+    It's only used in function parameters.
     """
 
     def write(self, data: bytes) -> Union[Any, Coroutine[Any, Any, Any]]:
@@ -126,6 +132,9 @@ class OutWrapper:
 class File(metaclass=NoPublicConstructor):
     """
     File information of media sent to Telegram that can be downloaded.
+
+    You can get a file from messages via :attr:`telethon.types.Message.file`,
+    or from methods such as :meth:`telethon.Client.get_profile_photos`.
     """
 
     def __init__(
@@ -292,7 +301,7 @@ class File(metaclass=NoPublicConstructor):
         """
         The file extension, including the leading dot ``.``.
 
-        If the name is not known, the mime-type is used in :meth:`mimetypes.guess_extension`.
+        If the name is not known, the mime-type is used in :func:`mimetypes.guess_extension`.
 
         If no extension is known for the mime-type, the empty string will be returned.
         This makes it safe to always append this property to a file name.

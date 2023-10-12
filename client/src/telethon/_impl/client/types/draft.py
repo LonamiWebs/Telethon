@@ -8,6 +8,8 @@ from .meta import NoPublicConstructor
 class Draft(metaclass=NoPublicConstructor):
     """
     A draft message in a chat.
+
+    You can obtain drafts with methods such as :meth:`telethon.Client.get_drafts`.
     """
 
     __slots__ = ("_raw", "_chat_map")

@@ -1,7 +1,9 @@
 """
 Classes related to the different event types that wrap incoming Telegram updates.
 
-See the :doc:`/concepts/updates` concept for more details.
+.. seealso::
+
+    The :doc:`/concepts/updates` concept to learn how to listen to these events.
 """
 from .._impl.client.events import (
     CallbackQuery,

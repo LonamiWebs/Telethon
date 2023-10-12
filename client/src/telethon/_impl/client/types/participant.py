@@ -8,6 +8,8 @@ from .meta import NoPublicConstructor
 class Participant(metaclass=NoPublicConstructor):
     """
     A participant in a chat, including the corresponding user and permissions.
+
+    You can obtain participants with methods such as :meth:`telethon.Client.get_participants`.
     """
 
     __slots__ = ("_raw", "_chat_map")

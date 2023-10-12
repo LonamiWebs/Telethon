@@ -9,8 +9,8 @@ class AsyncList(abc.ABC, Generic[T]):
     """
     An asynchronous list.
 
-    It can be awaited to get all the items as a normal `list`,
-    or iterated over via `async for`.
+    It can be awaited to get all the items as a normal :class:`list`,
+    or iterated over via `async for <https://docs.python.org/3/reference/compound_stmts.html#the-async-for-statement>`_.
 
     Both approaches will perform as many requests as needed to retrieve the
     items, but awaiting will need to do it all at once, which can be slow.
@@ -18,10 +18,25 @@ class AsyncList(abc.ABC, Generic[T]):
     Using asynchronous iteration will perform the requests lazily as needed,
     and lets you break out of the loop at any time to stop fetching items.
 
-    The `len()` of the asynchronous list will be the "total count" reported
+    The :func:`len` of the asynchronous list will be the "total count" reported
     by the server. It does not necessarily reflect how many items will
     actually be returned. This count can change as more items are fetched.
     Note that this method cannot be awaited.
+
+    .. rubric:: Example
+
+    :meth:`telethon.Client.get_messages` returns an :class:`AsyncList`\ [:class:`Message`].
+    This means:
+
+    .. code-block:: python
+
+        # You can await it directly:
+        messages = await client.get_messages(chat, 1)
+        # ...and now messages is a normal list with a single Message.
+
+        # Or you can use async for:
+        async for mesasge in client.get_messages(chat, 1):
+            ...  # the messages are fetched lazily, rather than all up-front.
     """
 
     def __init__(self) -> None:

@@ -144,9 +144,6 @@ class TextOnly:
     """
 
 
-MediaType = Union[Literal["photo"], Literal["audio"], Literal["video"]]
-
-
 class Media:
     """
     Filter by the media type in the message.
@@ -166,11 +163,15 @@ class Media:
 
     __slots__ = "_types"
 
-    def __init__(self, *types: MediaType) -> None:
+    def __init__(
+        self, *types: Union[Literal["photo"], Literal["audio"], Literal["video"]]
+    ) -> None:
         self._types = types or None
 
     @property
-    def types(self) -> Tuple[MediaType, ...]:
+    def types(
+        self,
+    ) -> Tuple[Union[Literal["photo"], Literal["audio"], Literal["video"]], ...]:
         """
         The media types being checked.
         """

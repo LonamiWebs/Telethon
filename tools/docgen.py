@@ -10,7 +10,7 @@ def run(*args: str) -> int:
 
 
 def main() -> None:
-    exit(run("sphinx", "-nW", "client/doc", "dist-doc"))
+    exit(run("sphinx", "-n", "client/doc", "dist-doc"))
 
 
 if __name__ == "__main__":

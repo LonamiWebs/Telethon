@@ -68,3 +68,19 @@ Errors
                 await asyncio.sleep(e.value)
             else:
                 raise
+
+Private definitions
+-------------------
+
+.. warning::
+
+    These are **not** intended to be imported directly.
+    They are *not* available from :mod:`telethon.types`.
+
+    This section exists for documentation purposes only.
+
+.. currentmodule:: telethon._impl.client.types.async_list
+
+.. data:: T
+
+    Generic parameter used by :class:`AsyncList`.
