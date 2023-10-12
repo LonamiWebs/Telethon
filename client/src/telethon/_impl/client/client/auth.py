@@ -50,7 +50,7 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
 async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
     assert dc_id is not None
     sender, client._session.dcs = await connect_sender(
-        client._config, datacenter_for_id(client, dc_id)
+        client._config, datacenter_for_id(client, dc_id), client._logger
     )
     async with client._sender_lock:
         client._sender = sender

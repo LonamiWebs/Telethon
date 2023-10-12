@@ -44,7 +44,6 @@ def build_chat_map(users: List[abcs.User], chats: List[abcs.Chat]) -> Dict[int, 
 
         for k, v in counter.items():
             if len(v) > 1:
-                # TODO proper logger
                 for x in v:
                     print(x, file=sys.stderr)
 

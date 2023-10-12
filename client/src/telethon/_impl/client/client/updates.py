@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -117,7 +116,10 @@ def extend_update_queue(
                 now - client._last_update_limit_warn
                 > UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN
             ):
-                # TODO warn
+                client._logger.warning(
+                    "updates are being dropped because limit=%d has been reached",
+                    client._updates.maxsize,
+                )
                 client._last_update_limit_warn = now
             break
 
@@ -132,14 +134,15 @@ async def dispatcher(client: Client) -> None:
         except Exception as e:
             if isinstance(e, RuntimeError) and loop.is_closed():
                 # User probably forgot to call disconnect.
-                logging.warning(
+                client._logger.warning(
                     "client was not closed cleanly, make sure to call client.disconnect()! %s",
                     e,
                 )
                 return
             else:
-                # TODO proper logger
-                logging.exception("Unhandled exception in event handler")
+                client._logger.exception(
+                    "unhandled exception in event handler; this is probably a bug in your code, not telethon"
+                )
                 raise
 
 

@@ -37,7 +37,7 @@ def epoch() -> datetime.datetime:
 # https://core.telegram.org/api/updates#message-related-event-sequences.
 class MessageBox:
     __slots__ = (
-        "_log",
+        "_logger",
         "map",
         "date",
         "seq",
@@ -49,9 +49,9 @@ class MessageBox:
     def __init__(
         self,
         *,
-        log: Optional[logging.Logger] = None,
+        base_logger: logging.Logger,
     ) -> None:
-        self._log = log or logging.getLogger("telethon.messagebox")
+        self._logger = base_logger.getChild("messagebox")
         self.map: Dict[Entry, State] = {}
         self.date = epoch()
         self.seq = NO_SEQ
@@ -67,14 +67,14 @@ class MessageBox:
         # So every call to trace is prefixed with `if __debug__`` instead, to remove
         # it when using `python -O`. Probably unnecessary, but it's nice to avoid
         # paying the cost for something that is not used.
-        self._log.log(
+        self._logger.log(
             LOG_LEVEL_TRACE,
             "Current MessageBox state: seq = %r, date = %s, map = %r",
             self.seq,
             self.date.isoformat(),
             self.map,
         )
-        self._log.log(LOG_LEVEL_TRACE, msg, *args)
+        self._logger.log(LOG_LEVEL_TRACE, msg, *args)
 
     def load(self, state: UpdateState) -> None:
         if __debug__:

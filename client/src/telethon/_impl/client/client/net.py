@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+import logging
 import platform
 import re
 from dataclasses import dataclass, field
@@ -67,14 +68,18 @@ DEFAULT_DC = 2
 
 
 async def connect_sender(
-    config: Config, dc: DataCenter
+    config: Config,
+    dc: DataCenter,
+    base_logger: logging.Logger,
 ) -> Tuple[Sender, List[DataCenter]]:
     transport = Full()
 
     if dc.auth:
-        sender = await connect_with_auth(transport, dc.id, dc.addr, dc.auth)
+        sender = await connect_with_auth(
+            transport, dc.id, dc.addr, dc.auth, base_logger
+        )
     else:
-        sender = await connect_without_auth(transport, dc.id, dc.addr)
+        sender = await connect_without_auth(transport, dc.id, dc.addr, base_logger)
 
     # TODO handle -404 (we had a previously-valid authkey, but server no longer knows about it)
     remote_config = await sender.invoke(
@@ -146,7 +151,9 @@ async def connect(self: Client) -> None:
             self, self._session.user.dc if self._session.user else DEFAULT_DC
         )
 
-    self._sender, self._session.dcs = await connect_sender(self._config, datacenter)
+    self._sender, self._session.dcs = await connect_sender(
+        self._config, datacenter, self._logger
+    )
 
     if self._message_box.is_empty() and self._session.user:
         try:
@@ -190,14 +197,16 @@ async def disconnect(self: Client) -> None:
     try:
         await self._dispatcher
     except Exception:
-        pass  # TODO log
+        self._logger.exception(
+            "unhandled exception when cancelling dispatcher; this is a bug"
+        )
     finally:
         self._dispatcher = None
 
     try:
         await self._sender.disconnect()
     except Exception:
-        pass  # TODO log
+        self._logger.exception("unhandled exception during disconnect; this is a bug")
     finally:
         self._sender = None
 

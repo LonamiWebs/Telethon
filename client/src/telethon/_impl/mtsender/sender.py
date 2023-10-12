@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import struct
 import time
 from abc import ABC
@@ -78,6 +79,7 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
+    _logger: logging.Logger
     _reader: StreamReader
     _writer: StreamWriter
     _transport: Transport
@@ -91,13 +93,19 @@ class Sender:
 
     @classmethod
     async def connect(
-        cls, transport: Transport, mtp: Mtp, dc_id: int, addr: str
+        cls,
+        transport: Transport,
+        mtp: Mtp,
+        dc_id: int,
+        addr: str,
+        base_logger: logging.Logger,
     ) -> Self:
         reader, writer = await asyncio.open_connection(*addr.split(":"))
 
         return cls(
             dc_id=dc_id,
             addr=addr,
+            _logger=base_logger.getChild("mtsender"),
             _reader=reader,
             _writer=writer,
             _transport=transport,
@@ -230,7 +238,7 @@ class Sender:
                 )
             )
         )
-        self._next_ping = time.time() + PING_DELAY
+        self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
     def _process_mtp_buffer(self, updates: List[Updates]) -> None:
         result = self._mtp.deserialize(self._mtp_buffer)
@@ -239,7 +247,10 @@ class Sender:
             try:
                 u = Updates.from_bytes(update)
             except ValueError:
-                pass  # TODO log
+                self._logger.warning(
+                    "failed to deserialize incoming update; make sure the session is not in use elsewhere: %s",
+                    update.hex(),
+                )
             else:
                 updates.append(u)
 
@@ -267,7 +278,11 @@ class Sender:
                     req.result.set_result(ret)
                     break
             if not found:
-                pass  # TODO log
+                self._logger.warning(
+                    "telegram sent rpc_result for unknown msg_id=%d: %s",
+                    msg_id,
+                    ret.hex() if isinstance(ret, bytes) else repr(ret),
+                )
 
     @property
     def auth_key(self) -> Optional[bytes]:
@@ -277,8 +292,10 @@ class Sender:
             return None
 
 
-async def connect(transport: Transport, dc_id: int, addr: str) -> Sender:
-    sender = await Sender.connect(transport, Plain(), dc_id, addr)
+async def connect(
+    transport: Transport, dc_id: int, addr: str, base_logger: logging.Logger
+) -> Sender:
+    sender = await Sender.connect(transport, Plain(), dc_id, addr, base_logger)
     return await generate_auth_key(sender)
 
 
@@ -294,20 +311,9 @@ async def generate_auth_key(sender: Sender) -> Sender:
     time_offset = finished.time_offset
     first_salt = finished.first_salt
 
-    return Sender(
-        dc_id=sender.dc_id,
-        addr=sender.addr,
-        _reader=sender._reader,
-        _writer=sender._writer,
-        _transport=sender._transport,
-        _mtp=Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt),
-        _mtp_buffer=sender._mtp_buffer,
-        _requests=sender._requests,
-        _request_event=sender._request_event,
-        _next_ping=time.time() + PING_DELAY,
-        _read_buffer=sender._read_buffer,
-        _write_drain_pending=sender._write_drain_pending,
-    )
+    sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
+    sender._next_ping = asyncio.get_running_loop().time() + PING_DELAY
+    return sender
 
 
 async def connect_with_auth(
@@ -315,7 +321,8 @@ async def connect_with_auth(
     dc_id: int,
     addr: str,
     auth_key: bytes,
+    base_logger: logging.Logger,
 ) -> Sender:
     return await Sender.connect(
-        transport, Encrypted(AuthKey.from_bytes(auth_key)), dc_id, addr
+        transport, Encrypted(AuthKey.from_bytes(auth_key)), dc_id, addr, base_logger
     )

@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -149,6 +150,31 @@ class Client:
 
         This is required to sign in, and can be omitted otherwise.
 
+    :param catch_up:
+        Whether to "catch up" on updates that occured while the client was not connected.
+
+    :param check_all_handlers:
+        Whether to always check all event handlers or stop early.
+
+        The library will call event handlers in the order they were added.
+        By default, the library stops checking handlers as soon as a filter returns :data:`True`.
+
+        By setting ``check_all_handlers=True``, the library will keep calling handlers after the first match.
+
+    :param flood_sleep_threshold:
+        Maximum amount of time, in seconds, to automatically sleep before retrying a request.
+        This sleeping occurs when ``FLOOD_WAIT`` :class:`~telethon.RpcError` is raised by Telegram.
+
+    :param logger:
+        Logger for the client.
+        Any dependency of the client will use :meth:`logging.Logger.getChild`.
+        This effectively makes the parameter the root logger.
+
+        The default will get the logger for the package name from the root.
+
+    :param update_queue_limit:
+        Maximum amount of updates to keep in memory before dropping them.
+
     :param device_model:
         Device model.
 
@@ -164,27 +190,9 @@ class Client:
     :param lang_code:
         ISO 639-1 language code of the application's language.
 
-    :param catch_up:
-        Whether to "catch up" on updates that occured while the client was not connected.
-
     :param datacenter:
         Override the datacenter to connect to.
         Useful to connect to one of Telegram's test servers.
-
-    :param flood_sleep_threshold:
-        Maximum amount of time, in seconds, to automatically sleep before retrying a request.
-        This sleeping occurs when ``FLOOD_WAIT`` :class:`~telethon.RpcError` is raised by Telegram.
-
-    :param update_queue_limit:
-        Maximum amount of updates to keep in memory before dropping them.
-
-    :param check_all_handlers:
-        Whether to always check all event handlers or stop early.
-
-        The library will call event handlers in the order they were added.
-        By default, the library stops checking handlers as soon as a filter returns :data:`True`.
-
-        By setting ``check_all_handlers=True``, the library will keep calling handlers after the first match.
     """
 
     def __init__(
@@ -193,17 +201,22 @@ class Client:
         api_id: int,
         api_hash: Optional[str] = None,
         *,
+        catch_up: bool = False,
+        check_all_handlers: bool = False,
+        flood_sleep_threshold: Optional[int] = None,
+        logger: Optional[logging.Logger] = None,
+        update_queue_limit: Optional[int] = None,
         device_model: Optional[str] = None,
         system_version: Optional[str] = None,
         app_version: Optional[str] = None,
         system_lang_code: Optional[str] = None,
         lang_code: Optional[str] = None,
-        catch_up: Optional[bool] = None,
         datacenter: Optional[DataCenter] = None,
-        flood_sleep_threshold: Optional[int] = None,
-        update_queue_limit: Optional[int] = None,
-        check_all_handlers: bool = False,
     ) -> None:
+        self._logger = logger or logging.getLogger(
+            __package__[: __package__.index(".")]
+        )
+
         self._sender: Optional[Sender] = None
         self._sender_lock = asyncio.Lock()
         if isinstance(session, Storage):
@@ -231,7 +244,7 @@ class Client:
 
         self._session = Session()
 
-        self._message_box = MessageBox()
+        self._message_box = MessageBox(base_logger=self._logger)
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
         self._updates: asyncio.Queue[
