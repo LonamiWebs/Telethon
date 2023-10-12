@@ -82,7 +82,7 @@ You can no longer ``import telethon.sync`` to have most calls wrapped in :meth:`
 Raw API is now private
 ----------------------
 
-v2 aims to comply with `Semantic Versioning <https://semver.org/>`.
+v2 aims to comply with `Semantic Versioning <https://semver.org/>`_.
 This is impossible because Telegram is a live service that can change things any time.
 But we can get pretty close.
 
