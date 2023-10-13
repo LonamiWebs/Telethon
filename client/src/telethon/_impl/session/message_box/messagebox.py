@@ -360,7 +360,6 @@ class MessageBox:
                     )
                 return pts.entry, None
             elif local_pts + pts.pts_count < pts.pts:
-                # TODO store chats too?
                 if __debug__:
                     self._trace(
                         "Possible gap since local pts %r < %r: %s",

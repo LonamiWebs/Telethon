@@ -188,7 +188,6 @@ class Encrypted(Mtp):
 
         # https://core.telegram.org/mtproto/service_messages
         # https://core.telegram.org/mtproto/service_messages_about_messages
-        # TODO verify what needs ack and what doesn't
         constructor_id = struct.unpack_from("<I", message.body)[0]
         self._handlers.get(constructor_id, self._handle_update)(message)
 
@@ -227,7 +226,6 @@ class Encrypted(Mtp):
             self._updates.append(body)
 
     def _handle_ack(self, message: Message) -> None:
-        # TODO notify about this somehow
         MsgsAck.from_bytes(message.body)
 
     def _handle_bad_notification(self, message: Message) -> None:
@@ -265,19 +263,15 @@ class Encrypted(Mtp):
             self._sequence -= 16
 
     def _handle_state_req(self, message: Message) -> None:
-        # TODO implement
         MsgsStateReq.from_bytes(message.body)
 
     def _handle_state_info(self, message: Message) -> None:
-        # TODO implement
         MsgsStateInfo.from_bytes(message.body)
 
     def _handle_msg_all(self, message: Message) -> None:
-        # TODO implement
         MsgsAllInfo.from_bytes(message.body)
 
     def _handle_detailed_info(self, message: Message) -> None:
-        # TODO properly implement
         msg_detailed = AbcMsgDetailedInfo.from_bytes(message.body)
         if isinstance(msg_detailed, MsgDetailedInfo):
             self._pending_ack.append(msg_detailed.answer_msg_id)
@@ -287,11 +281,9 @@ class Encrypted(Mtp):
             assert False
 
     def _handle_msg_resend(self, message: Message) -> None:
-        # TODO implement
         MsgResendReq.from_bytes(message.body)
 
     def _handle_future_salts(self, message: Message) -> None:
-        # TODO implement
         salts = FutureSalts.from_bytes(message.body)
         self._rpc_results.append((MsgId(salts.req_msg_id), message.body))
 
@@ -308,11 +300,9 @@ class Encrypted(Mtp):
         self._rpc_results.append((MsgId(pong.msg_id), message.body))
 
     def _handle_destroy_session(self, message: Message) -> None:
-        # TODO implement
         DestroySessionRes.from_bytes(message.body)
 
     def _handle_new_session_created(self, message: Message) -> None:
-        # TODO implement
         new_session = NewSessionCreated.from_bytes(message.body)
         self._salts.clear()
         self._salts.append(
@@ -339,11 +329,9 @@ class Encrypted(Mtp):
         )
 
     def _handle_http_wait(self, message: Message) -> None:
-        # TODO implement
         HttpWait.from_bytes(message.body)
 
     def _handle_update(self, message: Message) -> None:
-        # TODO if this `Updates` cannot be deserialized, `getDifference` should be used
         self._updates.append(message.body)
 
     def push(self, request: bytes) -> Optional[MsgId]:

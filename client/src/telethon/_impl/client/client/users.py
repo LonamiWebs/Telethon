@@ -81,7 +81,7 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
             return PackedChat(
                 ty=PackedType.BOT if self._session.user.bot else PackedType.USER,
                 id=self._chat_hashes.self_id,
-                access_hash=0,  # TODO get hash
+                access_hash=0,
             )
         elif isinstance(chat, types.InputPeerChat):
             return PackedChat(

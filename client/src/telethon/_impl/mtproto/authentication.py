@@ -207,7 +207,7 @@ def _do_step3(
         ClientDhInnerData(
             nonce=nonce,
             server_nonce=server_nonce,
-            retry_id=0,  # TODO use an actual retry_id
+            retry_id=0,
             g_b=g_b.to_bytes((g_b.bit_length() + 7) // 8),
         )
     )

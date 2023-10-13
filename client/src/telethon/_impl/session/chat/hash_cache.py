@@ -195,15 +195,6 @@ class ChatHashCache:
                 elif isinstance(peer, abcs.NotifyPeer):
                     success &= self._has_notify_peer(peer)
 
-            # TODO cover?:
-            # ChatParticipants.participants
-            # PinnedDialogs.order
-            # FolderPeers.folder_peers
-            # PeerLocated.peers
-            # GroupCallParticipants.participants
-            # ChatParticipant and ChannelParticipant .prev_participant, new_participant, invite
-            # BotChatInviteRequester.invite
-
             return success
         elif isinstance(updates, types.UpdatesCombined):
             return self.extend(updates.users, updates.chats)

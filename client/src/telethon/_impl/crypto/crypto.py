@@ -73,7 +73,9 @@ def decrypt_data_v2(ciphertext: bytes, auth_key: AuthKey) -> bytes:
     if len(ciphertext) < 24 or (len(ciphertext) - 24) % 16 != 0:
         raise ValueError("invalid ciphertext buffer length")
 
-    # TODO Check salt, session_id and sequence_number
+    # salt, session_id and sequence_number should also be checked.
+    # However, not doing so has worked fine for years.
+
     key_id = ciphertext[:8]
     if auth_key.key_id != key_id:
         raise ValueError("server authkey mismatches with ours")
