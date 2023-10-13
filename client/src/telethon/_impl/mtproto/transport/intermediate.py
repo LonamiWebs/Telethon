@@ -1,6 +1,6 @@
 import struct
 
-from .abcs import MissingBytes, OutFn, Transport
+from .abcs import BadStatus, MissingBytes, OutFn, Transport
 
 
 class Intermediate(Transport):
@@ -40,6 +40,15 @@ class Intermediate(Transport):
         assert isinstance(length, int)
         if len(input) < length:
             raise MissingBytes(expected=length, got=len(input))
+
+        if length <= 4:
+            if (
+                length >= 4
+                and (status := struct.unpack("<i", input[4 : 4 + length])[0]) < 0
+            ):
+                raise BadStatus(status=-status)
+
+            raise ValueError(f"bad length, expected > 0, got: {length}")
 
         output += memoryview(input)[4 : 4 + length]
         return length + 4

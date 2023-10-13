@@ -1,6 +1,6 @@
 import struct
 
-from .abcs import MissingBytes, OutFn, Transport
+from .abcs import BadStatus, MissingBytes, OutFn, Transport
 
 
 class Abridged(Transport):
@@ -41,13 +41,18 @@ class Abridged(Transport):
             raise MissingBytes(expected=1, got=0)
 
         length = input[0]
-        if length < 127:
+        if 1 < length < 127:
             header_len = 1
         elif len(input) < 4:
             raise MissingBytes(expected=4, got=len(input))
         else:
             header_len = 4
             length = struct.unpack_from("<i", input)[0] >> 8
+
+        if length <= 0:
+            if length < 0:
+                raise BadStatus(status=-length)
+            raise ValueError(f"bad length, expected > 0, got: {length}")
 
         length *= 4
         if len(input) < header_len + length:

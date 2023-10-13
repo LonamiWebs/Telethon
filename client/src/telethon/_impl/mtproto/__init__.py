@@ -3,7 +3,7 @@ from .authentication import step1 as auth_step1
 from .authentication import step2 as auth_step2
 from .authentication import step3 as auth_step3
 from .mtp import BadMessage, Deserialization, Encrypted, MsgId, Mtp, Plain, RpcError
-from .transport import Abridged, Full, Intermediate, MissingBytes, Transport
+from .transport import Abridged, BadStatus, Full, Intermediate, MissingBytes, Transport
 from .utils import DEFAULT_COMPRESSION_THRESHOLD
 
 __all__ = [
@@ -23,6 +23,7 @@ __all__ = [
     "Plain",
     "RpcError",
     "Abridged",
+    "BadStatus",
     "Full",
     "Intermediate",
     "MissingBytes",

@@ -1,7 +1,7 @@
 import struct
 from zlib import crc32
 
-from .abcs import MissingBytes, OutFn, Transport
+from .abcs import BadStatus, MissingBytes, OutFn, Transport
 
 
 class Full(Transport):
@@ -42,6 +42,8 @@ class Full(Transport):
         length = struct.unpack_from("<i", input)[0]
         assert isinstance(length, int)
         if length < 12:
+            if length < 0:
+                raise BadStatus(status=-length)
             raise ValueError(f"bad length, expected > 12, got: {length}")
 
         if len(input) < length:

@@ -1,5 +1,4 @@
 import gzip
-import struct
 from typing import Optional
 
 from ..tl.mtproto.types import GzipPacked, Message
@@ -12,10 +11,7 @@ MESSAGE_SIZE_OVERHEAD = 8 + 4 + 4  # msg_id, seq_no, bytes
 
 
 def check_message_buffer(message: bytes) -> None:
-    if len(message) == 4:
-        neg_http_code = struct.unpack("<i", message)[0]
-        raise ValueError(f"transport error: {neg_http_code}")
-    elif len(message) < 20:
+    if len(message) < 20:
         raise ValueError(
             f"server payload is too small to be a valid message: {message.hex()}"
         )

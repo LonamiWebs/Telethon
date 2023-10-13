@@ -1,3 +1,4 @@
+import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -80,6 +81,25 @@ class RpcError(ValueError):
         )
 
 
+# https://core.telegram.org/mtproto/service_messages_about_messages
+BAD_MSG_DESCRIPTIONS = {
+    16: "msg_id too low",
+    17: "msg_id too high",
+    18: "incorrect two lower order msg_id bits",
+    19: "container msg_id is the same as msg_id of a previously received message",
+    20: "message too old, and it cannot be verified whether the server has received a message with this msg_id or not",
+    32: "msg_seqno too low",
+    33: "msg_seqno too high",
+    34: "an even msg_seqno expected, but odd received",
+    35: "odd msg_seqno expected, but even received",
+    48: "incorrect server salt",
+    64: "invalid container",
+}
+
+RETRYABLE_MSG_IDS = {16, 17, 48}
+NON_FATAL_MSG_IDS = RETRYABLE_MSG_IDS & {32, 33}
+
+
 class BadMessage(ValueError):
     def __init__(
         self,
@@ -87,14 +107,26 @@ class BadMessage(ValueError):
         code: int,
         caused_by: Optional[int] = None,
     ) -> None:
-        super().__init__(f"bad msg: {code}")
+        description = BAD_MSG_DESCRIPTIONS.get(code) or "no description available"
+        super().__init__(f"bad msg={code}: {description}")
 
         self._code = code
         self._caused_by = caused_by
+        self.severity = (
+            logging.WARNING if self._code in NON_FATAL_MSG_IDS else logging.ERROR
+        )
 
     @property
     def code(self) -> int:
         return self._code
+
+    @property
+    def retryable(self) -> bool:
+        return self._code in RETRYABLE_MSG_IDS
+
+    @property
+    def fatal(self) -> bool:
+        return self._code not in NON_FATAL_MSG_IDS
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
