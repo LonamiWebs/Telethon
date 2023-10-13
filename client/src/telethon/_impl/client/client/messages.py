@@ -49,57 +49,104 @@ async def send_message(
     link_preview: Optional[bool] = None,
     reply_to: Optional[int] = None,
 ) -> Message:
-    peer = (await self._resolve_to_packed(chat))._to_input_peer()
+    packed = await self._resolve_to_packed(chat)
+    peer = packed._to_input_peer()
     message, entities = parse_message(
         text=text, markdown=markdown, html=html, allow_empty=False
     )
     random_id = generate_random_id()
-    return self._build_message_map(
-        await self(
-            functions.messages.send_message(
-                no_webpage=not link_preview,
+    result = await self(
+        functions.messages.send_message(
+            no_webpage=not link_preview,
+            silent=False,
+            background=False,
+            clear_draft=False,
+            noforwards=False,
+            update_stickersets_order=False,
+            peer=peer,
+            reply_to=types.InputReplyToMessage(
+                reply_to_msg_id=reply_to, top_msg_id=None
+            )
+            if reply_to
+            else None,
+            message=message,
+            random_id=random_id,
+            reply_markup=None,
+            entities=entities,
+            schedule_date=None,
+            send_as=None,
+        )
+        if isinstance(message, str)
+        else functions.messages.send_message(
+            no_webpage=not message.web_preview,
+            silent=message.silent,
+            background=False,
+            clear_draft=False,
+            noforwards=not message.can_forward,
+            update_stickersets_order=False,
+            peer=peer,
+            reply_to=types.InputReplyToMessage(
+                reply_to_msg_id=message.replied_message_id, top_msg_id=None
+            )
+            if message.replied_message_id
+            else None,
+            message=message.text or "",
+            random_id=random_id,
+            reply_markup=getattr(message._raw, "reply_markup", None),
+            entities=getattr(message._raw, "entities", None) or None,
+            schedule_date=None,
+            send_as=None,
+        )
+    )
+    if isinstance(result, types.UpdateShortSentMessage):
+        return Message._from_raw(
+            self,
+            types.Message(
+                out=result.out,
+                mentioned=False,
+                media_unread=False,
                 silent=False,
-                background=False,
-                clear_draft=False,
+                post=False,
+                from_scheduled=False,
+                legacy=False,
+                edit_hide=False,
+                pinned=False,
                 noforwards=False,
-                update_stickersets_order=False,
-                peer=peer,
-                reply_to=types.InputReplyToMessage(
-                    reply_to_msg_id=reply_to, top_msg_id=None
+                id=result.id,
+                from_id=types.PeerUser(user_id=self._session.user.id)
+                if self._session.user
+                else None,
+                peer_id=packed._to_peer(),
+                fwd_from=None,
+                via_bot_id=None,
+                reply_to=types.MessageReplyHeader(
+                    reply_to_scheduled=False,
+                    forum_topic=False,
+                    reply_to_msg_id=reply_to,
+                    reply_to_peer_id=None,
+                    reply_to_top_id=None,
                 )
                 if reply_to
                 else None,
-                message=message,
-                random_id=random_id,
+                date=result.date,
+                message=message if isinstance(message, str) else (message.text or ""),
+                media=result.media,
                 reply_markup=None,
-                entities=entities,
-                schedule_date=None,
-                send_as=None,
-            )
-            if isinstance(message, str)
-            else functions.messages.send_message(
-                no_webpage=not message.web_preview,
-                silent=message.silent,
-                background=False,
-                clear_draft=False,
-                noforwards=not message.can_forward,
-                update_stickersets_order=False,
-                peer=peer,
-                reply_to=types.InputReplyToMessage(
-                    reply_to_msg_id=message.replied_message_id, top_msg_id=None
-                )
-                if message.replied_message_id
-                else None,
-                message=message.text or "",
-                random_id=random_id,
-                reply_markup=getattr(message._raw, "reply_markup", None),
-                entities=getattr(message._raw, "entities", None) or None,
-                schedule_date=None,
-                send_as=None,
-            )
-        ),
-        peer,
-    ).with_random_id(random_id)
+                entities=result.entities,
+                views=None,
+                forwards=None,
+                replies=None,
+                edit_date=None,
+                post_author=None,
+                grouped_id=None,
+                reactions=None,
+                restriction_reason=None,
+                ttl_period=result.ttl_period,
+            ),
+            {},
+        )
+    else:
+        return self._build_message_map(result, peer).with_random_id(random_id)
 
 
 async def edit_message(
