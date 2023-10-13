@@ -1,8 +1,18 @@
 import abc
 import struct
-from typing import Self, Tuple
+from typing import Protocol, Self, Tuple
 
 from .reader import Reader
+
+
+class HasSlots(Protocol):
+    __slots__: Tuple[str, ...]
+
+
+def obj_repr(obj: HasSlots) -> str:
+    fields = ((attr, getattr(obj, attr)) for attr in obj.__slots__)
+    params = ", ".join(f"{name}={field!r}" for name, field in fields)
+    return f"{obj.__class__.__name__}({params})"
 
 
 class Serializable(abc.ABC):
@@ -34,10 +44,7 @@ class Serializable(abc.ABC):
         self._write_boxed_to(buffer)
         return bytes(buffer)
 
-    def __repr__(self) -> str:
-        fields = ((attr, getattr(self, attr)) for attr in self.__slots__)
-        attrs = ", ".join(f"{name}={field!r}" for name, field in fields)
-        return f"{self.__class__.__name__}({attrs})"
+    __repr__ = obj_repr
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):

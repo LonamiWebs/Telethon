@@ -79,7 +79,7 @@ class SqliteSession(Storage):
 
         return Session(
             dcs=[
-                DataCenter(id=id, addr=f"{ip}:{port}", auth=auth)
+                DataCenter(id=id, ipv4_addr=f"{ip}:{port}", ipv6_addr=None, auth=auth)
                 for (id, ip, port, auth) in sessions
             ],
             user=None,
@@ -105,8 +105,8 @@ class SqliteSession(Storage):
 
         return Session(
             dcs=[
-                DataCenter(id=id, addr=addr, auth=auth)
-                for (id, addr, auth) in datacenter
+                DataCenter(id=id, ipv4_addr=ipv4_addr, ipv6_addr=ipv6_addr, auth=auth)
+                for (id, ipv4_addr, ipv6_addr, auth) in datacenter
             ],
             user=User(id=user[0], dc=user[1], bot=bool(user[2]), username=user[3])
             if user
@@ -129,8 +129,8 @@ class SqliteSession(Storage):
         c.execute("delete from state")
         c.execute("delete from channelstate")
         c.executemany(
-            "insert into datacenter values (?, ?, ?)",
-            [(dc.id, dc.addr, dc.auth) for dc in session.dcs],
+            "insert into datacenter values (?, ?, ?, ?)",
+            [(dc.id, dc.ipv4_addr, dc.ipv6_addr, dc.auth) for dc in session.dcs],
         )
         if user := session.user:
             c.execute(
@@ -188,7 +188,8 @@ class SqliteSession(Storage):
             );
             create table datacenter(
                 id integer primary key,
-                addr text not null,
+                ipv4_addr text,
+                ipv6_addr text,
                 auth blob
             );
             create table user(

@@ -1,24 +1,47 @@
 from typing import List, Optional
 
+from ..tl.core.serializable import obj_repr
+
 
 class DataCenter:
     """
     Data-center information.
 
     :param id: See below.
-    :param addr: See below.
+    :param ipv4_addr: See below.
+    :param ipv6_addr: See below.
     :param auth: See below.
     """
 
-    __slots__ = ("id", "addr", "auth")
+    __slots__ = ("id", "ipv4_addr", "ipv6_addr", "auth")
 
-    def __init__(self, *, id: int, addr: str, auth: Optional[bytes]) -> None:
+    def __init__(
+        self,
+        *,
+        id: int,
+        ipv4_addr: Optional[str] = None,
+        ipv6_addr: Optional[str] = None,
+        auth: Optional[bytes] = None,
+    ) -> None:
         self.id = id
         "The DC identifier."
-        self.addr = addr
-        "The server address of the DC, in ``'ip:port'`` format."
+        self.ipv4_addr = ipv4_addr
+        "The IPv4 socket server address of the DC, in ``'ip:port'`` format."
+        self.ipv6_addr = ipv6_addr
+        "The IPv6 socket server address of the DC, in ``'ip:port'`` format."
         self.auth = auth
         "Authentication key to encrypt communication with."
+
+    def __repr__(self) -> str:
+        # Censor auth
+        return obj_repr(
+            DataCenter(
+                id=self.id,
+                ipv4_addr=self.ipv4_addr,
+                ipv6_addr=self.ipv6_addr,
+                auth=b"..." if self.auth else None,
+            )
+        )
 
 
 class User:
@@ -43,6 +66,9 @@ class User:
         self.username = username
         "User's primary username."
 
+    __repr__ = obj_repr
+    __str__ = __repr__
+
 
 class ChannelState:
     """
@@ -59,6 +85,9 @@ class ChannelState:
         "The channel identifier."
         self.pts = pts
         "The channel's partial sequence number."
+
+    __repr__ = obj_repr
+    __str__ = __repr__
 
 
 class UpdateState:
@@ -99,6 +128,9 @@ class UpdateState:
         "The sequence number."
         self.channels = channels
         "Update state for channels."
+
+    __repr__ = obj_repr
+    __str__ = __repr__
 
 
 class Session:
@@ -143,3 +175,6 @@ class Session:
         "Information about the logged-in user."
         self.state = state
         "Update state."
+
+    __repr__ = obj_repr
+    __str__ = __repr__
