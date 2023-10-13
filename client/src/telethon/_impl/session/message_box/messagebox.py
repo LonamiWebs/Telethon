@@ -60,7 +60,7 @@ class MessageBox:
         self.next_deadline: Optional[Entry] = None
 
         if __debug__:
-            self._trace("MessageBox initialized")
+            self._trace("initialized")
 
     def _trace(self, msg: str, *args: object) -> None:
         # Calls to trace can't really be removed beforehand without some dark magic.
@@ -69,7 +69,7 @@ class MessageBox:
         # paying the cost for something that is not used.
         self._logger.log(
             LOG_LEVEL_TRACE,
-            "Current MessageBox state: seq = %r, date = %s, map = %r",
+            "current state: seq=%r, date=%s, map=%r",
             self.seq,
             self.date.isoformat(),
             self.map,
@@ -79,7 +79,7 @@ class MessageBox:
     def load(self, state: UpdateState) -> None:
         if __debug__:
             self._trace(
-                "Loading MessageBox with state = %r",
+                "loading state: %r",
                 state,
             )
 
@@ -147,7 +147,7 @@ class MessageBox:
 
             if __debug__:
                 self._trace(
-                    "Deadlines met, now getting diff for %r", self.getting_diff_for
+                    "deadlines met, now getting diff for: %r", self.getting_diff_for
                 )
 
             for entry in self.getting_diff_for:
@@ -184,7 +184,7 @@ class MessageBox:
 
     def set_state(self, state: abcs.updates.State) -> None:
         if __debug__:
-            self._trace("Setting state %s", state)
+            self._trace("setting state: %s", state)
 
         deadline = next_updates_deadline()
         assert isinstance(state, types.updates.State)
@@ -197,7 +197,7 @@ class MessageBox:
 
     def try_set_channel_state(self, id: int, pts: int) -> None:
         if __debug__:
-            self._trace("Trying to set channel state for %r: %r", id, pts)
+            self._trace("trying to set channel=%r state: %r", id, pts)
 
         if id not in self.map:
             self.map[id] = State(pts=pts, deadline=next_updates_deadline())
@@ -211,7 +211,9 @@ class MessageBox:
             return
 
         if __debug__:
-            self._trace("Marking %r as needing difference because %s", entry, reason)
+            self._trace(
+                "marking entry=%r as needing difference because: %s", entry, reason
+            )
         self.getting_diff_for.add(entry)
         self.possible_gaps.pop(entry, None)
 
@@ -253,7 +255,7 @@ class MessageBox:
 
         if __debug__:
             self._trace(
-                "Processing updates with seq = %r, seq_start = %r, date = %r: %s",
+                "processing updates with seq=%r, seq_start=%r, date=%r: %s",
                 combined.seq,
                 combined.seq_start,
                 combined.date,
@@ -264,7 +266,7 @@ class MessageBox:
             if self.seq + 1 > combined.seq_start:
                 if __debug__:
                     self._trace(
-                        "Skipping updates as they should have already been handled"
+                        "skipping updates as they should have already been handled"
                     )
                 return result, combined.users, combined.chats
             elif self.seq + 1 < combined.seq_start:
@@ -291,7 +293,7 @@ class MessageBox:
 
         if any_pts_applied:
             if __debug__:
-                self._trace("Updating seq as local pts was updated too")
+                self._trace("updating seq as local pts was updated too")
             self.date = datetime.datetime.fromtimestamp(
                 combined.date, tz=datetime.timezone.utc
             )
@@ -301,7 +303,7 @@ class MessageBox:
         if self.possible_gaps:
             if __debug__:
                 self._trace(
-                    "Trying to re-apply %r possible gaps", len(self.possible_gaps)
+                    "trying to re-apply count=%r possible gaps", len(self.possible_gaps)
                 )
 
             for key in list(self.possible_gaps.keys()):
@@ -314,7 +316,7 @@ class MessageBox:
                         result.append(applied)
                         if __debug__:
                             self._trace(
-                                "Resolved gap with %r: %s",
+                                "resolved gap with pts=%r: %s",
                                 pts_info_from_update(applied),
                                 applied,
                             )
@@ -337,14 +339,15 @@ class MessageBox:
         if not pts:
             if __debug__:
                 self._trace(
-                    "No pts in update, so it can be applied in any order: %s", update
+                    "no pts in update, so it can be applied in any order: %s", update
                 )
             return None, update
 
         if pts.entry in self.getting_diff_for:
             if __debug__:
                 self._trace(
-                    "Skipping update with %r as its difference is being fetched", pts
+                    "skipping update with pts=%r as its difference is being fetched",
+                    pts,
                 )
             return pts.entry, None
 
@@ -353,7 +356,7 @@ class MessageBox:
             if local_pts + pts.pts_count > pts.pts:
                 if __debug__:
                     self._trace(
-                        "Skipping update since local pts %r > %r: %s",
+                        "skipping update since local-pts=%r > pts=%r: %s",
                         local_pts,
                         pts,
                         update,
@@ -362,7 +365,7 @@ class MessageBox:
             elif local_pts + pts.pts_count < pts.pts:
                 if __debug__:
                     self._trace(
-                        "Possible gap since local pts %r < %r: %s",
+                        "possible gap since local-pts=%r < pts=%r: %s",
                         local_pts,
                         pts,
                         update,
@@ -379,7 +382,7 @@ class MessageBox:
             else:
                 if __debug__:
                     self._trace(
-                        "Applying update pts since local pts %r = %r: %s",
+                        "applying update pts since local-pts=%r = pts=%r: %s",
                         local_pts,
                         pts,
                         update,
@@ -413,7 +416,7 @@ class MessageBox:
                     qts_limit=None,
                 )
                 if __debug__:
-                    self._trace("Requesting account difference %s", gd)
+                    self._trace("requesting account difference: %s", gd)
                 return gd
 
         return None
@@ -424,7 +427,7 @@ class MessageBox:
         chat_hashes: ChatHashCache,
     ) -> Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]:
         if __debug__:
-            self._trace("Applying account difference %s", diff)
+            self._trace("applying account difference: %s", diff)
 
         finish: bool
         result: Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]
@@ -548,11 +551,11 @@ class MessageBox:
                     else USER_CHANNEL_DIFF_LIMIT,
                 )
                 if __debug__:
-                    self._trace("Requesting channel difference %s", gd)
+                    self._trace("requesting channel difference: %s", gd)
                 return gd
             else:
                 raise RuntimeError(
-                    "Should not try to get difference for an entry without known state"
+                    "should not try to get difference for an entry without known state"
                 )
         else:
             self.end_get_diff(entry)
@@ -567,7 +570,7 @@ class MessageBox:
     ) -> Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]:
         entry: Entry = channel_id
         if __debug__:
-            self._trace("Applying channel difference for %r: %s", entry, diff)
+            self._trace("applying channel=%r difference: %s", entry, diff)
 
         self.possible_gaps.pop(entry, None)
 
@@ -624,7 +627,7 @@ class MessageBox:
     ) -> None:
         entry: Entry = channel_id
         if __debug__:
-            self._trace("Ending channel difference for %r because %s", entry, reason)
+            self._trace("ending channel=%r difference: %s", entry, reason)
 
         if reason == PrematureEndReason.TEMPORARY_SERVER_ISSUES:
             self.possible_gaps.pop(entry, None)
@@ -634,4 +637,4 @@ class MessageBox:
             self.end_get_diff(entry)
             del self.map[entry]
         else:
-            raise RuntimeError("Unknown reason to end channel difference")
+            raise RuntimeError("unknown reason to end channel difference")
