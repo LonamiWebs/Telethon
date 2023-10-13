@@ -66,11 +66,23 @@ async def resolve_username(self: Client, username: str) -> Chat:
 
 
 async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
+    if isinstance(chat, PackedChat):
+        return chat
+
     if isinstance(chat, (User, Group, Channel)):
-        packed = chat.pack()
-        if packed is None:
-            raise ValueError("Cannot resolve chat")
-        return packed
+        packed = chat.pack() or self._chat_hashes.get(chat.id)
+        if packed is not None:
+            return packed
+
+        # Try anyway (may work for contacts or bot users).
+        if isinstance(chat, User):
+            ty = PackedType.USER
+        elif isinstance(chat, Group):
+            ty = PackedType.MEGAGROUP if chat.is_megagroup else PackedType.CHAT
+        elif isinstance(chat, Channel):
+            ty = PackedType.BROADCAST
+
+        return PackedChat(ty=ty, id=chat.id, access_hash=0)
 
     if isinstance(chat, abcs.InputPeer):
         if isinstance(chat, types.InputPeerEmpty):
@@ -125,6 +137,12 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
 
         if resolved and (packed := resolved.pack()) is not None:
             return packed
+
+    if isinstance(chat, int):
+        packed = self._chat_hashes.get(chat)
+        if packed is None:
+            raise ValueError("Cannot resolve chat")
+        return packed
 
     raise ValueError("Cannot resolve chat")
 
