@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from ..tl.core.serializable import obj_repr
 
@@ -13,7 +13,7 @@ class DataCenter:
     :param auth: See below.
     """
 
-    __slots__ = ("id", "ipv4_addr", "ipv6_addr", "auth")
+    __slots__: Tuple[str, ...] = ("id", "ipv4_addr", "ipv6_addr", "auth")
 
     def __init__(
         self,

@@ -66,6 +66,7 @@ class PackedChat:
         """
         return bytes(self).hex()
 
+    @classmethod
     def from_hex(cls, hex: str) -> Self:
         """
         Convenience method to convert hexadecimal numbers into bytes then passed to :meth:`from_bytes`:

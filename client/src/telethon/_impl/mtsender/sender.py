@@ -186,24 +186,17 @@ class Sender:
         if self._write_drain_pending:
             return
 
-        # TODO test that the a request is only ever sent onrece
-        requests = [r for r in self._requests if isinstance(r.state, NotSerialized)]
-        if not requests:
-            return
-
-        msg_ids = []
-        for request in requests:
-            if (msg_id := self._mtp.push(request.body)) is not None:
-                msg_ids.append(msg_id)
-            else:
-                break
+        for request in self._requests:
+            if isinstance(request.state, NotSerialized):
+                if (msg_id := self._mtp.push(request.body)) is not None:
+                    request.state = Serialized(msg_id)
+                else:
+                    break
 
         mtp_buffer = self._mtp.finalize()
-        self._transport.pack(mtp_buffer, self._writer.write)
-        self._write_drain_pending = True
-
-        for req, msg_id in zip(requests, msg_ids):
-            req.state = Serialized(msg_id)
+        if mtp_buffer:
+            self._transport.pack(mtp_buffer, self._writer.write)
+            self._write_drain_pending = True
 
     def _on_net_read(self, read_buffer: bytes) -> List[Updates]:
         if not read_buffer:
@@ -255,34 +248,47 @@ class Sender:
                 updates.append(u)
 
         for msg_id, ret in result.rpc_results:
-            found = False
-            for i in reversed(range(len(self._requests))):
-                req = self._requests[i]
+            for i, req in enumerate(self._requests):
                 if isinstance(req.state, Serialized) and req.state.msg_id == msg_id:
                     raise RuntimeError("got rpc result for unsent request")
-                if isinstance(req.state, Sent) and req.state.msg_id == msg_id:
-                    found = True
-                    if isinstance(ret, bytes):
-                        assert len(ret) >= 4
-                    elif isinstance(ret, RpcError):
-                        ret._caused_by = struct.unpack_from("<I", req.body)[0]
-                        raise ret
-                    elif isinstance(ret, BadMessage):
-                        # TODO test that we resend the request
-                        req.state = NotSerialized()
-                        break
-                    else:
-                        raise RuntimeError("unexpected case")
-
-                    req = self._requests.pop(i)
-                    req.result.set_result(ret)
+                elif isinstance(req.state, Sent) and req.state.msg_id == msg_id:
+                    del self._requests[i]
                     break
-            if not found:
+            else:
                 self._logger.warning(
                     "telegram sent rpc_result for unknown msg_id=%d: %s",
                     msg_id,
                     ret.hex() if isinstance(ret, bytes) else repr(ret),
                 )
+                continue
+
+            if isinstance(ret, bytes):
+                assert len(ret) >= 4
+                req.result.set_result(ret)
+            elif isinstance(ret, RpcError):
+                ret._caused_by = struct.unpack_from("<I", req.body)[0]
+                req.result.set_exception(ret)
+            elif isinstance(ret, BadMessage):
+                if ret.retryable:
+                    self._logger.log(
+                        ret.severity,
+                        "telegram notified of bad msg_id=%d; will attempt to resend request: %s",
+                        msg_id,
+                        ret,
+                    )
+                    req.state = NotSerialized()
+                    self._requests.append(req)
+                else:
+                    self._logger.log(
+                        ret.severity,
+                        "telegram notified of bad msg_id=%d; impossible to retry: %s",
+                        msg_id,
+                        ret,
+                    )
+                    ret._caused_by = struct.unpack_from("<I", req.body)[0]
+                    req.result.set_exception(ret)
+            else:
+                raise RuntimeError("unexpected case")
 
     @property
     def auth_key(self) -> Optional[bytes]:
