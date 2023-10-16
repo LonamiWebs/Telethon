@@ -196,7 +196,6 @@ class Encrypted(Mtp):
                 self._msg_count,
             )
 
-        print("packed", self._msg_count)
         self._msg_count = 0
         result = bytes(self._buffer)
         self._buffer.clear()

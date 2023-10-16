@@ -311,7 +311,7 @@ async def upload(
 ) -> abcs.InputFile:
     file_id = generate_random_id()
 
-    uploaded = 0
+    offset = 0
     part = 0
     total_parts = (size + MAX_CHUNK_SIZE - 1) // MAX_CHUNK_SIZE
     buffer = bytearray()
@@ -319,18 +319,19 @@ async def upload(
     hash_md5 = hashlib.md5()
     is_big = size > BIG_FILE_SIZE
 
-    while uploaded != size:
+    while offset != size:
         ret = fd.read(MAX_CHUNK_SIZE - len(buffer))
         chunk = await ret if isawaitable(ret) else ret
         assert isinstance(chunk, bytes)
         if not chunk:
             raise ValueError("unexpected end-of-file")
 
-        if len(chunk) == MAX_CHUNK_SIZE or uploaded + len(chunk) == size:
+        offset += len(chunk)
+        if not buffer and (offset == size or len(chunk) == MAX_CHUNK_SIZE):
             to_store = chunk
         else:
             buffer += chunk
-            if len(buffer) == MAX_CHUNK_SIZE:
+            if offset == size or len(buffer) == MAX_CHUNK_SIZE:
                 to_store = buffer
             else:
                 continue
@@ -340,14 +341,14 @@ async def upload(
                 functions.upload.save_big_file_part(
                     file_id=file_id,
                     file_part=part,
-                    file_total_parts=part,
+                    file_total_parts=total_parts,
                     bytes=to_store,
                 )
             )
         else:
             await client(
                 functions.upload.save_file_part(
-                    file_id=file_id, file_part=total_parts, bytes=to_store
+                    file_id=file_id, file_part=part, bytes=to_store
                 )
             )
             hash_md5.update(to_store)

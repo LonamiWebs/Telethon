@@ -289,7 +289,7 @@ class Client:
         .. code-block:: python
 
             async def my_print_handler(event):
-                print(event.chat.full_name, event.text)
+                print(event.chat.name, event.text)
 
             # Register a handler to be called on new messages
             client.add_event_handler(my_print_handler, events.NewMessage)
@@ -395,7 +395,7 @@ class Client:
         .. code-block:: python
 
             async for dialog in client.iter_dialogs():
-                if 'dog pictures' in dialog.chat.full_name:
+                if 'dog pictures' in dialog.chat.name:
                     # You've realized you're more of a cat person
                     await client.delete_dialog(dialog.chat)
         """
@@ -609,7 +609,7 @@ class Client:
         .. code-block:: python
 
             async for user in client.get_contacts():
-                print(user.full_name, user.id)
+                print(user.name, user.id)
         """
         return get_contacts(self)
 
@@ -629,7 +629,7 @@ class Client:
 
             async for dialog in client.get_dialogs():
                 print(
-                    dialog.chat.full_name,
+                    dialog.chat.name,
                     dialog.last_message.text if dialog.last_message else ''
                 )
         """
@@ -719,7 +719,7 @@ class Client:
             if me.bot:
                 print('I am a bot')
 
-            print('My name is', me.full_name)
+            print('My name is', me.name)
 
             if me.phone:
                 print('My phone number is', me.phone)
@@ -764,7 +764,7 @@ class Client:
             from datetime import datetime
 
             async for message in client.get_messages(chat, offset_date=datetime(2023, 1, 1)):
-                print(message.sender.full_name, ':', message.html_text)
+                print(message.sender.name, ':', message.html_text)
         """
         return get_messages(
             self, chat, limit, offset_id=offset_id, offset_date=offset_date
@@ -814,7 +814,7 @@ class Client:
         .. code-block:: python
 
             async for participant in client.get_participants(chat):
-                print(participant.user.full_name)
+                print(participant.user.name)
         """
         return get_participants(self, chat)
 
@@ -897,7 +897,7 @@ class Client:
         .. code-block:: python
 
             me = await client.interactive_login()
-            print('Logged in as:', me.full_name)
+            print('Logged in as:', me.name)
 
             # or, to make sure you're logged-in as a bot
             await client.interactive_login('1234:ab56cd78ef90)
@@ -950,14 +950,14 @@ class Client:
             # Register a handler to be called on new messages
             @client.on(events.NewMessage)
             async def my_print_handler(event):
-                print(event.chat.full_name, event.text)
+                print(event.chat.name, event.text)
 
             # Register a handler to be called on new messages if they contain "hello" or "/start"
             from telethon.events.filters import Any, Text, Command
 
             @client.on(events.NewMessage, Any(Text(r'hello'), Command('/start')))
             async def my_other_print_handler(event):
-                print(event.chat.full_name, event.text)
+                print(event.chat.name, event.text)
 
         .. seealso::
 

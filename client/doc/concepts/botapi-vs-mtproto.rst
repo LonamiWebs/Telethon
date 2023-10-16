@@ -402,7 +402,7 @@ In Telethon:
 
     @client.on(events.NewMessage, Command("/start"))
     async def command_start_handler(message: Message) -> None:
-        await message.respond(html=f"Hello, <b>{html.escape(message.sender.full_name)}</b>!")
+        await message.respond(html=f"Hello, <b>{html.escape(message.sender.name)}</b>!")
 
     @dp.message()
     async def echo_handler(message: types.Message) -> None:

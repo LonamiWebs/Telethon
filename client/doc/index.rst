@@ -19,7 +19,7 @@
     async def main():
         async with Client('name', api_id, api_hash) as client:
             me = await client.interactive_login()
-            await client.send_message(me, f'Hello, {me.full_name}!')
+            await client.send_message(me, f'Hello, {me.name}!')
 
             @client.on(events.NewMessage, filters.Text(r'(?i)hello'))
             async def handler(event):

@@ -147,7 +147,7 @@ async def interactive_login(
     if re.match(r"\d+:", phone_or_token):
         user = await self.bot_sign_in(phone_or_token)
         try:
-            print("Signed in as bot:", user.full_name)
+            print("Signed in as bot:", user.name)
         except UnicodeEncodeError:
             print("Signed in as bot")
 
@@ -188,7 +188,7 @@ async def interactive_login(
         user = user_or_token
 
     try:
-        print("Signed in as user:", user.full_name)
+        print("Signed in as user:", user.name)
     except UnicodeEncodeError:
         print("Signed in as user")
 
