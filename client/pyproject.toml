@@ -48,7 +48,8 @@ doc = [
 
 [build-system]
 requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+build-backend = "backend"
+backend-path = ["build_backend"]
 
 [tool.setuptools.dynamic]
 version = {attr = "telethon.version.__version__"}
