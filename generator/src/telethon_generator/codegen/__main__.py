@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
 
-from .._impl.codegen import FakeFs, generate, load_tl_file
+from .._impl.codegen import FakeFs, generate
+from .._impl.tl_parser import load_tl_file
 
 HELP = f"""
 USAGE:

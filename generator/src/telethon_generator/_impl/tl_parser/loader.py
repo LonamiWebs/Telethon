@@ -1,8 +1,10 @@
 import re
 from dataclasses import dataclass
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Union
 
-from ..tl_parser import Definition, FunctionDef, TypeDef, parse_tl_file
+from .tl import Definition
+from .tl_iterator import FunctionDef, TypeDef, iterate
 
 
 @dataclass
@@ -12,7 +14,7 @@ class ParsedTl:
     functiondefs: List[Definition]
 
 
-def load_tl_file(path: str) -> ParsedTl:
+def load_tl_file(path: Union[str, Path]) -> ParsedTl:
     typedefs, functiondefs = [], []
     with open(path, "r", encoding="utf-8") as fd:
         contents = fd.read()
@@ -22,7 +24,7 @@ def load_tl_file(path: str) -> ParsedTl:
     else:
         layer = None
 
-    for definition in parse_tl_file(contents):
+    for definition in iterate(contents):
         if isinstance(definition, Exception):
             # generic types (such as vector) is known to not be implemented
             if definition.args[0] != "not implemented":

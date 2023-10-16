@@ -1,9 +1,8 @@
 from pathlib import Path
 from typing import Set
 
-from ..tl_parser import NormalParameter
+from ..tl_parser import NormalParameter, ParsedTl
 from .fakefs import FakeFs, SourceWriter
-from .loader import ParsedTl
 from .serde.common import (
     inner_type_fmt,
     is_computed,

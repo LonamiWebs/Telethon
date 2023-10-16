@@ -1,3 +1,4 @@
+from .loader import ParsedTl, load_tl_file
 from .tl import (
     BaseParameter,
     Definition,
@@ -23,4 +24,6 @@ __all__ = [
     "FlagsParameter",
     "NormalParameter",
     "Type",
+    "ParsedTl",
+    "load_tl_file",
 ]

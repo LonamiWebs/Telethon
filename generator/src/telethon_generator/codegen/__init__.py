@@ -1,3 +1,3 @@
-from .._impl.codegen import FakeFs, ParsedTl, generate
+from .._impl.codegen import FakeFs, generate
 
-__all__ = ["FakeFs", "ParsedTl", "generate"]
+__all__ = ["FakeFs", "generate"]

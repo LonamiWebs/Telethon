@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from telethon_generator.codegen import FakeFs, ParsedTl, generate
-from telethon_generator.tl_parser import Definition, parse_tl_file
+from telethon_generator.codegen import FakeFs, generate
+from telethon_generator.tl_parser import Definition, ParsedTl, parse_tl_file
 
 
 def get_definitions(contents: str) -> List[Definition]:

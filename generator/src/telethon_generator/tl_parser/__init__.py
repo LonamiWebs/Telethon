@@ -6,9 +6,11 @@ from .._impl.tl_parser import (
     FunctionDef,
     NormalParameter,
     Parameter,
+    ParsedTl,
     Type,
     TypeDef,
     TypeDefNotImplemented,
+    load_tl_file,
     parse_tl_file,
 )
 
@@ -16,6 +18,7 @@ __all__ = [
     "Definition",
     "Flag",
     "Parameter",
+    "ParsedTl",
     "TypeDefNotImplemented",
     "BaseParameter",
     "FlagsParameter",
@@ -23,5 +26,6 @@ __all__ = [
     "Type",
     "FunctionDef",
     "TypeDef",
+    "load_tl_file",
     "parse_tl_file",
 ]
