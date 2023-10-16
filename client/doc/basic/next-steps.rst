@@ -30,3 +30,15 @@ There are `several requests that applications must make <https://core.telegram.o
 The library will not make these calls for you, as it cannot know how users interact with the application being developed.
 If you use an official client alongside the application you are developing,
 it should be safe to rely on that client making the requests instead.
+
+Having your account banned might sound scary.
+However, keep in mind that people often don't post comments when things work fine!
+The only comments you're likely to see are negative ones.
+As long as you use a real phone number and don't abuse the API, you will most likely be fine.
+This library would not be used at all otherwise!
+
+If you believe your account was banned on accident,
+`there are ways to try to get it back <https://github.com/LonamiWebs/Telethon/issues/824>`_.
+
+If you are using a bot account instead, the risk of a ban is either zero or very close to it.
+If you know of a bot causing account bans, please let me know so it can be documented.

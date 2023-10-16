@@ -26,10 +26,10 @@ Before working with Telegram's API, you (as the application developer) need to g
 This API ID and hash can now be used to develop an application using Telegram's API.
 Telethon consumes this API ID and hash in order to make the requests to Telegram.
 
-It is important to note that this API ID and hash is attached to a developer account,
+It is important to note that this API ID and hash is attached to a **developer account**,
 and can be used to develop applications or otherwise using libraries such as Telethon.
 
-The *users* of the application you develop do *not* need to provide their own API ID and hash.
+The *users* of the application you develop do **not** need to provide their own API ID and hash.
 The API ID and hash values are meant to be hardcoded in the application.
 Any user is then able to login with just their phone number or bot token, even if they have not registered an application themselves.
 
@@ -106,6 +106,27 @@ To summarize:
     await client.connect()
     await client.interactive_login()
 
+If you want to automatically login as a bot when needed, you can do so without any prompts, too:
+
+.. code-block:: python
+
+    from telethon import Client
+    client = Client('name', 12345, '0123456789abcdef0123456789abcdef')
+    await client.connect()
+    await client.interactive_login('54321:hJrIQtVBab0M2Yqg4HL1K-EubfY_v2fEVR')
+
+.. note::
+
+    The bot token obtained from `@BotFather <https://t.me/BotFather>`_ looks something like this::
+
+        54321:hJrIQtVBab0M2Yqg4HL1K-EubfY_v2fEVR
+
+    This is **not** the API ID and hash separated by a colon!
+    All of it is the bot token.
+    Using a bot with Telethon still requires a separate API ID and hash.
+
+    See :doc:`/concepts/botapi-vs-mtproto` for more details.
+
 
 Manual login
 ------------
@@ -160,19 +181,20 @@ Put into code, a user can thus login as follows:
             phone = input('phone: ')
             login_token = await client.request_login_code(phone_or_token)
 
-        code = input('code: ')
-        user_or_token = await client.sign_in(login_token, code)
+            code = input('code: ')
+            user_or_token = await client.sign_in(login_token, code)
 
-        if isinstance(user_or_token, User):
-            return user_or_token
+            if isinstance(user_or_token, User):
+                return user_or_token
 
-        # user_or_token is PasswordToken
-        password_token = user_or_token
+            # user_or_token is PasswordToken
+            password_token = user_or_token
 
-        import getpass
-        password = getpass.getpass("password: ")
-        user = await client.check_password(password_token, password)
-        return user
+            import getpass
+            password = getpass.getpass("password: ")
+            user = await client.check_password(password_token, password)
+
+        ...  # can now use the client and user
 
 A bot account does not need to request login code and cannot have passwords, so the login flow is much simpler:
 
@@ -182,9 +204,12 @@ A bot account does not need to request login code and cannot have passwords, so 
 
     # SESSION, API_ID, API_HASH should be previously defined in your code
     async with Client(SESSION, API_ID, API_HASH) as client:
-        bot_token = input('token: ')
-        bot_user = await client.bot_sign_in(bot_token)
-        return bot_user
+        if not await client.is_authorized():
+            bot_token = input('token: ')
+            bot_user = await client.bot_sign_in(bot_token)
+            bot_user
+
+        ...  # can now use the client and bot_user
 
 To get a bot account, you need to talk with `@BotFather <https://t.me/BotFather>`_.
 

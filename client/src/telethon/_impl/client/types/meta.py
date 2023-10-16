@@ -28,7 +28,7 @@ class Final(abc.ABCMeta):
 
 
 class NoPublicConstructor(Final):
-    def __call__(cls, *args: object, **kwargs: object) -> None:
+    def __call__(cls) -> None:
         raise TypeError(
             f"{cls.__module__}.{cls.__qualname__} has no public constructor"
         )

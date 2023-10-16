@@ -17,6 +17,9 @@ You can confirm that you have Python installed with:
     python --version
 
 Which should print something similar to ``Python 3.11.5`` (or newer).
+Be sure to run the command in a terminal such as PowerShell or Terminal.
+The above won't work inside a Python shell!
+If you had the terminal open before installing Python, you will probably need to open a new one.
 
 
 Installing the latest stable version
@@ -28,7 +31,8 @@ Once you have a working Python 3 installation, you can install or upgrade the ``
 
     python -m pip install --upgrade telethon
 
-Be sure to use lock-files if your project depends on a specific, older version of the library!
+Be sure to use lock-files if your project!
+The above is just a quick way to get started and install Telethon globally.
 
 
 Installing development versions

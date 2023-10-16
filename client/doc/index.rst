@@ -73,22 +73,6 @@ In this section you will learn how to install the library and login to your Tele
     basic/next-steps
 
 
-API reference
-=============
-
-This section contains all the functions and types offered by the library.
-
-:doc:`‣ Start reading Client API <modules/client>`
-
-.. toctree::
-    :hidden:
-    :caption: API reference
-
-    modules/client
-    modules/events
-    modules/types
-    modules/sessions
-
 Concepts
 ========
 
@@ -108,6 +92,24 @@ A more in-depth explanation of some of the concepts and words used in Telethon.
     concepts/botapi-vs-mtproto
     concepts/full-api
     concepts/glossary
+
+
+API reference
+=============
+
+This section contains all the functions and types offered by the library.
+
+:doc:`‣ Start reading Client API <modules/client>`
+
+.. toctree::
+    :hidden:
+    :caption: API reference
+
+    modules/client
+    modules/events
+    modules/types
+    modules/sessions
+
 
 Development resources
 =====================

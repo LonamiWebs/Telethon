@@ -84,3 +84,9 @@ Private definitions
 .. data:: T
 
     Generic parameter used by :class:`AsyncList`.
+
+.. currentmodule:: telethon._impl.client.types.file
+
+.. autoclass:: InFileLike
+
+.. autoclass:: OutFileLike
