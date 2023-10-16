@@ -198,7 +198,7 @@ async def interactive_login(
 
 
 async def get_password_information(client: Client) -> PasswordToken:
-    result = client(functions.account.get_password())
+    result = await client(functions.account.get_password())
     assert isinstance(result, types.account.Password)
     return PasswordToken._new(result)
 
