@@ -3,9 +3,10 @@ from typing import Optional, Self, Union
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
+from .chat import Chat
 
 
-class Channel(metaclass=NoPublicConstructor):
+class Channel(Chat, metaclass=NoPublicConstructor):
     """
     A broadcast channel.
 
@@ -32,9 +33,24 @@ class Channel(metaclass=NoPublicConstructor):
         else:
             raise RuntimeError("unexpected case")
 
+    # region Overrides
+
     @property
     def id(self) -> int:
         return self._raw.id
+
+    @property
+    def name(self) -> str:
+        """
+        The channel's title.
+
+        This property is always present, but may be the empty string.
+        """
+        return self._raw.title
+
+    @property
+    def username(self) -> Optional[str]:
+        return getattr(self._raw, "username", None)
 
     def pack(self) -> Optional[PackedChat]:
         if self._raw.access_hash is None:
@@ -48,14 +64,4 @@ class Channel(metaclass=NoPublicConstructor):
                 access_hash=None,
             )
 
-    @property
-    def title(self) -> str:
-        return getattr(self._raw, "title", None) or ""
-
-    @property
-    def full_name(self) -> str:
-        return self.title
-
-    @property
-    def username(self) -> Optional[str]:
-        return getattr(self._raw, "username", None)
+    # endregion Overrides

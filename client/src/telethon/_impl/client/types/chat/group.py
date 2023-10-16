@@ -3,9 +3,10 @@ from typing import Optional, Self, Union
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
+from .chat import Chat
 
 
-class Group(metaclass=NoPublicConstructor):
+class Group(Chat, metaclass=NoPublicConstructor):
     """
     A small group or supergroup.
 
@@ -38,9 +39,24 @@ class Group(metaclass=NoPublicConstructor):
         else:
             raise RuntimeError("unexpected case")
 
+    # region Overrides
+
     @property
     def id(self) -> int:
         return self._raw.id
+
+    @property
+    def name(self) -> str:
+        """
+        The group's title.
+
+        This property is always present, but may be the empty string.
+        """
+        return self._raw.title
+
+    @property
+    def username(self) -> Optional[str]:
+        return getattr(self._raw, "username", None)
 
     def pack(self) -> Optional[PackedChat]:
         if isinstance(self._raw, (types.ChatEmpty, types.Chat, types.ChatForbidden)):
@@ -52,18 +68,13 @@ class Group(metaclass=NoPublicConstructor):
                 ty=PackedType.MEGAGROUP, id=self._raw.id, access_hash=None
             )
 
-    @property
-    def title(self) -> str:
-        return getattr(self._raw, "title", None) or ""
-
-    @property
-    def full_name(self) -> str:
-        return self.title
-
-    @property
-    def username(self) -> Optional[str]:
-        return getattr(self._raw, "username", None)
+    # endregion Overrides
 
     @property
     def is_megagroup(self) -> bool:
+        """
+        Whether the group is a supergroup.
+
+        These are known as "megagroups" in Telegram's API, and are different from "gigagroups".
+        """
         return isinstance(self._raw, (types.Channel, types.ChannelForbidden))

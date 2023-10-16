@@ -27,10 +27,7 @@ def build_chat_map(users: List[abcs.User], chats: List[abcs.Chat]) -> Dict[int, 
         for c in chats
     )
 
-    # https://github.com/python/mypy/issues/2115
-    result: Dict[int, Chat] = {
-        c.id: c for c in itertools.chain(users_iter, chats_iter)  # type: ignore [attr-defined, misc]
-    }
+    result: Dict[int, Chat] = {c.id: c for c in itertools.chain(users_iter, chats_iter)}
 
     if len(result) != len(users) + len(chats):
         # The fabled ID collision between different chat types.

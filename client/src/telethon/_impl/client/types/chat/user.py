@@ -1,39 +1,12 @@
-from typing import List, Optional, Self
+from typing import Optional, Self
 
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
+from .chat import Chat
 
 
-class RestrictionReason(metaclass=NoPublicConstructor):
-    """
-    A restriction reason for :class:`telethon.types.User`.
-    """
-
-    __slots__ = ("_raw",)
-
-    def __init__(self, raw: types.RestrictionReason) -> None:
-        self._raw = raw
-
-    @classmethod
-    def _from_raw(cls, reason: abcs.RestrictionReason) -> Self:
-        assert isinstance(reason, types.RestrictionReason)
-        return cls._create(reason)
-
-    @property
-    def platforms(self) -> List[str]:
-        return self._raw.platform.split("-")
-
-    @property
-    def reason(self) -> str:
-        return self._raw.reason
-
-    @property
-    def text(self) -> str:
-        return self._raw.text
-
-
-class User(metaclass=NoPublicConstructor):
+class User(Chat, metaclass=NoPublicConstructor):
     """
     A user, representing either a bot account or an account created with a phone number.
 
@@ -95,9 +68,26 @@ class User(metaclass=NoPublicConstructor):
         else:
             raise RuntimeError("unexpected case")
 
+    # region Overrides
+
     @property
     def id(self) -> int:
         return self._raw.id
+
+    @property
+    def name(self) -> str:
+        """
+        The user's full name.
+
+        This property joins both the :attr:`first_name` and :attr:`last_name` into a single string.
+
+        This property is always present, but may be the empty string.
+        """
+        return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def username(self) -> Optional[str]:
+        return self._raw.username
 
     def pack(self) -> Optional[PackedChat]:
         if self._raw.access_hash is not None:
@@ -109,6 +99,8 @@ class User(metaclass=NoPublicConstructor):
         else:
             return None
 
+    # endregion Overrides
+
     @property
     def first_name(self) -> str:
         return self._raw.first_name or ""
@@ -118,23 +110,9 @@ class User(metaclass=NoPublicConstructor):
         return self._raw.last_name or ""
 
     @property
-    def full_name(self) -> str:
-        return f"{self.first_name} {self.last_name}".strip()
-
-    @property
-    def username(self) -> Optional[str]:
-        return self._raw.username
-
-    @property
     def phone(self) -> Optional[str]:
         return self._raw.phone
 
     @property
     def bot(self) -> bool:
         return self._raw.bot
-
-    @property
-    def restriction_reasons(self) -> List[RestrictionReason]:
-        return [
-            RestrictionReason._from_raw(r) for r in (self._raw.restriction_reason or [])
-        ]

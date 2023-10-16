@@ -1,5 +1,5 @@
 from .async_list import AsyncList
-from .chat import Channel, Chat, ChatLike, Group, RestrictionReason, User
+from .chat import Channel, Chat, ChatLike, Group, User
 from .dialog import Dialog
 from .draft import Draft
 from .file import File, InFileLike, OutFileLike, OutWrapper
@@ -17,7 +17,6 @@ __all__ = [
     "Chat",
     "ChatLike",
     "Group",
-    "RestrictionReason",
     "User",
     "Dialog",
     "Draft",
