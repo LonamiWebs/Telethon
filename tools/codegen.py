@@ -6,7 +6,8 @@ import subprocess
 import sys
 
 GENERATOR = "telethon_generator.codegen"
-ROOT = "client/src/telethon/_impl"
+GEN_ROOT = "client/src/telethon/_impl"
+TL_ROOT = "generator/tl"
 
 
 def run(*args: str) -> int:
@@ -15,8 +16,8 @@ def run(*args: str) -> int:
 
 def main() -> None:
     exit(
-        run(GENERATOR, "api.tl", f"{ROOT}/tl")
-        or run(GENERATOR, "mtproto.tl", f"{ROOT}/tl/mtproto")
+        run(GENERATOR, f"{TL_ROOT}/api.tl", f"{GEN_ROOT}/tl")
+        or run(GENERATOR, f"{TL_ROOT}/mtproto.tl", f"{GEN_ROOT}/tl/mtproto")
     )
 
 
