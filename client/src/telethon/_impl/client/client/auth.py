@@ -42,8 +42,16 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
     try:
         state = await client(functions.updates.get_state())
         client._message_box.set_state(state)
+        client._session.state = client._message_box.session_state()
     except Exception:
         pass
+
+    try:
+        await client._storage.save(client._session)
+    except Exception:
+        client._logger.exception(
+            "failed to save session upon login; you may need to login again in future runs"
+        )
 
     return user
 
