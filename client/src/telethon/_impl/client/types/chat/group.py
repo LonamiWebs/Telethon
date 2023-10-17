@@ -65,7 +65,9 @@ class Group(Chat, metaclass=NoPublicConstructor):
             return None
         else:
             return PackedChat(
-                ty=PackedType.MEGAGROUP, id=self._raw.id, access_hash=None
+                ty=PackedType.MEGAGROUP,
+                id=self._raw.id,
+                access_hash=self._raw.access_hash,
             )
 
     # endregion Overrides

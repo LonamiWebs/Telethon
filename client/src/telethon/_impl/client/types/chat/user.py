@@ -90,14 +90,14 @@ class User(Chat, metaclass=NoPublicConstructor):
         return self._raw.username
 
     def pack(self) -> Optional[PackedChat]:
-        if self._raw.access_hash is not None:
+        if self._raw.access_hash is None:
+            return None
+        else:
             return PackedChat(
                 ty=PackedType.BOT if self._raw.bot else PackedType.USER,
                 id=self._raw.id,
                 access_hash=self._raw.access_hash,
             )
-        else:
-            return None
 
     # endregion Overrides
 

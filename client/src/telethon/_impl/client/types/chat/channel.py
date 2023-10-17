@@ -61,7 +61,7 @@ class Channel(Chat, metaclass=NoPublicConstructor):
                 if getattr(self._raw, "gigagroup", False)
                 else PackedType.BROADCAST,
                 id=self._raw.id,
-                access_hash=None,
+                access_hash=self._raw.access_hash,
             )
 
     # endregion Overrides
