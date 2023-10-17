@@ -348,21 +348,22 @@ class _FileStream(io.IOBase):
             self._size = os.path.getsize(self._file)
             self._stream = open(self._file, 'rb')
             self._close_stream = True
+            return self
 
-        elif isinstance(self._file, bytes):
+        if isinstance(self._file, bytes):
             self._size = len(self._file)
             self._stream = io.BytesIO(self._file)
             self._close_stream = True
+            return self
 
-        elif not callable(getattr(self._file, 'read', None)):
+        if not callable(getattr(self._file, 'read', None)):
             raise TypeError('file description should have a `read` method')
 
-        elif self._size is not None:
-            self._name = getattr(self._file, 'name', None)
-            self._stream = self._file
-            self._close_stream = False
+        self._name = getattr(self._file, 'name', None)
+        self._stream = self._file
+        self._close_stream = False
 
-        else:
+        if self._size is None:
             if callable(getattr(self._file, 'seekable', None)):
                 seekable = await _maybe_await(self._file.seekable())
             else:
@@ -373,8 +374,6 @@ class _FileStream(io.IOBase):
                 await _maybe_await(self._file.seek(0, os.SEEK_END))
                 self._size = await _maybe_await(self._file.tell())
                 await _maybe_await(self._file.seek(pos, os.SEEK_SET))
-                self._stream = self._file
-                self._close_stream = False
             else:
                 _log.warning(
                     'Could not determine file size beforehand so the entire '
