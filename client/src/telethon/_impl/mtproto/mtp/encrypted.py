@@ -422,10 +422,6 @@ class Encrypted(Mtp):
             )
 
     def push(self, request: bytes) -> Optional[MsgId]:
-        if self._in_pending_ack:
-            self._serialize_msg(bytes(MsgsAck(msg_ids=self._in_pending_ack)), False)
-            self._in_pending_ack = []
-
         if self._start_salt_time and len(self._salts) >= 2:
             start_secs, start_instant = self._start_salt_time
             salt = self._salts[-2]
@@ -434,6 +430,13 @@ class Encrypted(Mtp):
                 self._salts.pop()
 
         self._try_request_salts()
+        if self._salt_request_msg_id:
+            # Don't add anything else to the container while we still need new salts.
+            return None
+
+        if self._in_pending_ack:
+            self._serialize_msg(bytes(MsgsAck(msg_ids=self._in_pending_ack)), False)
+            self._in_pending_ack = []
 
         if self._msg_count >= CONTAINER_MAX_LENGTH:
             return None
