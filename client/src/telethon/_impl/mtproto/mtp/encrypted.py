@@ -149,6 +149,7 @@ class Encrypted(Mtp):
         now = time.time()
         correct = msg_id >> 32
         self._time_offset = correct - int(now)
+        self._last_msg_id = 0
 
     def _adjusted_now(self) -> float:
         return time.time() + self._time_offset
@@ -288,20 +289,22 @@ class Encrypted(Mtp):
         exc = BadMessage(code=bad_msg.error_code)
 
         bad_msg_id = bad_msg.bad_msg_id
-        if self._out_pending_ack[bad_msg_id] is None:
+        if bad_msg_id in self._out_pending_ack:
+            bad_msg_ids = [bad_msg.bad_msg_id]
+        else:
             # Search bad_msg_id in containers instead.
-            # Make a new list since pending ack needs to be mutated after.
             bad_msg_ids = [
                 m for m, c in self._out_pending_ack.items() if bad_msg_id == c
             ]
             if not bad_msg_ids:
                 raise KeyError(f"bad_msg for unknown msg_id: {bad_msg_id}")
 
-            for bad_msg_id in bad_msg_id:
+        for bad_msg_id in bad_msg_ids:
+            if bad_msg_id == self._salt_request_msg_id:
+                # Response to internal request, do not propagate.
+                self._salt_request_msg_id = None
+            else:
                 self._rpc_results.append((MsgId(bad_msg_id), exc))
-                del self._out_pending_ack[bad_msg_id]
-        else:
-            self._rpc_results.append((MsgId(bad_msg_id), exc))
             del self._out_pending_ack[bad_msg_id]
 
         if isinstance(bad_msg, BadServerSalt) and self._get_current_salt() == 0:
@@ -316,7 +319,7 @@ class Encrypted(Mtp):
                 )
             )
             self._salt_request_msg_id = None
-        elif bad_msg.error_code not in (16, 17):
+        elif bad_msg.error_code in (16, 17):
             self._correct_time_offset(message.msg_id)
         elif bad_msg.error_code in (32, 33):
             self._reset_session()
