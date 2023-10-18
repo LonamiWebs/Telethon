@@ -210,6 +210,8 @@ async def disconnect(self: Client) -> None:
     self._dispatcher.cancel()
     try:
         await self._dispatcher
+    except asyncio.CancelledError:
+        pass
     except Exception:
         self._logger.exception(
             "unhandled exception when cancelling dispatcher; this is a bug"

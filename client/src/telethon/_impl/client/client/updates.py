@@ -130,7 +130,7 @@ async def dispatcher(client: Client) -> None:
         try:
             await dispatch_next(client)
         except asyncio.CancelledError:
-            return
+            raise
         except Exception as e:
             if isinstance(e, RuntimeError) and loop.is_closed():
                 # User probably forgot to call disconnect.
