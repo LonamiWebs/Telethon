@@ -207,6 +207,9 @@ async def disconnect(self: Client) -> None:
         return
     assert self._dispatcher
 
+    sender = self._sender
+    self._sender = None  # treated as disconnected
+
     self._dispatcher.cancel()
     try:
         await self._dispatcher
@@ -220,11 +223,9 @@ async def disconnect(self: Client) -> None:
         self._dispatcher = None
 
     try:
-        await self._sender.disconnect()
+        await sender.disconnect()
     except Exception:
         self._logger.exception("unhandled exception during disconnect; this is a bug")
-    finally:
-        self._sender = None
 
     self._session.state = self._message_box.session_state()
     await self._storage.save(self._session)
@@ -272,7 +273,15 @@ async def step_sender(client: Client, sender: Sender, lock: asyncio.Lock) -> Non
             pass
     else:
         async with lock:
-            updates = await sender.step()
+            try:
+                updates = await sender.step()
+            except ConnectionError:
+                if client.connected:
+                    raise
+                else:
+                    # disconnect was called, so the socket returning 0 bytes is expected
+                    return
+
         process_socket_updates(client, updates)
 
 
