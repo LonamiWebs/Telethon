@@ -208,7 +208,7 @@ class Encrypted(Mtp):
         )
 
         if self._msg_count == 1:
-            container_msg_id = Single
+            container_msg_id: Union[Type[Single], int] = Single
         else:
             container_msg_id = self._get_new_msg_id()
             self._buffer[HEADER_LEN : HEADER_LEN + CONTAINER_HEADER_LEN] = struct.pack(

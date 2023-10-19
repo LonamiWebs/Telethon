@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import time
+from typing import TYPE_CHECKING, Optional
 
 from ...tl import functions, types
 from ..types import AsyncList, ChatLike, Dialog, Draft
-from ..utils import build_chat_map
+from ..utils import build_chat_map, build_msg_map
+from .messages import parse_message
 
 if TYPE_CHECKING:
     from .client import Client
@@ -40,8 +42,11 @@ class DialogList(AsyncList[Dialog]):
         assert isinstance(result, (types.messages.Dialogs, types.messages.DialogsSlice))
 
         chat_map = build_chat_map(result.users, result.chats)
+        msg_map = build_msg_map(self._client, result.messages, chat_map)
 
-        self._buffer.extend(Dialog._from_raw(d, chat_map) for d in result.dialogs)
+        self._buffer.extend(
+            Dialog._from_raw(self._client, d, chat_map, msg_map) for d in result.dialogs
+        )
 
 
 def get_dialogs(self: Client) -> AsyncList[Dialog]:
@@ -93,7 +98,7 @@ class DraftList(AsyncList[Draft]):
         chat_map = build_chat_map(result.users, result.chats)
 
         self._buffer.extend(
-            Draft._from_raw(u, chat_map)
+            Draft._from_raw_update(self._client, u, chat_map)
             for u in result.updates
             if isinstance(u, types.UpdateDraftMessage)
         )
@@ -104,3 +109,47 @@ class DraftList(AsyncList[Draft]):
 
 def get_drafts(self: Client) -> AsyncList[Draft]:
     return DraftList(self)
+
+
+async def edit_draft(
+    self: Client,
+    chat: ChatLike,
+    text: Optional[str] = None,
+    *,
+    markdown: Optional[str] = None,
+    html: Optional[str] = None,
+    link_preview: bool = False,
+    reply_to: Optional[int] = None,
+) -> Draft:
+    packed = await self._resolve_to_packed(chat)
+    peer = (await self._resolve_to_packed(chat))._to_input_peer()
+    message, entities = parse_message(
+        text=text, markdown=markdown, html=html, allow_empty=False
+    )
+    assert isinstance(message, str)
+
+    result = await self(
+        functions.messages.save_draft(
+            no_webpage=not link_preview,
+            reply_to_msg_id=reply_to,
+            top_msg_id=None,
+            peer=peer,
+            message=message,
+            entities=entities,
+        )
+    )
+    assert result
+
+    return Draft._from_raw(
+        client=self,
+        peer=packed._to_peer(),
+        top_msg_id=0,
+        draft=types.DraftMessage(
+            no_webpage=not link_preview,
+            reply_to_msg_id=reply_to,
+            message=message,
+            entities=entities,
+            date=int(time.time()),
+        ),
+        chat_map={},
+    )

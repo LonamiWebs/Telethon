@@ -1,11 +1,17 @@
+from __future__ import annotations
+
+import datetime
 import itertools
 import sys
 import time
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, DefaultDict, Dict, List, Optional, Union
 
 from ..tl import abcs, types
-from .types import Channel, Chat, Group, User
+from .types import Channel, Chat, Group, Message, User
+
+if TYPE_CHECKING:
+    from .client import Client
 
 _last_id = 0
 
@@ -51,6 +57,15 @@ def build_chat_map(users: List[abcs.User], chats: List[abcs.Chat]) -> Dict[int, 
     return result
 
 
+def build_msg_map(
+    client: Client, messages: List[abcs.Message], chat_map: Dict[int, Chat]
+) -> Dict[int, Message]:
+    return {
+        msg.id: msg
+        for msg in (Message._from_raw(client, m, chat_map) for m in messages)
+    }
+
+
 def peer_id(peer: abcs.Peer) -> int:
     if isinstance(peer, types.PeerUser):
         return peer.user_id
@@ -83,3 +98,11 @@ def expand_peer(peer: abcs.Peer, *, broadcast: Optional[bool]) -> Chat:
         return Channel._from_raw(channel) if broadcast else Group._from_raw(channel)
     else:
         raise RuntimeError("unexpected case")
+
+
+def adapt_date(date: Optional[int]) -> Optional[datetime.datetime]:
+    return (
+        datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc)
+        if date is not None
+        else None
+    )

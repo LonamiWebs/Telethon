@@ -70,7 +70,7 @@ from .chats import (
     set_banned_rights,
     set_default_rights,
 )
-from .dialogs import delete_dialog, get_dialogs, get_drafts
+from .dialogs import delete_dialog, edit_draft, get_dialogs, get_drafts
 from .files import (
     download,
     get_file_bytes,
@@ -499,7 +499,7 @@ class Client:
         text: Optional[str] = None,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
-        link_preview: Optional[bool] = None,
+        link_preview: bool = False,
     ) -> Message:
         """
         Edit a message.
@@ -1247,6 +1247,7 @@ class Client:
         title: Optional[str] = None,
         performer: Optional[str] = None,
         emoji: Optional[str] = None,
+        emoji_sticker: Optional[str] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
         round: bool = False,
@@ -1396,6 +1397,7 @@ class Client:
             title=title,
             performer=performer,
             emoji=emoji,
+            emoji_sticker=emoji_sticker,
             width=width,
             height=height,
             round=round,
@@ -1425,14 +1427,7 @@ class Client:
         :param text: See :ref:`formatting`.
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
-
-        :param link_preview:
-            Whether the link preview is allowed.
-
-            Setting this to :data:`True` does not guarantee a preview.
-            Telegram must be able to generate a preview from the first link in the message text.
-
-            To regenerate the preview, send the link to `@WebpageBot <https://t.me/WebpageBot>`_.
+        :param link_preview: See :ref:`formatting`.
 
         :param reply_to:
             The message identifier of the message to reply to.
@@ -1577,6 +1572,58 @@ class Client:
 
     def set_default_rights(self, chat: ChatLike, user: ChatLike) -> None:
         set_default_rights(self, chat, user)
+
+    async def edit_draft(
+        self,
+        chat: ChatLike,
+        text: Optional[str] = None,
+        *,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: bool = False,
+        reply_to: Optional[int] = None,
+    ) -> Draft:
+        """
+        Set a draft message in a chat.
+
+        This can also be used to clear the draft by setting the text to an empty string ``""``.
+
+        :param chat:
+            The :term:`chat` where the draft will be saved to.
+
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
+        :param link_preview: See :ref:`formatting`.
+
+        :param reply_to:
+            The message identifier of the message to reply to.
+
+        :return: The created draft.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            # Edit message to have text without formatting
+            await client.edit_message(chat, msg_id, text='New text')
+
+            # Remove the link preview without changing the text
+            await client.edit_message(chat, msg_id, link_preview=False)
+
+        .. seealso::
+
+            :meth:`telethon.types.Message.edit`
+        """
+        return await edit_draft(
+            self,
+            chat,
+            text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+            reply_to=reply_to,
+        )
 
     def set_handler_filter(
         self,

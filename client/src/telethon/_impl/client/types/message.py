@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Self, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Self, Union
 
 from ...tl import abcs, types
 from ..parsers import generate_html_message, generate_markdown_message
-from ..utils import expand_peer, peer_id
+from ..utils import adapt_date, expand_peer, peer_id
 from .chat import Chat, ChatLike
 from .file import File
 from .meta import NoPublicConstructor
@@ -39,6 +39,52 @@ class Message(metaclass=NoPublicConstructor):
         cls, client: Client, message: abcs.Message, chat_map: Dict[int, Chat]
     ) -> Self:
         return cls._create(client, message, chat_map)
+
+    @classmethod
+    def _from_defaults(
+        cls,
+        client: Client,
+        chat_map: Dict[int, Chat],
+        id: int,
+        peer_id: abcs.Peer,
+        date: int,
+        message: str,
+        **kwargs: Any,
+    ) -> Self:
+        default_kwargs: Dict[str, Any] = {
+            "out": False,
+            "mentioned": False,
+            "media_unread": False,
+            "silent": False,
+            "post": False,
+            "from_scheduled": False,
+            "legacy": False,
+            "edit_hide": False,
+            "pinned": False,
+            "noforwards": False,
+            "id": id,
+            "from_id": None,
+            "peer_id": peer_id,
+            "fwd_from": None,
+            "via_bot_id": None,
+            "reply_to": None,
+            "date": date,
+            "message": message,
+            "media": None,
+            "reply_markup": None,
+            "entities": None,
+            "views": None,
+            "forwards": None,
+            "replies": None,
+            "edit_date": None,
+            "post_author": None,
+            "grouped_id": None,
+            "reactions": None,
+            "restriction_reason": None,
+            "ttl_period": None,
+        }
+        default_kwargs.update(kwargs)
+        return cls._create(client, types.Message(**default_kwargs), chat_map)
 
     @property
     def id(self) -> int:
@@ -86,12 +132,7 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def date(self) -> Optional[datetime.datetime]:
-        date = getattr(self._raw, "date", None)
-        return (
-            datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc)
-            if date is not None
-            else None
-        )
+        return adapt_date(getattr(self._raw, "date", None))
 
     @property
     def chat(self) -> Chat:
@@ -236,7 +277,7 @@ class Message(metaclass=NoPublicConstructor):
         text: Optional[str] = None,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
-        link_preview: Optional[bool] = None,
+        link_preview: bool = False,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.edit_message`.

@@ -46,7 +46,7 @@ async def send_message(
     *,
     markdown: Optional[str] = None,
     html: Optional[str] = None,
-    link_preview: Optional[bool] = None,
+    link_preview: bool = False,
     reply_to: Optional[int] = None,
 ) -> Message:
     packed = await self._resolve_to_packed(chat)
@@ -99,51 +99,29 @@ async def send_message(
         )
     )
     if isinstance(result, types.UpdateShortSentMessage):
-        return Message._from_raw(
+        return Message._from_defaults(
             self,
-            types.Message(
-                out=result.out,
-                mentioned=False,
-                media_unread=False,
-                silent=False,
-                post=False,
-                from_scheduled=False,
-                legacy=False,
-                edit_hide=False,
-                pinned=False,
-                noforwards=False,
-                id=result.id,
-                from_id=types.PeerUser(user_id=self._session.user.id)
-                if self._session.user
-                else None,
-                peer_id=packed._to_peer(),
-                fwd_from=None,
-                via_bot_id=None,
-                reply_to=types.MessageReplyHeader(
-                    reply_to_scheduled=False,
-                    forum_topic=False,
-                    reply_to_msg_id=reply_to,
-                    reply_to_peer_id=None,
-                    reply_to_top_id=None,
-                )
-                if reply_to
-                else None,
-                date=result.date,
-                message=message if isinstance(message, str) else (message.text or ""),
-                media=result.media,
-                reply_markup=None,
-                entities=result.entities,
-                views=None,
-                forwards=None,
-                replies=None,
-                edit_date=None,
-                post_author=None,
-                grouped_id=None,
-                reactions=None,
-                restriction_reason=None,
-                ttl_period=result.ttl_period,
-            ),
             {},
+            out=result.out,
+            id=result.id,
+            from_id=types.PeerUser(user_id=self._session.user.id)
+            if self._session.user
+            else None,
+            peer_id=packed._to_peer(),
+            reply_to=types.MessageReplyHeader(
+                reply_to_scheduled=False,
+                forum_topic=False,
+                reply_to_msg_id=reply_to,
+                reply_to_peer_id=None,
+                reply_to_top_id=None,
+            )
+            if reply_to
+            else None,
+            date=result.date,
+            message=message if isinstance(message, str) else (message.text or ""),
+            media=result.media,
+            entities=result.entities,
+            ttl_period=result.ttl_period,
         )
     else:
         return self._build_message_map(result, peer).with_random_id(random_id)
@@ -157,7 +135,7 @@ async def edit_message(
     text: Optional[str] = None,
     markdown: Optional[str] = None,
     html: Optional[str] = None,
-    link_preview: Optional[bool] = None,
+    link_preview: bool = False,
 ) -> Message:
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
     message, entities = parse_message(

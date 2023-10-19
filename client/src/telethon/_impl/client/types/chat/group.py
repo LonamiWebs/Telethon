@@ -52,7 +52,7 @@ class Group(Chat, metaclass=NoPublicConstructor):
 
         This property is always present, but may be the empty string.
         """
-        return self._raw.title
+        return getattr(self._raw, "title", None) or ""
 
     @property
     def username(self) -> Optional[str]:
