@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Optional, Self, Union
 
 from ...tl import abcs, types
-from ..utils import peer_id
 from .chat import Chat
 from .draft import Draft
 from .message import Message
@@ -52,6 +51,8 @@ class Dialog(metaclass=NoPublicConstructor):
         """
         The chat where messages are sent in this dialog.
         """
+        from ..utils import peer_id
+
         return self._chat_map[peer_id(self._raw.peer)]
 
     @property

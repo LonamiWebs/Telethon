@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 
 from ...tl import abcs, functions, types
-from ..utils import generate_random_id
 from .chat import ChatLike
 from .message import Message
 from .meta import NoPublicConstructor
@@ -51,6 +50,8 @@ class InlineResult(metaclass=NoPublicConstructor):
 
         :return: The sent message.
         """
+        from ..utils import generate_random_id
+
         if chat is None and isinstance(self._default_peer, types.InputPeerEmpty):
             raise ValueError("no target chat was specified")
 

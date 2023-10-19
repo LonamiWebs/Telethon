@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Self, Union
 
 from ...tl import abcs, types
 from ..parsers import generate_html_message, generate_markdown_message
-from ..utils import adapt_date, expand_peer, peer_id
 from .chat import Chat, ChatLike
 from .file import File
 from .meta import NoPublicConstructor
@@ -132,10 +131,14 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def date(self) -> Optional[datetime.datetime]:
+        from ..utils import adapt_date
+
         return adapt_date(getattr(self._raw, "date", None))
 
     @property
     def chat(self) -> Chat:
+        from ..utils import expand_peer, peer_id
+
         peer = self._raw.peer_id or types.PeerUser(user_id=0)
         broadcast = broadcast = getattr(self._raw, "post", None)
         return self._chat_map.get(peer_id(peer)) or expand_peer(
@@ -144,6 +147,8 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def sender(self) -> Optional[Chat]:
+        from ..utils import expand_peer, peer_id
+
         if (from_ := getattr(self._raw, "from_id", None)) is not None:
             return self._chat_map.get(peer_id(from_)) or expand_peer(
                 from_, broadcast=getattr(self._raw, "post", None)
