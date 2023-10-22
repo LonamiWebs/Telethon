@@ -42,7 +42,7 @@ If you want the *latest* unreleased changes, you can run the following command i
 
 .. code-block:: shell
 
-    python -m pip install --upgrade https://github.com/LonamiWebs/Telethon/archive/v2.zip
+    python -m pip install --upgrade https://github.com/LonamiWebs/Telethon/archive/v2.zip#subdirectory=client
 
 .. note::
 
