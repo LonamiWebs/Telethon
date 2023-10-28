@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 from ...session import PackedChat
 from ...tl import abcs, functions, types
 from ..parsers import parse_html_message, parse_markdown_message
-from ..types import AsyncList, Chat, ChatLike, Message
+from ..types import AsyncList, Chat, ChatLike, Message, buttons
 from ..utils import build_chat_map, generate_random_id, peer_id
 
 if TYPE_CHECKING:
@@ -39,6 +39,40 @@ def parse_message(
     return parsed, entities or None
 
 
+def build_keyboard(
+    btns: Optional[Union[List[buttons.Button], List[List[buttons.Button]]]]
+) -> Optional[abcs.ReplyMarkup]:
+    # list[button] -> list[list[button]]
+    # This does allow for "invalid" inputs (mixing lists and non-lists), but that's acceptable.
+    buttons_lists_iter = (
+        button if isinstance(button, list) else [button] for button in (btns or [])
+    )
+    # Remove empty rows (also making it easy to check if all-empty).
+    buttons_lists = [bs for bs in buttons_lists_iter if bs]
+
+    if not buttons_lists:
+        return None
+
+    rows: List[abcs.KeyboardButtonRow] = [
+        types.KeyboardButtonRow(buttons=[btn._raw for btn in btns])
+        for btns in buttons_lists
+    ]
+
+    # Guaranteed to have at least one, first one used to check if it's inline.
+    # If the user mixed inline with non-inline, Telegram will complain.
+    if isinstance(buttons_lists[0][0], buttons.InlineButton):
+        return types.ReplyInlineMarkup(rows=rows)
+    else:
+        return types.ReplyKeyboardMarkup(
+            resize=False,
+            single_use=False,
+            selective=False,
+            persistent=False,
+            rows=rows,
+            placeholder=None,
+        )
+
+
 async def send_message(
     self: Client,
     chat: ChatLike,
@@ -48,6 +82,7 @@ async def send_message(
     html: Optional[str] = None,
     link_preview: bool = False,
     reply_to: Optional[int] = None,
+    buttons: Optional[Union[List[buttons.Button], List[List[buttons.Button]]]] = None,
 ) -> Message:
     packed = await self._resolve_to_packed(chat)
     peer = packed._to_input_peer()
@@ -71,14 +106,14 @@ async def send_message(
             else None,
             message=message,
             random_id=random_id,
-            reply_markup=None,
+            reply_markup=build_keyboard(buttons),
             entities=entities,
             schedule_date=None,
             send_as=None,
         )
         if isinstance(message, str)
         else functions.messages.send_message(
-            no_webpage=not message.web_preview,
+            no_webpage=not message.link_preview,
             silent=message.silent,
             background=False,
             clear_draft=False,
@@ -527,6 +562,27 @@ async def unpin_message(
         await self(
             functions.messages.update_pinned_message(
                 silent=True, unpin=True, pm_oneside=False, peer=peer, id=message_id
+            )
+        )
+
+
+async def read_message(
+    self: Client, chat: ChatLike, message_id: Union[int, Literal["all"]]
+) -> None:
+    packed = await self._resolve_to_packed(chat)
+    if message_id == "all":
+        message_id = 0
+
+    if packed.is_channel():
+        await self(
+            functions.channels.read_history(
+                channel=packed._to_input_channel(), max_id=message_id
+            )
+        )
+    else:
+        await self(
+            functions.messages.read_history(
+                peer=packed._to_input_peer(), max_id=message_id
             )
         )
 

@@ -1,7 +1,24 @@
 Types
 =====
 
+This section contains most custom types used by the library.
+:doc:`events` and the :doc:`client` get their own section to prevent the page from growing out of control.
+
+Some of these are further divided into additional submodules.
+This keeps them neatly grouped and avoids polluting a single module too much.
+
+
+Core types
+----------
+
 .. automodule:: telethon.types
+
+
+Keyboard buttons
+----------------
+
+.. automodule:: telethon.types.buttons
+
 
 Errors
 ------

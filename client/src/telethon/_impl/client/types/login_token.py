@@ -21,4 +21,10 @@ class LoginToken(metaclass=NoPublicConstructor):
 
     @property
     def timeout(self) -> Optional[int]:
+        """
+        Number of seconds before this token expires.
+
+        This property does not return different values as the current time advances.
+        To determine when the token expires, add the timeout to the current time as soon as the token is obtained.
+        """
         return self._code.timeout

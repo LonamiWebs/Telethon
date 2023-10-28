@@ -18,6 +18,11 @@ class RpcError(ValueError):
 
     This is the parent class of all :data:`telethon.errors` subtypes.
 
+    :param code: See below.
+    :param name: See below.
+    :param value: See below.
+    :param caused_by: Constructor identifier of the request that caused the error.
+
     .. seealso::
 
         :doc:`/concepts/errors`
@@ -41,14 +46,27 @@ class RpcError(ValueError):
 
     @property
     def code(self) -> int:
+        """
+        Integer code of the error.
+
+        This usually reassembles an `HTTP status code <https://developer.mozilla.org/en-US/docs/Web/HTTP/Status>`_.
+        """
         return self._code
 
     @property
     def name(self) -> str:
+        """
+        Name of the error, usually in ``SCREAMING_CASE``.
+        """
         return self._name
 
     @property
     def value(self) -> Optional[int]:
+        """
+        Integer value contained within the error.
+
+        For example, if the :attr:`name` is ``'FLOOD_WAIT'``, this would be the number of seconds.
+        """
         return self._value
 
     @classmethod

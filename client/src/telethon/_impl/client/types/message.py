@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Self, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Union
 
 from ...tl import abcs, types
 from ..parsers import generate_html_message, generate_markdown_message
+from .buttons import Button, as_concrete_row, create_button
 from .chat import Chat, ChatLike
 from .file import File
 from .meta import NoPublicConstructor
@@ -109,10 +110,18 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def text(self) -> Optional[str]:
+        """
+        The message text without any formatting.
+        """
         return getattr(self._raw, "message", None)
 
     @property
     def text_html(self) -> Optional[str]:
+        """
+        The message text formatted using standard `HTML elements <https://developer.mozilla.org/en-US/docs/Web/HTML/Element>`_.
+
+        See :ref:`formatting` to learn the HTML elements used.
+        """
         if text := getattr(self._raw, "message", None):
             return generate_html_message(
                 text, getattr(self._raw, "entities", None) or []
@@ -122,6 +131,11 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def text_markdown(self) -> Optional[str]:
+        """
+        The message text formatted as `CommonMark's markdown <https://commonmark.org/>`_.
+
+        See :ref:`formatting` to learn the formatting characters used.
+        """
         if text := getattr(self._raw, "message", None):
             return generate_markdown_message(
                 text, getattr(self._raw, "entities", None) or []
@@ -131,22 +145,37 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def date(self) -> Optional[datetime.datetime]:
+        """
+        The date when the message was sent.
+        """
         from ..utils import adapt_date
 
         return adapt_date(getattr(self._raw, "date", None))
 
     @property
     def chat(self) -> Chat:
+        """
+        The :term:`chat` when the message was sent.
+        """
         from ..utils import expand_peer, peer_id
 
         peer = self._raw.peer_id or types.PeerUser(user_id=0)
-        broadcast = broadcast = getattr(self._raw, "post", None)
-        return self._chat_map.get(peer_id(peer)) or expand_peer(
-            peer, broadcast=broadcast
-        )
+        pid = peer_id(peer)
+        if pid not in self._chat_map:
+            self._chat_map[pid] = expand_peer(
+                peer, broadcast=getattr(self._raw, "post", None)
+            )
+        return self._chat_map[pid]
 
     @property
     def sender(self) -> Optional[Chat]:
+        """
+        The :term:`chat` that sent the message.
+
+        This will usually be a :class:`User`, but can also be a :class:`Channel`.
+
+        If there is no sender, it means the message was sent by an anonymous user.
+        """
         from ..utils import expand_peer, peer_id
 
         if (from_ := getattr(self._raw, "from_id", None)) is not None:
@@ -165,11 +194,21 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def photo(self) -> Optional[File]:
+        """
+        The compressed photo media :attr:`file` in the message.
+
+        This can also be used as a way to check that the message media is a photo.
+        """
         photo = self._file()
         return photo if photo and photo._photo else None
 
     @property
     def audio(self) -> Optional[File]:
+        """
+        The audio media :attr:`file` in the message.
+
+        This can also be used as a way to check that the message media is an audio.
+        """
         audio = self._file()
         return (
             audio
@@ -182,6 +221,11 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def video(self) -> Optional[File]:
+        """
+        The video media :attr:`file` in the message.
+
+        This can also be used as a way to check that the message media is a video.
+        """
         audio = self._file()
         return (
             audio
@@ -194,6 +238,16 @@ class Message(metaclass=NoPublicConstructor):
 
     @property
     def file(self) -> Optional[File]:
+        """
+        The downloadable file in the message.
+
+        This might also come from a link preview.
+
+        Unlike :attr:`photo`, :attr:`audio` and :attr:`video`,
+        this property does not care about the media type, only whether it can be downloaded.
+
+        This means the file will be :data:`None` for other media types, such as polls, venues or contacts.
+        """
         return self._file()
 
     @property
@@ -231,6 +285,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
+        buttons: Optional[Union[List[Button], List[List[Button]]]] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.send_message`.
@@ -241,7 +296,12 @@ class Message(metaclass=NoPublicConstructor):
         :param link_preview: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.send_message(
-            self.chat, text, markdown=markdown, html=html, link_preview=link_preview
+            self.chat,
+            text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+            buttons=buttons,
         )
 
     async def reply(
@@ -251,6 +311,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
+        buttons: Optional[Union[List[Button], List[List[Button]]]] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.send_message` with the ``reply_to`` parameter set to this message.
@@ -267,6 +328,7 @@ class Message(metaclass=NoPublicConstructor):
             html=html,
             link_preview=link_preview,
             reply_to=self.id,
+            buttons=buttons,
         )
 
     async def delete(self, *, revoke: bool = True) -> None:
@@ -309,20 +371,23 @@ class Message(metaclass=NoPublicConstructor):
         """
         return (await self._client.forward_messages(target, [self.id], self.chat))[0]
 
-    async def mark_read(self) -> None:
-        pass
+    async def read(self) -> None:
+        """
+        Alias for :meth:`telethon.Client.read_message`.
+        """
+        await self._client.read_message(self.chat, self.id)
 
-    async def pin(self) -> None:
+    async def pin(self) -> Message:
         """
         Alias for :meth:`telethon.Client.pin_message`.
         """
-        pass
+        return await self._client.pin_message(self.chat, self.id)
 
     async def unpin(self) -> None:
         """
         Alias for :meth:`telethon.Client.unpin_message`.
         """
-        pass
+        await self._client.unpin_message(self.chat, self.id)
 
     # ---
 
@@ -331,63 +396,46 @@ class Message(metaclass=NoPublicConstructor):
         pass
 
     @property
-    def buttons(self) -> None:
-        pass
+    def buttons(self) -> Optional[List[List[Button]]]:
+        """
+        The buttons attached to the message.
+
+        These are displayed under the message if they are :class:`~telethon.types.InlineButton`,
+        and replace the user's virtual keyboard otherwise.
+
+        The returned value is a list of rows, each row having a list of buttons, one per column.
+        The amount of columns in each row can vary. For example:
+
+        .. code-block:: python
+
+            buttons = [
+                [col_0,        col_1],  # row 0
+                [       col_0       ],  # row 1
+                [col_0, col_1, col_2],  # row 2
+            ]
+
+            row = 2
+            col = 1
+            button = buttons[row][col]  # the middle button on the bottom row
+        """
+        markup = getattr(self._raw, "reply_markup", None)
+        if not isinstance(markup, (types.ReplyKeyboardMarkup, types.ReplyInlineMarkup)):
+            return None
+
+        return [
+            [create_button(self, button) for button in row.buttons]
+            for row in map(as_concrete_row, markup.rows)
+        ]
 
     @property
-    def web_preview(self) -> None:
-        pass
-
-    @property
-    def voice(self) -> None:
-        pass
-
-    @property
-    def video_note(self) -> None:
-        pass
-
-    @property
-    def gif(self) -> None:
-        pass
-
-    @property
-    def sticker(self) -> None:
-        pass
-
-    @property
-    def contact(self) -> None:
-        pass
-
-    @property
-    def game(self) -> None:
-        pass
-
-    @property
-    def geo(self) -> None:
-        pass
-
-    @property
-    def invoice(self) -> None:
-        pass
-
-    @property
-    def poll(self) -> None:
-        pass
-
-    @property
-    def venue(self) -> None:
-        pass
-
-    @property
-    def dice(self) -> None:
-        pass
-
-    @property
-    def via_bot(self) -> None:
+    def link_preview(self) -> None:
         pass
 
     @property
     def silent(self) -> bool:
+        """
+        :data:`True` if the message is silent and should not cause a notification.
+        """
         return getattr(self._raw, "silent", None) or False
 
     @property

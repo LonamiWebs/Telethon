@@ -1,4 +1,5 @@
 from .async_list import AsyncList
+from .callback_answer import CallbackAnswer
 from .chat import Channel, Chat, ChatLike, Group, User
 from .dialog import Dialog
 from .draft import Draft
@@ -13,6 +14,7 @@ from .recent_action import RecentAction
 
 __all__ = [
     "AsyncList",
+    "CallbackAnswer",
     "Channel",
     "Chat",
     "ChatLike",

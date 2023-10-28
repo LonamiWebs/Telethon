@@ -43,7 +43,7 @@ The :class:`session.Storage` abstract base class defines the required methods to
 Telethon comes with two built-in storages:
 
 * :class:`~session.SqliteSession`. This is used by default when a string or path is used.
-* :class:`~session.MemorySession`. This is used by default when the path is ``None``.
+* :class:`~session.MemorySession`. This is used by default when the path is :data:`None`.
   You can also use it directly when you have a :class:`~session.Session` instance.
   It's useful when you don't have file-system access.
 

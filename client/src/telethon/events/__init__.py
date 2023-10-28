@@ -6,7 +6,7 @@ Classes related to the different event types that wrap incoming Telegram updates
     The :doc:`/concepts/updates` concept to learn how to listen to these events.
 """
 from .._impl.client.events import (
-    CallbackQuery,
+    ButtonCallback,
     Event,
     InlineQuery,
     MessageDeleted,
@@ -16,7 +16,7 @@ from .._impl.client.events import (
 )
 
 __all__ = [
-    "CallbackQuery",
+    "ButtonCallback",
     "Event",
     "InlineQuery",
     "MessageDeleted",

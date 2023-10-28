@@ -27,4 +27,9 @@ class RecentAction(metaclass=NoPublicConstructor):
 
     @property
     def id(self) -> int:
+        """
+        The identifier of this action.
+
+        This identifier is *not* the same as the one in the message that was edited or deleted.
+        """
         return self._raw.id

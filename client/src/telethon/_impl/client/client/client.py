@@ -51,6 +51,7 @@ from ..types import (
     PasswordToken,
     RecentAction,
     User,
+    buttons,
 )
 from .auth import (
     bot_sign_in,
@@ -88,6 +89,7 @@ from .messages import (
     get_messages,
     get_messages_with_ids,
     pin_message,
+    read_message,
     search_all_messages,
     search_messages,
     send_message,
@@ -125,8 +127,6 @@ T = TypeVar("T")
 class Client:
     """
     A client capable of connecting to Telegram and sending requests.
-
-    This is the "entry point" of the library.
 
     This class can be used as an asynchronous context manager to automatically :meth:`connect` and :meth:`disconnect`:
 
@@ -490,6 +490,58 @@ class Client:
             :meth:`get_file_bytes`, for more control over the download.
         """
         await download(self, media, file)
+
+    async def edit_draft(
+        self,
+        chat: ChatLike,
+        text: Optional[str] = None,
+        *,
+        markdown: Optional[str] = None,
+        html: Optional[str] = None,
+        link_preview: bool = False,
+        reply_to: Optional[int] = None,
+    ) -> Draft:
+        """
+        Set a draft message in a chat.
+
+        This can also be used to clear the draft by setting the text to an empty string ``""``.
+
+        :param chat:
+            The :term:`chat` where the draft will be saved to.
+
+        :param text: See :ref:`formatting`.
+        :param markdown: See :ref:`formatting`.
+        :param html: See :ref:`formatting`.
+        :param link_preview: See :ref:`formatting`.
+
+        :param reply_to:
+            The message identifier of the message to reply to.
+
+        :return: The created draft.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            # Edit message to have text without formatting
+            await client.edit_message(chat, msg_id, text='New text')
+
+            # Remove the link preview without changing the text
+            await client.edit_message(chat, msg_id, link_preview=False)
+
+        .. seealso::
+
+            :meth:`telethon.types.Message.edit`
+        """
+        return await edit_draft(
+            self,
+            chat,
+            text,
+            markdown=markdown,
+            html=html,
+            link_preview=link_preview,
+            reply_to=reply_to,
+        )
 
     async def edit_message(
         self,
@@ -987,6 +1039,40 @@ class Client:
         """
         return await pin_message(self, chat, message_id)
 
+    async def read_message(
+        self, chat: ChatLike, message_id: Union[int, Literal["all"]]
+    ) -> None:
+        """
+        Mark messages as read.
+
+        This will send a read acknowledgment to all messages with identifiers below and up-to the given message identifier.
+
+        This is often represented as a blue double-check (✓✓).
+
+        A single check (✓) in Telegram often indicates the message was sent and perhaps received, but not read.
+
+        A clock (🕒) in Telegram often indicates the message was not yet sent at all.
+        This most commonly occurs when sending messages without a network connection.
+
+        :param chat:
+            The chat where the messages to be marked as read are.
+
+        :param message_id:
+            The identifier of the message to mark as read.
+            All messages older (sent before) this one will also be marked as read.
+
+            The literal ``'all'`` may be used to mark all messages in a chat as read.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            # Mark all messages as read
+            message = await client.read_message(chat, 'all')
+            await message.delete()
+        """
+        await read_message(self, chat, message_id)
+
     def remove_event_handler(self, handler: Callable[[Event], Awaitable[Any]]) -> None:
         """
         Remove the handler as a function to be called when events occur.
@@ -1417,6 +1503,9 @@ class Client:
         html: Optional[str] = None,
         link_preview: bool = False,
         reply_to: Optional[int] = None,
+        buttons: Optional[
+            Union[List[buttons.Button], List[List[buttons.Button]]]
+        ] = None,
     ) -> Message:
         """
         Send a message.
@@ -1432,6 +1521,11 @@ class Client:
         :param reply_to:
             The message identifier of the message to reply to.
 
+        :param buttons:
+            The buttons to use for the message.
+
+            Only bot accounts can send buttons.
+
         .. rubric:: Example
 
         .. code-block:: python
@@ -1446,6 +1540,7 @@ class Client:
             html=html,
             link_preview=link_preview,
             reply_to=reply_to,
+            buttons=buttons,
         )
 
     async def send_photo(
@@ -1572,58 +1667,6 @@ class Client:
 
     def set_default_rights(self, chat: ChatLike, user: ChatLike) -> None:
         set_default_rights(self, chat, user)
-
-    async def edit_draft(
-        self,
-        chat: ChatLike,
-        text: Optional[str] = None,
-        *,
-        markdown: Optional[str] = None,
-        html: Optional[str] = None,
-        link_preview: bool = False,
-        reply_to: Optional[int] = None,
-    ) -> Draft:
-        """
-        Set a draft message in a chat.
-
-        This can also be used to clear the draft by setting the text to an empty string ``""``.
-
-        :param chat:
-            The :term:`chat` where the draft will be saved to.
-
-        :param text: See :ref:`formatting`.
-        :param markdown: See :ref:`formatting`.
-        :param html: See :ref:`formatting`.
-        :param link_preview: See :ref:`formatting`.
-
-        :param reply_to:
-            The message identifier of the message to reply to.
-
-        :return: The created draft.
-
-        .. rubric:: Example
-
-        .. code-block:: python
-
-            # Edit message to have text without formatting
-            await client.edit_message(chat, msg_id, text='New text')
-
-            # Remove the link preview without changing the text
-            await client.edit_message(chat, msg_id, link_preview=False)
-
-        .. seealso::
-
-            :meth:`telethon.types.Message.edit`
-        """
-        return await edit_draft(
-            self,
-            chat,
-            text,
-            markdown=markdown,
-            html=html,
-            link_preview=link_preview,
-            reply_to=reply_to,
-        )
 
     def set_handler_filter(
         self,

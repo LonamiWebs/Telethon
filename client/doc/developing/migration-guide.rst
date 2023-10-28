@@ -377,7 +377,7 @@ Now handlers are called in order until the filter for one returns :data:`True`.
 The default behaviour is that handlers after that one are not called.
 This behaviour can be changed with the ``check_all_handlers`` flag in :class:`Client` constructor.
 
-:class:`events.CallbackQuery` no longer also handles "inline bot callback queries".
+``events.CallbackQuery`` has been renamed to :class:`events.ButtonCallback` and no longer also handles "inline bot callback queries".
 This was a hacky workaround.
 
 :class:`events.MessageRead` no longer triggers when the *contents* of a message are read, such as voice notes being played.

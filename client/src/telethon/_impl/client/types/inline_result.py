@@ -12,6 +12,12 @@ if TYPE_CHECKING:
 
 
 class InlineResult(metaclass=NoPublicConstructor):
+    """
+    A single inline result from an inline query made to a bot.
+
+    This is returned when calling :meth:`telethon.Client.inline_query`.
+    """
+
     def __init__(
         self,
         client: Client,
@@ -30,10 +36,16 @@ class InlineResult(metaclass=NoPublicConstructor):
 
     @property
     def title(self) -> str:
+        """
+        The title of the result, or the empty string if there is none.
+        """
         return self._raw.title or ""
 
     @property
     def description(self) -> Optional[str]:
+        """
+        The description of the result, if available.
+        """
         return self._raw.description
 
     async def send(
@@ -41,7 +53,7 @@ class InlineResult(metaclass=NoPublicConstructor):
         chat: Optional[ChatLike] = None,
     ) -> Message:
         """
-        Send the inline result to the desired chat.
+        Send the result to the desired chat.
 
         :param chat:
             The chat where the inline result should be sent to.

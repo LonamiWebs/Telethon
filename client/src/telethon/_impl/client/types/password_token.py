@@ -20,4 +20,7 @@ class PasswordToken(metaclass=NoPublicConstructor):
 
     @property
     def hint(self) -> str:
+        """
+        The password hint, or the empty string if none is known.
+        """
         return self._password.hint or ""

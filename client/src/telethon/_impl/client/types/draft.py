@@ -56,7 +56,9 @@ class Draft(metaclass=NoPublicConstructor):
     @property
     def chat(self) -> Chat:
         """
-        The chat where the draft will be sent to.
+        The chat where the draft is saved.
+
+        This is also the chat where the message will be sent to by :meth:`send`.
         """
         from ..utils import expand_peer, peer_id
 
