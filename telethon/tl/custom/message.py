@@ -68,6 +68,9 @@ class Message(ChatGetter, SenderGetter, TLObject):
         noforwards (`bool`):
             Whether this message can be forwarded or not.
 
+        invert_media (`bool`):
+            Whether the media in this message should be inverted.
+
         id (`int`):
             The ID of this message. This field is *always* present.
             Any other member is optional and may be `None`.
@@ -200,6 +203,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             edit_hide: Optional[bool] = None,
             pinned: Optional[bool] = None,
             noforwards: Optional[bool] = None,
+            invert_media: Optional[bool] = None,
             reactions: Optional[types.TypeMessageReactions] = None,
             restriction_reason: Optional[types.TypeRestrictionReason] = None,
             forwards: Optional[int] = None,
@@ -234,6 +238,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.edit_date = edit_date
         self.pinned = pinned
         self.noforwards = noforwards
+        self.invert_media = invert_media
         self.post_author = post_author
         self.grouped_id = grouped_id
         self.reactions = reactions
