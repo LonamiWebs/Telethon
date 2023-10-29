@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Dict, Optional, Self
 from ...session import PackedChat
 from ...tl import abcs, functions, types
 from ..parsers import generate_html_message, generate_markdown_message
-from .chat import Chat
-from .message import Message
+from .chat import Chat, expand_peer, peer_id
+from .message import Message, generate_random_id
 from .meta import NoPublicConstructor
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from ..client.client import Client
 
 
 class Draft(metaclass=NoPublicConstructor):
@@ -60,8 +60,6 @@ class Draft(metaclass=NoPublicConstructor):
 
         This is also the chat where the message will be sent to by :meth:`send`.
         """
-        from ..utils import expand_peer, peer_id
-
         return self._chat_map.get(peer_id(self._peer)) or expand_peer(
             self._peer, broadcast=None
         )
@@ -161,8 +159,6 @@ class Draft(metaclass=NoPublicConstructor):
         )
 
     async def _packed_chat(self) -> PackedChat:
-        from ..utils import peer_id
-
         packed = None
         if chat := self._chat_map.get(peer_id(self._peer)):
             packed = chat.pack()
@@ -184,8 +180,6 @@ class Draft(metaclass=NoPublicConstructor):
 
             await draft.send(clear=False)
         """
-        from ..utils import generate_random_id
-
         packed = await self._packed_chat()
         peer = packed._to_input_peer()
 

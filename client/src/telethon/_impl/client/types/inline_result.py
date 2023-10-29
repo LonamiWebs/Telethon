@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from ...tl import abcs, functions, types
 from .chat import ChatLike
-from .message import Message
+from .message import Message, generate_random_id
 from .meta import NoPublicConstructor
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from ..client.client import Client
 
 
 class InlineResult(metaclass=NoPublicConstructor):
@@ -62,8 +62,6 @@ class InlineResult(metaclass=NoPublicConstructor):
 
         :return: The sent message.
         """
-        from ..utils import generate_random_id
-
         if chat is None and isinstance(self._default_peer, types.InputPeerEmpty):
             raise ValueError("no target chat was specified")
 

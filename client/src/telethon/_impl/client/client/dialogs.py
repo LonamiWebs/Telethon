@@ -4,8 +4,7 @@ import time
 from typing import TYPE_CHECKING, Optional
 
 from ...tl import functions, types
-from ..types import AsyncList, ChatLike, Dialog, Draft
-from ..utils import build_chat_map, build_msg_map
+from ..types import AsyncList, ChatLike, Dialog, Draft, build_chat_map, build_msg_map
 from .messages import parse_message
 
 if TYPE_CHECKING:

@@ -16,9 +16,9 @@ from ..types import (
     Message,
     OutFileLike,
     OutWrapper,
+    expand_stripped_size,
+    generate_random_id,
 )
-from ..types.file import expand_stripped_size
-from ..utils import generate_random_id
 from .messages import parse_message
 
 if TYPE_CHECKING:

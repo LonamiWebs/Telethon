@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Optional, Self, Union
 
 from ...tl import abcs, types
-from .chat import Chat
+from .chat import Chat, peer_id
 from .draft import Draft
 from .message import Message
 from .meta import NoPublicConstructor
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from ..client.client import Client
 
 
 class Dialog(metaclass=NoPublicConstructor):
@@ -51,8 +51,6 @@ class Dialog(metaclass=NoPublicConstructor):
         """
         The chat where messages are sent in this dialog.
         """
-        from ..utils import peer_id
-
         return self._chat_map[peer_id(self._raw.peer)]
 
     @property

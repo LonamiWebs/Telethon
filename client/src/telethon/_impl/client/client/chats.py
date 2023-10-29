@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from ...tl import abcs, functions, types
-from ..types import AsyncList, ChatLike, File, Participant, RecentAction
-from ..utils import build_chat_map
+from ..types import AsyncList, ChatLike, File, Participant, RecentAction, build_chat_map
 from .messages import SearchList
 
 if TYPE_CHECKING:

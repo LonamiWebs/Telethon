@@ -1,17 +1,37 @@
 from __future__ import annotations
 
 import datetime
+import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Union
 
 from ...tl import abcs, types
 from ..parsers import generate_html_message, generate_markdown_message
 from .buttons import Button, as_concrete_row, create_button
-from .chat import Chat, ChatLike
+from .chat import Chat, ChatLike, expand_peer, peer_id
 from .file import File
 from .meta import NoPublicConstructor
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from ..client.client import Client
+
+
+_last_id = 0
+
+
+def generate_random_id() -> int:
+    global _last_id
+    if _last_id == 0:
+        _last_id = int(time.time() * 1e9)
+    _last_id += 1
+    return _last_id
+
+
+def adapt_date(date: Optional[int]) -> Optional[datetime.datetime]:
+    return (
+        datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc)
+        if date is not None
+        else None
+    )
 
 
 class Message(metaclass=NoPublicConstructor):
@@ -148,8 +168,6 @@ class Message(metaclass=NoPublicConstructor):
         """
         The date when the message was sent.
         """
-        from ..utils import adapt_date
-
         return adapt_date(getattr(self._raw, "date", None))
 
     @property
@@ -157,8 +175,6 @@ class Message(metaclass=NoPublicConstructor):
         """
         The :term:`chat` when the message was sent.
         """
-        from ..utils import expand_peer, peer_id
-
         peer = self._raw.peer_id or types.PeerUser(user_id=0)
         pid = peer_id(peer)
         if pid not in self._chat_map:
@@ -176,8 +192,6 @@ class Message(metaclass=NoPublicConstructor):
 
         If there is no sender, it means the message was sent by an anonymous user.
         """
-        from ..utils import expand_peer, peer_id
-
         if (from_ := getattr(self._raw, "from_id", None)) is not None:
             return self._chat_map.get(peer_id(from_)) or expand_peer(
                 from_, broadcast=getattr(self._raw, "post", None)
@@ -444,3 +458,12 @@ class Message(metaclass=NoPublicConstructor):
             return not self._raw.noforwards
         else:
             return False
+
+
+def build_msg_map(
+    client: Client, messages: List[abcs.Message], chat_map: Dict[int, Chat]
+) -> Dict[int, Message]:
+    return {
+        msg.id: msg
+        for msg in (Message._from_raw(client, m, chat_map) for m in messages)
+    }

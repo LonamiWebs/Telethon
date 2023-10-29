@@ -16,7 +16,7 @@ from ...session import Gap
 from ...tl import abcs
 from ..events import Event as EventBase
 from ..events.filters import Filter
-from ..utils import build_chat_map
+from ..types import build_chat_map
 
 if TYPE_CHECKING:
     from .client import Client

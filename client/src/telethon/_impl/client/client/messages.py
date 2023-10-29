@@ -7,8 +7,16 @@ from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 from ...session import PackedChat
 from ...tl import abcs, functions, types
 from ..parsers import parse_html_message, parse_markdown_message
-from ..types import AsyncList, Chat, ChatLike, Message, buttons
-from ..utils import build_chat_map, generate_random_id, peer_id
+from ..types import (
+    AsyncList,
+    Chat,
+    ChatLike,
+    Message,
+    build_chat_map,
+    buttons,
+    generate_random_id,
+    peer_id,
+)
 
 if TYPE_CHECKING:
     from .client import Client

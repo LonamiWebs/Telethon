@@ -10,7 +10,7 @@ from ...tl import abcs, types
 from .meta import NoPublicConstructor
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from ..client.client import Client
 
 math_round = round
 

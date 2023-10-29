@@ -5,8 +5,16 @@ from typing import TYPE_CHECKING, Optional
 from ...mtproto import RpcError
 from ...session import PackedChat, PackedType
 from ...tl import abcs, functions, types
-from ..types import AsyncList, Channel, Chat, ChatLike, Group, User
-from ..utils import build_chat_map, peer_id
+from ..types import (
+    AsyncList,
+    Channel,
+    Chat,
+    ChatLike,
+    Group,
+    User,
+    build_chat_map,
+    peer_id,
+)
 
 if TYPE_CHECKING:
     from .client import Client

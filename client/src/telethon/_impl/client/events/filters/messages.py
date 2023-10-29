@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
 from ..event import Event
 
 if TYPE_CHECKING:
-    from ...client import Client
+    from ...client.client import Client
 
 
 class Text:
