@@ -107,3 +107,11 @@ Private definitions
 .. autoclass:: InFileLike
 
 .. autoclass:: OutFileLike
+
+.. currentmodule:: telethon._impl.mtsender.sender
+
+.. autoclass:: AsyncReader
+
+.. autoclass:: AsyncWriter
+
+.. autoclass:: Connector

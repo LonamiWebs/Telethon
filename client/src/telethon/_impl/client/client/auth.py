@@ -49,7 +49,7 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
     try:
         await client._storage.save(client._session)
     except Exception:
-        client._logger.exception(
+        client._config.base_logger.exception(
             "failed to save session upon login; you may need to login again in future runs"
         )
 
@@ -59,7 +59,7 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
 async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
     assert dc_id is not None
     sender, client._session.dcs = await connect_sender(
-        client._config, client._session.dcs, DataCenter(id=dc_id), client._logger
+        client._config, client._session.dcs, DataCenter(id=dc_id)
     )
     async with client._sender_lock:
         client._sender = sender

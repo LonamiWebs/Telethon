@@ -19,12 +19,11 @@ from typing import (
     Union,
 )
 
-from telethon._impl.session.session import DataCenter
-
 from ....version import __version__ as default_version
-from ...mtsender import Sender
+from ...mtsender import Connector, Sender
 from ...session import (
     ChatHashCache,
+    DataCenter,
     MemorySession,
     MessageBox,
     PackedChat,
@@ -193,6 +192,13 @@ class Client:
     :param datacenter:
         Override the datacenter to connect to.
         Useful to connect to one of Telegram's test servers.
+
+    :param connector:
+        Asynchronous function called to connect to a remote address.
+        By default, this is :func:`asyncio.open_connection`.
+        In order to use proxies, you can set a custom connector.
+
+        See :class:`~telethon._impl.mtsender.sender.Connector` for more details.
     """
 
     def __init__(
@@ -212,10 +218,9 @@ class Client:
         system_lang_code: Optional[str] = None,
         lang_code: Optional[str] = None,
         datacenter: Optional[DataCenter] = None,
+        connector: Optional[Connector] = None,
     ) -> None:
-        self._logger = logger or logging.getLogger(
-            __package__[: __package__.index(".")]
-        )
+        base_logger = logger or logging.getLogger(__package__[: __package__.index(".")])
 
         self._sender: Optional[Sender] = None
         self._sender_lock = asyncio.Lock()
@@ -240,11 +245,13 @@ class Client:
             if flood_sleep_threshold is None
             else flood_sleep_threshold,
             update_queue_limit=update_queue_limit,
+            base_logger=base_logger,
+            connector=connector or (lambda ip, port: asyncio.open_connection(ip, port)),
         )
 
         self._session = Session()
 
-        self._message_box = MessageBox(base_logger=self._logger)
+        self._message_box = MessageBox(base_logger=base_logger)
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
         self._updates: asyncio.Queue[

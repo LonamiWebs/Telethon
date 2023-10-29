@@ -21,7 +21,13 @@ async def test_invoke_encrypted_method(caplog: LogCaptureFixture) -> None:
         return deadline - asyncio.get_running_loop().time()
 
     sender = await asyncio.wait_for(
-        connect(Full(), *TELEGRAM_TEST_DC, logging.getLogger(__file__)),
+        connect(
+            Full(),
+            *TELEGRAM_TEST_DC,
+            auth_key=None,
+            base_logger=logging.getLogger(__file__),
+            connector=lambda ip, port: asyncio.open_connection(ip, port),
+        ),
         timeout(),
     )
 

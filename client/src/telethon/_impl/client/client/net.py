@@ -10,9 +10,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, TypeVar
 
 from ....version import __version__
 from ...mtproto import BadStatus, Full, RpcError
-from ...mtsender import Sender
-from ...mtsender import connect as connect_without_auth
-from ...mtsender import connect_with_auth
+from ...mtsender import Connector, Sender
+from ...mtsender import connect as do_connect_sender
 from ...session import DataCenter
 from ...session import User as SessionUser
 from ...tl import LAYER, Request, abcs, functions, types
@@ -45,6 +44,8 @@ def default_system_version() -> str:
 class Config:
     api_id: int
     api_hash: str
+    base_logger: logging.Logger
+    connector: Connector
     device_model: str = field(default_factory=default_device_model)
     system_version: str = field(default_factory=default_system_version)
     app_version: str = __version__
@@ -76,7 +77,6 @@ async def connect_sender(
     config: Config,
     known_dcs: List[DataCenter],
     dc: DataCenter,
-    base_logger: logging.Logger,
     force_auth_gen: bool = False,
 ) -> Tuple[Sender, List[DataCenter]]:
     # Only the ID of the input DC may be known.
@@ -93,11 +93,14 @@ async def connect_sender(
         or (next((d.auth for d in known_dcs if d.id == dc.id and d.auth), None))
     )
 
-    transport = Full()
-    if auth:
-        sender = await connect_with_auth(transport, dc.id, addr, auth, base_logger)
-    else:
-        sender = await connect_without_auth(transport, dc.id, addr, base_logger)
+    sender = await do_connect_sender(
+        Full(),
+        dc.id,
+        addr,
+        auth_key=auth,
+        base_logger=config.base_logger,
+        connector=config.connector,
+    )
 
     try:
         remote_config_data = await sender.invoke(
@@ -122,13 +125,11 @@ async def connect_sender(
             dc = DataCenter(
                 id=dc.id, ipv4_addr=dc.ipv4_addr, ipv6_addr=dc.ipv6_addr, auth=None
             )
-            base_logger.warning(
+            config.base_logger.warning(
                 "datacenter could not find stored auth; will retry generating a new one: %s",
                 dc,
             )
-            return await connect_sender(
-                config, known_dcs, dc, base_logger, force_auth_gen=True
-            )
+            return await connect_sender(config, known_dcs, dc, force_auth_gen=True)
         else:
             raise
 
@@ -177,7 +178,7 @@ async def connect(self: Client) -> None:
         id=self._session.user.dc if self._session.user else DEFAULT_DC
     )
     self._sender, self._session.dcs = await connect_sender(
-        self._config, self._session.dcs, datacenter, self._logger
+        self._config, self._session.dcs, datacenter
     )
 
     if self._message_box.is_empty() and self._session.user:
@@ -216,7 +217,7 @@ async def disconnect(self: Client) -> None:
     except asyncio.CancelledError:
         pass
     except Exception:
-        self._logger.exception(
+        self._config.base_logger.exception(
             "unhandled exception when cancelling dispatcher; this is a bug"
         )
     finally:
@@ -225,7 +226,9 @@ async def disconnect(self: Client) -> None:
     try:
         await sender.disconnect()
     except Exception:
-        self._logger.exception("unhandled exception during disconnect; this is a bug")
+        self._config.base_logger.exception(
+            "unhandled exception during disconnect; this is a bug"
+        )
 
     self._session.state = self._message_box.session_state()
     await self._storage.save(self._session)

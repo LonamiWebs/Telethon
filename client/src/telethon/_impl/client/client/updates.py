@@ -116,7 +116,7 @@ def extend_update_queue(
                 now - client._last_update_limit_warn
                 > UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN
             ):
-                client._logger.warning(
+                client._config.base_logger.warning(
                     "updates are being dropped because limit=%d has been reached",
                     client._updates.maxsize,
                 )
@@ -134,13 +134,13 @@ async def dispatcher(client: Client) -> None:
         except Exception as e:
             if isinstance(e, RuntimeError) and loop.is_closed():
                 # User probably forgot to call disconnect.
-                client._logger.warning(
+                client._config.base_logger.warning(
                     "client was not closed cleanly, make sure to call client.disconnect()! %s",
                     e,
                 )
                 return
             else:
-                client._logger.exception(
+                client._config.base_logger.exception(
                     "unhandled exception in event handler; this is probably a bug in your code, not telethon"
                 )
                 raise

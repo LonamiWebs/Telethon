@@ -3,9 +3,9 @@ import logging
 import struct
 import time
 from abc import ABC
-from asyncio import FIRST_COMPLETED, Event, Future, StreamReader, StreamWriter
+from asyncio import FIRST_COMPLETED, Event, Future
 from dataclasses import dataclass
-from typing import Generic, List, Optional, Self, TypeVar
+from typing import Generic, List, Optional, Protocol, Self, Tuple, TypeVar
 
 from ..crypto import AuthKey
 from ..mtproto import (
@@ -41,6 +41,74 @@ def generate_random_id() -> int:
         _last_id = int(time.time() * 0x100000000)
     _last_id += 1
     return _last_id
+
+
+class AsyncReader(Protocol):
+    """
+    A :class:`asyncio.StreamReader`-like class.
+    """
+
+    async def read(self, n: int) -> bytes:
+        """
+        Must behave like :meth:`asyncio.StreamReader.read`.
+
+        :param n:
+            Amount of bytes to read at most.
+        """
+
+
+class AsyncWriter(Protocol):
+    """
+    A :class:`asyncio.StreamWriter`-like class.
+    """
+
+    def write(self, data: bytes) -> None:
+        """
+        Must behave like :meth:`asyncio.StreamWriter.write`.
+
+        :param data:
+            Data that must be entirely written or buffered until :meth:`drain` is called.
+        """
+
+    async def drain(self) -> None:
+        """
+        Must behave like :meth:`asyncio.StreamWriter.drain`.
+        """
+
+    def close(self) -> None:
+        """
+        Must behave like :meth:`asyncio.StreamWriter.close`.
+        """
+
+    async def wait_closed(self) -> None:
+        """
+        Must behave like :meth:`asyncio.StreamWriter.wait_closed`.
+        """
+
+
+class Connector(Protocol):
+    """
+    A *Connector* is any function that takes in the following two positional parameters as input:
+
+    * The ``ip`` address as a :class:`str`. This might be either a IPv4 or IPv6.
+    * The ``port`` as a :class:`int`. This will be a number below 2¹⁶, often 443.
+
+    and returns a :class:`tuple`\ [:class:`AsyncReader`, :class:`AsyncWriter`].
+
+    You can use a custom connector to connect to Telegram through proxies.
+    The library will only ever open remote connections through this function.
+
+    The default connector is :func:`asyncio.open_connection`, defined as:
+
+    .. code-block:: python
+
+        default_connector = lambda ip, port: asyncio.open_connection(ip, port)
+
+    If your connector needs additional parameters, you can use either the :keyword:`lambda` syntax or :func:`functools.partial`.
+    """
+
+    async def __call__(self, ip: str, port: int) -> Tuple[AsyncReader, AsyncWriter]:
+        pass
 
 
 class RequestState(ABC):
@@ -80,8 +148,8 @@ class Sender:
     dc_id: int
     addr: str
     _logger: logging.Logger
-    _reader: StreamReader
-    _writer: StreamWriter
+    _reader: AsyncReader
+    _writer: AsyncWriter
     _transport: Transport
     _mtp: Mtp
     _mtp_buffer: bytearray
@@ -98,9 +166,12 @@ class Sender:
         mtp: Mtp,
         dc_id: int,
         addr: str,
+        *,
+        connector: Connector,
         base_logger: logging.Logger,
     ) -> Self:
-        reader, writer = await asyncio.open_connection(*addr.split(":"))
+        ip, port = addr.split(":")
+        reader, writer = await connector(ip, int(port))
 
         return cls(
             dc_id=dc_id,
@@ -299,10 +370,33 @@ class Sender:
 
 
 async def connect(
-    transport: Transport, dc_id: int, addr: str, base_logger: logging.Logger
+    transport: Transport,
+    dc_id: int,
+    addr: str,
+    *,
+    auth_key: Optional[bytes],
+    base_logger: logging.Logger,
+    connector: Connector,
 ) -> Sender:
-    sender = await Sender.connect(transport, Plain(), dc_id, addr, base_logger)
-    return await generate_auth_key(sender)
+    if auth_key is None:
+        sender = await Sender.connect(
+            transport,
+            Plain(),
+            dc_id,
+            addr,
+            connector=connector,
+            base_logger=base_logger,
+        )
+        return await generate_auth_key(sender)
+    else:
+        return await Sender.connect(
+            transport,
+            Encrypted(AuthKey.from_bytes(auth_key)),
+            dc_id,
+            addr,
+            connector=connector,
+            base_logger=base_logger,
+        )
 
 
 async def generate_auth_key(sender: Sender) -> Sender:
@@ -320,15 +414,3 @@ async def generate_auth_key(sender: Sender) -> Sender:
     sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
     sender._next_ping = asyncio.get_running_loop().time() + PING_DELAY
     return sender
-
-
-async def connect_with_auth(
-    transport: Transport,
-    dc_id: int,
-    addr: str,
-    auth_key: bytes,
-    base_logger: logging.Logger,
-) -> Sender:
-    return await Sender.connect(
-        transport, Encrypted(AuthKey.from_bytes(auth_key)), dc_id, addr, base_logger
-    )
