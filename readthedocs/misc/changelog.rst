@@ -13,6 +13,27 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.32)
+=================
+
++------------------------+
+| Scheme layer used: 166 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=165&to=166>`__.
+
+This enables you to use custom languages in preformatted blocks using HTML:
+
+.. code-block:: html
+
+  <pre>
+    <code class='language-python'>from telethon import TelegramClient</code>
+  </pre>
+
+Note that Telethon v1's markdown is a custom format and won't support language tags.
+If you want to set a custom language, you have to use HTML or a custom formatter.
+
+
 Dropped imghdr support (v1.31)
 ==============================
 
