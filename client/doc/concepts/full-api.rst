@@ -10,7 +10,7 @@ Telethon concedes to this fact and implements only commonly-used features to kee
 Access to the entirity of Telegram's API via Telethon's :term:`Raw API` is a necessary evil.
 
 The ``telethon._tl`` module has a leading underscore to signal that it is private.
-It is not covered by the semver guarantees of the library, but you may need to use it regardless.
+It is not covered by the `semver <https://semver.org/>`_ guarantees of the library, but you may need to use it regardless.
 If the :class:`Client` doesn't offer a method for what you need, using the :term:`Raw API` is inevitable.
 
 

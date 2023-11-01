@@ -105,6 +105,10 @@ class Connector(Protocol):
         default_connector = lambda ip, port: asyncio.open_connection(ip, port)
 
     If your connector needs additional parameters, you can use either the :keyword:`lambda` syntax or :func:`functools.partial`.
+
+    .. seealso::
+
+        The :doc:`/concepts/datacenters` concept has examples on how to combine proxy libraries with Telethon.
     """
 
     async def __call__(self, ip: str, port: int) -> Tuple[AsyncReader, AsyncWriter]:

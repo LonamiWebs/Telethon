@@ -14,7 +14,7 @@ class NewMessage(Event, Message):
     """
     Occurs when a new message is sent or received.
 
-    .. warning::
+    .. caution::
 
         Messages sent with the :class:`~telethon.Client` are also caught,
         so be careful not to enter infinite loops!

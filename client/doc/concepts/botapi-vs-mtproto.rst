@@ -72,7 +72,7 @@ There is no HTTP connection, no "polling", and no "web hooks".
 We can compare the two visually:
 
 .. graphviz::
-    :caption: Communication between a Client and the Bot API
+    :caption: Communication between a Client and the HTTP Bot API
 
     digraph botapi {
         rankdir=LR;
@@ -86,7 +86,7 @@ We can compare the two visually:
     }
 
 .. graphviz::
-    :caption: Communication between a Client and the MTProto API
+    :caption: Communication between a Client and Telegram's API via MTProto
 
     digraph botapi {
         rankdir=LR;
@@ -119,7 +119,7 @@ If the above points convinced you to switch to Telethon, the following short gui
 It doesn't matter if you wrote your bot with `requests <https://pypi.org/project/requests/>`_
 and you were making API requests manually, or if you used a wrapper library like
 `python-telegram-bot <https://python-telegram-bot.readthedocs.io>`_
-or `pyTelegramBotAPI <https://pytba.readthedocs.io/en/latest/index.html>`.
+or `pyTelegramBotAPI <https://pytba.readthedocs.io/en/latest/index.html>`_.
 You will surely be pleased with Telethon!
 
 If you were using an asynchronous library like `aiohttp <https://docs.aiohttp.org/en/stable/>`_

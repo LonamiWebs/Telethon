@@ -29,10 +29,10 @@ Once you have a working Python 3 installation, you can install or upgrade the ``
 
 .. code-block:: shell
 
-    python -m pip install --upgrade telethon
+    python -m pip install --upgrade "telethon~=2.0"
 
 Be sure to use lock-files if your project!
-The above is just a quick way to get started and install Telethon globally.
+The above is just a quick way to get started and install a `v2-compatible <https://peps.python.org/pep-0440/#compatible-release>`_ Telethon globally.
 
 
 Installing development versions
@@ -47,7 +47,7 @@ If you want the *latest* unreleased changes, you can run the following command i
 .. note::
 
     The development version may have bugs and is not recommended for production use.
-    However, when you are `reporting a library bug <https://github.com/LonamiWebs/Telethon/issues/>`,
+    However, when you are `reporting a library bug <https://github.com/LonamiWebs/Telethon/issues/>`_,
     you must reproduce the issue in this version before reporting the problem.
 
 

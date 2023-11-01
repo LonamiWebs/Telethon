@@ -4,7 +4,7 @@ Sessions
 .. currentmodule:: telethon
 
 In Telethon, the word :term:`session` is used to refer to the set of data needed to connect to Telegram.
-This includes the server address of your home datacenter, as well as the authorization key bound to an account.
+This includes the server address of your home data center, as well as the authorization key bound to an account.
 When you first connect to Telegram, an authorization key is generated to encrypt all communication.
 After login, Telegram remembers this authorization key as logged-in, so you don't need to login again.
 
@@ -48,6 +48,9 @@ Telethon comes with two built-in storages:
   It's useful when you don't have file-system access.
 
 If you would like to store the session state in a different way, you can subclass :class:`session.Storage`.
+You may also find `custom third-party session storages in Telethon's wiki <https://github.com/LonamiWebs/Telethon/wiki/Session-Storages>`_.
+Be careful with any third-party code you install, as they could steal the login credentials.
+Only use session storages you trust, and pin the specific versions you have audited.
 
 Some Python installations do not have the ``sqlite3`` module.
 In this case, attempting to use the default :class:`~session.SqliteSession` will fail.

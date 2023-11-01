@@ -152,6 +152,8 @@ class Client:
     :param catch_up:
         Whether to "catch up" on updates that occured while the client was not connected.
 
+        If :data:`True`, all updates that occured while the client was offline will trigger your :doc:`event handlers </concepts/updates>`.
+
     :param check_all_handlers:
         Whether to always check all event handlers or stop early.
 
@@ -159,20 +161,23 @@ class Client:
         By default, the library stops checking handlers as soon as a filter returns :data:`True`.
 
         By setting ``check_all_handlers=True``, the library will keep calling handlers after the first match.
+        Use :class:`telethon.events.Continue` instead if you only want this behaviour sometimes.
 
     :param flood_sleep_threshold:
         Maximum amount of time, in seconds, to automatically sleep before retrying a request.
-        This sleeping occurs when ``FLOOD_WAIT`` :class:`~telethon.RpcError` is raised by Telegram.
+        This sleeping occurs when ``FLOOD_WAIT`` (and similar) :class:`~telethon.RpcError`\ s are raised by Telegram.
 
     :param logger:
         Logger for the client.
         Any dependency of the client will use :meth:`logging.Logger.getChild`.
         This effectively makes the parameter the root logger.
 
-        The default will get the logger for the package name from the root.
+        The default will get the logger for the package name from the root (usually *telethon*).
 
     :param update_queue_limit:
         Maximum amount of updates to keep in memory before dropping them.
+
+        A warning will be logged on a cooldown if this limit is reached.
 
     :param device_model:
         Device model.
@@ -184,19 +189,19 @@ class Client:
         Application version.
 
     :param system_lang_code:
-        ISO 639-1 language code of the system's language.
+        `ISO 639-1 <https://www.iso.org/iso-639-language-codes.html>`_ language code of the system's language.
 
     :param lang_code:
-        ISO 639-1 language code of the application's language.
+        `ISO 639-1 <https://www.iso.org/iso-639-language-codes.html>`_ language code of the application's language.
 
     :param datacenter:
-        Override the datacenter to connect to.
+        Override the :doc:`data center </concepts/datacenters>` to connect to.
         Useful to connect to one of Telegram's test servers.
 
     :param connector:
         Asynchronous function called to connect to a remote address.
         By default, this is :func:`asyncio.open_connection`.
-        In order to use proxies, you can set a custom connector.
+        In order to :doc:`use proxies </concepts/datacenters>`, you can set a custom connector.
 
         See :class:`~telethon._impl.mtsender.sender.Connector` for more details.
     """
@@ -330,7 +335,13 @@ class Client:
 
         .. code-block:: python
 
-            await client.bot_sign_in('12345:abc67DEF89ghi')
+            user = await client.bot_sign_in('12345:abc67DEF89ghi')
+            print('Signed in to bot account:', user.name)
+
+        .. caution::
+
+            Be sure to check :meth:`is_authorized` before calling this function.
+            Signing in often when you don't need to will lead to :doc:`/concepts/errors`.
 
         .. seealso::
 
@@ -364,6 +375,7 @@ class Client:
             assert isinstance(password_token, PasswordToken)
 
             user = await client.check_password(password_token, '1-L0V3+T3l3th0n')
+            print('Signed in to 2FA-protected account:', user.name)
 
         .. seealso::
 
@@ -390,9 +402,9 @@ class Client:
 
         This lets you leave a group, unsubscribe from a channel, or delete a one-to-one private conversation.
 
-        Note that the group or channel will not be deleted.
+        Note that the group or channel will not be deleted (other users will remain in it).
 
-        Note that bot accounts do not have dialogs, so this method will fail.
+        Note that bot accounts do not have dialogs, so this method will fail when used in a bot account.
 
         :param chat:
             The :term:`chat` representing the dialog to delete.
@@ -420,8 +432,8 @@ class Client:
             .. warning::
 
                 When deleting messages from private conversations or small groups,
-                this parameter is ignored. This means the *message_ids* may delete
-                messages in different chats.
+                this parameter is currently ignored.
+                This means the *message_ids* may delete messages in different chats.
 
         :param message_ids:
             The list of message identifiers to delete.
@@ -437,11 +449,12 @@ class Client:
         .. code-block:: python
 
             # Delete two messages from chat for yourself
-            await client.delete_messages(
+            delete_count = await client.delete_messages(
                 chat,
                 [187481, 187482],
                 revoke=False,
             )
+            print('Deleted', delete_count, 'message(s)')
 
         .. seealso::
 
@@ -477,19 +490,19 @@ class Client:
             Note that the extension is not automatically added to the path.
             You can get the file extension with :attr:`telethon.types.File.ext`.
 
-            .. warning::
+            .. caution::
 
-                If the file already exists, it will be overwritten!
+                If the file already exists, it will be overwritten.
 
         .. rubric:: Example
 
         .. code-block:: python
 
             if photo := message.photo:
-                await client.download(photo, 'picture.jpg')
+                await client.download(photo, f'picture{photo.ext}')
 
             if video := message.video:
-                with open('video.mp4, 'wb') as file:
+                with open(f'video{video.ext}', 'wb') as file:
                     await client.download(video, file)
 
         .. seealso::
@@ -530,15 +543,21 @@ class Client:
 
         .. code-block:: python
 
-            # Edit message to have text without formatting
-            await client.edit_message(chat, msg_id, text='New text')
+            # Set a draft with no formatting and print the date Telegram registered
+            draft = await client.edit_draft(chat, 'New text')
+            print('Set current draft on', draft.date)
 
-            # Remove the link preview without changing the text
-            await client.edit_message(chat, msg_id, link_preview=False)
+            # Set a draft using HTML formatting, with a reply, and enabling the link preview
+            await client.edit_draft(
+                chat,
+                html='Draft with <em>reply</em> an URL https://example.com',
+                reply_to=message_id,
+                link_preview=True
+            )
 
         .. seealso::
 
-            :meth:`telethon.types.Message.edit`
+            :meth:`telethon.types.Draft.edit`
         """
         return await edit_draft(
             self,
@@ -622,11 +641,12 @@ class Client:
         .. code-block:: python
 
             # Forward two messages from chat to the destination
-            await client.forward_messages(
+            messages = await client.forward_messages(
                 destination,
                 [187481, 187482],
                 chat,
             )
+            print('Forwarded', len(messages), 'message(s)')
 
         .. seealso::
 
@@ -704,6 +724,7 @@ class Client:
 
         .. code-block:: python
 
+            # Clear all drafts
             async for draft in client.get_drafts():
                 await draft.delete()
         """
@@ -794,10 +815,12 @@ class Client:
         offset_date: Optional[datetime.datetime] = None,
     ) -> AsyncList[Message]:
         """
-        Get the message history from a :term:`chat`.
+        Get the message history from a :term:`chat`, from the newest message to the oldest.
+
+        The returned iterator can be :func:`reversed` to fetch from the first to the last instead.
 
         :param chat:
-            The :term:`chat` where the message to edit is.
+            The :term:`chat` where the messages should be fetched from.
 
         :param limit:
             How many messages to fetch at most.
@@ -818,12 +841,17 @@ class Client:
 
             # Get the last message in a chat
             last_message = (await client.get_messages(chat, 1))[0]
+            print(message.sender.name, last_message.text)
 
             # Print all messages before 2023 as HTML
             from datetime import datetime
 
             async for message in client.get_messages(chat, offset_date=datetime(2023, 1, 1)):
                 print(message.sender.name, ':', message.html_text)
+
+            # Print the first 10 messages in a chat as markdown
+            async for message in reversed(client.get_messages(chat)):
+                print(message.sender.name, ':', message.markdown_text)
         """
         return get_messages(
             self, chat, limit, offset_id=offset_id, offset_date=offset_date
@@ -859,9 +887,11 @@ class Client:
         """
         Get the participants in a group or channel, along with their permissions.
 
-        Note that Telegram is rather strict when it comes to fetching members.
-        It is very likely that you will not be able to fetch all the members.
-        There is no way to bypass this.
+        .. note::
+
+            Telegram is rather strict when it comes to fetching members.
+            It is very likely that you will not be able to fetch all the members.
+            There is no way to bypass this.
 
         :param chat:
             The :term:`chat` to fetch participants from.
@@ -955,11 +985,12 @@ class Client:
 
         .. code-block:: python
 
+            # Interactive login from the terminal
             me = await client.interactive_login()
             print('Logged in as:', me.name)
 
-            # or, to make sure you're logged-in as a bot
-            await client.interactive_login('1234:ab56cd78ef90)
+            # Automatic login to a bot account
+            await client.interactive_login('54321:hJrIQtVBab0M2Yqg4HL1K-EubfY_v2fEVR')
 
         .. seealso::
 
@@ -979,6 +1010,11 @@ class Client:
 
             if not await client.is_authorized():
                 ...  # need to sign in
+
+        .. seealso::
+
+            :meth:`get_me` can be used to fetch up-to-date information about :term:`yourself`
+            and check if you're logged-in at the same time.
         """
         return await is_authorized(self)
 
@@ -1075,8 +1111,7 @@ class Client:
         .. code-block:: python
 
             # Mark all messages as read
-            message = await client.read_message(chat, 'all')
-            await message.delete()
+            await client.read_message(chat, 'all')
         """
         await read_message(self, chat, message_id)
 
@@ -1100,18 +1135,12 @@ class Client:
                     client.remove_event_handler(my_handler)
                 else:
                     print('still going!')
-
-        .. seealso::
-
-            :meth:`add_event_handler`, used to register existing functions as event handlers.
         """
         remove_event_handler(self, handler)
 
     async def request_login_code(self, phone: str) -> LoginToken:
         """
         Request Telegram to send a login code to the provided phone number.
-        This is simply the opposite of :meth:`add_event_handler`.
-        Does nothing if the handler was not actually registered.
 
         :param phone:
             The phone number string, in international format.
@@ -1125,6 +1154,11 @@ class Client:
 
             login_token = await client.request_login_code('+1 23 456...')
             print(login_token.timeout, 'seconds before code expires')
+
+        .. caution::
+
+            Be sure to check :meth:`is_authorized` before calling this function.
+            Signing in often when you don't need to will lead to :doc:`/concepts/errors`.
 
         .. seealso::
 
@@ -1159,7 +1193,7 @@ class Client:
         Resolve a username into a :term:`chat`.
 
         This method is rather expensive to call.
-        It is recommended to use it once and then ``chat.pack()`` the result.
+        It is recommended to use it once and then :meth:`types.Chat.pack` the result.
         The packed chat can then be used (and re-fetched) more cheaply.
 
         :param username:
@@ -1773,6 +1807,14 @@ class Client:
 
     @property
     def connected(self) -> bool:
+        """
+        :data:`True` if :meth:`connect` has been called previously.
+
+        This property will be set back to :data:`False` after calling :meth:`disconnect`.
+
+        This property does *not* check whether the connection is alive.
+        The only way to check if the connection still works is to make a request.
+        """
         return connected(self)
 
     def _build_message_map(

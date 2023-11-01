@@ -50,6 +50,8 @@ If the issue persists, you may try contacting them, using a proxy or using a VPN
 Be aware that some phone numbers are not eligible to register applications with.
 
 
+.. _interactive login:
+
 Interactive login
 -----------------
 
@@ -131,6 +133,11 @@ If you want to automatically login as a bot when needed, you can do so without a
 Manual login
 ------------
 
+.. tip::
+
+    You can safely skip to :doc:`next-steps` if you've already completed the :ref:`interactive login`.
+    This section is only of interest if you want more control over how to manually login.
+
 We've talked about the second and third parameters of the :class:`Client` constructor, but not the first:
 
 .. code-block:: python
@@ -143,7 +150,7 @@ The session path can contain directory separators and live anywhere in the file 
 Telethon will automatically append the ``.session`` extension if you don't provide any.
 
 Briefly, the session contains some of the information needed to connect to Telegram.
-This includes the datacenter belonging to the account logged-in, and the authorization key used for encryption, among other things.
+This includes the data center belonging to the account logged-in, and the authorization key used for encryption, among other things.
 
 .. important::
 

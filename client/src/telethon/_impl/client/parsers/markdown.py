@@ -134,7 +134,7 @@ def parse(message: str) -> Tuple[str, List[MessageEntity]]:
         elif token.type in ("s_close", "s_open"):
             push(MessageEntityStrike)
         elif token.type == "softbreak":
-            message += " "
+            message += "\n"
         elif token.type in ("strong_close", "strong_open"):
             push(MessageEntityBold)
         elif token.type == "text":

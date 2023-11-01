@@ -15,6 +15,43 @@ Messages
 Messages are at the heart of a messaging platform.
 In Telethon, you will be using the :class:`~types.Message` class to interact with them.
 
+
+Fetching messages
+-----------------
+
+The most common way to actively fetch messages using the :meth:`Client.get_messages` method:
+
+.. code-block:: python
+
+    # Get the last message in a chat (by setting the limit to 1).
+    last_message = (await client.get_messages(chat, 1))[0]
+
+    # Iterate over all messages in a chat, starting from the oldest message (by using reversed).
+    async for message in reversed(client.get_messages(chat)):
+        print(message.sender.name, message.text_html)
+
+You can also perform a fuzzy text search with the :meth:`Client.search_messages` method.
+The search will be performed server-side by Telegram, so the rules for how it works are also fuzzy.
+
+If you want to search for messages in all the chats you're part of, you can use :meth:`Client.search_all_messages`.
+
+Lastly, :meth:`Client.send_message` *also* returns the :class:`~types.Message` that you just sent.
+
+The most common way to passively listen to incoming messages is using the :class:`~events.NewMessage` event:
+
+.. code-block:: python
+
+    from telethon import events
+
+    @client.on(events.NewMessage)
+    async def first(event):
+        print(event.chat.name, ':', event.text)
+
+.. seealso::
+
+    The :doc:`updates` concept for an in-depth explanation on using events.
+
+
 .. _formatting:
 
 Formatting messages

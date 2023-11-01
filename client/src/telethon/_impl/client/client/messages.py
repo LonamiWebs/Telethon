@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Tuple, Union
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
@@ -250,36 +250,35 @@ async def forward_messages(
 
 
 class MessageList(AsyncList[Message]):
+    def __init__(self) -> None:
+        super().__init__()
+        self._reversed = False
+
     def _extend_buffer(
         self, client: Client, messages: abcs.messages.Messages
     ) -> Dict[int, Chat]:
-        if isinstance(messages, types.messages.Messages):
-            chat_map = build_chat_map(messages.users, messages.chats)
-            self._buffer.extend(
-                Message._from_raw(client, m, chat_map) for m in messages.messages
-            )
-            self._total = len(messages.messages)
-            self._done = True
-            return chat_map
-        elif isinstance(messages, types.messages.MessagesSlice):
-            chat_map = build_chat_map(messages.users, messages.chats)
-            self._buffer.extend(
-                Message._from_raw(client, m, chat_map) for m in messages.messages
-            )
-            self._total = messages.count
-            return chat_map
-        elif isinstance(messages, types.messages.ChannelMessages):
-            chat_map = build_chat_map(messages.users, messages.chats)
-            self._buffer.extend(
-                Message._from_raw(client, m, chat_map) for m in messages.messages
-            )
-            self._total = messages.count
-            return chat_map
-        elif isinstance(messages, types.messages.MessagesNotModified):
+        if isinstance(messages, types.messages.MessagesNotModified):
             self._total = messages.count
             return {}
+
+        if isinstance(messages, types.messages.Messages):
+            self._total = len(messages.messages)
+            self._done = True
+        elif isinstance(
+            messages, (types.messages.MessagesSlice, types.messages.ChannelMessages)
+        ):
+            self._total = messages.count
         else:
             raise RuntimeError("unexpected case")
+
+        chat_map = build_chat_map(messages.users, messages.chats)
+        self._buffer.extend(
+            Message._from_raw(client, m, chat_map)
+            for m in (
+                reversed(messages.messages) if self._reversed else messages.messages
+            )
+        )
+        return chat_map
 
     def _last_non_empty_message(
         self,
@@ -320,13 +319,14 @@ class HistoryList(MessageList):
                 await self._client._resolve_to_packed(self._chat)
             )._to_input_peer()
 
+        limit = min(max(self._limit, 1), 100)
         result = await self._client(
             functions.messages.get_history(
                 peer=self._peer,
                 offset_id=self._offset_id,
                 offset_date=self._offset_date,
-                add_offset=0,
-                limit=min(max(self._limit, 1), 100),
+                add_offset=-limit if self._reversed else 0,
+                limit=limit,
                 max_id=0,
                 min_id=0,
                 hash=0,
@@ -338,9 +338,20 @@ class HistoryList(MessageList):
         self._done |= not self._limit
         if self._buffer and not self._done:
             last = self._last_non_empty_message()
-            self._offset_id = self._buffer[-1].id
-            if (date := getattr(last, "date", None)) is not None:
-                self._offset_date = date
+            self._offset_id = last.id + (1 if self._reversed else 0)
+            self._offset_date = 0
+
+    def __reversed__(self) -> Self:
+        new = self.__class__(
+            self._client,
+            self._chat,
+            self._limit,
+            offset_id=1 if self._offset_id == 0 else self._offset_id,
+            offset_date=self._offset_date,
+        )
+        new._peer = self._peer
+        new._reversed = not self._reversed
+        return new
 
 
 def get_messages(

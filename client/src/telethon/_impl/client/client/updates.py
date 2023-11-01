@@ -14,6 +14,7 @@ from typing import (
 
 from ...session import Gap
 from ...tl import abcs
+from ..events import Continue
 from ..events import Event as EventBase
 from ..events.filters import Filter
 from ..types import build_chat_map
@@ -152,6 +153,6 @@ async def dispatch_next(client: Client) -> None:
         if event := event_cls._try_from_update(client, update, chat_map):
             for handler, filter in handlers:
                 if not filter or filter(event):
-                    await handler(event)
-                    if client._shortcircuit_handlers:
+                    ret = await handler(event)
+                    if ret is Continue or client._shortcircuit_handlers:
                         return

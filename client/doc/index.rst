@@ -91,6 +91,7 @@ A more in-depth explanation of some of the concepts and words used in Telethon.
     concepts/errors
     concepts/botapi-vs-mtproto
     concepts/full-api
+    concepts/datacenters
     concepts/glossary
 
 

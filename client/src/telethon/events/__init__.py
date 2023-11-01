@@ -7,6 +7,7 @@ Classes related to the different event types that wrap incoming Telegram updates
 """
 from .._impl.client.events import (
     ButtonCallback,
+    Continue,
     Event,
     InlineQuery,
     MessageDeleted,
@@ -17,6 +18,7 @@ from .._impl.client.events import (
 
 __all__ = [
     "ButtonCallback",
+    "Continue",
     "Event",
     "InlineQuery",
     "MessageDeleted",

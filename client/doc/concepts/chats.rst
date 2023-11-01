@@ -39,7 +39,7 @@ Telegram Chat
 The Telegram API is very confusing when it comes to the word "chat".
 You only need to know about this if you plan to use the :term:`Raw API`.
 
-In the schema definitions, there are two boxed types, :tl:`User` and :tl:`Chat`.
+In the :term:`TL` schema definitions, there are two boxed types, :tl:`User` and :tl:`Chat`.
 A boxed :tl:`User` can only be the bare :tl:`user`, but the boxed :tl:`Chat` can be either a bare :tl:`chat` or a bare :tl:`channel`.
 
 A bare :tl:`chat` always refers to small groups.
@@ -48,7 +48,7 @@ A bare :tl:`channel` can have either the ``broadcast`` or the ``megagroup`` flag
 A bare :tl:`channel` with the ``broadcast`` flag set to :data:`True` is known as a broadcast channel.
 A bare :tl:`channel` with the ``megagroup`` flag set to :data:`True` is known as a supergroup.
 
-A bare :tl:`chat` with has less features than a bare :tl:`channel` ``megagroup``.
+A bare :tl:`chat` has less features available than a bare :tl:`channel` ``megagroup``.
 Official clients are very good at hiding this difference.
 They will implicitly convert bare :tl:`chat` to bare :tl:`channel` ``megagroup`` when doing certain operations.
 Doing things like setting a username is actually a two-step process (migration followed by updating the username).
@@ -70,10 +70,20 @@ The Bot API follows a certain convention when it comes to identifiers:
 
 * User IDs are positive.
 * Chat IDs are negative.
-* Channel IDs are prefixed with ``-100``.
+* Channel IDs are *also* negative, but are prefixed by ``-100``.
 
 Telethon encourages the use of :class:`~types.PackedChat` instead of naked identifiers.
 As a reminder, negative identifiers are not supported in Telethon's chat-like parameters.
+
+If you got an Bot API-style ID from somewhere else, you will need to explicitly say what type it is:
+
+.. code-block:: python
+
+    # If -1001234 is your ID...
+    from telethon.types import PackedChat, PackedType
+    chat = PackedChat(PackedType.BROADCAST, 1234, None)
+    # ...you need to explicitly create a PackedChat with id=1234 and set the corresponding type (a channel).
+    # The access hash (see below) will be ``None``, which may or may not work.
 
 
 Encountering chats
@@ -87,6 +97,7 @@ If you:
 * …know the user has a common chat with you, you can :meth:`~Client.get_participants` of the chat in common.
 * …know the username of the user, group, or channel, you can :meth:`~Client.resolve_username`.
 * …are a bot responding to users, you will be able to access the :attr:`types.Message.sender`.
+
 
 Chats access hash
 -----------------
