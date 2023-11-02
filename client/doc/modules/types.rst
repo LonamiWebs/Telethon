@@ -102,6 +102,10 @@ Private definitions
 
     Generic parameter used by :class:`AsyncList`.
 
+.. currentmodule:: telethon._impl.client.events.filters.combinators
+
+.. autoclass:: Combinable
+
 .. currentmodule:: telethon._impl.client.types.file
 
 .. autoclass:: InFileLike

@@ -37,7 +37,7 @@ The most common way is using the :meth:`Client.on` decorator to register your ca
 
     bot = Client(...)
 
-    @bot.on(events.NewMessage, filters.Command('/start'))
+    @bot.on(events.NewMessage, filters.Command('/start') | filters.Command('/help'))
     async def handler(event: events.NewMessage):
         await event.respond('Beep boop!')
 
@@ -46,7 +46,11 @@ The first parameter is the :class:`type` of one of the :mod:`telethon.events`, n
 The second parameter is optional.
 If provided, it must be a callable function that returns :data:`True` if the handler should run.
 Built-in filter functions are available in the :mod:`~telethon.events.filters` module.
-In this example, :class:`~events.filters.Command` means the handler will be called when the user sends */start* to the bot.
+In this example, :class:`~events.filters.Command` means the handler will be called when the user sends */start* or */help* to the bot.
+
+Built-in filter functions are also :class:`~telethon._impl.client.events.filters.combinators.Combinable`.
+This means you can use ``|``, ``&`` and the unary ``~`` to combine filters with *or*, *and*, and negate them, respectively.
+These operators correspond to :class:`events.filters.Any`, :class:`events.filters.All` and :class:`events.filters.Not`.
 
 When your ``handler`` function is called, it will receive a single parameter, the event.
 The event type is the same as the one you defined in the decorator when registering your handler.
@@ -138,7 +142,6 @@ This makes it very convenient to write custom filters using the :keyword:`lambda
     @client.on(events.NewMessage, lambda e: e.id == 1000)
     async def handler(event):
         ...
-
 
 
 Setting priority on handlers

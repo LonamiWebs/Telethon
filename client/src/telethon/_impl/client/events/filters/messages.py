@@ -4,12 +4,13 @@ import re
 from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
 
 from ..event import Event
+from .combinators import Combinable
 
 if TYPE_CHECKING:
     from ...client.client import Client
 
 
-class Text:
+class Text(Combinable):
     """
     Filter by ``event.text`` using a *regular expression* pattern.
 
@@ -33,7 +34,7 @@ class Text:
         return re.search(self._pattern, text) is not None if text is not None else False
 
 
-class Command:
+class Command(Combinable):
     """
     Filter by ``event.text`` to make sure the first word matches the command or
     the command + '@' + username, using the username of the logged-in account.
@@ -84,7 +85,7 @@ class Command:
         return False
 
 
-class Incoming:
+class Incoming(Combinable):
     """
     Filter by ``event.incoming``, that is, messages sent from others to the
     logged-in account.
@@ -99,7 +100,7 @@ class Incoming:
         return getattr(event, "incoming", False)
 
 
-class Outgoing:
+class Outgoing(Combinable):
     """
     Filter by ``event.outgoing``, that is, messages sent from others to the
     logged-in account.
@@ -114,7 +115,7 @@ class Outgoing:
         return getattr(event, "outgoing", False)
 
 
-class Forward:
+class Forward(Combinable):
     """
     Filter by ``event.forward``.
     """
@@ -125,7 +126,7 @@ class Forward:
         return getattr(event, "forward", None) is not None
 
 
-class Reply:
+class Reply(Combinable):
     """
     Filter by ``event.reply``.
     """
@@ -136,7 +137,7 @@ class Reply:
         return getattr(event, "reply", None) is not None
 
 
-class TextOnly:
+class TextOnly(Combinable):
     """
     Filter by messages with some text and no media.
 
@@ -144,7 +145,7 @@ class TextOnly:
     """
 
 
-class Media:
+class Media(Combinable):
     """
     Filter by the media type in the message.
 

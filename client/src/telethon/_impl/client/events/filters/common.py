@@ -1,12 +1,11 @@
-from typing import Callable, Literal, Sequence, Tuple, Type, Union
+from typing import Literal, Sequence, Tuple, Type, Union
 
 from ...types import Channel, Group, User
 from ..event import Event
+from .combinators import Combinable
 
-Filter = Callable[[Event], bool]
 
-
-class Chats:
+class Chats(Combinable):
     """
     Filter by ``event.chat.id``, if the event has a chat.
     """
@@ -30,7 +29,7 @@ class Chats:
         return id in self._chats
 
 
-class Senders:
+class Senders(Combinable):
     """
     Filter by ``event.sender.id``, if the event has a sender.
     """
@@ -54,7 +53,7 @@ class Senders:
         return id in self._senders
 
 
-class ChatType:
+class ChatType(Combinable):
     """
     Filter by chat type, either ``'user'``, ``'group'`` or ``'broadcast'``.
     """

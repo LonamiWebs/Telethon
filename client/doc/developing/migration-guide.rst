@@ -345,6 +345,7 @@ There is no longer nested ``class Event`` inside them either.
 
 Instead, the event type itself is what the handler will actually be called with.
 Because filters are separate, there is no longer a need for v1 ``@events.register`` either.
+It also means you can combine filters with ``&``, ``|`` and ``~``.
 
 Filters are now normal functions that work with any event.
 Of course, this doesn't mean all filters make sense for all events.
