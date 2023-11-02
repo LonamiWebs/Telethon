@@ -4,8 +4,8 @@ from .markdown import parse as parse_markdown_message
 from .markdown import unparse as generate_markdown_message
 
 __all__ = [
-    "generate_html_message",
     "parse_html_message",
-    "generate_markdown_message",
+    "generate_html_message",
     "parse_markdown_message",
+    "generate_markdown_message",
 ]
