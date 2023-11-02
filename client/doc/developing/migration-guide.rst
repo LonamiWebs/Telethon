@@ -244,14 +244,17 @@ The simplest approach could be using a global ``states`` dictionary storing the 
 This is not a thing in Telegram.
 It was implemented by restricting and then removing the restriction.
 
-The old ``client.edit_permissions()`` was renamed to :meth:`Client.set_banned_rights`.
-This defines the rights a restricted participant has (bans them from doing other things).
+The old ``client.edit_permissions()`` was renamed to :meth:`Client.set_participant_restrictions`.
+This defines the restrictions a banned participant has applied (bans them from doing those things).
 Revoking the right to view messages will kick them.
 This rename should avoid confusion, as it is now clear this is not to promote users to admin status.
 
-For administrators, ``client.edit_admin`` was renamed to :meth:`Client.set_admin_rights` for consistency.
+For administrators, ``client.edit_admin`` was renamed to :meth:`Client.set_participant_admin_rights` for consistency.
 
-Note that a new method, :meth:`Client.set_default_rights`, must now be used to set a chat's default rights.
+You can also use the aliases on the :class:`~types.Participant`, :meth:`types.Participant.set_restrictions` and :meth:`types.Participant.set_admin_rights`.
+
+Note that a new method, :meth:`Client.set_chat_default_restrictions`, must now be used to set a chat's default rights.
+You can also use the alias on the :class:`~types.Group`, :meth:`types.Group.set_default_restrictions`.
 
 .. rubric:: No ``client.download_profile_photo()`` method.
 

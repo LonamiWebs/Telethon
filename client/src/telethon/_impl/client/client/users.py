@@ -51,10 +51,10 @@ def get_contacts(self: Client) -> AsyncList[User]:
     return ContactList(self)
 
 
-def resolved_peer_to_chat(resolved: abcs.contacts.ResolvedPeer) -> Chat:
+def resolved_peer_to_chat(client: Client, resolved: abcs.contacts.ResolvedPeer) -> Chat:
     assert isinstance(resolved, types.contacts.ResolvedPeer)
 
-    map = build_chat_map(resolved.users, resolved.chats)
+    map = build_chat_map(client, resolved.users, resolved.chats)
     if chat := map.get(peer_id(resolved.peer)):
         return chat
     else:
@@ -63,13 +63,13 @@ def resolved_peer_to_chat(resolved: abcs.contacts.ResolvedPeer) -> Chat:
 
 async def resolve_phone(client: Client, phone: str) -> Chat:
     return resolved_peer_to_chat(
-        await client(functions.contacts.resolve_phone(phone=phone))
+        client, await client(functions.contacts.resolve_phone(phone=phone))
     )
 
 
 async def resolve_username(self: Client, username: str) -> Chat:
     return resolved_peer_to_chat(
-        await self(functions.contacts.resolve_username(username=username))
+        self, await self(functions.contacts.resolve_username(username=username))
     )
 
 

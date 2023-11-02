@@ -102,3 +102,23 @@ class AdminRight(Enum):
             cls.EDIT_STORIES,
             cls.DELETE_STORIES,
         }
+
+    @classmethod
+    def _set_to_raw(cls, all_rights: Set[AdminRight]) -> types.ChatAdminRights:
+        return types.ChatAdminRights(
+            change_info=cls.CHANGE_INFO in all_rights,
+            post_messages=cls.POST_MESSAGES in all_rights,
+            edit_messages=cls.EDIT_MESSAGES in all_rights,
+            delete_messages=cls.DELETE_MESSAGES in all_rights,
+            ban_users=cls.BAN_USERS in all_rights,
+            invite_users=cls.INVITE_USERS in all_rights,
+            pin_messages=cls.PIN_MESSAGES in all_rights,
+            add_admins=cls.MANAGE_ADMINS in all_rights,
+            anonymous=cls.REMAIN_ANONYMOUS in all_rights,
+            manage_call=cls.MANAGE_CALLS in all_rights,
+            other=cls.OTHER in all_rights,
+            manage_topics=cls.MANAGE_TOPICS in all_rights,
+            post_stories=cls.POST_STORIES in all_rights,
+            edit_stories=cls.EDIT_STORIES in all_rights,
+            delete_stories=cls.DELETE_STORIES in all_rights,
+        )

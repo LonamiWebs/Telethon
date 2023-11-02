@@ -40,7 +40,7 @@ class DialogList(AsyncList[Dialog]):
 
         assert isinstance(result, (types.messages.Dialogs, types.messages.DialogsSlice))
 
-        chat_map = build_chat_map(result.users, result.chats)
+        chat_map = build_chat_map(self._client, result.users, result.chats)
         msg_map = build_msg_map(self._client, result.messages, chat_map)
 
         self._buffer.extend(
@@ -94,7 +94,7 @@ class DraftList(AsyncList[Draft]):
         result = await self._client(functions.messages.get_all_drafts())
         assert isinstance(result, types.Updates)
 
-        chat_map = build_chat_map(result.users, result.chats)
+        chat_map = build_chat_map(self._client, result.users, result.chats)
 
         self._buffer.extend(
             Draft._from_raw_update(self._client, u, chat_map)

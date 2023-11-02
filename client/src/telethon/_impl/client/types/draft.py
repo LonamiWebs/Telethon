@@ -61,7 +61,7 @@ class Draft(metaclass=NoPublicConstructor):
         This is also the chat where the message will be sent to by :meth:`send`.
         """
         return self._chat_map.get(peer_id(self._peer)) or expand_peer(
-            self._peer, broadcast=None
+            self._client, self._peer, broadcast=None
         )
 
     @property

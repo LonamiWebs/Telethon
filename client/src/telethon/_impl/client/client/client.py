@@ -13,6 +13,7 @@ from typing import (
     Literal,
     Optional,
     Self,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -35,9 +36,11 @@ from ...tl import Request, abcs
 from ..events import Event
 from ..events.filters import Filter
 from ..types import (
+    AdminRight,
     AsyncList,
     Chat,
     ChatLike,
+    ChatRestriction,
     Dialog,
     Draft,
     File,
@@ -66,9 +69,9 @@ from .chats import (
     get_admin_log,
     get_participants,
     get_profile_photos,
-    set_admin_rights,
-    set_banned_rights,
-    set_default_rights,
+    set_chat_default_restrictions,
+    set_participant_admin_rights,
+    set_participant_restrictions,
 )
 from .dialogs import delete_dialog, edit_draft, get_dialogs, get_drafts
 from .files import (
@@ -1700,14 +1703,46 @@ class Client:
             caption_html=caption_html,
         )
 
-    def set_admin_rights(self, chat: ChatLike, user: ChatLike) -> None:
-        set_admin_rights(self, chat, user)
+    async def set_chat_default_restrictions(
+        self,
+        chat: ChatLike,
+        restrictions: Sequence[ChatRestriction],
+        *,
+        until: Optional[datetime.datetime] = None,
+    ) -> None:
+        """
+        Set the default restrictions to apply to all participant in a chat.
 
-    def set_banned_rights(self, chat: ChatLike, user: ChatLike) -> None:
-        set_banned_rights(self, chat, user)
+        :param chat:
+            The :term:`chat` where the restrictions will be applied.
 
-    def set_default_rights(self, chat: ChatLike, user: ChatLike) -> None:
-        set_default_rights(self, chat, user)
+        :param restrictions:
+            The sequence of restrictions to apply.
+
+        :param until:
+            Date until which the restrictions should be applied.
+            By default, restrictions apply for as long as possible.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            from datetime import datetime, timedelta
+            from telethon.types import ChatRestriction
+
+            # Don't allow anyone except administrators to send stickers for a day
+            await client.set_chat_default_restrictions(
+                chat, user, [ChatRestriction.SEND_STICKERS],
+                until=datetime.now() + timedelta(days=1))
+
+            # Remove all default restrictions from the chat
+            await client.set_chat_default_restrictions(chat, user, [])
+
+        .. seealso::
+
+            :meth:`telethon.types.Group.set_default_restrictions`
+        """
+        await set_chat_default_restrictions(self, chat, restrictions, until=until)
 
     def set_handler_filter(
         self,
@@ -1736,6 +1771,102 @@ class Client:
             client.set_handler_filter(my_handler, None)
         """
         set_handler_filter(self, handler, filter)
+
+    async def set_participant_admin_rights(
+        self, chat: ChatLike, user: ChatLike, rights: Sequence[AdminRight]
+    ) -> None:
+        """
+        Set the administrator rights granted to the participant in the chat.
+
+        If an empty sequence of rights is given, the user will be demoted and stop being an administrator.
+
+        In small group chats, there are no separate administrator rights.
+        In this case, granting any right will make the user an administrator with all rights.
+
+        :param chat:
+            The :term:`chat` where the rights will be granted.
+
+        :param participant:
+            The participant to promote to administrator, usually a :class:`types.User`.
+
+        :param rights:
+            The sequence of rights to grant.
+            Can be empty to revoke the administrator status from the participant.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            from telethon.types import AdminRight
+
+            # Make user an administrator allowed to pin messages
+            await client.set_participant_admin_rights(
+                chat, user, [AdminRight.PIN_MESSAGES])
+
+            # Demote an administrator
+            await client.set_participant_admin_rights(chat, user, [])
+
+        .. seealso::
+
+            :meth:`telethon.types.Participant.set_admin_rights`
+        """
+        await set_participant_admin_rights(self, chat, user, rights)
+
+    async def set_participant_restrictions(
+        self,
+        chat: ChatLike,
+        user: ChatLike,
+        restrictions: Sequence[ChatRestriction],
+        *,
+        until: Optional[datetime.datetime] = None,
+    ) -> None:
+        """
+        Set the restrictions to apply to a participant in the chat.
+
+        Restricting the participant to :attr:`~types.ChatRestriction.VIEW_MESSAGES` will kick them out of the chat.
+
+        In small group chats, there are no separate restrictions.
+        In this case, any restriction will kick the participant.
+        The participant's history will be revoked if the restriction to :attr:`~types.ChatRestriction.VIEW_MESSAGES` is applied.
+
+        :param chat:
+            The :term:`chat` where the restrictions will be applied.
+
+        :param participant:
+            The participant to restrict or ban, usually a :class:`types.User`.
+
+        :param restrictions:
+            The sequence of restrictions to apply.
+            Can be empty to remove all restrictions from the participant and unban them.
+
+        :param until:
+            Date until which the restrictions should be applied.
+            By default, restrictions apply for as long as possible.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            from datetime import datetime, timedelta
+            from telethon.types import ChatRestriction
+
+            # Kick the user out of the chat
+            await client.set_participant_restrictions(
+                chat, user, [ChatRestriction.VIEW_MESSAGES])
+
+            # Don't allow the user to send media for 5 minutes
+            await client.set_participant_restrictions(
+                chat, user, [ChatRestriction.SEND_MEDIA],
+                until=datetime.now() + timedelta(minutes=5))
+
+            # Unban the user
+            await client.set_participant_restrictions(chat, user, [])
+
+        .. seealso::
+
+            :meth:`telethon.types.Participant.set_restrictions`
+        """
+        await set_participant_restrictions(self, chat, user, restrictions, until=until)
 
     async def sign_in(self, token: LoginToken, code: str) -> Union[User, PasswordToken]:
         """

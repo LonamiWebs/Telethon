@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import itertools
 import sys
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, DefaultDict, Dict, List, Optional, Union
 
 from ....session import PackedChat
 from ....tl import abcs, types
@@ -10,15 +12,20 @@ from .chat import Chat
 from .group import Group
 from .user import User
 
+if TYPE_CHECKING:
+    from ...client.client import Client
+
 ChatLike = Union[Chat, PackedChat, int, str]
 
 
-def build_chat_map(users: List[abcs.User], chats: List[abcs.Chat]) -> Dict[int, Chat]:
+def build_chat_map(
+    client: Client, users: List[abcs.User], chats: List[abcs.Chat]
+) -> Dict[int, Chat]:
     users_iter = (User._from_raw(u) for u in users)
     chats_iter = (
         Channel._from_raw(c)
         if isinstance(c, (types.Channel, types.ChannelForbidden)) and c.broadcast
-        else Group._from_raw(c)
+        else Group._from_raw(client, c)
         for c in chats
     )
 
@@ -57,11 +64,11 @@ def peer_id(peer: abcs.Peer) -> int:
         raise RuntimeError("unexpected case")
 
 
-def expand_peer(peer: abcs.Peer, *, broadcast: Optional[bool]) -> Chat:
+def expand_peer(client: Client, peer: abcs.Peer, *, broadcast: Optional[bool]) -> Chat:
     if isinstance(peer, types.PeerUser):
         return User._from_raw(types.UserEmpty(id=peer.user_id))
     elif isinstance(peer, types.PeerChat):
-        return Group._from_raw(types.ChatEmpty(id=peer.chat_id))
+        return Group._from_raw(client, types.ChatEmpty(id=peer.chat_id))
     elif isinstance(peer, types.PeerChannel):
         if broadcast is None:
             broadcast = True  # assume broadcast by default (Channel type is more accurate than Group)
@@ -75,7 +82,11 @@ def expand_peer(peer: abcs.Peer, *, broadcast: Optional[bool]) -> Chat:
             until_date=None,
         )
 
-        return Channel._from_raw(channel) if broadcast else Group._from_raw(channel)
+        return (
+            Channel._from_raw(channel)
+            if broadcast
+            else Group._from_raw(client, channel)
+        )
     else:
         raise RuntimeError("unexpected case")
 

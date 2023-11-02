@@ -179,7 +179,7 @@ class Message(metaclass=NoPublicConstructor):
         pid = peer_id(peer)
         if pid not in self._chat_map:
             self._chat_map[pid] = expand_peer(
-                peer, broadcast=getattr(self._raw, "post", None)
+                self._client, peer, broadcast=getattr(self._raw, "post", None)
             )
         return self._chat_map[pid]
 
@@ -194,7 +194,7 @@ class Message(metaclass=NoPublicConstructor):
         """
         if (from_ := getattr(self._raw, "from_id", None)) is not None:
             return self._chat_map.get(peer_id(from_)) or expand_peer(
-                from_, broadcast=getattr(self._raw, "post", None)
+                self._client, from_, broadcast=getattr(self._raw, "post", None)
             )
         else:
             return None

@@ -106,7 +106,7 @@ def extend_update_queue(
     users: List[abcs.User],
     chats: List[abcs.Chat],
 ) -> None:
-    chat_map = build_chat_map(users, chats)
+    chat_map = build_chat_map(client, users, chats)
 
     for update in updates:
         try:

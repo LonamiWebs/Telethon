@@ -1,9 +1,17 @@
-from typing import Dict, Optional, Self, Set, Union
+from __future__ import annotations
 
+import datetime
+from typing import TYPE_CHECKING, Dict, Optional, Self, Sequence, Set, Union
+
+from ...session import PackedChat
 from ...tl import abcs, types
 from .admin_right import AdminRight
 from .chat import Chat, User, peer_id
+from .chat_restriction import ChatRestriction
 from .meta import NoPublicConstructor
+
+if TYPE_CHECKING:
+    from ..client.client import Client
 
 
 class Participant(metaclass=NoPublicConstructor):
@@ -13,10 +21,10 @@ class Participant(metaclass=NoPublicConstructor):
     You can obtain participants with methods such as :meth:`telethon.Client.get_participants`.
     """
 
-    __slots__ = ("_raw", "_chat_map")
-
     def __init__(
         self,
+        client: Client,
+        chat: PackedChat,
         participant: Union[
             types.ChannelParticipant,
             types.ChannelParticipantSelf,
@@ -30,12 +38,18 @@ class Participant(metaclass=NoPublicConstructor):
         ],
         chat_map: Dict[int, Chat],
     ) -> None:
+        self._client = client
+        self._chat = chat
         self._raw = participant
         self._chat_map = chat_map
 
     @classmethod
     def _from_raw_channel(
-        cls, participant: abcs.ChannelParticipant, chat_map: Dict[int, Chat]
+        cls,
+        client: Client,
+        chat: PackedChat,
+        participant: abcs.ChannelParticipant,
+        chat_map: Dict[int, Chat],
     ) -> Self:
         if isinstance(
             participant,
@@ -48,13 +62,17 @@ class Participant(metaclass=NoPublicConstructor):
                 types.ChannelParticipantLeft,
             ),
         ):
-            return cls._create(participant, chat_map)
+            return cls._create(client, chat, participant, chat_map)
         else:
             raise RuntimeError("unexpected case")
 
     @classmethod
     def _from_raw_chat(
-        cls, participant: abcs.ChatParticipant, chat_map: Dict[int, Chat]
+        cls,
+        client: Client,
+        chat: PackedChat,
+        participant: abcs.ChatParticipant,
+        chat_map: Dict[int, Chat],
     ) -> Self:
         if isinstance(
             participant,
@@ -64,7 +82,7 @@ class Participant(metaclass=NoPublicConstructor):
                 types.ChatParticipantAdmin,
             ),
         ):
-            return cls._create(participant, chat_map)
+            return cls._create(client, chat, participant, chat_map)
         else:
             raise RuntimeError("unexpected case")
 
@@ -162,3 +180,36 @@ class Participant(metaclass=NoPublicConstructor):
             return AdminRight._chat_rights()
         else:
             return None
+
+    @property
+    def restrictions(self) -> Optional[Set[ChatRestriction]]:
+        """
+        The set of restrictions applied to this participant, if they are banned.
+        """
+        if isinstance(self._raw, types.ChannelParticipantBanned):
+            return ChatRestriction._from_raw(self._raw.banned_rights)
+        else:
+            return None
+
+    async def set_admin_rights(self, rights: Sequence[AdminRight]) -> None:
+        """
+        Alias for :meth:`telethon.Client.set_participant_admin_rights`.
+        """
+        participant = self.user or self.banned or self.left
+        assert participant
+        await self._client.set_participant_admin_rights(self._chat, participant, rights)
+
+    async def set_restrictions(
+        self,
+        restrictions: Sequence[ChatRestriction],
+        *,
+        until: Optional[datetime.datetime] = None,
+    ) -> None:
+        """
+        Alias for :meth:`telethon.Client.set_participant_restrictions`.
+        """
+        participant = self.user or self.banned or self.left
+        assert participant
+        await self._client.set_participant_restrictions(
+            self._chat, participant, restrictions, until=until
+        )

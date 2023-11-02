@@ -1,9 +1,16 @@
-from typing import Optional, Self, Union
+from __future__ import annotations
+
+import datetime
+from typing import TYPE_CHECKING, Optional, Self, Sequence, Union
 
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
+from ..chat_restriction import ChatRestriction
 from ..meta import NoPublicConstructor
 from .chat import Chat
+
+if TYPE_CHECKING:
+    from ...client.client import Client
 
 
 class Group(Chat, metaclass=NoPublicConstructor):
@@ -18,7 +25,8 @@ class Group(Chat, metaclass=NoPublicConstructor):
 
     def __init__(
         self,
-        raw: Union[
+        client: Client,
+        chat: Union[
             types.ChatEmpty,
             types.Chat,
             types.ChatForbidden,
@@ -26,16 +34,17 @@ class Group(Chat, metaclass=NoPublicConstructor):
             types.ChannelForbidden,
         ],
     ) -> None:
-        self._raw = raw
+        self._client = client
+        self._raw = chat
 
     @classmethod
-    def _from_raw(cls, chat: abcs.Chat) -> Self:
+    def _from_raw(cls, client: Client, chat: abcs.Chat) -> Self:
         if isinstance(chat, (types.ChatEmpty, types.Chat, types.ChatForbidden)):
-            return cls._create(chat)
+            return cls._create(client, chat)
         elif isinstance(chat, (types.Channel, types.ChannelForbidden)):
             if chat.broadcast:
                 raise RuntimeError("cannot create group from broadcast channel")
-            return cls._create(chat)
+            return cls._create(client, chat)
         else:
             raise RuntimeError("unexpected case")
 
@@ -80,3 +89,16 @@ class Group(Chat, metaclass=NoPublicConstructor):
         These are known as "megagroups" in Telegram's API, and are different from "gigagroups".
         """
         return isinstance(self._raw, (types.Channel, types.ChannelForbidden))
+
+    async def set_default_restrictions(
+        self,
+        restrictions: Sequence[ChatRestriction],
+        *,
+        until: Optional[datetime.datetime] = None,
+    ) -> None:
+        """
+        Alias for :meth:`telethon.Client.set_chat_default_restrictions`.
+        """
+        await self._client.set_chat_default_restrictions(
+            self, restrictions, until=until
+        )

@@ -11,6 +11,7 @@ from .chat import (
     expand_peer,
     peer_id,
 )
+from .chat_restriction import ChatRestriction
 from .dialog import Dialog
 from .draft import Draft
 from .file import File, InFileLike, OutFileLike, OutWrapper, expand_stripped_size
@@ -25,6 +26,7 @@ from .recent_action import RecentAction
 __all__ = [
     "AdminRight",
     "AsyncList",
+    "ChatRestriction",
     "CallbackAnswer",
     "Channel",
     "Chat",

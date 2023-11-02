@@ -271,7 +271,7 @@ class MessageList(AsyncList[Message]):
         else:
             raise RuntimeError("unexpected case")
 
-        chat_map = build_chat_map(messages.users, messages.chats)
+        chat_map = build_chat_map(client, messages.users, messages.chats)
         self._buffer.extend(
             Message._from_raw(client, m, chat_map)
             for m in (
@@ -650,7 +650,7 @@ def build_message_map(
 ) -> MessageMap:
     if isinstance(result, (types.Updates, types.UpdatesCombined)):
         updates = result.updates
-        chat_map = build_chat_map(result.users, result.chats)
+        chat_map = build_chat_map(client, result.users, result.chats)
     elif isinstance(result, types.UpdateShort):
         updates = [result.update]
         chat_map = {}
