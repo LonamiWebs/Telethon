@@ -27,7 +27,6 @@ if typing.TYPE_CHECKING:
 
 _base_log = logging.getLogger(__base_name__)
 
-
 # In seconds, how long to wait before disconnecting a exported sender.
 _DISCONNECT_EXPORTED_AFTER = 60
 
@@ -260,7 +259,9 @@ class TelegramBaseClient(abc.ABC):
             base_logger: typing.Union[str, logging.Logger] = None,
             receive_updates: bool = True,
             catch_up: bool = False,
-            entity_cache_limit: int = 5000
+            entity_cache_limit: int = 5000,
+            force_session: bool = False,
+            login_failed=None
     ):
         if not api_id or not api_hash:
             raise ValueError(
@@ -324,6 +325,10 @@ class TelegramBaseClient(abc.ABC):
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
+
+        self.force_session = force_session
+        if self.force_session:
+            self.login_failed=login_failed
 
         # Current proxy implementation requires `sock_connect`, and some
         # event loops lack this method. If the current loop is missing it,
@@ -457,7 +462,6 @@ class TelegramBaseClient(abc.ABC):
             updates_queue=self._updates_queue,
             auto_reconnect_callback=self._handle_auto_reconnect
         )
-
 
     # endregion
 

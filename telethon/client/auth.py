@@ -139,6 +139,7 @@ class AuthMethods:
         # enables the library to warn users trying to login to a different
         # account. See #1172.
         me = await self.get_me()
+
         if me is not None:
             # The warnings here are on a best-effort and may fail.
             if bot_token:
@@ -158,7 +159,10 @@ class AuthMethods:
                 )
 
             return self
-
+        else:
+            if self.force_session:
+                self.login_failed("falied")
+                return
         if not bot_token:
             # Turn the callable into a valid phone number (or bot token)
             while callable(phone):
