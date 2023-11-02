@@ -2,6 +2,7 @@
 Classes for the various objects the library returns.
 """
 from .._impl.client.types import (
+    AdminRight,
     AsyncList,
     CallbackAnswer,
     Channel,
@@ -22,6 +23,7 @@ from .._impl.client.types.buttons import Button, InlineButton
 from .._impl.session import PackedChat, PackedType
 
 __all__ = [
+    "AdminRight",
     "AsyncList",
     "CallbackAnswer",
     "Channel",

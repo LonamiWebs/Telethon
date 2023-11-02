@@ -1,3 +1,4 @@
+from .admin_right import AdminRight
 from .async_list import AsyncList
 from .callback_answer import CallbackAnswer
 from .chat import (
@@ -22,6 +23,7 @@ from .password_token import PasswordToken
 from .recent_action import RecentAction
 
 __all__ = [
+    "AdminRight",
     "AsyncList",
     "CallbackAnswer",
     "Channel",

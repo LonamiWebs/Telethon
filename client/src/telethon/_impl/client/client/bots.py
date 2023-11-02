@@ -10,10 +10,6 @@ if TYPE_CHECKING:
 
 
 class InlineResults(metaclass=NoPublicConstructor):
-    """
-    :final:
-    """
-
     def __init__(
         self,
         client: Client,

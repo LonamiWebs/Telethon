@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Set
 
 from ...tl import abcs, functions, types
 from ..types import AsyncList, ChatLike, File, Participant, RecentAction, build_chat_map
@@ -21,6 +21,7 @@ class ParticipantList(AsyncList[Participant]):
         self._chat = chat
         self._peer: Optional[abcs.InputPeer] = None
         self._offset = 0
+        self._seen: Set[int] = set()
 
     async def _fetch_next(self) -> None:
         if self._peer is None:
@@ -45,10 +46,17 @@ class ParticipantList(AsyncList[Participant]):
 
             chat_map = build_chat_map(result.users, result.chats)
 
-            self._buffer.extend(
-                Participant._from_raw_channel(p, chat_map) for p in result.participants
-            )
+            seen_count = len(self._seen)
+            for p in result.participants:
+                part = Participant._from_raw_channel(p, chat_map)
+                pid = part._peer_id()
+                if pid not in self._seen:
+                    self._seen.add(pid)
+                    self._buffer.append(part)
+
             self._total = result.count
+            self._offset += len(result.participants)
+            self._done = len(self._seen) == seen_count
 
         elif isinstance(self._peer, types.InputPeerChat):
             result = await self._client(
