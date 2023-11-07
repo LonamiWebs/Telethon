@@ -14,8 +14,6 @@ class RecentAction(metaclass=NoPublicConstructor):
     You can obtain recent actions with methods such as :meth:`telethon.Client.get_admin_log`.
     """
 
-    __slots__ = ("_raw", "_chat_map")
-
     def __init__(
         self,
         event: abcs.ChannelAdminLogEvent,

@@ -11,8 +11,6 @@ class ForwardInfo(metaclass=NoPublicConstructor):
     This is also known as the forward header, as it's often displayed at the top of messages.
     """
 
-    __slots__ = ("_code", "_phone")
-
     def __init__(self, code: types.auth.SentCode, phone: str) -> None:
         self._code = code
         self._phone = phone

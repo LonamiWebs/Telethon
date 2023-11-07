@@ -21,8 +21,6 @@ class Group(Chat, metaclass=NoPublicConstructor):
     or from methods such as :meth:`telethon.Client.resolve_username`.
     """
 
-    __slots__ = ("_raw",)
-
     def __init__(
         self,
         client: Client,

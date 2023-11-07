@@ -11,8 +11,6 @@ class Chat(abc.ABC):
     This will either be a :class:`User`, :class:`Group` or :class:`Channel`.
     """
 
-    __slots__ = ()
-
     @property
     @abc.abstractmethod
     def id(self) -> int:

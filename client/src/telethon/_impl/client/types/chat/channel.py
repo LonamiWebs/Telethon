@@ -14,8 +14,6 @@ class Channel(Chat, metaclass=NoPublicConstructor):
     or from methods such as :meth:`telethon.Client.resolve_username`.
     """
 
-    __slots__ = ("_raw",)
-
     def __init__(
         self,
         raw: Union[types.Channel, types.ChannelForbidden],

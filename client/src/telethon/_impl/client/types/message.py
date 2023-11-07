@@ -42,8 +42,6 @@ class Message(metaclass=NoPublicConstructor):
     or from methods such as :meth:`telethon.Client.get_messages`.
     """
 
-    __slots__ = ("_client", "_raw", "_chat_map")
-
     def __init__(
         self, client: Client, message: abcs.Message, chat_map: Dict[int, Chat]
     ) -> None:
