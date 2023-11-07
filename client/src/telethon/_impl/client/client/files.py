@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import mimetypes
-import urllib.parse
 from inspect import isawaitable
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from ...tl import abcs, functions, types
 from ..types import (
+    AlbumBuilder,
     AsyncList,
     ChatLike,
     File,
@@ -16,10 +16,14 @@ from ..types import (
     Message,
     OutFileLike,
     OutWrapper,
+)
+from ..types import buttons as btns
+from ..types import (
     expand_stripped_size,
     generate_random_id,
+    parse_message,
+    try_get_url_path,
 )
-from .messages import parse_message
 
 if TYPE_CHECKING:
     from .client import Client
@@ -34,6 +38,10 @@ BIG_FILE_SIZE = 10 * 1024 * 1024
 math_round = round
 
 
+def prepare_album(self: Client) -> AlbumBuilder:
+    return AlbumBuilder._create(client=self)
+
+
 async def send_photo(
     self: Client,
     chat: ChatLike,
@@ -41,12 +49,15 @@ async def send_photo(
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
+    mime_type: Optional[str] = None,
     compress: bool = True,
     width: Optional[int] = None,
     height: Optional[int] = None,
     caption: Optional[str] = None,
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
+    reply_to: Optional[int] = None,
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -54,12 +65,17 @@ async def send_photo(
         file,
         size=size,
         name=name,
+        mime_type="image/jpeg"  # specific mime doesn't matter, only that it's image
+        if compress
+        else mime_type,
         compress=compress,
         width=width,
         height=height,
         caption=caption,
         caption_markdown=caption_markdown,
         caption_html=caption_html,
+        reply_to=reply_to,
+        buttons=buttons,
     )
 
 
@@ -67,6 +83,7 @@ async def send_audio(
     self: Client,
     chat: ChatLike,
     file: Union[str, Path, InFileLike, File],
+    mime_type: Optional[str] = None,
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
@@ -77,6 +94,8 @@ async def send_audio(
     caption: Optional[str] = None,
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
+    reply_to: Optional[int] = None,
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -84,6 +103,7 @@ async def send_audio(
         file,
         size=size,
         name=name,
+        mime_type=mime_type,
         duration=duration,
         voice=voice,
         title=title,
@@ -91,6 +111,8 @@ async def send_audio(
         caption=caption,
         caption_markdown=caption_markdown,
         caption_html=caption_html,
+        reply_to=reply_to,
+        buttons=buttons,
     )
 
 
@@ -101,39 +123,38 @@ async def send_video(
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
+    mime_type: Optional[str] = None,
     duration: Optional[float] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
     round: bool = False,
     supports_streaming: bool = False,
+    muted: bool = False,
     caption: Optional[str] = None,
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
+    reply_to: Optional[int] = None,
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
 ) -> Message:
     return await send_file(
         self,
         chat,
         file,
         size=size,
+        mime_type=mime_type,
         name=name,
         duration=duration,
         width=width,
         height=height,
         round=round,
         supports_streaming=supports_streaming,
+        muted=muted,
         caption=caption,
         caption_markdown=caption_markdown,
         caption_html=caption_html,
+        reply_to=reply_to,
+        buttons=buttons,
     )
-
-
-def try_get_url_path(maybe_url: Union[str, Path, InFileLike]) -> Optional[str]:
-    if not isinstance(maybe_url, str):
-        return None
-    lowercase = maybe_url.lower()
-    if lowercase.startswith("http://") or lowercase.startswith("https://"):
-        return urllib.parse.urlparse(maybe_url).path
-    return None
 
 
 async def send_file(
@@ -160,15 +181,18 @@ async def send_file(
     caption: Optional[str] = None,
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
+    reply_to: Optional[int] = None,
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
 ) -> Message:
     message, entities = parse_message(
         text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
     )
-    assert isinstance(message, str)
 
     # Re-send existing file.
     if isinstance(file, File):
-        return await do_send_file(self, chat, file._input_media, message, entities)
+        return await do_send_file(
+            self, chat, file._input_media, message, entities, reply_to, buttons
+        )
 
     # URLs are handled early as they can't use any other attributes either.
     input_media: abcs.InputMedia
@@ -190,23 +214,11 @@ async def send_file(
             input_media = types.InputMediaDocumentExternal(
                 spoiler=False, url=file, ttl_seconds=None
             )
-        return await do_send_file(self, chat, input_media, message, entities)
+        return await do_send_file(
+            self, chat, input_media, message, entities, reply_to, buttons
+        )
 
-    # Paths are opened and closed by us. Anything else is *only* read, not closed.
-    if isinstance(file, (str, Path)):
-        path = Path(file) if isinstance(file, str) else file
-        if size is None:
-            size = path.stat().st_size
-        if name is None:
-            name = path.name
-        with path.open("rb") as fd:
-            input_file = await upload(self, fd, size, name)
-    else:
-        if size is None:
-            raise ValueError("size must be set when sending file-like objects")
-        if name is None:
-            raise ValueError("name must be set when sending file-like objects")
-        input_file = await upload(self, file, size, name)
+    input_file, name = await upload(self, file, size, name)
 
     # Mime is mandatory for documents, but we also use it to determine whether to send as photo.
     if mime_type is None:
@@ -249,7 +261,7 @@ async def send_file(
                         round_message=round,
                         supports_streaming=supports_streaming,
                         nosound=muted,
-                        duration=int(math_round(duration)),
+                        duration=duration,
                         w=width,
                         h=height,
                         preload_prefix_size=None,
@@ -268,7 +280,9 @@ async def send_file(
             ttl_seconds=None,
         )
 
-    return await do_send_file(self, chat, input_media, message, entities)
+    return await do_send_file(
+        self, chat, input_media, message, entities, reply_to, buttons
+    )
 
 
 async def do_send_file(
@@ -277,6 +291,8 @@ async def do_send_file(
     input_media: abcs.InputMedia,
     message: str,
     entities: Optional[List[abcs.MessageEntity]],
+    reply_to: Optional[int],
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]],
 ) -> Message:
     peer = (await client._resolve_to_packed(chat))._to_input_peer()
     random_id = generate_random_id()
@@ -289,11 +305,15 @@ async def do_send_file(
                 noforwards=False,
                 update_stickersets_order=False,
                 peer=peer,
-                reply_to=None,
+                reply_to=types.InputReplyToMessage(
+                    reply_to_msg_id=reply_to, top_msg_id=None
+                )
+                if reply_to
+                else None,
                 media=input_media,
                 message=message,
                 random_id=random_id,
-                reply_markup=None,
+                reply_markup=btns.build_keyboard(buttons),
                 entities=entities,
                 schedule_date=None,
                 send_as=None,
@@ -304,6 +324,31 @@ async def do_send_file(
 
 
 async def upload(
+    client: Client,
+    file: Union[str, Path, InFileLike],
+    size: Optional[int],
+    name: Optional[str],
+) -> Tuple[abcs.InputFile, str]:
+    # Paths are opened and closed by us. Anything else is *only* read, not closed.
+    if isinstance(file, (str, Path)):
+        path = Path(file) if isinstance(file, str) else file
+        if size is None:
+            size = path.stat().st_size
+        if name is None:
+            name = path.name
+        with path.open("rb") as fd:
+            return await do_upload(client, fd, size, name), name
+    else:
+        if size is None:
+            raise ValueError("size must be set when sending file-like objects")
+        if name is None:
+            name = getattr(file, "name", None)
+        if not isinstance(name, str):
+            raise ValueError("name must be set when sending file-like objects")
+        return await do_upload(client, file, size, name), name
+
+
+async def do_upload(
     client: Client,
     fd: InFileLike,
     size: int,

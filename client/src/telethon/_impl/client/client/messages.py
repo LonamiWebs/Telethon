@@ -2,83 +2,16 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Union
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
-from ..parsers import parse_html_message, parse_markdown_message
-from ..types import (
-    AsyncList,
-    Chat,
-    ChatLike,
-    Message,
-    build_chat_map,
-    buttons,
-    generate_random_id,
-    peer_id,
-)
+from ..types import AsyncList, Chat, ChatLike, Message, build_chat_map
+from ..types import buttons as btns
+from ..types import generate_random_id, parse_message, peer_id
 
 if TYPE_CHECKING:
     from .client import Client
-
-
-def parse_message(
-    *,
-    text: Optional[Union[str, Message]],
-    markdown: Optional[str],
-    html: Optional[str],
-    allow_empty: bool,
-) -> Tuple[Union[str, Message], Optional[List[abcs.MessageEntity]]]:
-    cnt = sum((text is not None, markdown is not None, html is not None))
-    if cnt != 1:
-        if cnt == 0 and allow_empty:
-            return "", None
-        raise ValueError("must specify exactly one of text, markdown or html")
-
-    if text is not None:
-        parsed, entities = text, None
-    elif markdown is not None:
-        parsed, entities = parse_markdown_message(markdown)
-    elif html is not None:
-        parsed, entities = parse_html_message(html)
-    else:
-        raise RuntimeError("unexpected case")
-
-    return parsed, entities or None
-
-
-def build_keyboard(
-    btns: Optional[Union[List[buttons.Button], List[List[buttons.Button]]]]
-) -> Optional[abcs.ReplyMarkup]:
-    # list[button] -> list[list[button]]
-    # This does allow for "invalid" inputs (mixing lists and non-lists), but that's acceptable.
-    buttons_lists_iter = (
-        button if isinstance(button, list) else [button] for button in (btns or [])
-    )
-    # Remove empty rows (also making it easy to check if all-empty).
-    buttons_lists = [bs for bs in buttons_lists_iter if bs]
-
-    if not buttons_lists:
-        return None
-
-    rows: List[abcs.KeyboardButtonRow] = [
-        types.KeyboardButtonRow(buttons=[btn._raw for btn in btns])
-        for btns in buttons_lists
-    ]
-
-    # Guaranteed to have at least one, first one used to check if it's inline.
-    # If the user mixed inline with non-inline, Telegram will complain.
-    if isinstance(buttons_lists[0][0], buttons.InlineButton):
-        return types.ReplyInlineMarkup(rows=rows)
-    else:
-        return types.ReplyKeyboardMarkup(
-            resize=False,
-            single_use=False,
-            selective=False,
-            persistent=False,
-            rows=rows,
-            placeholder=None,
-        )
 
 
 async def send_message(
@@ -90,16 +23,39 @@ async def send_message(
     html: Optional[str] = None,
     link_preview: bool = False,
     reply_to: Optional[int] = None,
-    buttons: Optional[Union[List[buttons.Button], List[List[buttons.Button]]]] = None,
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
 ) -> Message:
     packed = await self._resolve_to_packed(chat)
     peer = packed._to_input_peer()
-    message, entities = parse_message(
-        text=text, markdown=markdown, html=html, allow_empty=False
-    )
     random_id = generate_random_id()
-    result = await self(
-        functions.messages.send_message(
+
+    if isinstance(text, Message):
+        message = text.text or ""
+        request = functions.messages.send_message(
+            no_webpage=not text.link_preview,
+            silent=text.silent,
+            background=False,
+            clear_draft=False,
+            noforwards=not text.can_forward,
+            update_stickersets_order=False,
+            peer=peer,
+            reply_to=types.InputReplyToMessage(
+                reply_to_msg_id=text.replied_message_id, top_msg_id=None
+            )
+            if text.replied_message_id
+            else None,
+            message=message,
+            random_id=random_id,
+            reply_markup=getattr(text._raw, "reply_markup", None),
+            entities=getattr(text._raw, "entities", None) or None,
+            schedule_date=None,
+            send_as=None,
+        )
+    else:
+        message, entities = parse_message(
+            text=text, markdown=markdown, html=html, allow_empty=False
+        )
+        request = functions.messages.send_message(
             no_webpage=not link_preview,
             silent=False,
             background=False,
@@ -114,33 +70,13 @@ async def send_message(
             else None,
             message=message,
             random_id=random_id,
-            reply_markup=build_keyboard(buttons),
+            reply_markup=btns.build_keyboard(buttons),
             entities=entities,
             schedule_date=None,
             send_as=None,
         )
-        if isinstance(message, str)
-        else functions.messages.send_message(
-            no_webpage=not message.link_preview,
-            silent=message.silent,
-            background=False,
-            clear_draft=False,
-            noforwards=not message.can_forward,
-            update_stickersets_order=False,
-            peer=peer,
-            reply_to=types.InputReplyToMessage(
-                reply_to_msg_id=message.replied_message_id, top_msg_id=None
-            )
-            if message.replied_message_id
-            else None,
-            message=message.text or "",
-            random_id=random_id,
-            reply_markup=getattr(message._raw, "reply_markup", None),
-            entities=getattr(message._raw, "entities", None) or None,
-            schedule_date=None,
-            send_as=None,
-        )
-    )
+
+    result = await self(request)
     if isinstance(result, types.UpdateShortSentMessage):
         return Message._from_defaults(
             self,
@@ -161,7 +97,7 @@ async def send_message(
             if reply_to
             else None,
             date=result.date,
-            message=message if isinstance(message, str) else (message.text or ""),
+            message=message,
             media=result.media,
             entities=result.entities,
             ttl_period=result.ttl_period,
@@ -184,7 +120,6 @@ async def edit_message(
     message, entities = parse_message(
         text=text, markdown=markdown, html=html, allow_empty=False
     )
-    assert isinstance(message, str)
     return self._build_message_map(
         await self(
             functions.messages.edit_message(

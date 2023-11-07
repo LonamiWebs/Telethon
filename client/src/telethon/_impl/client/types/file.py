@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+import urllib.parse
 from inspect import isawaitable
 from io import BufferedWriter
 from pathlib import Path
@@ -66,6 +67,15 @@ def photo_size_dimensions(
         return types.DocumentAttributeImageSize(w=size.bytes[1], h=size.bytes[2])
     else:
         raise RuntimeError("unexpected case")
+
+
+def try_get_url_path(maybe_url: Union[str, Path, InFileLike]) -> Optional[str]:
+    if not isinstance(maybe_url, str):
+        return None
+    lowercase = maybe_url.lower()
+    if lowercase.startswith("http://") or lowercase.startswith("https://"):
+        return urllib.parse.urlparse(maybe_url).path
+    return None
 
 
 class InFileLike(Protocol):

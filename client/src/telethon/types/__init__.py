@@ -3,6 +3,7 @@ Classes for the various objects the library returns.
 """
 from .._impl.client.types import (
     AdminRight,
+    AlbumBuilder,
     AsyncList,
     CallbackAnswer,
     Channel,
@@ -25,6 +26,7 @@ from .._impl.session import PackedChat, PackedType
 
 __all__ = [
     "AdminRight",
+    "AlbumBuilder",
     "AsyncList",
     "CallbackAnswer",
     "Channel",

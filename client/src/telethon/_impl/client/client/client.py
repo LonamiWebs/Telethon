@@ -37,6 +37,7 @@ from ..events import Event
 from ..events.filters import Filter
 from ..types import (
     AdminRight,
+    AlbumBuilder,
     AsyncList,
     Chat,
     ChatLike,
@@ -53,8 +54,8 @@ from ..types import (
     PasswordToken,
     RecentAction,
     User,
-    buttons,
 )
+from ..types import buttons as btns
 from .auth import (
     bot_sign_in,
     check_password,
@@ -77,10 +78,12 @@ from .dialogs import delete_dialog, edit_draft, get_dialogs, get_drafts
 from .files import (
     download,
     get_file_bytes,
+    prepare_album,
     send_audio,
     send_file,
     send_photo,
     send_video,
+    upload,
 )
 from .messages import (
     MessageMap,
@@ -1085,6 +1088,34 @@ class Client:
         """
         return await pin_message(self, chat, message_id)
 
+    def prepare_album(self) -> AlbumBuilder:
+        """
+        Prepare an album upload to send.
+
+        Albums are a way to send multiple photos or videos as separate messages with the same grouped identifier.
+
+        :return: A new album builder instance, with no media added to it yet.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            # Prepare a new album
+            album = await client.prepare_album()
+
+            # Add a bunch of photos
+            for photo in ('a.jpg', 'b.png'):
+                await album.add_photo(photo)
+            # A video in-between
+            await album.add_video('c.mp4')
+            # And another photo
+            await album.add_photo('d.jpeg')
+
+            # Album is ready to be sent to as many chats as needed
+            await album.send(chat)
+        """
+        return prepare_album(self)
+
     async def read_message(
         self, chat: ChatLike, message_id: Union[int, Literal["all"]]
     ) -> None:
@@ -1310,6 +1341,7 @@ class Client:
         self,
         chat: ChatLike,
         file: Union[str, Path, InFileLike, File],
+        mime_type: Optional[str] = None,
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
@@ -1320,6 +1352,8 @@ class Client:
         caption: Optional[str] = None,
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
+        reply_to: Optional[int] = None,
+        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
     ) -> Message:
         """
         Send an audio file.
@@ -1333,6 +1367,7 @@ class Client:
         :param file: See :meth:`send_file`.
         :param size: See :meth:`send_file`.
         :param name: See :meth:`send_file`.
+        :param mime_type: See :meth:`send_file`.
         :param duration: See :meth:`send_file`.
         :param voice: See :meth:`send_file`.
         :param title: See :meth:`send_file`.
@@ -1351,6 +1386,7 @@ class Client:
             self,
             chat,
             file,
+            mime_type,
             size=size,
             name=name,
             duration=duration,
@@ -1360,6 +1396,8 @@ class Client:
             caption=caption,
             caption_markdown=caption_markdown,
             caption_html=caption_html,
+            reply_to=reply_to,
+            buttons=buttons,
         )
 
     async def send_file(
@@ -1386,6 +1424,8 @@ class Client:
         caption: Optional[str] = None,
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
+        reply_to: Optional[int] = None,
+        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
     ) -> Message:
         """
         Send any type of file with any amount of attributes.
@@ -1438,8 +1478,10 @@ class Client:
 
             When given a string or path, its :attr:`~pathlib.PurePath.name` will be used by default only if this parameter is omitted.
 
-            This parameter **must** be specified when sending a previously-opened or in-memory files.
-            The library will not attempt to read any ``name`` attributes the object may have.
+            When given a :term:`file-like object`, if it has a ``.name`` :class:`str` property, it will be used.
+            This is the case for files opened via :func:`open`.
+
+            This parameter **must** be specified when sending any other previously-opened or in-memory files.
 
         :param mime_type:
             Override for the default mime-type.
@@ -1536,6 +1578,8 @@ class Client:
             caption=caption,
             caption_markdown=caption_markdown,
             caption_html=caption_html,
+            reply_to=reply_to,
+            buttons=buttons,
         )
 
     async def send_message(
@@ -1547,9 +1591,7 @@ class Client:
         html: Optional[str] = None,
         link_preview: bool = False,
         reply_to: Optional[int] = None,
-        buttons: Optional[
-            Union[List[buttons.Button], List[List[buttons.Button]]]
-        ] = None,
+        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
     ) -> Message:
         """
         Send a message.
@@ -1594,12 +1636,15 @@ class Client:
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
+        mime_type: Optional[str] = None,
         compress: bool = True,
         width: Optional[int] = None,
         height: Optional[int] = None,
         caption: Optional[str] = None,
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
+        reply_to: Optional[int] = None,
+        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
     ) -> Message:
         """
         Send a photo file.
@@ -1617,6 +1662,7 @@ class Client:
         :param file: See :meth:`send_file`.
         :param size: See :meth:`send_file`.
         :param name: See :meth:`send_file`.
+        :param mime_type: See :meth:`send_file`.
         :param compress: See :meth:`send_file`.
         :param width: See :meth:`send_file`.
         :param height: See :meth:`send_file`.
@@ -1636,12 +1682,15 @@ class Client:
             file,
             size=size,
             name=name,
+            mime_type=mime_type,
             compress=compress,
             width=width,
             height=height,
             caption=caption,
             caption_markdown=caption_markdown,
             caption_html=caption_html,
+            reply_to=reply_to,
+            buttons=buttons,
         )
 
     async def send_video(
@@ -1651,14 +1700,18 @@ class Client:
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
+        mime_type: Optional[str] = None,
         duration: Optional[float] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
         round: bool = False,
         supports_streaming: bool = False,
+        muted: bool = False,
         caption: Optional[str] = None,
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
+        reply_to: Optional[int] = None,
+        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
     ) -> Message:
         """
         Send a video file.
@@ -1672,6 +1725,7 @@ class Client:
         :param file: See :meth:`send_file`.
         :param size: See :meth:`send_file`.
         :param name: See :meth:`send_file`.
+        :param mime_type: See :meth:`send_file`.
         :param duration: See :meth:`send_file`.
         :param width: See :meth:`send_file`.
         :param height: See :meth:`send_file`.
@@ -1693,14 +1747,18 @@ class Client:
             file,
             size=size,
             name=name,
+            mime_type=mime_type,
             duration=duration,
             width=width,
             height=height,
             round=round,
             supports_streaming=supports_streaming,
+            muted=muted,
             caption=caption,
             caption_markdown=caption_markdown,
             caption_html=caption_html,
+            reply_to=reply_to,
+            buttons=buttons,
         )
 
     async def set_chat_default_restrictions(
@@ -1960,6 +2018,11 @@ class Client:
 
     def _input_to_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
         return input_to_peer(self, input)
+
+    async def _upload(
+        self, fd: Union[str, Path, InFileLike], size: Optional[int], name: Optional[str]
+    ) -> Tuple[abcs.InputFile, str]:
+        return await upload(self, fd, size, name)
 
     async def __call__(self, request: Request[Return]) -> Return:
         if not self._sender:
