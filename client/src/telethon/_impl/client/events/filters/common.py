@@ -88,5 +88,5 @@ class ChatType(Combinable):
             raise RuntimeError("unexpected case")
 
     def __call__(self, event: Event) -> bool:
-        sender = getattr(event, "chat", None)
-        return isinstance(sender, self._type)
+        chat = getattr(event, "chat", None)
+        return isinstance(chat, self._type)
