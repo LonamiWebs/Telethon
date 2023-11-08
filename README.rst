@@ -37,9 +37,6 @@ Installing
 Creating a client
 -----------------
 
-
-Use ``python -m asyncio`` in order to run those examples
-
 .. code-block:: python
 
     from telethon import Client, events
