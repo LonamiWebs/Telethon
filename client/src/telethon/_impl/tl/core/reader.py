@@ -82,9 +82,8 @@ class Reader:
         assert self._pos <= self._len
         cid = struct.unpack("<I", self._view[self._pos - 4 : self._pos])[0]
         ty = self._get_ty(cid)
-        if ty is None:
-            raise ValueError(f"No type found for constructor ID: {cid:x}")
-        assert issubclass(ty, cls)
+        if ty is None or not issubclass(ty, cls):
+            raise ValueError(f"No type found for constructor ID of {cls}: {cid:x}")
         return ty._read_from(self)
 
 

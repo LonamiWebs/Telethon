@@ -45,6 +45,11 @@ from ...tl.types import (
     UpdateShortSentMessage,
     UpdatesTooLong,
 )
+from ...tl.types.messages import (
+    AffectedFoundMessages,
+    AffectedHistory,
+    AffectedMessages,
+)
 from ..utils import (
     CONTAINER_MAX_LENGTH,
     CONTAINER_MAX_SIZE,
@@ -69,6 +74,9 @@ UPDATE_IDS = {
     UpdateShortMessage.constructor_id(),
     UpdateShortSentMessage.constructor_id(),
     UpdatesTooLong.constructor_id(),
+    AffectedFoundMessages.constructor_id(),
+    AffectedHistory.constructor_id(),
+    AffectedMessages.constructor_id(),
 }
 
 HEADER_LEN = 8 + 8  # salt, client_id
