@@ -40,14 +40,20 @@ Creating a client
 .. code-block:: python
 
     from telethon import Client, events
+    import asyncio
 
     # These example values won't work. You must get your own api_id and
     # api_hash from https://my.telegram.org, under API Development.
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
 
-    async with Client('session_name', api_id, api_hash) as client:
-        await client.interactive_login()
+
+    async def main():
+        async with Client('session_name', api_id, api_hash) as client:
+            await client.interactive_login()
+
+
+    asyncio.run(main())
 
 
 Doing stuff
