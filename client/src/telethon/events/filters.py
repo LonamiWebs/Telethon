@@ -20,6 +20,7 @@ from .._impl.client.events.filters import (
     Outgoing,
     Reply,
     Senders,
+    ChatType,
     Text,
     TextOnly,
 )
@@ -37,6 +38,7 @@ __all__ = [
     "Outgoing",
     "Reply",
     "Senders",
+    "ChatType",
     "Text",
     "TextOnly",
 ]
