@@ -46,7 +46,6 @@ Creating a client
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
 
-
     async with Client('session_name', api_id, api_hash) as client:
         await client.interactive_login()
 
