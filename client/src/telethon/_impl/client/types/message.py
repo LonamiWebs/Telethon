@@ -281,6 +281,26 @@ class Message(metaclass=NoPublicConstructor):
 
         return None
 
+    @property
+    def incoming(self) -> bool:
+        """
+        :data:`True` if the message is incoming.
+        This would mean another user sent it, and the currently logged-in user received it.
+
+        This is usually the opposite of :attr:`outgoing`, although some messages can be neither.
+        """
+        return getattr(self._raw, "out", None) is False
+
+    @property
+    def outgoing(self) -> bool:
+        """
+        :data:`True` if the message is outgoing.
+        This would mean the currently logged-in user sent it.
+
+        This is usually the opposite of :attr:`incoming`, although some messages can be neither.
+        """
+        return getattr(self._raw, "out", None) is True
+
     async def get_replied_message(self) -> Optional[Message]:
         """
         Alias for :meth:`telethon.Client.get_messages_with_ids`.

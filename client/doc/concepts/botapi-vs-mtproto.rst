@@ -318,7 +318,7 @@ In Telethon:
 .. code-block:: python
 
     from telethon import Client, events
-    from telethon.events.filters import Any, Command, TextOnly
+    from telethon.events.filters import Any, Command, Media
     bot = Client('bot', api_id, api_hash)
 
     # Handle '/start' and '/help'
@@ -329,8 +329,8 @@ In Telethon:
     I am here to echo your kind words back to you. Just say anything nice and I'll say the exact same thing to you!\
     """)
 
-    # Handle all other messages with only 'text'
-    @bot.on(events.NewMessage, TextOnly())
+    # Handle all other messages without media (negating the filter using ~)
+    @bot.on(events.NewMessage, ~Media())
     async def echo_message(message: NewMessage):
         await message.reply(message.text)
 

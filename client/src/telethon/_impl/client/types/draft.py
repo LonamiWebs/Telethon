@@ -163,7 +163,7 @@ class Draft(metaclass=NoPublicConstructor):
         if chat := self._chat_map.get(peer_id(self._peer)):
             packed = chat.pack()
         if packed is None:
-            packed = await self._client.resolve_to_packed(peer_id(self._peer))
+            packed = await self._client._resolve_to_packed(peer_id(self._peer))
         return packed
 
     async def send(self) -> Message:

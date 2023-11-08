@@ -11,6 +11,7 @@ from .._impl.client.events.filters import (
     All,
     Any,
     Chats,
+    ChatType,
     Command,
     Filter,
     Forward,
@@ -21,13 +22,13 @@ from .._impl.client.events.filters import (
     Reply,
     Senders,
     Text,
-    TextOnly,
 )
 
 __all__ = [
     "All",
     "Any",
     "Chats",
+    "ChatType",
     "Command",
     "Filter",
     "Forward",
@@ -38,5 +39,4 @@ __all__ = [
     "Reply",
     "Senders",
     "Text",
-    "TextOnly",
 ]

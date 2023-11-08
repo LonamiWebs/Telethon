@@ -79,7 +79,7 @@ Note that `CommonMark's markdown <https://commonmark.org/>`_ is not fully compat
     ```
 
 HTML is also not fully compatible with :term:`HTTP Bot API`'s
-`MarkdownV2 style <https://core.telegram.org/bots/api#markdownv2-style>`_,
+`HTML style <https://core.telegram.org/bots/api#html-style>`_,
 and instead favours more standard `HTML elements <https://developer.mozilla.org/en-US/docs/Web/HTML/Element>`_:
 
 * ``strong`` and ``b`` for **bold**.

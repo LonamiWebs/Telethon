@@ -118,6 +118,7 @@ from .updates import (
     set_handler_filter,
 )
 from .users import (
+    get_chats,
     get_contacts,
     get_me,
     input_to_peer,
@@ -683,6 +684,40 @@ class Client:
         """
         return get_admin_log(self, chat)
 
+    async def get_chats(self, chats: Sequence[ChatLike]) -> List[Chat]:
+        """
+        Get the latest basic information about the given chats.
+
+        This method is most commonly used to turn one or more :class:`~types.PackedChat` into the original :class:`~types.Chat`.
+        This includes users, groups and broadcast channels.
+
+        :param chats:
+            The users, groups or channels to fetch.
+
+        :return: The fetched chats.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            # Retrieve a PackedChat from somewhere
+            packed_user = my_database.get_packed_winner()
+
+            # Fetch it
+            users = await client.get_chats([packed_user])
+            user = users[0]  # user will be a User if our packed_user was a user
+
+            # Notify the user they won, using their current full name in the message
+            await client.send_message(packed_user, f'Congratulations {user.name}, you won!')
+
+        .. caution::
+
+            This method supports being called with anything that looks like a chat, like every other method.
+            However, calling it with usernames or phone numbers will fetch the chats twice.
+            If that's the case, consider using :meth:`resolve_username` or :meth:`get_contacts` instead.
+        """
+        return await get_chats(self, chats)
+
     def get_contacts(self) -> AsyncList[User]:
         """
         Get the users in your contact list.
@@ -1199,28 +1234,6 @@ class Client:
             :meth:`sign_in`, to complete the login procedure.
         """
         return await request_login_code(self, phone)
-
-    async def resolve_to_packed(self, chat: ChatLike) -> PackedChat:
-        """
-        Resolve a :term:`chat` and return a compact, reusable reference to it.
-
-        :param chat:
-            The :term:`chat` to resolve.
-
-        :return: An efficient, reusable version of the input.
-
-        .. rubric:: Example
-
-        .. code-block:: python
-
-            friend = await client.resolve_to_packed('@cat')
-            # Now you can use `friend` to get or send messages, files...
-
-        .. seealso::
-
-            In-depth explanation for :doc:`/concepts/chats`.
-        """
-        return await resolve_to_packed(self, chat)
 
     async def resolve_username(self, username: str) -> Chat:
         """
