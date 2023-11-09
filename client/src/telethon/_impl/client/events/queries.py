@@ -44,6 +44,7 @@ class ButtonCallback(Event):
     async def answer(
         self,
         text: Optional[str] = None,
+        alert: bool = False,
     ) -> None:
         """
         Answer the callback query.
@@ -54,10 +55,13 @@ class ButtonCallback(Event):
 
         :param text:
             The text of the message to display to the user, usually as a toast.
+
+        :param alert:
+            If :data:`True`, the message will be shown as a pop-up alert that must be dismissed by the user.
         """
         await self._client(
             functions.messages.set_bot_callback_answer(
-                alert=False,
+                alert=alert,
                 query_id=self._raw.query_id,
                 message=text,
                 url=None,
