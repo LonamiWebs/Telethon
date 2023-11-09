@@ -89,23 +89,26 @@ async def get_chats(self: Client, chats: Sequence[ChatLike]) -> List[Chat]:
         else:
             input_channels.append(packed._to_input_channel())
 
-    users = (
-        (await self(functions.users.get_users(id=input_users))) if input_users else []
-    )
-    groups = (
-        (await self(functions.messages.get_chats(id=input_chats)))
-        if input_chats
-        else []
-    )
-    assert isinstance(groups, types.messages.Chats)
-    channels = (
-        (await self(functions.channels.get_channels(id=input_channels)))
-        if input_channels
-        else []
-    )
-    assert isinstance(channels, types.messages.Chats)
+    if input_users:
+        users = await self(functions.users.get_users(id=input_users))
+    else:
+        users = []
 
-    chat_map = build_chat_map(self, users, groups.chats + channels.chats)
+    if input_chats:
+        ret_chats = await self(functions.messages.get_chats(id=input_chats))
+        assert isinstance(ret_chats, types.messages.Chats)
+        groups = ret_chats.chats
+    else:
+        groups = []
+
+    if input_channels:
+        ret_chats = await self(functions.channels.get_channels(id=input_channels))
+        assert isinstance(ret_chats, types.messages.Chats)
+        channels = ret_chats.chats
+    else:
+        channels = []
+
+    chat_map = build_chat_map(self, users, groups + channels)
     return [
         chat_map.get(chat.id)
         or expand_peer(self, chat._to_peer(), broadcast=chat.ty == PackedType.BROADCAST)
