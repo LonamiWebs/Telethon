@@ -82,6 +82,7 @@ async def get_chats(self: Client, chats: Sequence[ChatLike]) -> List[Chat]:
 
     for chat in chats:
         packed = await resolve_to_packed(self, chat)
+        packed_chats.append(packed)
         if packed.is_user():
             input_users.append(packed._to_input_user())
         elif packed.is_chat():
