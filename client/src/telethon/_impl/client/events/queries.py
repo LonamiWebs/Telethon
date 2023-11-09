@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Optional, Self
 
 from ...tl import abcs, functions, types
-from ..types import Chat
+from ..types import Chat, Message
 from .event import Event
+from ..types.chat import peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -68,6 +69,22 @@ class ButtonCallback(Event):
                 cache_time=0,
             )
         )
+
+    async def get_message(self) -> Optional[Message]:
+        """
+        Returns the :class:`~telethon.types.Message` where the button click occurred,
+        or :data:`None` if the message couldn't be fetched
+        (for instance, if it's too old and no longer accessible to the bot).
+
+        """
+        peer_id_ = peer_id(self._raw.peer)
+        peer = self._chat_map.get(peer_id_, None)
+        if not peer:
+            peer = await self._client._resolve_to_packed(peer_id_)
+
+        message = (await self._client.get_messages_with_ids(chat=peer, message_ids=[self._raw.msg_id]))[0]
+
+        return message or None
 
 
 class InlineQuery(Event):
