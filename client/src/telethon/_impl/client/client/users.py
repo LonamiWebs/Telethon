@@ -172,6 +172,28 @@ async def resolve_to_packed(client: Client, chat: ChatLike) -> PackedChat:
         else:
             raise RuntimeError("unexpected case")
 
+    if isinstance(chat, abcs.Peer):
+        if isinstance(chat, types.PeerUser):
+            return PackedChat(
+                ty=PackedType.USER,
+                id=chat.user_id,
+                access_hash=0,
+            )
+        elif isinstance(chat, types.PeerChat):
+            return PackedChat(
+                ty=PackedType.CHAT,
+                id=chat.chat_id,
+                access_hash=0,
+            )
+        elif isinstance(chat, types.PeerChannel):
+            return PackedChat(
+                ty=PackedType.BROADCAST,
+                id=chat.channel_id,
+                access_hash=0,
+            )
+        else:
+            raise RuntimeError("unexpected case")
+
     if isinstance(chat, str):
         if chat.startswith("+"):
             resolved = await resolve_phone(client, chat)
