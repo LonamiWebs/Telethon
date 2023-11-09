@@ -45,6 +45,9 @@ class Message(metaclass=NoPublicConstructor):
 
     You can get a message from :class:`telethon.events.NewMessage`,
     or from methods such as :meth:`telethon.Client.get_messages`.
+
+    If the message is empty (like when it's not found using :meth:`telethon.Client.get_messages_with_ids`),
+    its ``__bool__`` method will yield :data:`False`.
     """
 
     def __init__(
@@ -481,6 +484,9 @@ class Message(metaclass=NoPublicConstructor):
             return not self._raw.noforwards
         else:
             return False
+
+    def __bool__(self):
+        return not isinstance(self._raw, types.MessageEmpty)
 
 
 def build_msg_map(
