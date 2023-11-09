@@ -22,6 +22,7 @@ from .._impl.client.events.filters import (
     Reply,
     Senders,
     Text,
+    Data,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "Reply",
     "Senders",
     "Text",
+    "Data"
 ]
