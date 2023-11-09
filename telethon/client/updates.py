@@ -289,7 +289,7 @@ class UpdateMethods:
                         len(self._mb_entity_cache),
                         self._entity_cache_limit
                     )
-                    self._save_states_and_entities()
+                    await self._save_states_and_entities()
                     self._mb_entity_cache.retain(lambda id: id == self._mb_entity_cache.self_id or id in self._message_box.map)
                     if len(self._mb_entity_cache) >= self._entity_cache_limit:
                         warnings.warn('in-memory entities exceed entity_cache_limit after flushing; consider setting a larger limit')
@@ -514,9 +514,11 @@ class UpdateMethods:
             # inserted because this is a rather expensive operation
             # (default's sqlite3 takes ~0.1s to commit changes). Do
             # it every minute instead. No-op if there's nothing new.
-            self._save_states_and_entities()
+            await self._save_states_and_entities()
 
-            self.session.save()
+            save = self.session.save()
+            if inspect.isawaitable(save):
+                await save
 
     async def _dispatch_update(self: 'TelegramClient', update):
         # TODO only used for AlbumHack, and MessageBox is not really designed for this

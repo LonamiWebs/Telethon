@@ -53,9 +53,12 @@ class _DirectDownloadIter(RequestIter):
                 config = await self.client(functions.help.GetConfigRequest())
                 for option in config.dc_options:
                     if option.ip_address == self.client.session.server_address:
-                        self.client.session.set_dc(
-                            option.id, option.ip_address, option.port)
-                        self.client.session.save()
+                        set_dc = self.client.session.set_dc(option.id, option.ip_address, option.port)
+                        if inspect.isawaitable(set_dc):
+                            await set_dc
+                        save = self.client.session.save()
+                        if inspect.isawaitable(save):
+                            await save
                         break
 
                 # TODO Figure out why the session may have the wrong DC ID
