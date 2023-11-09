@@ -154,5 +154,5 @@ async def dispatch_next(client: Client) -> None:
             for handler, filter in handlers:
                 if not filter or filter(event):
                     ret = await handler(event)
-                    if ret is not Continue or client._shortcircuit_handlers:
+                    if not (ret is Continue or client._check_all_handlers):
                         return
