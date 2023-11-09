@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Sequence
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union
 
 from ...mtproto import RpcError
 from ...session import PackedChat, PackedType
@@ -117,7 +117,7 @@ async def get_chats(self: Client, chats: Sequence[ChatLike]) -> List[Chat]:
     ]
 
 
-async def resolve_to_packed(client: Client, chat: ChatLike) -> PackedChat:
+async def resolve_to_packed(client: Client, chat: Union[ChatLike, abcs.InputPeer, abcs.Peer]) -> PackedChat:
     if isinstance(chat, PackedChat):
         return chat
 
