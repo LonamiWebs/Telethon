@@ -303,15 +303,6 @@ class TelegramBaseClient(abc.ABC):
                 'The given session must be a str or a Session instance.'
             )
 
-        # ':' in session.server_address is True if it's an IPv6 address
-        if (not session.server_address or
-                (':' in session.server_address) != use_ipv6):
-            session.set_dc(
-                DEFAULT_DC_ID,
-                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
-                DEFAULT_PORT
-            )
-
         self.flood_sleep_threshold = flood_sleep_threshold
 
         # TODO Use AsyncClassWrapper(session)
@@ -446,19 +437,7 @@ class TelegramBaseClient(abc.ABC):
         self._message_box = MessageBox(self._log['messagebox'])
         self._mb_entity_cache = MbEntityCache()  # required for proper update handling (to know when to getDifference)
         self._entity_cache_limit = entity_cache_limit
-
-        self._sender = MTProtoSender(
-            self.session.auth_key,
-            loggers=self._log,
-            retries=self._connection_retries,
-            delay=self._retry_delay,
-            auto_reconnect=self._auto_reconnect,
-            connect_timeout=self._timeout,
-            auth_key_callback=self._auth_key_callback,
-            updates_queue=self._updates_queue,
-            auto_reconnect_callback=self._handle_auto_reconnect
-        )
-
+        self._sender = None
 
     # endregion
 
@@ -541,6 +520,30 @@ class TelegramBaseClient(abc.ABC):
             self._loop = helpers.get_running_loop()
         elif self._loop != helpers.get_running_loop():
             raise RuntimeError('The asyncio event loop must not change after connection (see the FAQ for details)')
+
+        # ':' in session.server_address is True if it's an IPv6 address
+        if (not self.session.server_address or
+                (':' in self.session.server_address) != self._use_ipv6):
+            set_dc = self.session.set_dc(
+                DEFAULT_DC_ID,
+                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
+                DEFAULT_PORT
+            )
+            if inspect.isawaitable(set_dc):
+                await set_dc
+
+        if not self._sender:
+            self._sender = MTProtoSender(
+                self.session.auth_key,
+                loggers=self._log,
+                retries=self._connection_retries,
+                delay=self._retry_delay,
+                auto_reconnect=self._auto_reconnect,
+                connect_timeout=self._timeout,
+                auth_key_callback=self._auth_key_callback,
+                updates_queue=self._updates_queue,
+                auto_reconnect_callback=self._handle_auto_reconnect
+            )
 
         if not await self._sender.connect(self._connection(
             self.session.server_address,
@@ -769,7 +772,8 @@ class TelegramBaseClient(abc.ABC):
         file; user disconnects however should close it since it means that
         their job with the client is complete and we should clean it up all.
         """
-        await self._sender.disconnect()
+        if self._sender:
+            await self._sender.disconnect()
         await helpers._cancel(self._log[__name__],
                               updates_handle=self._updates_handle,
                               keepalive_handle=self._keepalive_handle)
@@ -778,6 +782,8 @@ class TelegramBaseClient(abc.ABC):
         """
         Permanently switches the current connection to the new data center.
         """
+        if not self._sender:
+            raise RuntimeError('Cant switch dc if not connected')
         self._log[__name__].info('Reconnecting to new data center %s', new_dc)
         dc = await self._get_dc(new_dc)
 
@@ -929,7 +935,9 @@ class TelegramBaseClient(abc.ABC):
             session = self.session.clone()
             if inspect.isawaitable(session):
                 session = await session
-            session.set_dc(dc.id, dc.ip_address, dc.port)
+            set_dc = session.set_dc(dc.id, dc.ip_address, dc.port)
+            if inspect.isawaitable(set_dc):
+                await set_dc
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')
