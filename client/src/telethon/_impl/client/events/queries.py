@@ -55,8 +55,9 @@ class ButtonCallback(Event):
 
         :param text:
             The text of the message to display to the user, usually as a toast.
+
         :param alert:
-            If True, the message will be shown as a pop-up alert that must be dismissed by the user.
+            If :data:`True`, the message will be shown as a pop-up alert that must be dismissed by the user.
         """
         await self._client(
             functions.messages.set_bot_callback_answer(
