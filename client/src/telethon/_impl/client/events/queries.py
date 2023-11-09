@@ -45,8 +45,6 @@ class ButtonCallback(Event):
         self,
         text: Optional[str] = None,
         alert: bool = False,
-        url: Optional[str] = None,
-        cache_time: int = 0,
     ) -> None:
         """
         Answer the callback query.
@@ -59,21 +57,14 @@ class ButtonCallback(Event):
             The text of the message to display to the user, usually as a toast.
         :param alert:
             If True, the answer will be shown as a pop-up alert that must be dismissed by the user.
-        :param url:
-            Url, to which user will be redirected upon pressing the button.
-            It should be a link to the same bot with ?start=... parameter, or a link to the game.
-        :param cache_time:
-            Time in seconds to cache the answer on the client side,
-            preventing repeated callback queries from being sent to the bot on subsequent button presses.
-            A cache_time of 0 means each button press will send a callback query to the bot.
         """
         await self._client(
             functions.messages.set_bot_callback_answer(
                 alert=alert,
                 query_id=self._raw.query_id,
                 message=text,
-                url=url,
-                cache_time=cache_time,
+                url=None,
+                cache_time=0,
             )
         )
 
