@@ -273,7 +273,7 @@ class Client:
         self._handlers: Dict[
             Type[Event], List[Tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
         ] = {}
-        self._shortcircuit_handlers = not check_all_handlers
+        self._check_all_handlers = check_all_handlers
 
         if self._session.user and self._config.catch_up and self._session.state:
             self._message_box.load(self._session.state)
