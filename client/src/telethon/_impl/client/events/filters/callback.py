@@ -6,7 +6,7 @@ from ..event import Event
 
 class Data(Combinable):
     """
-    Filter by ``event.data`` using a full bytes match, used for events, such as :class:`telethon.events.ButtonCallback`.
+    Filter by ``event.data`` using a full bytes match, used for events such as :class:`telethon.events.ButtonCallback`.
 
     It checks if ``event.data`` is equal to the data passed to the filter.
 
