@@ -159,14 +159,14 @@ class Media(Combinable):
     __slots__ = "_types"
 
     def __init__(
-        self, *types: Union[Literal["photo"], Literal["audio"], Literal["video"]]
+        self, *types: Literal["photo", "audio", "video"]
     ) -> None:
         self._types = types or None
 
     @property
     def types(
         self,
-    ) -> Tuple[Union[Literal["photo"], Literal["audio"], Literal["video"]], ...]:
+    ) -> Tuple[Literal["photo", "audio", "video"], ...]:
         """
         The media types being checked.
         """

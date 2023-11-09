@@ -77,7 +77,7 @@ NO_UPDATES_TIMEOUT = 15 * 60
 
 ENTRY_ACCOUNT: Literal["ACCOUNT"] = "ACCOUNT"
 ENTRY_SECRET: Literal["SECRET"] = "SECRET"
-Entry = Union[Literal["ACCOUNT"], Literal["SECRET"], int]
+Entry = Union[Literal["ACCOUNT", "SECRET"], int]
 
 # Python's logging doesn't define a TRACE level. Pick halfway between DEBUG and NOTSET.
 # We don't define a name for this as libraries shouldn't do that though.
