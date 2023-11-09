@@ -1,10 +1,10 @@
 import abc
 import typing
-from typing import Callable, Tuple
+from typing import Callable, Tuple, TypeAlias
 
 from ..event import Event
 
-Filter = Callable[[Event], bool]
+Filter: TypeAlias = Callable[[Event], bool]
 
 
 class Combinable(abc.ABC):
@@ -48,11 +48,12 @@ class Any(Combinable):
     """
     Combine multiple filters, returning :data:`True` if any of the filters pass.
 
-    When either filter is *combinable*, you can use the ``|`` operator instead.
+    When either filter is :class:`~telethon._impl.client.events.filters.combinators.Combinable`,
+    you can use the ``|`` operator instead.
 
     .. code-block:: python
 
-        from telethon.filters import Any, Command
+        from telethon.events.filters import Any, Command
 
         @bot.on(events.NewMessage, Any(Command('/start'), Command('/help')))
         async def handler(event): ...
@@ -87,11 +88,12 @@ class All(Combinable):
     """
     Combine multiple filters, returning :data:`True` if all of the filters pass.
 
-    When either filter is *combinable*, you can use the ``&`` operator instead.
+    When either filter is :class:`~telethon._impl.client.events.filters.combinators.Combinable`,
+    you can use the ``&`` operator instead.
 
     .. code-block:: python
 
-        from telethon.filters import All, Command, Text
+        from telethon.events.filters import All, Command, Text
 
         @bot.on(events.NewMessage, All(Command('/start'), Text(r'\bdata:\w+')))
         async def handler(event): ...
@@ -126,11 +128,12 @@ class Not(Combinable):
     """
     Negate the output of a single filter, returning :data:`True` if the nested filter does *not* pass.
 
-    When the filter is *combinable*, you can use the ``~`` operator instead.
+    When the filter is :class:`~telethon._impl.client.events.filters.combinators.Combinable`,
+    you can use the ``~`` operator instead.
 
     .. code-block:: python
 
-        from telethon.filters import All, Command
+        from telethon.events.filters import All, Command
 
         @bot.on(events.NewMessage, Not(Command('/start'))
         async def handler(event): ...

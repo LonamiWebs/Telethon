@@ -61,6 +61,7 @@ class Gap(ValueError):
         return "Gap()"
 
 
+NO_DATE = 0  # used on adapted messages.affected* from lower layers
 NO_SEQ = 0
 
 NO_PTS = 0

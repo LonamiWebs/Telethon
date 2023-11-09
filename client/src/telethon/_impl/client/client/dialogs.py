@@ -4,8 +4,15 @@ import time
 from typing import TYPE_CHECKING, Optional
 
 from ...tl import functions, types
-from ..types import AsyncList, ChatLike, Dialog, Draft, build_chat_map, build_msg_map
-from .messages import parse_message
+from ..types import (
+    AsyncList,
+    ChatLike,
+    Dialog,
+    Draft,
+    build_chat_map,
+    build_msg_map,
+    parse_message,
+)
 
 if TYPE_CHECKING:
     from .client import Client
@@ -125,7 +132,6 @@ async def edit_draft(
     message, entities = parse_message(
         text=text, markdown=markdown, html=html, allow_empty=False
     )
-    assert isinstance(message, str)
 
     result = await self(
         functions.messages.save_draft(

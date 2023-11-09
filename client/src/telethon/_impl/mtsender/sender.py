@@ -5,7 +5,7 @@ import time
 from abc import ABC
 from asyncio import FIRST_COMPLETED, Event, Future
 from dataclasses import dataclass
-from typing import Generic, List, Optional, Protocol, Self, Tuple, TypeVar
+from typing import Generic, List, Optional, Protocol, Self, Tuple, Type, TypeVar
 
 from ..crypto import AuthKey
 from ..mtproto import (
@@ -21,7 +21,10 @@ from ..mtproto import (
 )
 from ..tl import Request as RemoteCall
 from ..tl.abcs import Updates
+from ..tl.core import Serializable
 from ..tl.mtproto.functions import ping_delay_disconnect
+from ..tl.types import UpdateDeleteMessages, UpdateShort
+from ..tl.types.messages import AffectedFoundMessages, AffectedHistory, AffectedMessages
 
 MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)
 
@@ -315,12 +318,41 @@ class Sender:
             try:
                 u = Updates.from_bytes(update)
             except ValueError:
-                self._logger.warning(
-                    "failed to deserialize incoming update; make sure the session is not in use elsewhere: %s",
-                    update.hex(),
+                cid = struct.unpack_from("I", update)[0]
+                alt_classes: Tuple[Type[Serializable], ...] = (
+                    AffectedFoundMessages,
+                    AffectedHistory,
+                    AffectedMessages,
                 )
-            else:
-                updates.append(u)
+                for cls in alt_classes:
+                    if cid == cls.constructor_id():
+                        affected = cls.from_bytes(update)
+                        # mypy struggles with the types here quite a bit
+                        assert isinstance(
+                            affected,
+                            (
+                                AffectedFoundMessages,
+                                AffectedHistory,
+                                AffectedMessages,
+                            ),
+                        )
+                        u = UpdateShort(
+                            update=UpdateDeleteMessages(
+                                messages=[],
+                                pts=affected.pts,
+                                pts_count=affected.pts_count,
+                            ),
+                            date=0,
+                        )
+                        break
+                else:
+                    self._logger.warning(
+                        "failed to deserialize incoming update; make sure the session is not in use elsewhere: %s",
+                        update.hex(),
+                    )
+                    continue
+
+            updates.append(u)
 
         for msg_id, ret in result.rpc_results:
             for i, req in enumerate(self._requests):

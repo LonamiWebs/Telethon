@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional, Sequence
 
 from ...mtproto import RpcError
 from ...session import PackedChat, PackedType
@@ -13,6 +13,7 @@ from ..types import (
     Group,
     User,
     build_chat_map,
+    expand_peer,
     peer_id,
 )
 
@@ -73,12 +74,51 @@ async def resolve_username(self: Client, username: str) -> Chat:
     )
 
 
-async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
+async def get_chats(self: Client, chats: Sequence[ChatLike]) -> List[Chat]:
+    packed_chats: List[PackedChat] = []
+    input_users: List[types.InputUser] = []
+    input_chats: List[int] = []
+    input_channels: List[types.InputChannel] = []
+
+    for chat in chats:
+        packed = await resolve_to_packed(self, chat)
+        if packed.is_user():
+            input_users.append(packed._to_input_user())
+        elif packed.is_chat():
+            input_chats.append(packed.id)
+        else:
+            input_channels.append(packed._to_input_channel())
+
+    users = (
+        (await self(functions.users.get_users(id=input_users))) if input_users else []
+    )
+    groups = (
+        (await self(functions.messages.get_chats(id=input_chats)))
+        if input_chats
+        else []
+    )
+    assert isinstance(groups, types.messages.Chats)
+    channels = (
+        (await self(functions.channels.get_channels(id=input_channels)))
+        if input_channels
+        else []
+    )
+    assert isinstance(channels, types.messages.Chats)
+
+    chat_map = build_chat_map(self, users, groups.chats + channels.chats)
+    return [
+        chat_map.get(chat.id)
+        or expand_peer(self, chat._to_peer(), broadcast=chat.ty == PackedType.BROADCAST)
+        for chat in packed_chats
+    ]
+
+
+async def resolve_to_packed(client: Client, chat: ChatLike) -> PackedChat:
     if isinstance(chat, PackedChat):
         return chat
 
     if isinstance(chat, (User, Group, Channel)):
-        packed = chat.pack() or self._chat_hashes.get(chat.id)
+        packed = chat.pack() or client._chat_hashes.get(chat.id)
         if packed is not None:
             return packed
 
@@ -96,11 +136,11 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
         if isinstance(chat, types.InputPeerEmpty):
             raise ValueError("Cannot resolve chat")
         elif isinstance(chat, types.InputPeerSelf):
-            if not self._session.user:
+            if not client._session.user:
                 raise ValueError("Cannot resolve chat")
             return PackedChat(
-                ty=PackedType.BOT if self._session.user.bot else PackedType.USER,
-                id=self._chat_hashes.self_id,
+                ty=PackedType.BOT if client._session.user.bot else PackedType.USER,
+                id=client._chat_hashes.self_id,
                 access_hash=0,
             )
         elif isinstance(chat, types.InputPeerChat):
@@ -130,9 +170,9 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
 
     if isinstance(chat, str):
         if chat.startswith("+"):
-            resolved = await resolve_phone(self, chat)
+            resolved = await resolve_phone(client, chat)
         elif chat == "me":
-            if me := self._session.user:
+            if me := client._session.user:
                 return PackedChat(
                     ty=PackedType.BOT if me.bot else PackedType.USER,
                     id=me.id,
@@ -141,13 +181,13 @@ async def resolve_to_packed(self: Client, chat: ChatLike) -> PackedChat:
             else:
                 resolved = None
         else:
-            resolved = await resolve_username(self, username=chat)
+            resolved = await resolve_username(client, username=chat)
 
         if resolved and (packed := resolved.pack()) is not None:
             return packed
 
     if isinstance(chat, int):
-        packed = self._chat_hashes.get(chat)
+        packed = client._chat_hashes.get(chat)
         if packed is None:
             raise ValueError("Cannot resolve chat")
         return packed

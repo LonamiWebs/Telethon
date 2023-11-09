@@ -86,7 +86,7 @@ def inner_type_fmt(ty: Type) -> str:
         return f"abcs.{ns}{to_class_name(ty.name)}"
 
 
-def param_type_fmt(ty: BaseParameter) -> str:
+def param_type_fmt(ty: BaseParameter, *, immutable: bool) -> str:
     if isinstance(ty, FlagsParameter):
         return "int"
     elif not isinstance(ty, NormalParameter):
@@ -104,7 +104,10 @@ def param_type_fmt(ty: BaseParameter) -> str:
     res = "bytes" if inner_ty.name == "Object" else inner_type_fmt(inner_ty)
 
     if ty.ty.generic_arg:
-        res = f"List[{res}]"
+        if immutable:
+            res = f"Sequence[{res}]"
+        else:
+            res = f"List[{res}]"
 
     if ty.flag and ty.ty.name != "true":
         res = f"Optional[{res}]"

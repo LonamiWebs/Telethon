@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import datetime
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Tuple, Union
 
 from ...tl import abcs, types
-from ..parsers import generate_html_message, generate_markdown_message
+from ..parsers import (
+    generate_html_message,
+    generate_markdown_message,
+    parse_html_message,
+    parse_markdown_message,
+)
 from .buttons import Button, as_concrete_row, create_button
 from .chat import Chat, ChatLike, expand_peer, peer_id
 from .file import File
@@ -276,6 +281,26 @@ class Message(metaclass=NoPublicConstructor):
 
         return None
 
+    @property
+    def incoming(self) -> bool:
+        """
+        :data:`True` if the message is incoming.
+        This would mean another user sent it, and the currently logged-in user received it.
+
+        This is usually the opposite of :attr:`outgoing`, although some messages can be neither.
+        """
+        return getattr(self._raw, "out", None) is False
+
+    @property
+    def outgoing(self) -> bool:
+        """
+        :data:`True` if the message is outgoing.
+        This would mean the currently logged-in user sent it.
+
+        This is usually the opposite of :attr:`incoming`, although some messages can be neither.
+        """
+        return getattr(self._raw, "out", None) is True
+
     async def get_replied_message(self) -> Optional[Message]:
         """
         Alias for :meth:`telethon.Client.get_messages_with_ids`.
@@ -465,3 +490,28 @@ def build_msg_map(
         msg.id: msg
         for msg in (Message._from_raw(client, m, chat_map) for m in messages)
     }
+
+
+def parse_message(
+    *,
+    text: Optional[str],
+    markdown: Optional[str],
+    html: Optional[str],
+    allow_empty: bool,
+) -> Tuple[str, Optional[List[abcs.MessageEntity]]]:
+    cnt = sum((text is not None, markdown is not None, html is not None))
+    if cnt != 1:
+        if cnt == 0 and allow_empty:
+            return "", None
+        raise ValueError("must specify exactly one of text, markdown or html")
+
+    if text is not None:
+        parsed, entities = text, None
+    elif markdown is not None:
+        parsed, entities = parse_markdown_message(markdown)
+    elif html is not None:
+        parsed, entities = parse_html_message(html)
+    else:
+        raise RuntimeError("unexpected case")
+
+    return parsed, entities or None

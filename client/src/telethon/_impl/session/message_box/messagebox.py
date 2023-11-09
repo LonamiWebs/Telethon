@@ -13,6 +13,7 @@ from .defs import (
     ENTRY_ACCOUNT,
     ENTRY_SECRET,
     LOG_LEVEL_TRACE,
+    NO_DATE,
     NO_PTS,
     NO_SEQ,
     NO_UPDATES_TIMEOUT,
@@ -294,9 +295,10 @@ class MessageBox:
         if any_pts_applied:
             if __debug__:
                 self._trace("updating seq as local pts was updated too")
-            self.date = datetime.datetime.fromtimestamp(
-                combined.date, tz=datetime.timezone.utc
-            )
+            if combined.date != NO_DATE:
+                self.date = datetime.datetime.fromtimestamp(
+                    combined.date, tz=datetime.timezone.utc
+                )
             if combined.seq != NO_SEQ:
                 self.seq = combined.seq
 

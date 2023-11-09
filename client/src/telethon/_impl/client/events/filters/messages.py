@@ -21,7 +21,9 @@ class Text(Combinable):
     you need to manually perform the check inside the handler instead.
 
     Note that the caption text in messages with media is also searched.
-    If you want to filter based on media, use :class:`TextOnly` or :class:`Media`.
+    If you want to filter based on media, use :class:`Media`.
+
+    :param regexp: The regular expression to :func:`re.search` with on the text.
     """
 
     __slots__ = ("_pattern",)
@@ -43,6 +45,8 @@ class Command(Combinable):
     filter ``Command('/help')`` will match both ``"/help"`` and ``"/help@bot"``, but not
     ``"/list"`` or ``"/help@other"``.
 
+    :param command: The command to match on.
+
     .. note::
 
         The leading forward-slash is not automatically added!
@@ -58,7 +62,7 @@ class Command(Combinable):
     __slots__ = ("_cmd", "_username")
 
     def __init__(self, command: str) -> None:
-        if re.match(r"\s", command):
+        if re.search(r"\s", command):
             raise ValueError(f"command cannot contain spaces: {command}")
 
         self._cmd = command
@@ -87,11 +91,7 @@ class Command(Combinable):
 
 class Incoming(Combinable):
     """
-    Filter by ``event.incoming``, that is, messages sent from others to the
-    logged-in account.
-
-    This is not a reliable way to check that the update was not produced by
-    the logged-in account in broadcast channels.
+    Filter by ``event.incoming``, that is, messages sent from others to the logged-in account.
     """
 
     __slots__ = ()
@@ -102,11 +102,9 @@ class Incoming(Combinable):
 
 class Outgoing(Combinable):
     """
-    Filter by ``event.outgoing``, that is, messages sent from others to the
-    logged-in account.
+    Filter by ``event.outgoing``, that is, messages sent from the logged-in account.
 
-    This is not a reliable way to check that the update was not produced by
-    the logged-in account in broadcast channels.
+    This is not a reliable way to check that the update was not produced by the logged-in account in broadcast channels.
     """
 
     __slots__ = ()
@@ -117,32 +115,24 @@ class Outgoing(Combinable):
 
 class Forward(Combinable):
     """
-    Filter by ``event.forward``.
+    Filter by ``event.forward_info``, that is, messages that have been forwarded from elsewhere.
     """
 
     __slots__ = ()
 
     def __call__(self, event: Event) -> bool:
-        return getattr(event, "forward", None) is not None
+        return getattr(event, "forward_info", None) is not None
 
 
 class Reply(Combinable):
     """
-    Filter by ``event.reply``.
+    Filter by ``event.replied_message_id``, that is, messages which are a reply to another message.
     """
 
     __slots__ = ()
 
     def __call__(self, event: Event) -> bool:
-        return getattr(event, "reply", None) is not None
-
-
-class TextOnly(Combinable):
-    """
-    Filter by messages with some text and no media.
-
-    Note that link previews are only considered media if they have a photo or document.
-    """
+        return getattr(event, "replied_message_id", None) is not None
 
 
 class Media(Combinable):
@@ -156,6 +146,10 @@ class Media(Combinable):
     When you specify one or more media types, *only* those types will be considered.
 
     You can use literal strings or the constants defined by the filter.
+
+    :param types:
+        The media types to filter on.
+        This is all of them if none are specified.
     """
 
     PHOTO = "photo"
