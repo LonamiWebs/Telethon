@@ -4,9 +4,9 @@ from .combinators import Combinable
 from ..event import Event
 
 
-class CallbackData(Combinable):
+class Data(Combinable):
     """
-    Filter by ``event.data`` using a full bytes match, used for callback events :class:`events.ButtonCallback`
+    Filter by ``event.data`` using a full bytes match, used for callback events :class:`telethon.events.ButtonCallback`
 
     It checks if ``event.data`` is equal to the data passed to the filter.
 
