@@ -390,6 +390,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
+        buttons: Optional[Union[List[Button], List[List[Button]]]] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.edit_message`.
@@ -398,6 +399,10 @@ class Message(metaclass=NoPublicConstructor):
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :meth:`~telethon.Client.send_message`.
+        :param buttons:
+            The buttons to use for the message.
+
+            Only bot accounts can send buttons.
         """
         return await self._client.edit_message(
             self.chat,
@@ -406,6 +411,7 @@ class Message(metaclass=NoPublicConstructor):
             markdown=markdown,
             html=html,
             link_preview=link_preview,
+            buttons=buttons,
         )
 
     async def forward(self, target: ChatLike) -> Message:

@@ -585,6 +585,7 @@ class Client:
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
+        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
     ) -> Message:
         """
         Edit a message.
@@ -599,6 +600,10 @@ class Client:
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :ref:`formatting`.
+        :param buttons:
+            The buttons to use for the message.
+
+            Only bot accounts can send buttons.
 
         :return: The edited message.
 
@@ -624,6 +629,7 @@ class Client:
             markdown=markdown,
             html=html,
             link_preview=link_preview,
+            buttons=buttons
         )
 
     async def forward_messages(
