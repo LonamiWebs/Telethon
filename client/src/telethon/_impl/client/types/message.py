@@ -331,6 +331,10 @@ class Message(metaclass=NoPublicConstructor):
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :meth:`~telethon.Client.send_message`.
+        :param buttons:
+            The buttons to use for the message.
+
+            Only bot accounts can send buttons.
         """
         return await self._client.send_message(
             self.chat,
@@ -357,6 +361,10 @@ class Message(metaclass=NoPublicConstructor):
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :meth:`~telethon.Client.send_message`.
+        :param buttons:
+            The buttons to use for the message.
+
+            Only bot accounts can send buttons.
         """
         return await self._client.send_message(
             self.chat,
