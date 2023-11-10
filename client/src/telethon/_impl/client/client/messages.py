@@ -115,6 +115,7 @@ async def edit_message(
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: bool = False,
+    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
 ) -> Message:
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
     message, entities = parse_message(
@@ -128,7 +129,7 @@ async def edit_message(
                 id=message_id,
                 message=message,
                 media=None,
-                reply_markup=None,
+                reply_markup=btns.build_keyboard(buttons),
                 entities=entities,
                 schedule_date=None,
             )
