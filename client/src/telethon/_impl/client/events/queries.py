@@ -72,10 +72,9 @@ class ButtonCallback(Event):
 
     async def get_message(self) -> Optional[Message]:
         """
-        Returns the :class:`~telethon.types.Message` where the button click occurred,
-        or :data:`None` if the message couldn't be fetched
-        (for instance, if it's too old and no longer accessible to the bot).
+        Get the :class:`~telethon.types.Message` containing the button that was clicked.
 
+        If the message is too old and is no longer accessible, :data:`None` is returned instead.
         """
         peer_id_ = peer_id(self._raw.peer)
         peer = self._chat_map.get(peer_id_, None)
