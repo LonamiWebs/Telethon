@@ -173,6 +173,9 @@ async def resolve_to_packed(client: Client, chat: Union[ChatLike, abcs.InputPeer
             raise RuntimeError("unexpected case")
 
     if isinstance(chat, abcs.Peer):
+        packed = client._chat_hashes.get(peer_id(chat))
+        if packed is not None:
+            return packed
         if isinstance(chat, types.PeerUser):
             return PackedChat(
                 ty=PackedType.USER,
