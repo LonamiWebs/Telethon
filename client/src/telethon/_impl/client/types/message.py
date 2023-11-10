@@ -46,7 +46,15 @@ class Message(metaclass=NoPublicConstructor):
     You can get a message from :class:`telethon.events.NewMessage`,
     or from methods such as :meth:`telethon.Client.get_messages`.
 
-    If the message is empty (like when it's not found using :meth:`telethon.Client.get_messages_with_ids`),
+    Empty messages can occur very rarely when fetching the message history.
+    In these cases, only the :attr:`id` and :attr`peer` properties are guaranteed to be present.
+    To determine whether a message is empty, its truthy value can be checked via :meth:`object.__bool__`:
+
+    .. code-block:: python
+
+        async for message in client.iter_messages(chat):
+            if not message:
+                print('Found empty message with ID', message.id)
     its ``__bool__`` method will yield :data:`False`.
     """
 
