@@ -55,7 +55,6 @@ class Message(metaclass=NoPublicConstructor):
         async for message in client.iter_messages(chat):
             if not message:
                 print('Found empty message with ID', message.id)
-    its ``__bool__`` method will yield :data:`False`.
     """
 
     def __init__(

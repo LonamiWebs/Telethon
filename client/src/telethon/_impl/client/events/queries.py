@@ -76,12 +76,12 @@ class ButtonCallback(Event):
 
         If the message is too old and is no longer accessible, :data:`None` is returned instead.
         """
-        peer_id_ = peer_id(self._raw.peer)
-        peer = self._chat_map.get(peer_id_, None)
-        if not peer:
-            peer = await self._client._resolve_to_packed(peer_id_)
+        pid = peer_id(self._raw.peer)
+        chat = self._chat_map.get(pid)
+        if not chat:
+            chat = await self._client._resolve_to_packed(pid)
 
-        message = (await self._client.get_messages_with_ids(chat=peer, message_ids=[self._raw.msg_id]))[0]
+        message = (await self._client.get_messages_with_ids(chat=chat, message_ids=[self._raw.msg_id]))[0]
 
         return message or None
 
