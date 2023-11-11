@@ -50,7 +50,7 @@ class ButtonCallback(Event):
     def chat(self) -> Optional[Chat]:
         """
         The :term:`chat` when the message was sent.
-        Only available if the event was triggered by a button under usual message, not an inline one.
+        Only available if the event was triggered by a button under a usual message, not an inline one.
         """
         if isinstance(self._raw, types.UpdateInlineBotCallbackQuery):
             return None
