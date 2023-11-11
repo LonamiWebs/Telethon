@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional, Self
+from typing import TYPE_CHECKING, Dict, Optional, Self, Union
 
 from ...tl import abcs, functions, types
 from ..types import Chat, Message
@@ -22,7 +22,7 @@ class ButtonCallback(Event):
     def __init__(
         self,
         client: Client,
-        update: types.UpdateBotCallbackQuery,
+        update: Union[types.UpdateBotCallbackQuery, types.UpdateInlineBotCallbackQuery],
         chat_map: Dict[int, Chat],
     ):
         self._client = client
@@ -33,7 +33,10 @@ class ButtonCallback(Event):
     def _try_from_update(
         cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
     ) -> Optional[Self]:
-        if isinstance(update, types.UpdateBotCallbackQuery) and update.data is not None:
+        if (
+            isinstance(update, (types.UpdateBotCallbackQuery, types.UpdateInlineBotCallbackQuery))
+            and update.data is not None
+        ):
             return cls._create(client, update, chat_map)
         else:
             return None
@@ -42,6 +45,16 @@ class ButtonCallback(Event):
     def data(self) -> bytes:
         assert self._raw.data is not None
         return self._raw.data
+
+    @property
+    def chat(self) -> Optional[Chat]:
+        """
+        The :term:`chat` when the message was sent.
+        Only available if the event was triggered by a button under usual message, not an inline one.
+        """
+        if isinstance(self._raw, types.UpdateInlineBotCallbackQuery):
+            return None
+        return self._chat_map.get(peer_id(self._raw.peer))
 
     async def answer(
         self,
@@ -75,8 +88,10 @@ class ButtonCallback(Event):
         """
         Get the :class:`~telethon.types.Message` containing the button that was clicked.
 
-        If the message is too old and is no longer accessible, :data:`None` is returned instead.
+        If the message is inline, or too old and is no longer accessible, :data:`None` is returned instead.
         """
+        if isinstance(self._raw, types.UpdateInlineBotCallbackQuery):
+            return None
 
         pid = peer_id(self._raw.peer)
         chat = self._chat_map.get(pid)
