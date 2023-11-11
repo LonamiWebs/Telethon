@@ -49,7 +49,7 @@ class Dialog(metaclass=NoPublicConstructor):
     @property
     def chat(self) -> Chat:
         """
-        The chat where messages are sent in this dialog.
+        The :term:`chat` where messages are sent in this dialog.
         """
         return self._chat_map[peer_id(self._raw.peer)]
 
