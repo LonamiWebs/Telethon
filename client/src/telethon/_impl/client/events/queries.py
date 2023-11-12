@@ -49,8 +49,9 @@ class ButtonCallback(Event):
     @property
     def chat(self) -> Optional[Chat]:
         """
-        The :term:`chat` when the message was sent.
-        Only available if the event was triggered by a button under a usual message, not an inline one.
+        The :term:`chat` where the button was clicked.
+
+        This will be :data:`None` if the message with the button was sent from a user's inline query.
         """
         if isinstance(self._raw, types.UpdateInlineBotCallbackQuery):
             return None
