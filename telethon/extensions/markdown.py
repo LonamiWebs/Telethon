@@ -30,6 +30,37 @@ def overlap(a, b, x, y):
     return max(a, x) < min(b, y)
 
 
+def parse_lang(text: str, i: int, end: int) -> tuple[str, str, int]:
+    """
+    Extracts the language of a code block from a message.
+    :param text: the message to extract the language from.
+    :param i: the start of the code block.
+    :param end: the end of the code block.
+    :return: a tuple consisting of (language, text, end).
+    """
+    # Default language values
+    lang = ''
+
+    # Find first newline after delimiter
+    start_code = text.find('\n', i)
+
+    # If no newline is found, assume that no language is specified
+    if not start_code == -1:
+        unvalidated_lang = text[i:start_code].strip()
+
+        # Validate language against regex; return default if not matching
+        if re.compile(r'[a-zA-Z0-9_-]{1,32}'
+                      ).fullmatch(unvalidated_lang) is not None:
+            lang = unvalidated_lang
+
+            # Remove lang and extra newline from the text; update 'end'
+            code_block = text[start_code:end].strip()
+            text = text[:i] + code_block + text[end:]
+            end = i + len(code_block)
+
+    return lang, text, end
+
+
 def parse(message, delimiters=None, url_re=None):
     """
     Parses the given markdown message and returns its stripped representation
@@ -99,7 +130,8 @@ def parse(message, delimiters=None, url_re=None):
                 # Append the found entity
                 ent = delimiters[delim]
                 if ent == MessageEntityPre:
-                    result.append(ent(i, end - i - len(delim), ''))  # has 'lang'
+                    lang, message, end = parse_lang(message, i, end)
+                    result.append(ent(i, end - i - len(delim), lang))
                 else:
                     result.append(ent(i, end - i - len(delim)))
 
