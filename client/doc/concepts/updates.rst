@@ -105,8 +105,8 @@ If you need state, you can use a class with a ``__call__`` method defined:
 .. code-block:: python
 
     # Anonymous filter which only handles messages with ID = 1000
-    client.add_event_handler(handler, events.NewMessage, lambda e: e.id == 1000)
-    #                      this parameter is the filter  ^--------------------^
+    bot.add_event_handler(handler, events.NewMessage, lambda e: e.id == 1000)
+    #                   this parameter is the filter  ^--------------------^
 
     # ...
 
@@ -114,7 +114,7 @@ If you need state, you can use a class with a ``__call__`` method defined:
         "A filter that only handles messages when their ID is divisible by 2"
         return event.id % 2 == 0
 
-    client.add_event_handler(handler, events.NewMessage, only_odd_messages)
+    bot.add_event_handler(handler, events.NewMessage, only_odd_messages)
 
     # ...
 
@@ -126,7 +126,7 @@ If you need state, you can use a class with a ``__call__`` method defined:
         def __call__(self, event):
             return event.id % self.divisible_by == 0
 
-    client.add_event_handler(handler, events.NewMessage, OnlyDivisibleMessages(7))
+    bot.add_event_handler(handler, events.NewMessage, OnlyDivisibleMessages(7))
 
 Custom filters should accept any :class:`~events.Event`.
 You can use :func:`isinstance` if your filter can only deal with certain types of events.
@@ -139,7 +139,7 @@ This makes it very convenient to write custom filters using the :keyword:`lambda
 
 .. code-block:: python
 
-    @client.on(events.NewMessage, lambda e: e.id == 1000)
+    @bot.on(events.NewMessage, lambda e: e.id == 1000)
     async def handler(event):
         ...
 
@@ -156,11 +156,11 @@ By default, the library will stop calling the rest of handlers after one is call
 
 .. code-block:: python
 
-    @client.on(events.NewMessage)
+    @bot.on(events.NewMessage)
     async def first(event):
         print('This is always called on new messages!')
 
-    @client.on(events.NewMessage)
+    @bot.on(events.NewMessage)
     async def second(event):
         print('This will never be called, because "first" already ran.')
 
@@ -172,12 +172,12 @@ If that's the case, you can :keyword:`return` :class:`events.Continue`:
 
 .. code-block:: python
 
-    @client.on(events.NewMessage)
+    @bot.on(events.NewMessage)
     async def first(event):
         print('This is always called on new messages!')
         return events.Continue
 
-    @client.on(events.NewMessage)
+    @bot.on(events.NewMessage)
     async def second(event):
         print('Now this one runs as well!')
 
@@ -185,8 +185,8 @@ Alternatively, if this is *always* the behaviour you want, you can configure it 
 
 .. code-block:: python
 
-    client = Client(..., check_all_handlers=True)
-    #                    ^^^^^^^^^^^^^^^^^^^^^^^
+    bot = Client(..., check_all_handlers=True)
+    #                 ^^^^^^^^^^^^^^^^^^^^^^^
     # Now the code above will call both handlers, even without returning events.Continue
 
 If you need a more complicated setup, consider sorting all your handlers beforehand.
