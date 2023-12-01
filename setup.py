@@ -180,8 +180,9 @@ def main(argv):
         # Try importing the telethon module to assert it has no errors
         try:
             import telethon
-        except:
+        except Exception as e:
             print('Packaging for PyPi aborted, importing the module failed.')
+            print(e)
             return
 
         remove_dirs = ['__pycache__', 'build', 'dist', 'Telethon.egg-info']

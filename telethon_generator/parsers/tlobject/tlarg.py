@@ -96,7 +96,12 @@ class TLArg:
         :param generic_definition: Is the argument a generic definition?
                                    (i.e. {X:Type})
         """
-        self.name = 'is_self' if name == 'self' else name
+        if name == 'self':
+            self.name = 'is_self'
+        elif name == 'from':
+            self.name = 'from_'
+        else:
+            self.name = name
 
         # Default values
         self.is_vector = False
@@ -204,17 +209,21 @@ class TLArg:
         return real_type
 
     def __str__(self):
+        name = self.orig_name()
         if self.generic_definition:
-            return '{{{}:{}}}'.format(self.name, self.real_type())
+            return '{{{}:{}}}'.format(name, self.real_type())
         else:
-            return '{}:{}'.format(self.name, self.real_type())
+            return '{}:{}'.format(name, self.real_type())
 
     def __repr__(self):
         return str(self).replace(':date', ':int').replace('?date', '?int')
 
+    def orig_name(self):
+        return self.name.replace('is_self', 'self').strip('_')
+
     def to_dict(self):
         return {
-            'name': self.name.replace('is_self', 'self'),
+            'name': self.orig_name(),
             'type': re.sub(r'\bdate$', 'int', self.real_type())
         }
 

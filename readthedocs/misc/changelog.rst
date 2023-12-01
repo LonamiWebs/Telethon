@@ -13,6 +13,27 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.33)
+=================
+
++------------------------+
+| Scheme layer used: 167 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=166&to=167>`__.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``webbrowser`` is now imported conditionally, to support niche environments.
+* Library should now retry on the suddenly-common ``TimedOutError``.
+
+Bug fixes
+~~~~~~~~~
+
+* Sending photos which were automatically resized should work again (included in the v1.32 series).
+
+
 New layer (v1.32)
 =================
 
