@@ -124,6 +124,8 @@ def parse(html: str) -> Tuple[str, List[TypeMessageEntity]]:
     parser = HTMLToTelegramParser()
     parser.feed(add_surrogate(html))
     text = strip_text(parser.text, parser.entities)
+    parser.entities.reverse()
+    parser.entities.sort(key=lambda entity: entity.offset)
     return del_surrogate(text), parser.entities
 
 
