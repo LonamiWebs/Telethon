@@ -53,6 +53,22 @@ def test_entities_together():
     assert text == original
 
 
+def test_nested_entities():
+    """
+    Test that an entity nested inside another one behaves well.
+    """
+    original = '<a href="https://example.com"><strong>Example</strong></a>'
+    original_entities = [MessageEntityTextUrl(0, 7, url='https://example.com'), MessageEntityBold(0, 7)]
+    stripped = 'Example'
+
+    text, entities = html.parse(original)
+    assert text == stripped
+    assert entities == original_entities
+
+    text = html.unparse(text, entities)
+    assert text == original
+
+
 def test_offset_at_emoji():
     """
     Tests that an entity starting at a emoji preserves the emoji.
