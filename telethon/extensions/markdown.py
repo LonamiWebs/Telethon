@@ -170,7 +170,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
         delimiter = delimiters.get(type(entity), None)
         if delimiter:
             insert_at.append((s, i, delimiter))
-            insert_at.append((e, len(entities) - i, delimiter))
+            insert_at.append((e, -i, delimiter))
         else:
             url = None
             if isinstance(entity, MessageEntityTextUrl):
@@ -179,7 +179,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
                 url = 'tg://user?id={}'.format(entity.user_id)
             if url:
                 insert_at.append((s, i, '['))
-                insert_at.append((e, len(entities) - i, ']({})'.format(url)))
+                insert_at.append((e, -i, ']({})'.format(url)))
 
     insert_at.sort(key=lambda t: (t[0], t[1]))
     while insert_at:
