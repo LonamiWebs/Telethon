@@ -32,6 +32,14 @@ Installing
   pip3 install telethon
 
 
+Upgrading
+----------
+
+.. code-block:: sh
+
+  pip3 install telethon --upgrade
+
+
 Creating a client
 -----------------
 
