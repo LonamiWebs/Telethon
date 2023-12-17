@@ -78,7 +78,7 @@ class ButtonCallback(Event):
         """
         The :term:`chat` where the button was clicked.
 
-        This will be :data:`None` if the message with the button was sent from a user's inline query, except in channel.
+        This may be :data:`None` if :data:`via_inline` is :data:`True`, as the bot might not be part of the chat.
         """
         if isinstance(self._raw, types.UpdateInlineBotCallbackQuery):
             owner_id = None
