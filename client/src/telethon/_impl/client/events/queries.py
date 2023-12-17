@@ -56,9 +56,8 @@ class ButtonCallback(Event):
         """
         Whether the button was clicked in an inline message.
 
-        If it was, most likely bot is not in chat, and the :meth:`chat` property will return :data:`None`,
-        same for :meth:`get_message` method, however editing the message, using :meth:`message_id` property
-        and :meth:`answer` method will work.
+        If it was, it might indicate that the bot is not in chat.
+        If this is the case, both the :meth:`chat` and :meth:`get_message` will return :data:`None`.
         """
         return isinstance(self._raw, types.UpdateInlineBotCallbackQuery)
 
