@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import struct
+import typing
 from typing import TYPE_CHECKING, Dict, Optional, Self, Union
 
 from ...tl import abcs, functions, types
@@ -49,6 +50,29 @@ class ButtonCallback(Event):
     def data(self) -> bytes:
         assert self._raw.data is not None
         return self._raw.data
+
+    @property
+    def via_inline(self) -> bool:
+        """
+        Whether the button was clicked in an inline message.
+
+        If it was, most likely bot is not in chat, and the :meth:`chat` property will return :data:`None`,
+        same for :meth:`get_message` method, however editing the message, using :meth:`message_id` property
+        and :meth:`answer` method will work.
+        """
+        return isinstance(self._raw, types.UpdateInlineBotCallbackQuery)
+
+    @property
+    def message_id(self) -> typing.Union[int, abcs.InputBotInlineMessageId]:
+        """
+        The ID of the message containing the button that was clicked.
+        
+        If the message is inline, :class:`abcs.InputBotInlineMessageId` will be returned.
+        You can use it in :meth:`~telethon._tl.functions.messages.edit_inline_bot_message` to edit the message.
+
+        Else, usual message ID will be returned.
+        """
+        return self._raw.msg_id
 
     @property
     def chat(self) -> Optional[Chat]:
