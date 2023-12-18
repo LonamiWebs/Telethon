@@ -85,7 +85,6 @@ class ButtonCallback(Event):
         if isinstance(self._raw, types.UpdateInlineBotCallbackQuery):
             # for that type of update, the msg_id and owner_id are present, however bot is not guaranteed
             # to have "access" to the owner_id.
-            owner_id = None
             if isinstance(self._raw.msg_id, types.InputBotInlineMessageId):
                 # telegram used to pack msg_id and peer_id into InputBotInlineMessageId.id
                 # I assume this is for the chats with IDs, fitting into 32-bit integer.
