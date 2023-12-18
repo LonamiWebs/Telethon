@@ -72,7 +72,7 @@ class Group(Chat, metaclass=NoPublicConstructor):
             return None
         else:
             return PackedChat(
-                ty=PackedType.MEGAGROUP,
+                ty=PackedType.GIGAGROUP if getattr(self._raw, "gigagroup", False) else PackedType.MEGAGROUP,
                 id=self._raw.id,
                 access_hash=self._raw.access_hash,
             )

@@ -54,10 +54,14 @@ class Channel(Chat, metaclass=NoPublicConstructor):
         if self._raw.access_hash is None:
             return None
         else:
+            if getattr(self._raw, "megagroup", False):
+                ty = PackedType.MEGAGROUP
+            elif getattr(self._raw, "gigagroup", False):
+                ty = PackedType.GIGAGROUP
+            else:
+                ty = PackedType.BROADCAST
             return PackedChat(
-                ty=PackedType.GIGAGROUP
-                if getattr(self._raw, "gigagroup", False)
-                else PackedType.BROADCAST,
+                ty=ty,
                 id=self._raw.id,
                 access_hash=self._raw.access_hash,
             )
