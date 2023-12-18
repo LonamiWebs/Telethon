@@ -268,7 +268,7 @@ That means you can do this:
 .. code-block:: python
 
     message.user_id
-    await message.get_input_user()
+    await message.get_input_sender()
     message.user
     # ...etc
 
