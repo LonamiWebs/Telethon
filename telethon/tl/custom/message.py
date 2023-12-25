@@ -205,7 +205,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             noforwards: Optional[bool] = None,
             invert_media: Optional[bool] = None,
             reactions: Optional[types.TypeMessageReactions] = None,
-            restriction_reason: Optional[types.TypeRestrictionReason] = None,
+            restriction_reason: Optional[List[types.TypeRestrictionReason]] = None,
             forwards: Optional[int] = None,
             replies: Optional[types.TypeMessageReplies] = None,
 
