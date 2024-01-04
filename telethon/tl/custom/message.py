@@ -163,6 +163,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         action (:tl:`MessageAction`):
             The message action object of the message for :tl:`MessageService`
             instances, which will be `None` for other types of messages.
+
+        saved_peer_id (:tl:`Peer`)
     """
 
     # region Initialization
@@ -208,6 +210,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             restriction_reason: Optional[List[types.TypeRestrictionReason]] = None,
             forwards: Optional[int] = None,
             replies: Optional[types.TypeMessageReplies] = None,
+            saved_peer_id: Optional[types.TypePeer] = None,
 
             # For MessageAction (mandatory)
             action: Optional[types.TypeMessageAction] = None
@@ -244,6 +247,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.reactions = reactions
         self.restriction_reason = restriction_reason
         self.ttl_period = ttl_period
+        self.saved_peer_id = saved_peer_id
         self.action = action
 
         # Convenient storage for custom functions
