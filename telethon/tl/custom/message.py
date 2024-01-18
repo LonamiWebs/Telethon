@@ -280,6 +280,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         SenderGetter.__init__(self, sender_id)
 
         self._forward = None
+        self._reply_to_chat = None
+        self._reply_to_sender = None
 
     def _finish_init(self, client, entities, input_chat):
         """
@@ -332,6 +334,14 @@ class Message(ChatGetter, SenderGetter, TLObject):
         if self.replies and self.replies.channel_id:
             self._linked_chat = entities.get(utils.get_peer_id(
                     types.PeerChannel(self.replies.channel_id)))
+        
+        if self.reply_to:
+            if self.reply_to.reply_to_peer_id:
+                self._reply_to_chat = entities.get(utils.get_peer_id(self.reply_to.reply_to_peer_id))
+            if self.reply_to.reply_from:
+                if self.reply_to.reply_from.from_id:
+                    self._reply_to_sender = entities.get(utils.get_peer_id(self.reply_to.reply_from.from_id))
+
 
 
     # endregion Initialization
@@ -407,6 +417,22 @@ class Message(ChatGetter, SenderGetter, TLObject):
         information if this message is a forwarded message.
         """
         return self._forward
+
+    @property
+    def reply_to_chat(self):
+        """
+        The :tl:`Channel` in which the replied-to message was sent,
+        if this message is a reply in another chat
+        """
+        return self._reply_to_chat
+
+    @property
+    def reply_to_sender(self):
+        """
+        The :tl:`User`, :tl:`Channel`, or whatever other entity that
+        sent the replied-to message, if this message is a reply in another chat.
+        """
+        return self._reply_to_sender
 
     @property
     def buttons(self):
