@@ -58,7 +58,7 @@ def within_surrogate(text, index, *, length=None):
 
     return (
             1 < index < len(text) and  # in bounds
-            '\ud800' <= text[index - 1] <= '\udfff' and  # previous is
+            '\ud800' <= text[index - 1] <= '\udbff' and  # previous is
             '\ud800' <= text[index] <= '\udfff'  # current is
     )
 
