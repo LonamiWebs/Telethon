@@ -335,7 +335,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             self._linked_chat = entities.get(utils.get_peer_id(
                     types.PeerChannel(self.replies.channel_id)))
         
-        if self.reply_to:
+        if isinstance(self.reply_to, types.MessageReplyHeader):
             if self.reply_to.reply_to_peer_id:
                 self._reply_to_chat = entities.get(utils.get_peer_id(self.reply_to.reply_to_peer_id))
             if self.reply_to.reply_from:
