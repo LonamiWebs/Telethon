@@ -13,6 +13,28 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.34)
+=================
+
++------------------------+
+| Scheme layer used: 173 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=167&to=173>`__.
+
+Additions
+~~~~~~~~~~~~
+
+* ``reply_to_chat`` and ``reply_to_sender`` are now in ``Message``.
+  This is useful when you lack access to the chat, but Telegram still included some basic information.
+
+Bug fixes
+~~~~~~~~~
+
+* ``parse_mode`` with a custom instance containing both ``parse`` and ``unparse`` should now work.
+* Parsing and unparsing message entities should now behave better in certain corner-cases.
+
+
 New layer (v1.33)
 =================
 
