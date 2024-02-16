@@ -100,7 +100,7 @@ class TcpMTProxy(ObfuscatedConnection):
     def __init__(self, ip, port, dc_id, *, loggers, proxy=None, local_addr=None):
         # connect to proxy's host and port instead of telegram's ones
         proxy_host, proxy_port = self.address_info(proxy)
-        self._secret = TcpMTProxy.normilize_secret(proxy[2])
+        self._secret = self.normalize_secret(proxy[2])
         super().__init__(
             proxy_host, proxy_port, dc_id, loggers=loggers)
 
