@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import base64
 import os
 
 from .connection import ObfuscatedConnection
@@ -98,7 +99,7 @@ class TcpMTProxy(ObfuscatedConnection):
     def __init__(self, ip, port, dc_id, *, loggers, proxy=None, local_addr=None):
         # connect to proxy's host and port instead of telegram's ones
         proxy_host, proxy_port = self.address_info(proxy)
-        self._secret = bytes.fromhex(proxy[2])
+        self._secret = self.normalize_secret(proxy[2])
         super().__init__(
             proxy_host, proxy_port, dc_id, loggers=loggers)
 
@@ -130,6 +131,18 @@ class TcpMTProxy(ObfuscatedConnection):
             raise ValueError("No proxy info specified for MTProxy connection")
         return proxy_info[:2]
 
+    @staticmethod
+    def normalize_secret(secret):
+        if secret[:2] in ("ee", "dd"):  # Remove extra bytes
+            secret = secret[2:]
+
+        try:
+            secret_bytes = bytes.fromhex(secret)
+        except ValueError:
+            secret = secret + '=' * (-len(secret) % 4)
+            secret_bytes = base64.b64decode(secret.encode())
+
+        return secret_bytes[:16]  # Remove the domain from the secret (until domain support is added)
 
 class ConnectionTcpMTProxyAbridged(TcpMTProxy):
     """
