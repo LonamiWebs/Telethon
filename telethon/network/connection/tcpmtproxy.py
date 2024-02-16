@@ -139,7 +139,7 @@ class TcpMTProxy(ObfuscatedConnection):
 
         try:
             secret_bytes = bytes.fromhex(secret)
-        except:
+        except ValueError:
             try:
                 secret_bytes = base64.b64decode(secret.encode())
             except binascii.Error:
