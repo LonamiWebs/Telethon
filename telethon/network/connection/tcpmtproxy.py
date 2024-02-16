@@ -139,7 +139,7 @@ class TcpMTProxy(ObfuscatedConnection):
         try:
             secret_bytes = bytes.fromhex(secret)
         except ValueError:
-            secret = secret + '=' * (-len(s) % 4)
+            secret = secret + '=' * (-len(secret) % 4)
             secret_bytes = base64.b64decode(secret.encode())
 
         return secret_bytes[:16]  # Remove the domain from the secret (until domain support is added)
