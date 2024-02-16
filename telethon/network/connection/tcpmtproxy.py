@@ -1,4 +1,3 @@
-import binascii
 import asyncio
 import hashlib
 import base64
@@ -140,11 +139,8 @@ class TcpMTProxy(ObfuscatedConnection):
         try:
             secret_bytes = bytes.fromhex(secret)
         except ValueError:
-            try:
-                secret_bytes = base64.b64decode(secret.encode())
-            except binascii.Error:
-                secret = secret + "=="
-                secret_bytes = base64.b64decode(secret.encode())
+            secret = secret + '=' * (-len(s) % 4)
+            secret_bytes = base64.b64decode(secret.encode())
 
         return secret_bytes[:16]  # Remove the domain from the secret (until domain support is added)
 
