@@ -132,7 +132,7 @@ class TcpMTProxy(ObfuscatedConnection):
         return proxy_info[:2]
 
     @staticmethod
-    def normilize_secret(secret):
+    def normalize_secret(secret):
         if secret[:2] in ("ee", "dd"):  # Remove extra bytes
             secret = secret[2:]
 
