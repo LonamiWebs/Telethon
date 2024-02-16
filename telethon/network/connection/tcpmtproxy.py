@@ -146,7 +146,7 @@ class TcpMTProxy(ObfuscatedConnection):
                 secret = secret + "=="
                 secret_bytes = base64.b64decode(secret.encode())
 
-        return secret_bytes[:16] # Remove the domain from the secret (until domain support is added)
+        return secret_bytes[:16]  # Remove the domain from the secret (until domain support is added)
 
 class ConnectionTcpMTProxyAbridged(TcpMTProxy):
     """
