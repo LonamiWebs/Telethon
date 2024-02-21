@@ -170,52 +170,18 @@ class Message(ChatGetter, SenderGetter, TLObject):
     # region Initialization
 
     def __init__(
-            # Common to all
-            self, id: int,
-
-            # Common to Message and MessageService (mandatory)
-            peer_id: types.TypePeer = None,
-            date: Optional[datetime] = None,
-
-            # Common to Message and MessageService (flags)
-            out: Optional[bool] = None,
-            mentioned: Optional[bool] = None,
-            media_unread: Optional[bool] = None,
-            silent: Optional[bool] = None,
-            post: Optional[bool] = None,
-            from_id: Optional[types.TypePeer] = None,
-            reply_to: Optional[types.TypeMessageReplyHeader] = None,
-            ttl_period: Optional[int] = None,
-
-            # For Message (mandatory)
-            message: Optional[str] = None,
-
-            # For Message (flags)
-            fwd_from: Optional[types.TypeMessageFwdHeader] = None,
-            via_bot_id: Optional[int] = None,
-            media: Optional[types.TypeMessageMedia] = None,
-            reply_markup: Optional[types.TypeReplyMarkup] = None,
-            entities: Optional[List[types.TypeMessageEntity]] = None,
-            views: Optional[int] = None,
-            edit_date: Optional[datetime] = None,
-            post_author: Optional[str] = None,
-            grouped_id: Optional[int] = None,
-            from_scheduled: Optional[bool] = None,
-            legacy: Optional[bool] = None,
-            edit_hide: Optional[bool] = None,
-            pinned: Optional[bool] = None,
-            noforwards: Optional[bool] = None,
-            invert_media: Optional[bool] = None,
-            reactions: Optional[types.TypeMessageReactions] = None,
-            restriction_reason: Optional[List[types.TypeRestrictionReason]] = None,
-            forwards: Optional[int] = None,
-            replies: Optional[types.TypeMessageReplies] = None,
-            saved_peer_id: Optional[types.TypePeer] = None,
-
-            # For MessageAction (mandatory)
-            action: Optional[types.TypeMessageAction] = None
+            self,
+            id: int, peer_id: types.TypePeer,
+            # Copied from Message.__init__ signature
+            date: Optional[datetime], message: str, out: Optional[bool]=None, mentioned: Optional[bool]=None, media_unread: Optional[bool]=None, silent: Optional[bool]=None, post: Optional[bool]=None, from_scheduled: Optional[bool]=None, legacy: Optional[bool]=None, edit_hide: Optional[bool]=None, pinned: Optional[bool]=None, noforwards: Optional[bool]=None, invert_media: Optional[bool]=None, from_id: Optional[types.TypePeer]=None, from_boosts_applied: Optional[int]=None, saved_peer_id: Optional[types.TypePeer]=None, fwd_from: Optional[types.TypeMessageFwdHeader]=None, via_bot_id: Optional[int]=None, reply_to: Optional[types.TypeMessageReplyHeader]=None, media: Optional[types.TypeMessageMedia]=None, reply_markup: Optional[types.TypeReplyMarkup]=None, entities: Optional[List[types.TypeMessageEntity]]=None, views: Optional[int]=None, forwards: Optional[int]=None, replies: Optional[types.TypeMessageReplies]=None, edit_date: Optional[datetime]=None, post_author: Optional[str]=None, grouped_id: Optional[int]=None, reactions: Optional[types.TypeMessageReactions]=None, restriction_reason: Optional[List[types.TypeRestrictionReason]]=None, ttl_period: Optional[int]=None,
+            # Copied from MessageService.__init__ signature
+            action: Optional[types.TypeMessageAction]=None
     ):
-        # Common properties to messages, then to service (in the order they're defined in the `.tl`)
+        # Copied from Message.__init__ body
+        self.id = id
+        self.peer_id = peer_id
+        self.date = date
+        self.message = message
         self.out = bool(out)
         self.mentioned = mentioned
         self.media_unread = media_unread
@@ -224,30 +190,28 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.from_scheduled = from_scheduled
         self.legacy = legacy
         self.edit_hide = edit_hide
-        self.id = id
+        self.pinned = pinned
+        self.noforwards = noforwards
+        self.invert_media = invert_media
         self.from_id = from_id
-        self.peer_id = peer_id
+        self.from_boosts_applied = from_boosts_applied
+        self.saved_peer_id = saved_peer_id
         self.fwd_from = fwd_from
         self.via_bot_id = via_bot_id
         self.reply_to = reply_to
-        self.date = date
-        self.message = message
-        self.media =  None if isinstance(media, types.MessageMediaEmpty) else media
+        self.media = None if isinstance(media, types.MessageMediaEmpty) else media
         self.reply_markup = reply_markup
         self.entities = entities
         self.views = views
         self.forwards = forwards
         self.replies = replies
         self.edit_date = edit_date
-        self.pinned = pinned
-        self.noforwards = noforwards
-        self.invert_media = invert_media
         self.post_author = post_author
         self.grouped_id = grouped_id
         self.reactions = reactions
         self.restriction_reason = restriction_reason
         self.ttl_period = ttl_period
-        self.saved_peer_id = saved_peer_id
+        # Copied from MessageService.__init__ body
         self.action = action
 
         # Convenient storage for custom functions
