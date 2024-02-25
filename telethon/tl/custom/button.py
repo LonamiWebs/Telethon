@@ -307,3 +307,21 @@ class Button:
         documentation for more information on using games.
         """
         return types.KeyboardButtonGame(text)
+
+    @staticmethod
+    def webapp(text, url=None):
+        """
+        Creates a new inline webapp button to open the desired webapp on click.
+
+        If no `url` is given, the `text` will be used as said URL instead.
+
+        When the user clicks this button, a one time confirmation box will be shown
+        to the user asking whether they want to connect to the website and lauch web app.
+        """
+        if url:
+            url = url.replace(' ', '%20')
+            if not url.startswith("https://"):
+                url = "https://" + url.lstrip("http://")
+        elif not url:
+            url = "https://" + text.replace(' ', '%20')
+        return types.KeyboardButtonWebView(text, url)
