@@ -187,6 +187,7 @@ async def interactive_login(
                 password = getpass.getpass(": ")
                 try:
                     user = await self.check_password(user_or_token, password)
+                    break
                 except RpcError as e:
                     if e.name.startswith("PASSWORD"):
                         print("Invalid password:", e)
