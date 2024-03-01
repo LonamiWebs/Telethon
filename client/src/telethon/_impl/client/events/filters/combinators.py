@@ -95,12 +95,12 @@ class All(Combinable):
 
         from telethon.events.filters import All, Command, Text
 
-        @bot.on(events.NewMessage, All(Command('/start'), Text(r'\bdata:\w+')))
+        @bot.on(events.NewMessage, All(Command('/start'), Text(r'\\bdata:\\w+')))
         async def handler(event): ...
 
         # equivalent to:
 
-        @bot.on(events.NewMessage, Command('/start') & Text(r'\bdata:\w+'))
+        @bot.on(events.NewMessage, Command('/start') & Text(r'\\bdata:\\w+'))
         async def handler(event): ...
 
     :param filter1: The first filter to check.

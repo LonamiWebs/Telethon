@@ -25,7 +25,7 @@ class AsyncList(abc.ABC, Generic[T]):
 
     .. rubric:: Example
 
-    :meth:`telethon.Client.get_messages` returns an :class:`AsyncList`\ [:class:`Message`].
+    :meth:`telethon.Client.get_messages` returns an :class:`AsyncList`\\ [:class:`Message`].
     This means:
 
     .. code-block:: python

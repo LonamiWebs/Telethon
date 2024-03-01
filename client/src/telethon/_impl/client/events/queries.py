@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class ButtonCallback(Event):
     """
-    Occurs when the user :meth:`~telethon.types.buttons.Callback.click`\ s a :class:`~telethon.types.buttons.Callback` button.
+    Occurs when the user :meth:`~telethon.types.buttons.Callback.click`\\ s a :class:`~telethon.types.buttons.Callback` button.
 
     Only bot accounts can receive this event, because only bots can send :class:`~telethon.types.buttons.Callback` buttons.
     """

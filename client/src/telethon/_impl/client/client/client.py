@@ -172,7 +172,7 @@ class Client:
 
     :param flood_sleep_threshold:
         Maximum amount of time, in seconds, to automatically sleep before retrying a request.
-        This sleeping occurs when ``FLOOD_WAIT`` (and similar) :class:`~telethon.RpcError`\ s are raised by Telegram.
+        This sleeping occurs when ``FLOOD_WAIT`` (and similar) :class:`~telethon.RpcError`\\ s are raised by Telegram.
 
     :param logger:
         Logger for the client.

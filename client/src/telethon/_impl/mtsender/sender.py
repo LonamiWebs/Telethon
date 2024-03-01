@@ -96,7 +96,7 @@ class Connector(Protocol):
     * The ``ip`` address as a :class:`str`. This might be either a IPv4 or IPv6.
     * The ``port`` as a :class:`int`. This will be a number below 2¹⁶, often 443.
 
-    and returns a :class:`tuple`\ [:class:`AsyncReader`, :class:`AsyncWriter`].
+    and returns a :class:`tuple`\\ [:class:`AsyncReader`, :class:`AsyncWriter`].
 
     You can use a custom connector to connect to Telegram through proxies.
     The library will only ever open remote connections through this function.
