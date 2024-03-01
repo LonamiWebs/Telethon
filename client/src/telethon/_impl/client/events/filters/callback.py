@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .combinators import Combinable
 from ..event import Event
+from .combinators import Combinable
 
 
 class Data(Combinable):

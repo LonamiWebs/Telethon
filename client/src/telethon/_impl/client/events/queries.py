@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Optional, Self
 
 from ...tl import abcs, functions, types
-from ..types import Chat, Message
-from .event import Event
-from ..types.chat import peer_id
 from ..client.messages import CherryPickedList
+from ..types import Chat, Message
+from ..types.chat import peer_id
+from .event import Event
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -84,7 +84,11 @@ class ButtonCallback(Event):
             chat = await self._client._resolve_to_packed(pid)
 
         lst = CherryPickedList(self._client, chat, [])
-        lst._ids.append(types.InputMessageCallbackQuery(id=self._raw.msg_id, query_id=self._raw.query_id))
+        lst._ids.append(
+            types.InputMessageCallbackQuery(
+                id=self._raw.msg_id, query_id=self._raw.query_id
+            )
+        )
 
         message = (await lst)[0]
 

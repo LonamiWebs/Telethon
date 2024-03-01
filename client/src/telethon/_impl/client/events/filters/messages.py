@@ -158,9 +158,7 @@ class Media(Combinable):
 
     __slots__ = "_types"
 
-    def __init__(
-        self, *types: Literal["photo", "audio", "video"]
-    ) -> None:
+    def __init__(self, *types: Literal["photo", "audio", "video"]) -> None:
         self._types = types or None
 
     @property

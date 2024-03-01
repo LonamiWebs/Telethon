@@ -117,7 +117,9 @@ async def get_chats(self: Client, chats: Sequence[ChatLike]) -> List[Chat]:
     ]
 
 
-async def resolve_to_packed(client: Client, chat: Union[ChatLike, abcs.InputPeer, abcs.Peer]) -> PackedChat:
+async def resolve_to_packed(
+    client: Client, chat: Union[ChatLike, abcs.InputPeer, abcs.Peer]
+) -> PackedChat:
     if isinstance(chat, PackedChat):
         return chat
 

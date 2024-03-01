@@ -629,7 +629,7 @@ class Client:
             markdown=markdown,
             html=html,
             link_preview=link_preview,
-            buttons=buttons
+            buttons=buttons,
         )
 
     async def forward_messages(
