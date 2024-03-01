@@ -260,4 +260,9 @@ async def check_password(
 async def sign_out(self: Client) -> None:
     await self(functions.auth.log_out())
 
-    await self._storage.delete()
+    self._chat_hashes.clear()
+    self._message_box.reset()
+
+    self._session.user = None
+    self._session.state = None
+    await self._storage.save(self._session)

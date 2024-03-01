@@ -14,7 +14,7 @@ class Storage(abc.ABC):
         """
         Load the :class:`Session` instance, if any.
 
-        This method is called by the library prior to `connect`.
+        This method is called by the library prior to ``connect``.
 
         :return: The previously-saved session.
         """
@@ -24,18 +24,21 @@ class Storage(abc.ABC):
         """
         Save the :class:`Session` instance to persistent storage.
 
-        This method is called by the library post `disconnect`.
+        This method is called by the library after significant changes to the session,
+        such as login, logout, or to persist the update state prior to disconnection.
 
         :param session:
             The session information that should be persisted.
         """
 
     @abc.abstractmethod
-    async def delete(self) -> None:
+    async def close(self) -> None:
         """
-        Delete the saved `Session`.
+        Close the :class:`Session` instance, if it was still open.
 
-        This method is called by the library post `log_out`.
+        This method is called by the library post ``disconnect``,
+        even if the call to :meth:`save` failed.
 
-        Note that both :meth:`load` and :meth:`save` may still be called after.
+        Note that :meth:`load` may still be called after,
+        in which case the session should be reopened.
         """

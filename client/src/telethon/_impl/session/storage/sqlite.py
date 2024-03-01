@@ -52,14 +52,11 @@ class SqliteSession(Storage):
         conn = self._current_conn()
         with conn:
             self._save_v10(conn.cursor(), session)
-        conn.close()
-        self._conn = None
 
-    async def delete(self) -> None:
+    async def close(self) -> None:
         if self._conn:
             self._conn.close()
             self._conn = None
-        self._path.unlink()
 
     def _current_conn(self) -> sqlite3.Connection:
         if self._conn is None:

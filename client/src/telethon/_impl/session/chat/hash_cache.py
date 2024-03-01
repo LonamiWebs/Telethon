@@ -33,6 +33,11 @@ class ChatHashCache:
         else:
             return None
 
+    def clear(self) -> None:
+        self._hash_map.clear()
+        self._self_id = None
+        self._self_bot = False
+
     def _has(self, id: int) -> bool:
         return id in self._hash_map
 

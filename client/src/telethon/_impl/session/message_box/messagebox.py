@@ -103,6 +103,14 @@ class MessageBox:
         self.getting_diff_for.clear()
         self.next_deadline = ENTRY_ACCOUNT
 
+    def reset(self) -> None:
+        self.map.clear()
+        self.date = epoch()
+        self.seq = NO_SEQ
+        self.possible_gaps.clear()
+        self.getting_diff_for.clear()
+        self.next_deadline = None
+
     def session_state(self) -> UpdateState:
         return UpdateState(
             pts=self.map[ENTRY_ACCOUNT].pts if ENTRY_ACCOUNT in self.map else NO_PTS,

@@ -230,8 +230,13 @@ async def disconnect(self: Client) -> None:
             "unhandled exception during disconnect; this is a bug"
         )
 
-    self._session.state = self._message_box.session_state()
-    await self._storage.save(self._session)
+    try:
+        if self._session.user:
+            # Only save if we haven't logged out (prevents double-save)
+            self._session.state = self._message_box.session_state()
+            await self._storage.save(self._session)
+    finally:
+        await self._storage.close()
 
 
 async def invoke_request(

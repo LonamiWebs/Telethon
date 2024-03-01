@@ -24,5 +24,5 @@ class MemorySession(Storage):
     async def save(self, session: Session) -> None:
         self.session = session
 
-    async def delete(self) -> None:
-        self.session = None
+    async def close(self) -> None:
+        pass
