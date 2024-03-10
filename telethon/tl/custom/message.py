@@ -212,6 +212,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.reactions = reactions
         self.restriction_reason = restriction_reason
         self.ttl_period = ttl_period
+        self.quick_reply_shortcut_id = quick_reply_shortcut_id
         # Copied from MessageService.__init__ body
         self.action = action
 
