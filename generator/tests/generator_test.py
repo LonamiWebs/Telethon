@@ -32,7 +32,7 @@ def test_generic_functions_use_bytes_parameters() -> None:
     )
     result = gen_py_code(functiondefs=definitions)
     assert "invoke_with_layer" in result
-    assert "query: bytes" in result
+    assert "query: _bytes" in result
     assert "buffer += query" in result
 
 

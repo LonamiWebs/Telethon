@@ -25,8 +25,8 @@ The following types are chat-like:
 
 * The ``'me'`` literal string. This represents the account that is logged in ("yourself").
 * An ``'@username'``. The at-sign ``@`` is optional. Note that links are not supported.
-* An ``'+1 23'`` phone number string. It must be an ``str`` and start with the plus-sign ``+`` character.
-* An ``123`` integer identifier. It must be an ``int`` and cannot be negative.
+* An ``'+1 23'`` phone number string. It must be an :class:`str` and start with the plus-sign ``+`` character.
+* An ``123`` integer identifier. It must be an :class:`int` and cannot be negative.
 * An existing :class:`~types.User`, :class:`~types.Group` or :class:`~types.Channel`.
 * A :class:`~types.PackedChat`.
 
@@ -83,7 +83,7 @@ If you got an Bot API-style ID from somewhere else, you will need to explicitly 
     from telethon.types import PackedChat, PackedType
     chat = PackedChat(PackedType.BROADCAST, 1234, None)
     # ...you need to explicitly create a PackedChat with id=1234 and set the corresponding type (a channel).
-    # The access hash (see below) will be ``None``, which may or may not work.
+    # The access hash (see below) will be None, which may or may not work.
 
 
 Encountering chats

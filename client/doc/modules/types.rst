@@ -112,6 +112,12 @@ Private definitions
 
 .. autoclass:: OutFileLike
 
+.. currentmodule:: telethon._impl.mtproto.mtp.types
+
+.. class:: MsgId
+
+    New-type wrapper around :class:`int` used as a message identifier.
+
 .. currentmodule:: telethon._impl.mtsender.sender
 
 .. autoclass:: AsyncReader

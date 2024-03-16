@@ -497,7 +497,7 @@ class Message(metaclass=NoPublicConstructor):
         else:
             return False
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return not isinstance(self._raw, types.MessageEmpty)
 
 

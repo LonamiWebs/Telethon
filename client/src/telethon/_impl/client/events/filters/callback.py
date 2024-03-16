@@ -20,4 +20,4 @@ class Data(Combinable):
 
     def __call__(self, event: Event) -> bool:
         data = getattr(event, "data", None)
-        return self._data == data if data is not None else False
+        return self._data == data if isinstance(data, bytes) else False

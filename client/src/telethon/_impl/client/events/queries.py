@@ -79,9 +79,7 @@ class ButtonCallback(Event):
         """
 
         pid = peer_id(self._raw.peer)
-        chat = self._chat_map.get(pid)
-        if not chat:
-            chat = await self._client._resolve_to_packed(pid)
+        chat = self._chat_map.get(pid) or await self._client._resolve_to_packed(pid)
 
         lst = CherryPickedList(self._client, chat, [])
         lst._ids.append(
