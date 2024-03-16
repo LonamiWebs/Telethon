@@ -15,7 +15,8 @@ class ParsedTl:
 
 
 def load_tl_file(path: Union[str, Path]) -> ParsedTl:
-    typedefs, functiondefs = [], []
+    typedefs: List[TypeDef] = []
+    functiondefs: List[FunctionDef] = []
     with open(path, "r", encoding="utf-8") as fd:
         contents = fd.read()
 
@@ -31,10 +32,8 @@ def load_tl_file(path: Union[str, Path]) -> ParsedTl:
                 raise
         elif isinstance(definition, TypeDef):
             typedefs.append(definition)
-        elif isinstance(definition, FunctionDef):
-            functiondefs.append(definition)
         else:
-            raise TypeError(f"unexpected type: {type(definition)}")
+            functiondefs.append(definition)
 
     return ParsedTl(
         layer=layer, typedefs=list(typedefs), functiondefs=list(functiondefs)

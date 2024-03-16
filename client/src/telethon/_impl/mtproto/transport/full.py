@@ -35,7 +35,7 @@ class Full(Transport):
         write(struct.pack("<I", crc32(tmp)))
         self._send_seq += 1
 
-    def unpack(self, input: bytes, output: bytearray) -> int:
+    def unpack(self, input: bytes | bytearray | memoryview, output: bytearray) -> int:
         if len(input) < 4:
             raise MissingBytes(expected=4, got=len(input))
 

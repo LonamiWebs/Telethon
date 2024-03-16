@@ -46,14 +46,14 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
 
     ignored_types = {"true", "boolTrue", "boolFalse"}  # also "compiler built-ins"
 
-    abc_namespaces = set()
-    type_namespaces = set()
-    function_namespaces = set()
+    abc_namespaces: Set[str] = set()
+    type_namespaces: Set[str] = set()
+    function_namespaces: Set[str] = set()
 
-    abc_class_names = set()
-    type_class_names = set()
-    function_def_names = set()
-    generated_type_names = set()
+    abc_class_names: Set[str] = set()
+    type_class_names: Set[str] = set()
+    function_def_names: Set[str] = set()
+    generated_type_names: Set[str] = set()
 
     for typedef in tl.typedefs:
         if typedef.ty.full_name not in generated_types:
@@ -67,6 +67,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
                 abc_path = Path("abcs/_nons.py")
 
             if abc_path not in fs:
+                fs.write(abc_path, "# pyright: reportUnusedImport=false\n")
                 fs.write(abc_path, "from abc import ABCMeta\n")
                 fs.write(abc_path, "from ..core import Serializable\n")
 
@@ -93,11 +94,14 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer = fs.open(type_path)
 
         if type_path not in fs:
+            writer.write(
+                "# pyright: reportUnusedImport=false, reportConstantRedefinition=false"
+            )
             writer.write("import struct")
-            writer.write("from typing import List, Optional, Self, Sequence")
+            writer.write("from typing import Optional, Self, Sequence")
             writer.write("from .. import abcs")
             writer.write("from ..core import Reader, Serializable, serialize_bytes_to")
-            writer.write("_bytes = bytes")
+            writer.write("_bytes = bytes | bytearray | memoryview")
 
         ns = f"{typedef.namespace[0]}." if typedef.namespace else ""
         generated_type_names.add(f"{ns}{to_class_name(typedef.name)}")
@@ -113,14 +117,13 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
 
         #   def constructor_id()
         writer.write("  @classmethod")
-        writer.write("  def constructor_id(_) -> int:")
+        writer.write("  def constructor_id(cls) -> int:")
         writer.write(f"    return {hex(typedef.id)}")
 
         #   def __init__()
         if property_params:
             params = "".join(
-                f", {p.name}: {param_type_fmt(p.ty, immutable=False)}"
-                for p in property_params
+                f", {p.name}: {param_type_fmt(p.ty)}" for p in property_params
             )
             writer.write(f"  def __init__(_s, *{params}) -> None:")
             for p in property_params:
@@ -159,22 +162,18 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer = fs.open(function_path)
 
         if function_path not in fs:
+            writer.write("# pyright: reportUnusedImport=false")
             writer.write("import struct")
-            writer.write("from typing import List, Optional, Self, Sequence")
+            writer.write("from typing import Optional, Self, Sequence")
             writer.write("from .. import abcs")
             writer.write("from ..core import Request, serialize_bytes_to")
-            writer.write("_bytes = bytes")
+            writer.write("_bytes = bytes | bytearray | memoryview")
 
         #   def name(params, ...)
         required_params = [p for p in functiondef.params if not is_computed(p.ty)]
-        params = "".join(
-            f", {p.name}: {param_type_fmt(p.ty, immutable=True)}"
-            for p in required_params
-        )
+        params = "".join(f", {p.name}: {param_type_fmt(p.ty)}" for p in required_params)
         star = "*" if params else ""
-        return_ty = param_type_fmt(
-            NormalParameter(ty=functiondef.ty, flag=None), immutable=False
-        )
+        return_ty = param_type_fmt(NormalParameter(ty=functiondef.ty, flag=None))
         writer.write(
             f"def {to_method_name(functiondef.name)}({star}{params}) -> Request[{return_ty}]:"
         )
@@ -189,6 +188,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     )
 
     writer = fs.open(Path("layer.py"))
+    writer.write("# pyright: reportUnusedImport=false")
     writer.write("from . import abcs, types")
     writer.write(
         "from .core import Serializable, Reader, deserialize_bool, deserialize_i32_list, deserialize_i64_list, deserialize_identity, single_deserializer, list_deserializer"

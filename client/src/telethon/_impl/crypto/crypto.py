@@ -1,7 +1,7 @@
 import os
-from collections import namedtuple
 from enum import IntEnum
 from hashlib import sha1, sha256
+from typing import NamedTuple
 
 from .aes import ige_decrypt, ige_encrypt
 from .auth_key import AuthKey
@@ -13,15 +13,19 @@ class Side(IntEnum):
     SERVER = 8
 
 
-CalcKey = namedtuple("CalcKey", ("key", "iv"))
+class CalcKey(NamedTuple):
+    key: bytes
+    iv: bytes
 
 
 # https://core.telegram.org/mtproto/description#defining-aes-key-and-initialization-vector
-def calc_key(auth_key: AuthKey, msg_key: bytes, side: Side) -> CalcKey:
+def calc_key(
+    auth_key: AuthKey, msg_key: bytes | bytearray | memoryview, side: Side
+) -> CalcKey:
     x = int(side)
 
     # sha256_a = SHA256 (msg_key + substr (auth_key, x, 36))
-    sha256_a = sha256(msg_key + auth_key.data[x : x + 36]).digest()
+    sha256_a = sha256(bytes(msg_key) + auth_key.data[x : x + 36]).digest()
 
     # sha256_b = SHA256 (substr (auth_key, 40+x, 36) + msg_key)
     sha256_b = sha256(auth_key.data[x + 40 : x + 76] + msg_key).digest()
@@ -66,7 +70,9 @@ def encrypt_data_v2(plaintext: bytes, auth_key: AuthKey) -> bytes:
     return _do_encrypt_data_v2(plaintext, auth_key, random_padding)
 
 
-def decrypt_data_v2(ciphertext: bytes, auth_key: AuthKey) -> bytes:
+def decrypt_data_v2(
+    ciphertext: bytes | bytearray | memoryview, auth_key: AuthKey
+) -> bytes:
     side = Side.SERVER
     x = int(side)
 

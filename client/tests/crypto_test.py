@@ -65,7 +65,7 @@ def test_key_from_nonce() -> None:
     server_nonce = int.from_bytes(bytes(range(16)))
     new_nonce = int.from_bytes(bytes(range(32)))
 
-    (key, iv) = generate_key_data_from_nonce(server_nonce, new_nonce)
+    key, iv = generate_key_data_from_nonce(server_nonce, new_nonce)
     assert (
         key
         == b'\x07X\xf1S;a]$\xf6\xe8\xa9Jo\xcb\xee\nU\xea\xab"\x17\xd7)\\\xa9!=\x1a-}\x16\xa6'

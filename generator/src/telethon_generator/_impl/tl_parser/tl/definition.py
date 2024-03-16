@@ -59,8 +59,8 @@ class Definition:
                 raise ValueError("invalid id")
 
         type_defs: List[str] = []
-        flag_defs = []
-        params = []
+        flag_defs: List[str] = []
+        params: List[Parameter] = []
 
         for param_str in middle.split():
             try:

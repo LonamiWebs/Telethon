@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from setuptools import build_meta as _orig
-from setuptools.build_meta import *  # noqa: F403
+from setuptools.build_meta import *  # noqa: F403 # pyright: ignore [reportWildcardImportFromLibrary]
 
 
 def gen_types_if_needed() -> None:

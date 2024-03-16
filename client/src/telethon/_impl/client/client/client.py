@@ -2059,5 +2059,4 @@ class Client:
         exc: Optional[BaseException],
         tb: Optional[TracebackType],
     ) -> None:
-        exc_type, exc, tb
         await disconnect(self)

@@ -1,7 +1,19 @@
 from collections import deque
 from html import escape
 from html.parser import HTMLParser
-from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from ...tl.abcs import MessageEntity
 from ...tl.types import (
@@ -30,13 +42,11 @@ class HTMLToTelegramParser(HTMLParser):
         self._open_tags: Deque[str] = deque()
         self._open_tags_meta: Deque[Optional[str]] = deque()
 
-    def handle_starttag(
-        self, tag: str, attrs_seq: List[Tuple[str, Optional[str]]]
-    ) -> None:
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         self._open_tags.appendleft(tag)
         self._open_tags_meta.appendleft(None)
 
-        attrs = dict(attrs_seq)
+        attributes = dict(attrs)
         EntityType: Optional[Type[MessageEntity]] = None
         args = {}
         if tag == "strong" or tag == "b":
@@ -61,7 +71,7 @@ class HTMLToTelegramParser(HTMLParser):
                 # inside <pre> tags
                 pre = self._building_entities["pre"]
                 assert isinstance(pre, MessageEntityPre)
-                if cls := attrs.get("class"):
+                if cls := attributes.get("class"):
                     pre.language = cls[len("language-") :]
             except KeyError:
                 EntityType = MessageEntityCode
@@ -69,7 +79,7 @@ class HTMLToTelegramParser(HTMLParser):
             EntityType = MessageEntityPre
             args["language"] = ""
         elif tag == "a":
-            url = attrs.get("href")
+            url = attributes.get("href")
             if not url:
                 return
             if url.startswith("mailto:"):
@@ -94,18 +104,18 @@ class HTMLToTelegramParser(HTMLParser):
                 **args,
             )
 
-    def handle_data(self, text: str) -> None:
+    def handle_data(self, data: str) -> None:
         previous_tag = self._open_tags[0] if len(self._open_tags) > 0 else ""
         if previous_tag == "a":
             url = self._open_tags_meta[0]
             if url:
-                text = url
+                data = url
 
         for entity in self._building_entities.values():
             assert hasattr(entity, "length")
-            entity.length += len(text)
+            setattr(entity, "length", getattr(entity, "length", 0) + len(data))
 
-        self.text += text
+        self.text += data
 
     def handle_endtag(self, tag: str) -> None:
         try:
@@ -114,7 +124,7 @@ class HTMLToTelegramParser(HTMLParser):
         except IndexError:
             pass
         entity = self._building_entities.pop(tag, None)
-        if entity and hasattr(entity, "length") and entity.length:
+        if entity and getattr(entity, "length", None):
             self.entities.append(entity)
 
 
@@ -135,7 +145,9 @@ def parse(html: str) -> Tuple[str, List[MessageEntity]]:
     return del_surrogate(text), parser.entities
 
 
-ENTITY_TO_FORMATTER = {
+ENTITY_TO_FORMATTER: Dict[
+    Type[MessageEntity], Union[Tuple[str, str], Callable[[Any, str], Tuple[str, str]]]
+] = {
     MessageEntityBold: ("<strong>", "</strong>"),
     MessageEntityItalic: ("<em>", "</em>"),
     MessageEntityCode: ("<code>", "</code>"),
@@ -173,18 +185,20 @@ def unparse(text: str, entities: Iterable[MessageEntity]) -> str:
 
     text = add_surrogate(text)
     insert_at: List[Tuple[int, str]] = []
-    for entity in entities:
-        assert hasattr(entity, "offset") and hasattr(entity, "length")
-        s = entity.offset
-        e = entity.offset + entity.length
-        delimiter = ENTITY_TO_FORMATTER.get(type(entity), None)
+    for e in entities:
+        offset, length = getattr(e, "offset", None), getattr(e, "length", None)
+        assert isinstance(offset, int) and isinstance(length, int)
+
+        h = offset
+        t = offset + length
+        delimiter = ENTITY_TO_FORMATTER.get(type(e), None)
         if delimiter:
             if callable(delimiter):
-                delim = delimiter(entity, text[s:e])
+                delim = delimiter(e, text[h:t])
             else:
                 delim = delimiter
-            insert_at.append((s, delim[0]))
-            insert_at.append((e, delim[1]))
+            insert_at.append((h, delim[0]))
+            insert_at.append((t, delim[1]))
 
     insert_at.sort(key=lambda t: t[0])
     next_escape_bound = len(text)

@@ -7,7 +7,7 @@ from telethon._impl.mtproto import Intermediate
 class Output(bytearray):
     __slots__ = ()
 
-    def __call__(self, data: bytes) -> None:
+    def __call__(self, data: bytes | bytearray | memoryview) -> None:
         self += data
 
 

@@ -79,7 +79,7 @@ def test_recursive_vec() -> None:
         """
     )
     result = gen_py_code(typedefs=definitions)
-    assert "value: List[abcs.JsonObjectValue]" in result
+    assert "value: Sequence[abcs.JsonObjectValue]" in result
 
 
 def test_object_blob_special_case() -> None:

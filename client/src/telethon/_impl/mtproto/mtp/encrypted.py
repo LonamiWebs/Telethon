@@ -260,7 +260,7 @@ class Encrypted(Mtp):
             self._store_own_updates(result)
             self._deserialization.append(RpcResult(msg_id, result))
 
-    def _store_own_updates(self, body: bytes) -> None:
+    def _store_own_updates(self, body: bytes | bytearray | memoryview) -> None:
         constructor_id = struct.unpack_from("I", body)[0]
         if constructor_id in UPDATE_IDS:
             self._deserialization.append(Update(body))
@@ -332,7 +332,7 @@ class Encrypted(Mtp):
             )
 
         self._start_salt_time = (salts.now, self._adjusted_now())
-        self._salts = salts.salts
+        self._salts = list(salts.salts)
         self._salts.sort(key=lambda salt: -salt.valid_since)
 
     def _handle_future_salt(self, message: Message) -> None:
@@ -439,7 +439,9 @@ class Encrypted(Mtp):
         msg_id, buffer = result
         return msg_id, encrypt_data_v2(buffer, self._auth_key)
 
-    def deserialize(self, payload: bytes) -> List[Deserialization]:
+    def deserialize(
+        self, payload: bytes | bytearray | memoryview
+    ) -> List[Deserialization]:
         check_message_buffer(payload)
 
         plaintext = decrypt_data_v2(payload, self._auth_key)

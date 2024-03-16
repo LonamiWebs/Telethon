@@ -4,7 +4,7 @@ from .memory import MemorySession
 from .storage import Storage
 
 try:
-    from .sqlite import SqliteSession
+    from .sqlite import SqliteSession  # pyright: ignore [reportAssignmentType]
 except ImportError as e:
     import_err = e
 

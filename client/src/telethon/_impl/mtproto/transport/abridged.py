@@ -36,7 +36,7 @@ class Abridged(Transport):
             write(struct.pack("<i", 0x7F | (length << 8)))
         write(input)
 
-    def unpack(self, input: bytes, output: bytearray) -> int:
+    def unpack(self, input: bytes | bytearray | memoryview, output: bytearray) -> int:
         if not input:
             raise MissingBytes(expected=1, got=0)
 

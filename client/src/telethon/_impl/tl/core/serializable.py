@@ -9,10 +9,10 @@ class HasSlots(Protocol):
     __slots__: Tuple[str, ...]
 
 
-def obj_repr(obj: HasSlots) -> str:
-    fields = ((attr, getattr(obj, attr)) for attr in obj.__slots__)
+def obj_repr(self: HasSlots) -> str:
+    fields = ((attr, getattr(self, attr)) for attr in self.__slots__)
     params = ", ".join(f"{name}={field!r}" for name, field in fields)
-    return f"{obj.__class__.__name__}({params})"
+    return f"{self.__class__.__name__}({params})"
 
 
 class Serializable(abc.ABC):
@@ -36,7 +36,7 @@ class Serializable(abc.ABC):
         pass
 
     @classmethod
-    def from_bytes(cls, blob: bytes) -> Self:
+    def from_bytes(cls, blob: bytes | bytearray | memoryview) -> Self:
         return Reader(blob).read_serializable(cls)
 
     def __bytes__(self) -> bytes:
@@ -54,7 +54,7 @@ class Serializable(abc.ABC):
         )
 
 
-def serialize_bytes_to(buffer: bytearray, data: bytes) -> None:
+def serialize_bytes_to(buffer: bytearray, data: bytes | bytearray | memoryview) -> None:
     length = len(data)
     if length < 0xFE:
         buffer += struct.pack("<B", length)

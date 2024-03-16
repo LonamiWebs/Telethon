@@ -25,6 +25,7 @@ def serialize_builtin(value: Any) -> bytes:
 
 
 def overhead(obj: Obj) -> None:
+    x: Any
     for v in obj.__dict__.values():
         for x in v if isinstance(v, list) else [v]:
             if isinstance(x, Obj):
@@ -34,6 +35,7 @@ def overhead(obj: Obj) -> None:
 
 
 def strategy_concat(obj: Obj) -> bytes:
+    x: Any
     res = b""
     for v in obj.__dict__.values():
         for x in v if isinstance(v, list) else [v]:
@@ -45,6 +47,7 @@ def strategy_concat(obj: Obj) -> bytes:
 
 
 def strategy_append(obj: Obj) -> bytes:
+    x: Any
     res = bytearray()
     for v in obj.__dict__.values():
         for x in v if isinstance(v, list) else [v]:
@@ -57,6 +60,7 @@ def strategy_append(obj: Obj) -> bytes:
 
 def strategy_append_reuse(obj: Obj) -> bytes:
     def do_append(o: Obj, res: bytearray) -> None:
+        x: Any
         for v in o.__dict__.values():
             for x in v if isinstance(v, list) else [v]:
                 if isinstance(x, Obj):
@@ -70,15 +74,18 @@ def strategy_append_reuse(obj: Obj) -> bytes:
 
 
 def strategy_join(obj: Obj) -> bytes:
-    return b"".join(
-        strategy_join(x) if isinstance(x, Obj) else serialize_builtin(x)
-        for v in obj.__dict__.values()
-        for x in (v if isinstance(v, list) else [v])
-    )
+    def iterator() -> Iterator[bytes]:
+        x: Any
+        for v in obj.__dict__.values():
+            for x in v if isinstance(v, list) else [v]:
+                yield strategy_join(x) if isinstance(x, Obj) else serialize_builtin(x)
+
+    return b"".join(iterator())
 
 
 def strategy_join_flat(obj: Obj) -> bytes:
     def flatten(o: Obj) -> Iterator[bytes]:
+        x: Any
         for v in o.__dict__.values():
             for x in v if isinstance(v, list) else [v]:
                 if isinstance(x, Obj):
@@ -91,6 +98,7 @@ def strategy_join_flat(obj: Obj) -> bytes:
 
 def strategy_write(obj: Obj) -> bytes:
     def do_write(o: Obj, buffer: io.BytesIO) -> None:
+        x: Any
         for v in o.__dict__.values():
             for x in v if isinstance(v, list) else [v]:
                 if isinstance(x, Obj):

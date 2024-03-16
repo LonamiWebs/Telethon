@@ -8,6 +8,7 @@ from typing import (
     Callable,
     List,
     Optional,
+    Sequence,
     Type,
     TypeVar,
 )
@@ -103,8 +104,8 @@ def process_socket_updates(client: Client, all_updates: List[abcs.Updates]) -> N
 def extend_update_queue(
     client: Client,
     updates: List[abcs.Update],
-    users: List[abcs.User],
-    chats: List[abcs.Chat],
+    users: Sequence[abcs.User],
+    chats: Sequence[abcs.Chat],
 ) -> None:
     chat_map = build_chat_map(client, users, chats)
 

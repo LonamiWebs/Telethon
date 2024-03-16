@@ -31,7 +31,9 @@ class Plain(Mtp):
         self._buffer.clear()
         return MsgId(0), result
 
-    def deserialize(self, payload: bytes) -> List[Deserialization]:
+    def deserialize(
+        self, payload: bytes | bytearray | memoryview
+    ) -> List[Deserialization]:
         check_message_buffer(payload)
 
         auth_key_id, msg_id, length = struct.unpack_from("<qqi", payload)

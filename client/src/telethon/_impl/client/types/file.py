@@ -5,7 +5,17 @@ import urllib.parse
 from inspect import isawaitable
 from io import BufferedWriter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Coroutine, List, Optional, Protocol, Self, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Coroutine,
+    List,
+    Optional,
+    Protocol,
+    Self,
+    Sequence,
+    Union,
+)
 
 from ...tl import abcs, types
 from .meta import NoPublicConstructor
@@ -43,7 +53,7 @@ stripped_size_header = bytes.fromhex(
 stripped_size_footer = bytes.fromhex("FFD9")
 
 
-def expand_stripped_size(data: bytes) -> bytes:
+def expand_stripped_size(data: bytes | bytearray | memoryview) -> bytes:
     header = bytearray(stripped_size_header)
     header[164] = data[1]
     header[166] = data[2]
@@ -87,13 +97,14 @@ class InFileLike(Protocol):
     It's only used in function parameters.
     """
 
-    def read(self, n: int) -> Union[bytes, Coroutine[Any, Any, bytes]]:
+    def read(self, n: int, /) -> Union[bytes, Coroutine[Any, Any, bytes]]:
         """
         Read from the file or buffer.
 
         :param n:
             Maximum amount of bytes that should be returned.
         """
+        raise NotImplementedError
 
 
 class OutFileLike(Protocol):
@@ -115,18 +126,21 @@ class OutFileLike(Protocol):
 
 
 class OutWrapper:
-    __slots__ = ("_fd", "_owned")
+    __slots__ = ("_fd", "_owned_fd")
+
+    _fd: Union[OutFileLike, BufferedWriter]
+    _owned_fd: Optional[BufferedWriter]
 
     def __init__(self, file: Union[str, Path, OutFileLike]):
         if isinstance(file, str):
             file = Path(file)
 
         if isinstance(file, Path):
-            self._fd: Union[OutFileLike, BufferedWriter] = file.open("wb")
-            self._owned = True
+            self._fd = file.open("wb")
+            self._owned_fd = self._fd
         else:
             self._fd = file
-            self._owned = False
+            self._owned_fd = None
 
     async def write(self, chunk: bytes) -> None:
         ret = self._fd.write(chunk)
@@ -134,9 +148,9 @@ class OutWrapper:
             await ret
 
     def close(self) -> None:
-        if self._owned:
-            assert hasattr(self._fd, "close")
-            self._fd.close()
+        if self._owned_fd is not None:
+            assert hasattr(self._owned_fd, "close")
+            self._owned_fd.close()
 
 
 class File(metaclass=NoPublicConstructor):
@@ -150,7 +164,7 @@ class File(metaclass=NoPublicConstructor):
     def __init__(
         self,
         *,
-        attributes: List[abcs.DocumentAttribute],
+        attributes: Sequence[abcs.DocumentAttribute],
         size: int,
         name: str,
         mime: str,
@@ -158,7 +172,7 @@ class File(metaclass=NoPublicConstructor):
         muted: bool,
         input_media: abcs.InputMedia,
         thumb: Optional[abcs.PhotoSize],
-        thumbs: Optional[List[abcs.PhotoSize]],
+        thumbs: Optional[Sequence[abcs.PhotoSize]],
         raw: Optional[Union[abcs.MessageMedia, abcs.Photo, abcs.Document]],
         client: Optional[Client],
     ):
@@ -405,9 +419,9 @@ class File(metaclass=NoPublicConstructor):
                 id=self._input_media.id.id,
                 access_hash=self._input_media.id.access_hash,
                 file_reference=self._input_media.id.file_reference,
-                thumb_size=self._thumb.type
-                if isinstance(self._thumb, thumb_types)
-                else "",
+                thumb_size=(
+                    self._thumb.type if isinstance(self._thumb, thumb_types) else ""
+                ),
             )
         elif isinstance(self._input_media, types.InputMediaPhoto):
             assert isinstance(self._input_media.id, types.InputPhoto)

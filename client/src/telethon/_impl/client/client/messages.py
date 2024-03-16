@@ -39,11 +39,13 @@ async def send_message(
             noforwards=not text.can_forward,
             update_stickersets_order=False,
             peer=peer,
-            reply_to=types.InputReplyToMessage(
-                reply_to_msg_id=text.replied_message_id, top_msg_id=None
-            )
-            if text.replied_message_id
-            else None,
+            reply_to=(
+                types.InputReplyToMessage(
+                    reply_to_msg_id=text.replied_message_id, top_msg_id=None
+                )
+                if text.replied_message_id
+                else None
+            ),
             message=message,
             random_id=random_id,
             reply_markup=getattr(text._raw, "reply_markup", None),
@@ -63,11 +65,11 @@ async def send_message(
             noforwards=False,
             update_stickersets_order=False,
             peer=peer,
-            reply_to=types.InputReplyToMessage(
-                reply_to_msg_id=reply_to, top_msg_id=None
-            )
-            if reply_to
-            else None,
+            reply_to=(
+                types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
+                if reply_to
+                else None
+            ),
             message=message,
             random_id=random_id,
             reply_markup=btns.build_keyboard(buttons),
@@ -83,19 +85,23 @@ async def send_message(
             {},
             out=result.out,
             id=result.id,
-            from_id=types.PeerUser(user_id=self._session.user.id)
-            if self._session.user
-            else None,
+            from_id=(
+                types.PeerUser(user_id=self._session.user.id)
+                if self._session.user
+                else None
+            ),
             peer_id=packed._to_peer(),
-            reply_to=types.MessageReplyHeader(
-                reply_to_scheduled=False,
-                forum_topic=False,
-                reply_to_msg_id=reply_to,
-                reply_to_peer_id=None,
-                reply_to_top_id=None,
-            )
-            if reply_to
-            else None,
+            reply_to=(
+                types.MessageReplyHeader(
+                    reply_to_scheduled=False,
+                    forum_topic=False,
+                    reply_to_msg_id=reply_to,
+                    reply_to_peer_id=None,
+                    reply_to_top_id=None,
+                )
+                if reply_to
+                else None
+            ),
             date=result.date,
             message=message,
             media=result.media,
@@ -593,8 +599,8 @@ def build_message_map(
     else:
         return MessageMap(client, peer, {}, {})
 
-    random_id_to_id = {}
-    id_to_message = {}
+    random_id_to_id: Dict[int, int] = {}
+    id_to_message: Dict[int, Message] = {}
     for update in updates:
         if isinstance(update, types.UpdateMessageId):
             random_id_to_id[update.random_id] = update.id

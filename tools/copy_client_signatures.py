@@ -10,6 +10,7 @@ Imports of new definitions and formatting must be added with other tools.
 Properties and private methods can use a different parameter name than `self`
 to avoid being included.
 """
+
 import ast
 import subprocess
 import sys
@@ -31,6 +32,8 @@ class FunctionMethodsVisitor(ast.NodeVisitor):
         match node.args.args:
             case [ast.arg(arg="self", annotation=ast.Name(id="Client")), *_]:
                 self.methods.append(node)
+            case _:
+                pass
 
 
 class MethodVisitor(ast.NodeVisitor):
@@ -59,6 +62,8 @@ class MethodVisitor(ast.NodeVisitor):
         match node.body:
             case [ast.Expr(value=ast.Constant(value=str(doc))), *_]:
                 self.method_docs[node.name] = doc
+            case _:
+                pass
 
 
 def main() -> None:
@@ -81,10 +86,10 @@ def main() -> None:
 
     m_visitor.visit(ast.parse(contents))
 
-    class_body = []
+    class_body: List[ast.stmt] = []
 
     for function in sorted(fm_visitor.methods, key=lambda f: f.name):
-        function.body = []
+        function_body: List[ast.stmt] = []
         if doc := m_visitor.method_docs.get(function.name):
             function.body.append(ast.Expr(value=ast.Constant(value=doc)))
 
@@ -108,7 +113,7 @@ def main() -> None:
             case _:
                 call = ast.Return(value=call)
 
-        function.body.append(call)
+        function.body = function_body
         class_body.append(function)
 
     generated = ast.unparse(

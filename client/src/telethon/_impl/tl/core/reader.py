@@ -32,7 +32,7 @@ def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
 class Reader:
     __slots__ = ("_view", "_pos", "_len")
 
-    def __init__(self, buffer: bytes | memoryview) -> None:
+    def __init__(self, buffer: bytes | bytearray | memoryview) -> None:
         self._view = (
             memoryview(buffer) if not isinstance(buffer, memoryview) else buffer
         )

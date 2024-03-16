@@ -444,6 +444,7 @@ class FileBytesList(AsyncList[bytes]):
 
         if result.bytes:
             self._offset += MAX_CHUNK_SIZE
+            assert isinstance(result.bytes, bytes)
             self._buffer.append(result.bytes)
 
         self._done = len(result.bytes) < MAX_CHUNK_SIZE

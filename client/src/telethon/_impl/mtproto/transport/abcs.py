@@ -12,7 +12,7 @@ class Transport(ABC):
         pass
 
     @abstractmethod
-    def unpack(self, input: bytes, output: bytearray) -> int:
+    def unpack(self, input: bytes | bytearray | memoryview, output: bytearray) -> int:
         pass
 
 

@@ -70,6 +70,7 @@ class AsyncReader(Protocol):
         :param n:
             Amount of bytes to read at most.
         """
+        raise NotImplementedError
 
 
 class AsyncWriter(Protocol):
@@ -77,7 +78,7 @@ class AsyncWriter(Protocol):
     A :class:`asyncio.StreamWriter`-like class.
     """
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: bytes | bytearray | memoryview) -> None:
         """
         Must behave like :meth:`asyncio.StreamWriter.write`.
 
@@ -127,7 +128,7 @@ class Connector(Protocol):
     """
 
     async def __call__(self, ip: str, port: int) -> Tuple[AsyncReader, AsyncWriter]:
-        pass
+        raise NotImplementedError
 
 
 class RequestState(ABC):
@@ -340,12 +341,12 @@ class Sender:
                 self._process_result(result)
             elif isinstance(result, RpcError):
                 self._process_error(result)
-            elif isinstance(result, BadMessage):
-                self._process_bad_message(result)
             else:
-                raise RuntimeError("unexpected case")
+                self._process_bad_message(result)
 
-    def _process_update(self, updates: List[Updates], update: bytes) -> None:
+    def _process_update(
+        self, updates: List[Updates], update: bytes | bytearray | memoryview
+    ) -> None:
         try:
             updates.append(Updates.from_bytes(update))
         except ValueError:

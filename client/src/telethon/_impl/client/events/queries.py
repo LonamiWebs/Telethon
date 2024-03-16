@@ -40,7 +40,7 @@ class ButtonCallback(Event):
 
     @property
     def data(self) -> bytes:
-        assert self._raw.data is not None
+        assert isinstance(self._raw.data, bytes)
         return self._raw.data
 
     async def answer(

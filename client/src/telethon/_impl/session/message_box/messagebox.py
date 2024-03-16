@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import logging
 import time
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from ...tl import Request, abcs, functions, types
 from ..chat import ChatHashCache
@@ -168,6 +168,7 @@ class MessageBox:
         if not entries:
             return
 
+        entry: Entry = ENTRY_ACCOUNT  # for pyright to know it's not unbound
         for entry in entries:
             if entry not in self.map:
                 raise RuntimeError(
@@ -258,7 +259,7 @@ class MessageBox:
         self,
         updates: abcs.Updates,
         chat_hashes: ChatHashCache,
-    ) -> Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]:
+    ) -> Tuple[List[abcs.Update], Sequence[abcs.User], Sequence[abcs.Chat]]:
         result: List[abcs.Update] = []
         combined = adapt(updates, chat_hashes)
 
@@ -289,7 +290,7 @@ class MessageBox:
         sorted_updates = list(sorted(combined.updates, key=update_sort_key))
 
         any_pts_applied = False
-        reset_deadlines_for = set()
+        reset_deadlines_for: Set[Entry] = set()
         for update in sorted_updates:
             entry, applied = self.apply_pts_info(update)
             if entry is not None:
@@ -420,9 +421,11 @@ class MessageBox:
                     pts_limit=None,
                     pts_total_limit=None,
                     date=int(self.date.timestamp()),
-                    qts=self.map[ENTRY_SECRET].pts
-                    if ENTRY_SECRET in self.map
-                    else NO_SEQ,
+                    qts=(
+                        self.map[ENTRY_SECRET].pts
+                        if ENTRY_SECRET in self.map
+                        else NO_SEQ
+                    ),
                     qts_limit=None,
                 )
                 if __debug__:
@@ -435,12 +438,12 @@ class MessageBox:
         self,
         diff: abcs.updates.Difference,
         chat_hashes: ChatHashCache,
-    ) -> Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]:
+    ) -> Tuple[List[abcs.Update], Sequence[abcs.User], Sequence[abcs.Chat]]:
         if __debug__:
             self._trace("applying account difference: %s", diff)
 
         finish: bool
-        result: Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]
+        result: Tuple[List[abcs.Update], Sequence[abcs.User], Sequence[abcs.Chat]]
         if isinstance(diff, types.updates.DifferenceEmpty):
             finish = True
             self.date = datetime.datetime.fromtimestamp(
@@ -493,7 +496,7 @@ class MessageBox:
         self,
         diff: types.updates.Difference,
         chat_hashes: ChatHashCache,
-    ) -> Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]:
+    ) -> Tuple[List[abcs.Update], Sequence[abcs.User], Sequence[abcs.Chat]]:
         state = diff.state
         assert isinstance(state, types.updates.State)
         self.map[ENTRY_ACCOUNT].pts = state.pts
@@ -556,9 +559,11 @@ class MessageBox:
                     channel=channel,
                     filter=types.ChannelMessagesFilterEmpty(),
                     pts=state.pts,
-                    limit=BOT_CHANNEL_DIFF_LIMIT
-                    if chat_hashes.is_self_bot
-                    else USER_CHANNEL_DIFF_LIMIT,
+                    limit=(
+                        BOT_CHANNEL_DIFF_LIMIT
+                        if chat_hashes.is_self_bot
+                        else USER_CHANNEL_DIFF_LIMIT
+                    ),
                 )
                 if __debug__:
                     self._trace("requesting channel difference: %s", gd)
@@ -577,7 +582,7 @@ class MessageBox:
         channel_id: int,
         diff: abcs.updates.ChannelDifference,
         chat_hashes: ChatHashCache,
-    ) -> Tuple[List[abcs.Update], List[abcs.User], List[abcs.Chat]]:
+    ) -> Tuple[List[abcs.Update], Sequence[abcs.User], Sequence[abcs.Chat]]:
         entry: Entry = channel_id
         if __debug__:
             self._trace("applying channel=%r difference: %s", entry, diff)

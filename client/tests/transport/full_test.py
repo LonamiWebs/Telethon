@@ -7,7 +7,7 @@ from telethon._impl.mtproto import Full
 class Output(bytearray):
     __slots__ = ()
 
-    def __call__(self, data: bytes) -> None:
+    def __call__(self, data: bytes | bytearray | memoryview) -> None:
         self += data
 
 
@@ -20,7 +20,7 @@ def setup_unpack(n: int) -> Tuple[bytes, Full, bytes, bytearray]:
     transport, expected_output, input = setup_pack(n)
     transport.pack(expected_output, input)
 
-    return expected_output, Full(), input, bytearray()
+    return expected_output, Full(), bytes(input), bytearray()
 
 
 def test_pack_empty() -> None:

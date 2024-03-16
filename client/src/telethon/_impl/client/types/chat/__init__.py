@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import sys
 from collections import defaultdict
-from typing import TYPE_CHECKING, DefaultDict, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, DefaultDict, Dict, List, Optional, Sequence, Union
 
 from ....session import PackedChat
 from ....tl import abcs, types
@@ -19,13 +19,15 @@ ChatLike = Union[Chat, PackedChat, int, str]
 
 
 def build_chat_map(
-    client: Client, users: List[abcs.User], chats: List[abcs.Chat]
+    client: Client, users: Sequence[abcs.User], chats: Sequence[abcs.Chat]
 ) -> Dict[int, Chat]:
     users_iter = (User._from_raw(u) for u in users)
     chats_iter = (
-        Channel._from_raw(c)
-        if isinstance(c, (types.Channel, types.ChannelForbidden)) and c.broadcast
-        else Group._from_raw(client, c)
+        (
+            Channel._from_raw(c)
+            if isinstance(c, (types.Channel, types.ChannelForbidden)) and c.broadcast
+            else Group._from_raw(client, c)
+        )
         for c in chats
     )
 

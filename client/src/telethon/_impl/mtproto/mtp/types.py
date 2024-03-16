@@ -15,7 +15,7 @@ class Update:
 
     __slots__ = ("body",)
 
-    def __init__(self, body: bytes):
+    def __init__(self, body: bytes | bytearray | memoryview):
         self.body = body
 
 
@@ -26,7 +26,7 @@ class RpcResult:
 
     __slots__ = ("msg_id", "body")
 
-    def __init__(self, msg_id: MsgId, body: bytes):
+    def __init__(self, msg_id: MsgId, body: bytes | bytearray | memoryview):
         self.msg_id = msg_id
         self.body = body
 
@@ -201,7 +201,9 @@ class Mtp(ABC):
         """
 
     @abstractmethod
-    def deserialize(self, payload: bytes) -> List[Deserialization]:
+    def deserialize(
+        self, payload: bytes | bytearray | memoryview
+    ) -> List[Deserialization]:
         """
         Deserialize incoming buffer payload.
         """

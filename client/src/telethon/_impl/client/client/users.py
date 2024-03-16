@@ -91,21 +91,22 @@ async def get_chats(self: Client, chats: Sequence[ChatLike]) -> List[Chat]:
             input_channels.append(packed._to_input_channel())
 
     if input_users:
-        users = await self(functions.users.get_users(id=input_users))
+        ret_users = await self(functions.users.get_users(id=input_users))
+        users = list(ret_users)
     else:
         users = []
 
     if input_chats:
         ret_chats = await self(functions.messages.get_chats(id=input_chats))
         assert isinstance(ret_chats, types.messages.Chats)
-        groups = ret_chats.chats
+        groups = list(ret_chats.chats)
     else:
         groups = []
 
     if input_channels:
         ret_chats = await self(functions.channels.get_channels(id=input_channels))
         assert isinstance(ret_chats, types.messages.Chats)
-        channels = ret_chats.chats
+        channels = list(ret_chats.chats)
     else:
         channels = []
 
@@ -133,7 +134,7 @@ async def resolve_to_packed(
             ty = PackedType.USER
         elif isinstance(chat, Group):
             ty = PackedType.MEGAGROUP if chat.is_megagroup else PackedType.CHAT
-        elif isinstance(chat, Channel):
+        else:
             ty = PackedType.BROADCAST
 
         return PackedChat(ty=ty, id=chat.id, access_hash=0)

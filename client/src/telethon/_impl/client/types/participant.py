@@ -100,12 +100,8 @@ class Participant(metaclass=NoPublicConstructor):
             ),
         ):
             return self._raw.user_id
-        elif isinstance(
-            self._raw, (types.ChannelParticipantBanned, types.ChannelParticipantLeft)
-        ):
-            return peer_id(self._raw.peer)
         else:
-            raise RuntimeError("unexpected case")
+            return peer_id(self._raw.peer)
 
     @property
     def user(self) -> Optional[User]:

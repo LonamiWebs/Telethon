@@ -223,6 +223,7 @@ async def check_password(
 
     if not two_factor_auth.check_p_and_g(algo.p, algo.g):
         token = await get_password_information(self)
+        algo = token._password.current_algo
         if not isinstance(
             algo,
             types.PasswordKdfAlgoSha256Sha256Pbkdf2HmacshA512Iter100000Sha256ModPow,

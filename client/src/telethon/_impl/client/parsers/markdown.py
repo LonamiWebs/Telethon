@@ -1,5 +1,5 @@
 import re
-from typing import Any, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple, Type
 
 import markdown_it
 import markdown_it.token
@@ -19,7 +19,7 @@ from ...tl.types import (
 from .strings import add_surrogate, del_surrogate, within_surrogate
 
 MARKDOWN = markdown_it.MarkdownIt().enable("strikethrough")
-DELIMITERS = {
+DELIMITERS: Dict[Type[MessageEntity], Tuple[str, str]] = {
     MessageEntityBlockquote: ("> ", ""),
     MessageEntityBold: ("**", "**"),
     MessageEntityCode: ("`", "`"),
@@ -81,7 +81,9 @@ def parse(message: str) -> Tuple[str, List[MessageEntity]]:
         else:
             for entity in reversed(entities):
                 if isinstance(entity, ty):
-                    entity.length = len(message) - entity.offset
+                    setattr(
+                        entity, "length", len(message) - getattr(entity, "offset", 0)
+                    )
                     break
 
     parsed = MARKDOWN.parse(add_surrogate(message.strip()))
@@ -156,24 +158,25 @@ def unparse(text: str, entities: List[MessageEntity]) -> str:
 
     text = add_surrogate(text)
     insert_at: List[Tuple[int, str]] = []
-    for entity in entities:
-        assert hasattr(entity, "offset")
-        assert hasattr(entity, "length")
-        s = entity.offset
-        e = entity.offset + entity.length
-        delimiter = DELIMITERS.get(type(entity), None)
+    for e in entities:
+        offset, length = getattr(e, "offset", None), getattr(e, "length", None)
+        assert isinstance(offset, int) and isinstance(length, int)
+
+        h = offset
+        t = offset + length
+        delimiter = DELIMITERS.get(type(e), None)
         if delimiter:
-            insert_at.append((s, delimiter[0]))
-            insert_at.append((e, delimiter[1]))
-        elif isinstance(entity, MessageEntityPre):
-            insert_at.append((s, f"```{entity.language}\n"))
-            insert_at.append((e, "```\n"))
-        elif isinstance(entity, MessageEntityTextUrl):
-            insert_at.append((s, "["))
-            insert_at.append((e, f"]({entity.url})"))
-        elif isinstance(entity, MessageEntityMentionName):
-            insert_at.append((s, "["))
-            insert_at.append((e, f"](tg://user?id={entity.user_id})"))
+            insert_at.append((h, delimiter[0]))
+            insert_at.append((t, delimiter[1]))
+        elif isinstance(e, MessageEntityPre):
+            insert_at.append((h, f"```{e.language}\n"))
+            insert_at.append((t, "```\n"))
+        elif isinstance(e, MessageEntityTextUrl):
+            insert_at.append((h, "["))
+            insert_at.append((t, f"]({e.url})"))
+        elif isinstance(e, MessageEntityMentionName):
+            insert_at.append((h, "["))
+            insert_at.append((t, f"](tg://user?id={e.user_id})"))
 
     insert_at.sort(key=lambda t: t[0])
     while insert_at:

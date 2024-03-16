@@ -164,6 +164,7 @@ def _do_step3(
         )
 
     key, iv = generate_key_data_from_nonce(server_nonce, new_nonce)
+    assert isinstance(server_dh_params.encrypted_answer, bytes)
     plain_text_answer = decrypt_ige(server_dh_params.encrypted_answer, key, iv)
 
     got_answer_hash = plain_text_answer[:20]

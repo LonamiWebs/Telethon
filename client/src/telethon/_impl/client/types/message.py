@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import datetime
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Self,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from ...tl import abcs, types
 from ..parsers import (
@@ -502,7 +512,7 @@ class Message(metaclass=NoPublicConstructor):
 
 
 def build_msg_map(
-    client: Client, messages: List[abcs.Message], chat_map: Dict[int, Chat]
+    client: Client, messages: Sequence[abcs.Message], chat_map: Dict[int, Chat]
 ) -> Dict[int, Message]:
     return {
         msg.id: msg

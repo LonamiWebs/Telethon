@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Self, Union
+from typing import TYPE_CHECKING, Dict, Optional, Self, Sequence, Union
 
 from ...tl import abcs, types
 from ..types import Chat, Message, expand_peer, peer_id
@@ -69,7 +69,7 @@ class MessageDeleted(Event):
         The chat is only known when the deletion occurs in broadcast channels or supergroups.
     """
 
-    def __init__(self, msg_ids: List[int], channel_id: Optional[int]) -> None:
+    def __init__(self, msg_ids: Sequence[int], channel_id: Optional[int]) -> None:
         self._msg_ids = msg_ids
         self._channel_id = channel_id
 
@@ -85,7 +85,7 @@ class MessageDeleted(Event):
             return None
 
     @property
-    def message_ids(self) -> List[int]:
+    def message_ids(self) -> Sequence[int]:
         """
         The message identifiers of the messages that were deleted.
         """

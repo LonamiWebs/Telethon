@@ -6,7 +6,7 @@ DATA = 42
 
 
 def overhead(n: int) -> None:
-    n
+    n = n
 
 
 def strategy_bool(n: int) -> bool:

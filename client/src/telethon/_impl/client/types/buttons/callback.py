@@ -29,6 +29,7 @@ class Callback(InlineButton):
         This data will be received by :class:`telethon.events.ButtonCallback` when the button is pressed.
         """
         assert isinstance(self._raw, types.KeyboardButtonCallback)
+        assert isinstance(self._raw.data, bytes)
         return self._raw.data
 
     @data.setter

@@ -8,9 +8,11 @@ def add_surrogate(text: str) -> str:
     return "".join(
         # SMP -> Surrogate Pairs (Telegram offsets are calculated with these).
         # See https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview for more.
-        "".join(chr(y) for y in struct.unpack("<HH", x.encode("utf-16le")))
-        if (0x10000 <= ord(x) <= 0x10FFFF)
-        else x
+        (
+            "".join(chr(y) for y in struct.unpack("<HH", x.encode("utf-16le")))
+            if (0x10000 <= ord(x) <= 0x10FFFF)
+            else x
+        )
         for x in text
     )
 
@@ -43,32 +45,38 @@ def strip_text(text: str, entities: List[MessageEntity]) -> str:
     if not entities:
         return text.strip()
 
+    assert all(isinstance(getattr(e, "offset"), int) for e in entities)
+
     while text and text[-1].isspace():
         e = entities[-1]
-        assert hasattr(e, "offset") and hasattr(e, "length")
-        if e.offset + e.length == len(text):
-            if e.length == 1:
+        offset, length = getattr(e, "offset", None), getattr(e, "length", None)
+        assert isinstance(offset, int) and isinstance(length, int)
+
+        if offset + length == len(text):
+            if length == 1:
                 del entities[-1]
                 if not entities:
                     return text.strip()
             else:
-                e.length -= 1
+                length -= 1
         text = text[:-1]
 
     while text and text[0].isspace():
         for i in reversed(range(len(entities))):
             e = entities[i]
-            assert hasattr(e, "offset") and hasattr(e, "length")
-            if e.offset != 0:
-                e.offset -= 1
+            offset, length = getattr(e, "offset", None), getattr(e, "length", None)
+            assert isinstance(offset, int) and isinstance(length, int)
+
+            if offset != 0:
+                setattr(e, "offset", offset - 1)
                 continue
 
-            if e.length == 1:
+            if length == 1:
                 del entities[0]
                 if not entities:
                     return text.lstrip()
             else:
-                e.length -= 1
+                setattr(e, "length", length - 1)
 
         text = text[1:]
 

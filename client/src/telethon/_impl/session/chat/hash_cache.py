@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from ...tl import abcs, types
 from .packed import PackedChat, PackedType
@@ -131,7 +131,7 @@ class ChatHashCache:
         else:
             raise RuntimeError("unexpected case")
 
-    def extend(self, users: List[abcs.User], chats: List[abcs.Chat]) -> bool:
+    def extend(self, users: Sequence[abcs.User], chats: Sequence[abcs.Chat]) -> bool:
         # See https://core.telegram.org/api/min for "issues" with "min constructors".
         success = True
 
@@ -299,6 +299,7 @@ class ChatHashCache:
                     success &= self._has_notify_peer(peer)
 
             for field in ("users",):
+                user: Any
                 users = getattr(message.action, field, None)
                 if isinstance(users, list):
                     for user in users:

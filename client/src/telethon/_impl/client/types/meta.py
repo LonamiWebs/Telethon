@@ -1,8 +1,9 @@
 """
 Class definitions stolen from `trio`, with some modifications.
 """
+
 import abc
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -28,7 +29,7 @@ class Final(abc.ABCMeta):
 
 
 class NoPublicConstructor(Final):
-    def __call__(cls) -> None:
+    def __call__(cls, *args: Any, **kwds: Any) -> Any:
         raise TypeError(
             f"{cls.__module__}.{cls.__qualname__} has no public constructor"
         )
