@@ -65,7 +65,7 @@ _INNER_TYPE_MAP = {
     "int128": "int",
     "int256": "int",
     "double": "float",
-    "bytes": "bytes",
+    "bytes": "_bytes",  # parameters called "bytes" confuse the global bytes type
     "string": "str",
 }
 
@@ -78,7 +78,7 @@ def inner_type_fmt(ty: Type) -> str:
     elif ty.bare:
         return to_class_name(ty.name)
     elif ty.generic_ref:
-        return "bytes"
+        return "_bytes"
     elif ty.name == "Object":
         return "Serializable"
     else:
@@ -101,7 +101,7 @@ def param_type_fmt(ty: BaseParameter, *, immutable: bool) -> str:
     else:
         inner_ty = ty.ty
 
-    res = "bytes" if inner_ty.name == "Object" else inner_type_fmt(inner_ty)
+    res = "_bytes" if inner_ty.name == "Object" else inner_type_fmt(inner_ty)
 
     if ty.ty.generic_arg:
         if immutable:

@@ -97,6 +97,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write("from typing import List, Optional, Self, Sequence")
             writer.write("from .. import abcs")
             writer.write("from ..core import Reader, Serializable, serialize_bytes_to")
+            writer.write("_bytes = bytes")
 
         ns = f"{typedef.namespace[0]}." if typedef.namespace else ""
         generated_type_names.add(f"{ns}{to_class_name(typedef.name)}")
@@ -162,6 +163,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             writer.write("from typing import List, Optional, Self, Sequence")
             writer.write("from .. import abcs")
             writer.write("from ..core import Request, serialize_bytes_to")
+            writer.write("_bytes = bytes")
 
         #   def name(params, ...)
         required_params = [p for p in functiondef.params if not is_computed(p.ty)]
