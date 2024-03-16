@@ -186,6 +186,60 @@ From it, you're also able to call other ``async def`` without having to touch :f
 Be sure to read the :mod:`asyncio` documentation if you want a better understanding of event loop, tasks, and what functions you can use.
 
 
+KeyboardInterrupt during handling of asyncio.exceptions.CancelledError
+----------------------------------------------------------------------
+
+This is probably not an actual error, but rather the default way most :mod:`asyncio`-based programs exit.
+You can verify this running the following code:
+
+.. code-block:: python
+
+    import asyncio
+
+    asyncio.run(asyncio.sleep(86400))
+
+and pressing :kbd:`Control+C` on your keyboard while it's running, which should print something similar to:
+
+.. code-block:: text
+
+    Traceback (most recent call last):
+    File ".../Python/Python312/Lib/asyncio/runners.py", line 118, in run
+        return self._loop.run_until_complete(task)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File ".../Python/Python312/Lib/asyncio/base_events.py", line 685, in run_until_complete
+        return future.result()
+               ^^^^^^^^^^^^^^^
+    File ".../Python/Python312/Lib/asyncio/tasks.py", line 665, in sleep
+        return await future
+               ^^^^^^^^^^^^
+    asyncio.exceptions.CancelledError
+
+    During handling of the above exception, another exception occurred:
+
+    Traceback (most recent call last):
+    File ".../mycode.py", line 3, in <module>
+        asyncio.run(asyncio.sleep(86400))
+    File ".../Python/Python312/Lib/asyncio/runners.py", line 194, in run
+        return runner.run(main)
+               ^^^^^^^^^^^^^^^^
+    File ".../Python/Python312/Lib/asyncio/runners.py", line 123, in run
+        raise KeyboardInterrupt()
+    KeyboardInterrupt
+
+Note how there is a very large error even though Telethon was not involved at all.
+When you press :kbd:`Control+C` while Telethon is running, you should see a similar error, as expected.
+If you do not want to see this error when stopping your program, wrap the call to :func:`asyncio.run` in a ``try / except``:
+
+.. code-block:: python
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
+
+Telethon does not catch :class:`KeyboardInterrupt` itself to give you the option to handle it in any way you prefer.
+
+
 Can Telethon also do this thing the official clients do?
 --------------------------------------------------------
 
