@@ -690,7 +690,9 @@ class Client:
         """
         return get_admin_log(self, chat)
 
-    async def get_chats(self, chats: Sequence[ChatLike]) -> List[Chat]:
+    async def get_chats(
+        self, chats: Union[List[ChatLike], Tuple[ChatLike, ...]]
+    ) -> List[Chat]:
         """
         Get the latest basic information about the given chats.
 
