@@ -271,8 +271,9 @@ class Sender:
                 else:
                     break
 
-        mtp_buffer = self._mtp.finalize()
-        if mtp_buffer:
+        result = self._mtp.finalize()
+        if result:
+            _, mtp_buffer = result
             self._transport.pack(mtp_buffer, self._writer.write)
             self._write_drain_pending = True
 

@@ -165,12 +165,23 @@ class Deserialization:
 class Mtp(ABC):
     @abstractmethod
     def push(self, request: bytes) -> Optional[MsgId]:
-        pass
+        """
+        Push a request's body to the internal buffer.
+
+        On success, return the serialized message identifier.
+        """
 
     @abstractmethod
-    def finalize(self) -> bytes:
-        pass
+    def finalize(self) -> Optional[Tuple[MsgId, bytes]]:
+        """
+        Finalize the buffer of serialized requests.
+
+        If the buffer is empty, :data:`None` is returned.
+        Otherwise, the message identifier for the entire buffer and the serialized buffer are returned.
+        """
 
     @abstractmethod
     def deserialize(self, payload: bytes) -> Deserialization:
-        pass
+        """
+        Deserialize incoming buffer payload.
+        """

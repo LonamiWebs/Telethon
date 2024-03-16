@@ -204,9 +204,9 @@ class Encrypted(Mtp):
     def _get_current_salt(self) -> int:
         return self._salts[-1].salt if self._salts else 0
 
-    def _finalize_plain(self) -> bytes:
+    def _finalize_plain(self) -> Optional[Tuple[MsgId, bytes]]:
         if not self._msg_count:
-            return b""
+            return None
 
         if self._msg_count == 1:
             del self._buffer[:CONTAINER_HEADER_LEN]
@@ -216,7 +216,7 @@ class Encrypted(Mtp):
         )
 
         if self._msg_count == 1:
-            container_msg_id: Union[Type[Single], int] = Single
+            container_msg_id = self._last_msg_id
         else:
             container_msg_id = self._get_new_msg_id()
             self._buffer[HEADER_LEN : HEADER_LEN + CONTAINER_HEADER_LEN] = struct.pack(
@@ -235,7 +235,7 @@ class Encrypted(Mtp):
         self._msg_count = 0
         result = bytes(self._buffer)
         self._buffer.clear()
-        return result
+        return MsgId(container_msg_id), result
 
     def _process_message(self, message: Message) -> None:
         if message_requires_ack(message):
@@ -465,12 +465,13 @@ class Encrypted(Mtp):
 
         return self._serialize_msg(body, True)
 
-    def finalize(self) -> bytes:
-        buffer = self._finalize_plain()
-        if not buffer:
-            return buffer
-        else:
-            return encrypt_data_v2(buffer, self._auth_key)
+    def finalize(self) -> Optional[Tuple[MsgId, bytes]]:
+        result = self._finalize_plain()
+        if not result:
+            return None
+
+        msg_id, buffer = result
+        return msg_id, encrypt_data_v2(buffer, self._auth_key)
 
     def deserialize(self, payload: bytes) -> Deserialization:
         check_message_buffer(payload)

@@ -1,8 +1,10 @@
 import struct
+from typing import Optional, Tuple
 
 from pytest import raises
 from telethon._impl.crypto import AuthKey
 from telethon._impl.mtproto import Encrypted, Plain, RpcError
+from telethon._impl.mtproto.mtp.types import MsgId
 from telethon._impl.tl.mtproto.types import RpcError as GeneratedRpcError
 
 
@@ -47,14 +49,20 @@ def test_rpc_error_parsing() -> None:
 PLAIN_REQUEST = b"Hey!"
 
 
+def unwrap_finalize(finalized: Optional[Tuple[MsgId, bytes]]) -> bytes:
+    assert finalized is not None
+    _, buffer = finalized
+    return buffer
+
+
 def test_plain_finalize_clears_buffer() -> None:
     mtp = Plain()
 
     mtp.push(PLAIN_REQUEST)
-    assert len(mtp.finalize()) == 24
+    assert len(unwrap_finalize(mtp.finalize())) == 24
 
     mtp.push(PLAIN_REQUEST)
-    assert len(mtp.finalize()) == 24
+    assert len(unwrap_finalize(mtp.finalize())) == 24
 
 
 def test_plain_only_one_push_allowed() -> None:
@@ -90,7 +98,7 @@ def test_serialization_has_salt_client_id() -> None:
     mtp = Encrypted(auth_key())
 
     mtp.push(REQUEST)
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
 
     # salt
     assert buffer[0:8] == bytes(8)
@@ -104,7 +112,7 @@ def test_correct_single_serialization() -> None:
     mtp = Encrypted(auth_key())
 
     assert mtp.push(REQUEST) is not None
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
 
     ensure_buffer_is_message(buffer[MESSAGE_PREFIX_LEN:], REQUEST, 1)
 
@@ -114,7 +122,7 @@ def test_correct_multi_serialization() -> None:
 
     assert mtp.push(REQUEST) is not None
     assert mtp.push(REQUEST_B) is not None
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
     buffer = buffer[MESSAGE_PREFIX_LEN:]
 
     # container msg_id
@@ -138,7 +146,7 @@ def test_correct_single_large_serialization() -> None:
     data = bytes(0x7F for _ in range(768 * 1024))
 
     assert mtp.push(data) is not None
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
 
     buffer = buffer[MESSAGE_PREFIX_LEN:]
     assert len(buffer) == 16 + len(data)
@@ -151,7 +159,7 @@ def test_correct_multi_large_serialization() -> None:
     assert mtp.push(data) is not None
     assert mtp.push(data) is None
 
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
     buffer = buffer[MESSAGE_PREFIX_LEN:]
     assert len(buffer) == 16 + len(data)
 
@@ -173,22 +181,22 @@ def test_non_padded_payload_panics() -> None:
 def test_no_compression_is_honored() -> None:
     mtp = Encrypted(auth_key(), compression_threshold=None)
     mtp.push(bytes(512 * 1024))
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
     assert GZIP_PACKED_HEADER not in buffer
 
 
 def test_some_compression() -> None:
     mtp = Encrypted(auth_key(), compression_threshold=768 * 1024)
     mtp.push(bytes(512 * 1024))
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
     assert GZIP_PACKED_HEADER not in buffer
 
     mtp = Encrypted(auth_key(), compression_threshold=256 * 1024)
     mtp.push(bytes(512 * 1024))
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
     assert GZIP_PACKED_HEADER in buffer
 
     mtp = Encrypted(auth_key())
     mtp.push(bytes(512 * 1024))
-    buffer = mtp._finalize_plain()
+    buffer = unwrap_finalize(mtp._finalize_plain())
     assert GZIP_PACKED_HEADER in buffer

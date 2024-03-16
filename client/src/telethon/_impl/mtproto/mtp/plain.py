@@ -1,5 +1,5 @@
 import struct
-from typing import Optional
+from typing import Optional, Tuple
 
 from ..utils import check_message_buffer
 from .types import Deserialization, MsgId, Mtp
@@ -23,10 +23,13 @@ class Plain(Mtp):
         self._buffer += request  # message_data
         return msg_id
 
-    def finalize(self) -> bytes:
+    def finalize(self) -> Optional[Tuple[MsgId, bytes]]:
+        if not self._buffer:
+            return None
+
         result = bytes(self._buffer)
         self._buffer.clear()
-        return result
+        return MsgId(0), result
 
     def deserialize(self, payload: bytes) -> Deserialization:
         check_message_buffer(payload)
