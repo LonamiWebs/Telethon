@@ -30,7 +30,7 @@ from ...tl.types import (
     MessageEntityUnderline,
     MessageEntityUrl,
 )
-from .strings import add_surrogate, del_surrogate, strip_text, within_surrogate
+from .strings import add_surrogate, del_surrogate, within_surrogate
 
 
 class HTMLToTelegramParser(HTMLParser):
@@ -141,8 +141,7 @@ def parse(html: str) -> Tuple[str, List[MessageEntity]]:
 
     parser = HTMLToTelegramParser()
     parser.feed(add_surrogate(html))
-    text = strip_text(parser.text, parser.entities)
-    return del_surrogate(text), parser.entities
+    return del_surrogate(parser.text), parser.entities
 
 
 ENTITY_TO_FORMATTER: Dict[
