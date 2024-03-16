@@ -145,7 +145,6 @@ async def dispatcher(client: Client) -> None:
                 client._config.base_logger.exception(
                     "unhandled exception in event handler; this is probably a bug in your code, not telethon"
                 )
-                raise
 
 
 async def dispatch_next(client: Client) -> None:
