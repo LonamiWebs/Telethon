@@ -60,7 +60,7 @@ from ..utils import (
     gzip_decompress,
     message_requires_ack,
 )
-from .types import BadMessage, Deserialization, MsgId, Mtp, RpcError, RpcResult
+from .types import BadMessage, Deserialization, MsgId, Mtp, RpcError, RpcResult, Update
 
 NUM_FUTURE_SALTS = 64
 
@@ -112,8 +112,7 @@ class Encrypted(Mtp):
         ]
         self._start_salt_time: Optional[Tuple[int, float]] = None
         self._compression_threshold = compression_threshold
-        self._rpc_results: List[Tuple[MsgId, RpcResult]] = []
-        self._updates: List[bytes] = []
+        self._deserialization: List[Deserialization] = []
         self._buffer = bytearray()
         self._salt_request_msg_id: Optional[int] = None
 
@@ -244,12 +243,9 @@ class Encrypted(Mtp):
         inner_constructor = struct.unpack_from("<I", result)[0]
 
         if inner_constructor == GeneratedRpcError.constructor_id():
-            self._rpc_results.append(
-                (
-                    msg_id,
-                    RpcError._from_mtproto_error(GeneratedRpcError.from_bytes(result)),
-                )
-            )
+            error = RpcError._from_mtproto_error(GeneratedRpcError.from_bytes(result))
+            error.msg_id = msg_id
+            self._deserialization.append(error)
         elif inner_constructor == RpcAnswerUnknown.constructor_id():
             pass  # msg_id = rpc_drop_answer.msg_id
         elif inner_constructor == RpcAnswerDroppedRunning.constructor_id():
@@ -259,15 +255,15 @@ class Encrypted(Mtp):
         elif inner_constructor == GzipPacked.constructor_id():
             body = gzip_decompress(GzipPacked.from_bytes(result))
             self._store_own_updates(body)
-            self._rpc_results.append((msg_id, body))
+            self._deserialization.append(RpcResult(msg_id, body))
         else:
             self._store_own_updates(result)
-            self._rpc_results.append((msg_id, result))
+            self._deserialization.append(RpcResult(msg_id, result))
 
     def _store_own_updates(self, body: bytes) -> None:
         constructor_id = struct.unpack_from("I", body)[0]
         if constructor_id in UPDATE_IDS:
-            self._updates.append(body)
+            self._deserialization.append(Update(body))
 
     def _handle_ack(self, message: Message) -> None:
         MsgsAck.from_bytes(message.body)
@@ -276,13 +272,13 @@ class Encrypted(Mtp):
         bad_msg = AbcBadMsgNotification.from_bytes(message.body)
         assert isinstance(bad_msg, (BadServerSalt, BadMsgNotification))
 
-        exc = BadMessage(code=bad_msg.error_code)
+        exc = BadMessage(msg_id=MsgId(bad_msg.bad_msg_id), code=bad_msg.error_code)
 
         if bad_msg.bad_msg_id == self._salt_request_msg_id:
             # Response to internal request, do not propagate.
             self._salt_request_msg_id = None
         else:
-            self._rpc_results.append((MsgId(bad_msg.bad_msg_id), exc))
+            self._deserialization.append(exc)
 
         if isinstance(bad_msg, BadServerSalt) and self._get_current_salt() == 0:
             # If we had no valid salt, this error is expected.
@@ -331,7 +327,9 @@ class Encrypted(Mtp):
             # Response to internal request, do not propagate.
             self._salt_request_msg_id = None
         else:
-            self._rpc_results.append((MsgId(salts.req_msg_id), message.body))
+            self._deserialization.append(
+                RpcResult(MsgId(salts.req_msg_id), message.body)
+            )
 
         self._start_salt_time = (salts.now, self._adjusted_now())
         self._salts = salts.salts
@@ -343,7 +341,7 @@ class Encrypted(Mtp):
 
     def _handle_pong(self, message: Message) -> None:
         pong = Pong.from_bytes(message.body)
-        self._rpc_results.append((MsgId(pong.msg_id), message.body))
+        self._deserialization.append(RpcResult(MsgId(pong.msg_id), message.body))
 
     def _handle_destroy_session(self, message: Message) -> None:
         DestroySessionRes.from_bytes(message.body)
@@ -378,7 +376,7 @@ class Encrypted(Mtp):
         HttpWait.from_bytes(message.body)
 
     def _handle_update(self, message: Message) -> None:
-        self._updates.append(message.body)
+        self._deserialization.append(Update(message.body))
 
     def _try_request_salts(self) -> None:
         if (
@@ -441,7 +439,7 @@ class Encrypted(Mtp):
         msg_id, buffer = result
         return msg_id, encrypt_data_v2(buffer, self._auth_key)
 
-    def deserialize(self, payload: bytes) -> Deserialization:
+    def deserialize(self, payload: bytes) -> List[Deserialization]:
         check_message_buffer(payload)
 
         plaintext = decrypt_data_v2(payload, self._auth_key)
@@ -452,7 +450,6 @@ class Encrypted(Mtp):
 
         self._process_message(Message._read_from(Reader(memoryview(plaintext)[16:])))
 
-        result = Deserialization(rpc_results=self._rpc_results, updates=self._updates)
-        self._rpc_results = []
-        self._updates = []
+        result = self._deserialization[:]
+        self._deserialization.clear()
         return result

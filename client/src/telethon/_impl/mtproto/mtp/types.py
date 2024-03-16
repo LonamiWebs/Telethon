@@ -1,12 +1,34 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import List, NewType, Optional, Self, Tuple
 
 from ...tl.mtproto.types import RpcError as GeneratedRpcError
 
 MsgId = NewType("MsgId", int)
+
+
+class Update:
+    """
+    An update that does not belong to any RPC.
+    """
+
+    __slots__ = ("body",)
+
+    def __init__(self, body: bytes):
+        self.body = body
+
+
+class RpcResult:
+    """
+    A response that belongs to the RPC associated with this message identifier.
+    """
+
+    __slots__ = ("msg_id", "body")
+
+    def __init__(self, msg_id: MsgId, body: bytes):
+        self.msg_id = msg_id
+        self.body = body
 
 
 class RpcError(ValueError):
@@ -30,15 +52,17 @@ class RpcError(ValueError):
 
     def __init__(
         self,
-        *,
+        *args: object,
+        msg_id: MsgId = MsgId(0),
         code: int = 0,
         name: str = "",
         value: Optional[int] = None,
         caused_by: Optional[int] = None,
     ) -> None:
         append_value = f" ({value})" if value else ""
-        super().__init__(f"rpc error {code}: {name}{append_value}")
+        super().__init__(f"rpc error {code}: {name}{append_value}", *args)
 
+        self.msg_id = msg_id
         self._code = code
         self._name = name
         self._value = value
@@ -121,13 +145,15 @@ NON_FATAL_MSG_IDS = RETRYABLE_MSG_IDS & {32, 33}
 class BadMessage(ValueError):
     def __init__(
         self,
-        *,
+        *args: object,
+        msg_id: MsgId = MsgId(0),
         code: int,
         caused_by: Optional[int] = None,
     ) -> None:
         description = BAD_MSG_DESCRIPTIONS.get(code) or "no description available"
-        super().__init__(f"bad msg={code}: {description}")
+        super().__init__(f"bad msg={code}: {description}", *args)
 
+        self.msg_id = msg_id
         self._code = code
         self._caused_by = caused_by
         self.severity = (
@@ -152,13 +178,7 @@ class BadMessage(ValueError):
         return self._code == other._code
 
 
-RpcResult = bytes | RpcError | BadMessage
-
-
-@dataclass
-class Deserialization:
-    rpc_results: List[Tuple[MsgId, RpcResult]]
-    updates: List[bytes]
+Deserialization = Update | RpcResult | RpcError | BadMessage
 
 
 # https://core.telegram.org/mtproto/description
@@ -181,7 +201,7 @@ class Mtp(ABC):
         """
 
     @abstractmethod
-    def deserialize(self, payload: bytes) -> Deserialization:
+    def deserialize(self, payload: bytes) -> List[Deserialization]:
         """
         Deserialize incoming buffer payload.
         """

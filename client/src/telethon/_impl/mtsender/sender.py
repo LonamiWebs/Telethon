@@ -5,7 +5,17 @@ import time
 from abc import ABC
 from asyncio import FIRST_COMPLETED, Event, Future
 from dataclasses import dataclass
-from typing import Generic, List, Optional, Protocol, Self, Tuple, Type, TypeVar
+from typing import (
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Protocol,
+    Self,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 from ..crypto import AuthKey
 from ..mtproto import (
@@ -16,7 +26,9 @@ from ..mtproto import (
     Mtp,
     Plain,
     RpcError,
+    RpcResult,
     Transport,
+    Update,
     authentication,
 )
 from ..tl import Request as RemoteCall
@@ -127,17 +139,19 @@ class NotSerialized(RequestState):
 
 
 class Serialized(RequestState):
-    __slots__ = ("msg_id",)
+    __slots__ = ("msg_id", "container_msg_id")
 
     def __init__(self, msg_id: MsgId):
         self.msg_id = msg_id
+        self.container_msg_id = msg_id
 
 
 class Sent(RequestState):
-    __slots__ = ("msg_id",)
+    __slots__ = ("msg_id", "container_msg_id")
 
-    def __init__(self, msg_id: MsgId):
+    def __init__(self, msg_id: MsgId, container_msg_id: MsgId):
         self.msg_id = msg_id
+        self.container_msg_id = container_msg_id
 
 
 Return = TypeVar("Return")
@@ -273,7 +287,11 @@ class Sender:
 
         result = self._mtp.finalize()
         if result:
-            _, mtp_buffer = result
+            container_msg_id, mtp_buffer = result
+            for request in self._requests:
+                if isinstance(request.state, Serialized):
+                    request.state.container_msg_id = container_msg_id
+
             self._transport.pack(mtp_buffer, self._writer.write)
             self._write_drain_pending = True
 
@@ -299,7 +317,7 @@ class Sender:
     def _on_net_write(self) -> None:
         for req in self._requests:
             if isinstance(req.state, Serialized):
-                req.state = Sent(req.state.msg_id)
+                req.state = Sent(req.state.msg_id, req.state.container_msg_id)
 
     def _on_ping_timeout(self) -> None:
         ping_id = generate_random_id()
@@ -313,31 +331,44 @@ class Sender:
         self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
     def _process_mtp_buffer(self, updates: List[Updates]) -> None:
-        result = self._mtp.deserialize(self._mtp_buffer)
+        results = self._mtp.deserialize(self._mtp_buffer)
 
-        for update in result.updates:
-            try:
-                u = Updates.from_bytes(update)
-            except ValueError:
-                cid = struct.unpack_from("I", update)[0]
-                alt_classes: Tuple[Type[Serializable], ...] = (
-                    AffectedFoundMessages,
-                    AffectedHistory,
-                    AffectedMessages,
-                )
-                for cls in alt_classes:
-                    if cid == cls.constructor_id():
-                        affected = cls.from_bytes(update)
-                        # mypy struggles with the types here quite a bit
-                        assert isinstance(
-                            affected,
-                            (
-                                AffectedFoundMessages,
-                                AffectedHistory,
-                                AffectedMessages,
-                            ),
-                        )
-                        u = UpdateShort(
+        for result in results:
+            if isinstance(result, Update):
+                self._process_update(updates, result.body)
+            elif isinstance(result, RpcResult):
+                self._process_result(result)
+            elif isinstance(result, RpcError):
+                self._process_error(result)
+            elif isinstance(result, BadMessage):
+                self._process_bad_message(result)
+            else:
+                raise RuntimeError("unexpected case")
+
+    def _process_update(self, updates: List[Updates], update: bytes) -> None:
+        try:
+            updates.append(Updates.from_bytes(update))
+        except ValueError:
+            cid = struct.unpack_from("I", update)[0]
+            alt_classes: Tuple[Type[Serializable], ...] = (
+                AffectedFoundMessages,
+                AffectedHistory,
+                AffectedMessages,
+            )
+            for cls in alt_classes:
+                if cid == cls.constructor_id():
+                    affected = cls.from_bytes(update)
+                    # mypy struggles with the types here quite a bit
+                    assert isinstance(
+                        affected,
+                        (
+                            AffectedFoundMessages,
+                            AffectedHistory,
+                            AffectedMessages,
+                        ),
+                    )
+                    updates.append(
+                        UpdateShort(
                             update=UpdateDeleteMessages(
                                 messages=[],
                                 pts=affected.pts,
@@ -345,58 +376,83 @@ class Sender:
                             ),
                             date=0,
                         )
-                        break
-                else:
-                    self._logger.warning(
-                        "failed to deserialize incoming update; make sure the session is not in use elsewhere: %s",
-                        update.hex(),
                     )
-                    continue
-
-            updates.append(u)
-
-        for msg_id, ret in result.rpc_results:
-            for i, req in enumerate(self._requests):
-                if isinstance(req.state, Serialized) and req.state.msg_id == msg_id:
-                    raise RuntimeError("got rpc result for unsent request")
-                elif isinstance(req.state, Sent) and req.state.msg_id == msg_id:
-                    del self._requests[i]
                     break
             else:
                 self._logger.warning(
-                    "telegram sent rpc_result for unknown msg_id=%d: %s",
-                    msg_id,
-                    ret.hex() if isinstance(ret, bytes) else repr(ret),
+                    "failed to deserialize incoming update; make sure the session is not in use elsewhere: %s",
+                    update.hex(),
                 )
-                continue
+                return
 
-            if isinstance(ret, bytes):
-                assert len(ret) >= 4
-                req.result.set_result(ret)
-            elif isinstance(ret, RpcError):
-                ret._caused_by = struct.unpack_from("<I", req.body)[0]
-                req.result.set_exception(ret)
-            elif isinstance(ret, BadMessage):
-                if ret.retryable:
-                    self._logger.log(
-                        ret.severity,
-                        "telegram notified of bad msg_id=%d; will attempt to resend request: %s",
-                        msg_id,
-                        ret,
-                    )
-                    req.state = NotSerialized()
-                    self._requests.append(req)
-                else:
-                    self._logger.log(
-                        ret.severity,
-                        "telegram notified of bad msg_id=%d; impossible to retry: %s",
-                        msg_id,
-                        ret,
-                    )
-                    ret._caused_by = struct.unpack_from("<I", req.body)[0]
-                    req.result.set_exception(ret)
+    def _process_result(self, result: RpcResult) -> None:
+        req = self._pop_request(result.msg_id)
+
+        if req:
+            assert len(result.body) >= 4
+            req.result.set_result(result.body)
+        else:
+            self._logger.warning(
+                "telegram sent rpc_result for unknown msg_id=%d: %s",
+                result.msg_id,
+                result.body.hex(),
+            )
+
+    def _process_error(self, result: RpcError) -> None:
+        req = self._pop_request(result.msg_id)
+
+        if req:
+            result._caused_by = struct.unpack_from("<I", req.body)[0]
+            req.result.set_exception(result)
+        else:
+            self._logger.warning(
+                "telegram sent rpc_error for unknown msg_id=%d: %s",
+                result.msg_id,
+                result,
+            )
+
+    def _process_bad_message(self, result: BadMessage) -> None:
+        for req in self._drain_requests(result.msg_id):
+            if result.retryable:
+                self._logger.log(
+                    result.severity,
+                    "telegram notified of bad msg_id=%d; will attempt to resend request: %s",
+                    result.msg_id,
+                    result,
+                )
+                req.state = NotSerialized()
+                self._requests.append(req)
             else:
-                raise RuntimeError("unexpected case")
+                self._logger.log(
+                    result.severity,
+                    "telegram notified of bad msg_id=%d; impossible to retry: %s",
+                    result.msg_id,
+                    result,
+                )
+                result._caused_by = struct.unpack_from("<I", req.body)[0]
+                req.result.set_exception(result)
+
+    def _pop_request(self, msg_id: MsgId) -> Optional[Request[object]]:
+        for i, req in enumerate(self._requests):
+            if isinstance(req.state, Serialized) and req.state.msg_id == msg_id:
+                raise RuntimeError("got response for unsent request")
+            elif isinstance(req.state, Sent) and req.state.msg_id == msg_id:
+                del self._requests[i]
+                return req
+
+        return None
+
+    def _drain_requests(self, msg_id: MsgId) -> Iterator[Request[object]]:
+        for i in reversed(range(len(self._requests))):
+            req = self._requests[i]
+            if isinstance(req.state, Serialized) and (
+                req.state.msg_id == msg_id or req.state.container_msg_id == msg_id
+            ):
+                raise RuntimeError("got response for unsent request")
+            elif isinstance(req.state, Sent) and (
+                req.state.msg_id == msg_id or req.state.container_msg_id == msg_id
+            ):
+                yield self._requests.pop(i)
 
     @property
     def auth_key(self) -> Optional[bytes]:

@@ -1,8 +1,8 @@
 import struct
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from ..utils import check_message_buffer
-from .types import Deserialization, MsgId, Mtp
+from .types import Deserialization, MsgId, Mtp, RpcResult
 
 
 class Plain(Mtp):
@@ -31,7 +31,7 @@ class Plain(Mtp):
         self._buffer.clear()
         return MsgId(0), result
 
-    def deserialize(self, payload: bytes) -> Deserialization:
+    def deserialize(self, payload: bytes) -> List[Deserialization]:
         check_message_buffer(payload)
 
         auth_key_id, msg_id, length = struct.unpack_from("<qqi", payload)
@@ -50,6 +50,4 @@ class Plain(Mtp):
                 f"message too short, expected: {20 + length}, got {len(payload)}"
             )
 
-        return Deserialization(
-            rpc_results=[(MsgId(0), bytes(payload[20 : 20 + length]))], updates=[]
-        )
+        return [RpcResult(MsgId(0), bytes(payload[20 : 20 + length]))]
