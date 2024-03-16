@@ -53,7 +53,7 @@ class Config:
     lang_code: str = "en"
     catch_up: bool = False
     datacenter: Optional[DataCenter] = None
-    flood_sleep_threshold: Optional[int] = 60
+    flood_sleep_threshold: int = 60
     update_queue_limit: Optional[int] = None
 
 
@@ -245,8 +245,7 @@ async def invoke_request(
     lock: asyncio.Lock,
     request: Request[Return],
 ) -> Return:
-    slept_flood = False
-    sleep_thresh = client._config.flood_sleep_threshold or 0
+    sleep_thresh = client._config.flood_sleep_threshold
     rx = sender.enqueue(request)
     while True:
         while not rx.done():
@@ -255,14 +254,9 @@ async def invoke_request(
             response = rx.result()
             break
         except RpcError as e:
-            if (
-                e.code == 420
-                and e.value is not None
-                and not slept_flood
-                and e.value < sleep_thresh
-            ):
+            if e.code == 420 and e.value is not None and e.value < sleep_thresh:
                 await asyncio.sleep(e.value)
-                slept_flood = True
+                sleep_thresh -= e.value
                 rx = sender.enqueue(request)
                 continue
             else:
