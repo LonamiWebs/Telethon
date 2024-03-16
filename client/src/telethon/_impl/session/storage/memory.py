@@ -8,9 +8,7 @@ class MemorySession(Storage):
     """
     Session storage without persistence.
 
-    This is the simplest storage and is the one used by default.
-
-    Session data is only kept in memory and is not persisted to disk.
+    Session data is only kept in memory and is not saved to disk.
     """
 
     __slots__ = ("session",)
