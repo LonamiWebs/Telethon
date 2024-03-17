@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Optional, Self
 from ...session import PackedChat
 from ...tl import abcs, functions, types
 from ..parsers import generate_html_message, generate_markdown_message
-from .chat import Chat, expand_peer, peer_id
 from .message import Message, generate_random_id
 from .meta import NoPublicConstructor
+from .peer import Chat, expand_peer, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client

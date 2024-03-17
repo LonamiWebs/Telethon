@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Self
 
 from ...tl import abcs, types
-from .chat import Chat, peer_id
 from .draft import Draft
 from .message import Message
 from .meta import NoPublicConstructor
+from .peer import Chat, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client

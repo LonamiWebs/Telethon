@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, Self
 from ...tl import abcs, functions, types
 from ..client.messages import CherryPickedList
 from ..types import Chat, Message
-from ..types.chat import peer_id
+from ..types.peer import peer_id
 from .event import Event
 
 if TYPE_CHECKING:

@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from ...tl import abcs, functions, types
-from .chat import ChatLike
 from .file import InFileLike, try_get_url_path
 from .message import Message, generate_random_id, parse_message
 from .meta import NoPublicConstructor
+from .peer import ChatLike
 
 if TYPE_CHECKING:
     from ..client.client import Client

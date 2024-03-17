@@ -12,9 +12,9 @@ from ..parsers import (
     parse_markdown_message,
 )
 from .buttons import Button, as_concrete_row, create_button
-from .chat import Chat, ChatLike, expand_peer, peer_id
 from .file import File
 from .meta import NoPublicConstructor
+from .peer import Chat, ChatLike, expand_peer, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client

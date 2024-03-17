@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Optional, Self, Sequence
 from ...session import PackedChat
 from ...tl import abcs, types
 from .admin_right import AdminRight
-from .chat import Chat, User, peer_id
 from .chat_restriction import ChatRestriction
 from .meta import NoPublicConstructor
+from .peer import Chat, User, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client

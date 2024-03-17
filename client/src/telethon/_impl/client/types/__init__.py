@@ -2,16 +2,6 @@ from .admin_right import AdminRight
 from .album_builder import AlbumBuilder
 from .async_list import AsyncList
 from .callback_answer import CallbackAnswer
-from .chat import (
-    Channel,
-    Chat,
-    ChatLike,
-    Group,
-    User,
-    build_chat_map,
-    expand_peer,
-    peer_id,
-)
 from .chat_restriction import ChatRestriction
 from .dialog import Dialog
 from .draft import Draft
@@ -35,6 +25,16 @@ from .message import (
 from .meta import NoPublicConstructor
 from .participant import Participant
 from .password_token import PasswordToken
+from .peer import (
+    Channel,
+    Chat,
+    ChatLike,
+    Group,
+    User,
+    build_chat_map,
+    expand_peer,
+    peer_id,
+)
 from .recent_action import RecentAction
 
 __all__ = [

@@ -1,6 +1,6 @@
 from ...tl import abcs, types
-from .chat import Chat
 from .meta import NoPublicConstructor
+from .peer import Chat
 
 
 class RecentAction(metaclass=NoPublicConstructor):
