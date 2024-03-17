@@ -4,7 +4,7 @@ import datetime
 import sys
 from typing import TYPE_CHECKING, Literal, Optional, Self
 
-from ...session import PackedChat
+from ...session import PeerRef
 from ...tl import abcs, functions, types
 from ..types import AsyncList, ChatLike, Message, Peer, build_chat_map
 from ..types import buttons as btns
@@ -323,7 +323,7 @@ class CherryPickedList(MessageList):
         super().__init__()
         self._client = client
         self._chat = chat
-        self._packed: Optional[PackedChat] = None
+        self._packed: Optional[PeerRef] = None
         self._ids: list[abcs.InputMessage] = [types.InputMessageId(id=id) for id in ids]
 
     async def _fetch_next(self) -> None:

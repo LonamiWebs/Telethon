@@ -96,7 +96,7 @@ and instead favours more standard `HTML elements <https://developer.mozilla.org/
 Both markdown and HTML recognise the following special URLs using the ``tg:`` protocol:
 
 * ``tg://user?id=ab1234cd6789`` for inline mentions.
-  To make sure the mention works, use :attr:`types.PackedChat.hex`.
+  To make sure the mention works, use :attr:`types.PeerRef.hex`.
   You can also use :attr:`types.User.id`, but the mention will fail if the user is not in cache.
 * ``tg://emoji?id=1234567890`` for custom emoji.
   You must use the document identifier as the value.

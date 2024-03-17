@@ -1,6 +1,6 @@
 from typing import Optional, Self
 
-from ....session import PackedChat, PackedType
+from ....session import PackedType, PeerRef
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
 from .peer import Peer
@@ -50,11 +50,11 @@ class Channel(Peer, metaclass=NoPublicConstructor):
     def username(self) -> Optional[str]:
         return getattr(self._raw, "username", None)
 
-    def pack(self) -> Optional[PackedChat]:
+    def pack(self) -> Optional[PeerRef]:
         if self._raw.access_hash is None:
             return None
         else:
-            return PackedChat(
+            return PeerRef(
                 ty=(
                     PackedType.GIGAGROUP
                     if getattr(self._raw, "gigagroup", False)

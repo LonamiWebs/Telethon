@@ -13,7 +13,7 @@ from ...session import (
     DataCenter,
     MemorySession,
     MessageBox,
-    PackedChat,
+    PeerRef,
     Session,
     SqliteSession,
     Storage,
@@ -680,7 +680,7 @@ class Client:
         """
         Get the latest basic information about the given chats.
 
-        This method is most commonly used to turn one or more :class:`~types.PackedChat` into the original :class:`~types.Peer`.
+        This method is most commonly used to turn one or more :class:`~types.PeerRef` into the original :class:`~types.Peer`.
         This includes users, groups and broadcast channels.
 
         :param chats:
@@ -2018,7 +2018,7 @@ class Client:
     ) -> MessageMap:
         return build_message_map(self, result, peer)
 
-    async def _resolve_to_packed(self, chat: ChatLike) -> PackedChat:
+    async def _resolve_to_packed(self, chat: ChatLike) -> PeerRef:
         return await resolve_to_packed(self, chat)
 
     def _input_to_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:

@@ -5,7 +5,7 @@ import sys
 from collections import defaultdict
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from ....session import PackedChat
+from ....session import PeerRef
 from ....tl import abcs, types
 from .channel import Channel
 from .group import Group
@@ -15,7 +15,7 @@ from .user import User
 if TYPE_CHECKING:
     from ...client.client import Client
 
-ChatLike = Peer | PackedChat | int | str
+ChatLike = Peer | PeerRef | int | str
 
 
 def build_chat_map(

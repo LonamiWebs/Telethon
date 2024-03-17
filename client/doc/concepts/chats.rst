@@ -28,7 +28,7 @@ The following types are chat-like:
 * An ``'+1 23'`` phone number string. It must be an :class:`str` and start with the plus-sign ``+`` character.
 * An ``123`` integer identifier. It must be an :class:`int` and cannot be negative.
 * An existing :class:`~types.User`, :class:`~types.Group` or :class:`~types.Channel`.
-* A :class:`~types.PackedChat`.
+* A :class:`~types.PeerRef`.
 
 Previous versions of Telethon referred to this term as "entity" or "entities" instead.
 
@@ -72,7 +72,7 @@ The Bot API follows a certain convention when it comes to identifiers:
 * Chat IDs are negative.
 * Channel IDs are *also* negative, but are prefixed by ``-100``.
 
-Telethon encourages the use of :class:`~types.PackedChat` instead of naked identifiers.
+Telethon encourages the use of :class:`~types.PeerRef` instead of naked identifiers.
 As a reminder, negative identifiers are not supported in Telethon's chat-like parameters.
 
 If you got an Bot API-style ID from somewhere else, you will need to explicitly say what type it is:
@@ -104,7 +104,7 @@ Chats access hash
 
 Users, supergroups and channels all need an :term:`access hash`.
 
-In Telethon, the :class:`~types.PackedChat` is the recommended way to deal with the identifier-hash pairs.
+In Telethon, the :class:`~types.PeerRef` is the recommended way to deal with the identifier-hash pairs.
 This compact type can be used anywhere a chat is expected.
 It's designed to be easy to store and cache in any way your application chooses.
 
@@ -113,7 +113,7 @@ The same is true for user accounts, although to a lesser extent.
 
 When using just the identifier to refer to a chat, Telethon will attempt to retrieve its hash from its in-memory cache.
 If this fails, an invalid hash will be used. This may or may not make the API call succeed.
-For this reason, it is recommended that you always use :class:`~types.PackedChat` instead.
+For this reason, it is recommended that you always use :class:`~types.PeerRef` instead.
 
 Remember that an :term:`access hash` is account-bound.
 You cannot obtain an :term:`access hash` in Account-A and use it in Account-B.

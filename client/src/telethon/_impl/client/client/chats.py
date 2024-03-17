@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from ...session import PackedChat
+from ...session import PeerRef
 from ...tl import abcs, functions, types
 from ..types import (
     AdminRight,
@@ -30,7 +30,7 @@ class ParticipantList(AsyncList[Participant]):
         super().__init__()
         self._client = client
         self._chat = chat
-        self._packed: Optional[PackedChat] = None
+        self._packed: Optional[PeerRef] = None
         self._offset = 0
         self._seen: set[int] = set()
 

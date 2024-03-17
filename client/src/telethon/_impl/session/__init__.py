@@ -1,4 +1,4 @@
-from .chat import ChatHashCache, PackedChat, PackedType
+from .chat import ChatHashCache, PackedType, PeerRef
 from .message_box import (
     BOT_CHANNEL_DIFF_LIMIT,
     NO_UPDATES_TIMEOUT,
@@ -15,7 +15,7 @@ from .storage import MemorySession, SqliteSession, Storage
 
 __all__ = [
     "ChatHashCache",
-    "PackedChat",
+    "PeerRef",
     "PackedType",
     "BOT_CHANNEL_DIFF_LIMIT",
     "NO_UPDATES_TIMEOUT",

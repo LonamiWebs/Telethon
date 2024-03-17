@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from ...mtproto import RpcError
-from ...session import PackedChat, PackedType
+from ...session import PackedType, PeerRef
 from ...tl import abcs, functions, types
 from ..types import (
     AsyncList,
@@ -77,7 +77,7 @@ async def resolve_username(self: Client, username: str) -> Peer:
 async def get_chats(
     self: Client, chats: list[ChatLike] | tuple[ChatLike, ...]
 ) -> list[Peer]:
-    packed_chats: list[PackedChat] = []
+    packed_chats: list[PeerRef] = []
     input_users: list[types.InputUser] = []
     input_chats: list[int] = []
     input_channels: list[types.InputChannel] = []
@@ -122,8 +122,8 @@ async def get_chats(
 
 async def resolve_to_packed(
     client: Client, chat: ChatLike | abcs.InputPeer | abcs.Peer
-) -> PackedChat:
-    if isinstance(chat, PackedChat):
+) -> PeerRef:
+    if isinstance(chat, PeerRef):
         return chat
 
     if isinstance(chat, (User, Group, Channel)):
@@ -139,7 +139,7 @@ async def resolve_to_packed(
         else:
             ty = PackedType.BROADCAST
 
-        return PackedChat(ty=ty, id=chat.id, access_hash=0)
+        return PeerRef(ty=ty, id=chat.id, access_hash=0)
 
     if isinstance(chat, abcs.InputPeer):
         if isinstance(chat, types.InputPeerEmpty):
@@ -147,25 +147,25 @@ async def resolve_to_packed(
         elif isinstance(chat, types.InputPeerSelf):
             if not client._session.user:
                 raise ValueError("Cannot resolve chat")
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.BOT if client._session.user.bot else PackedType.USER,
                 id=client._chat_hashes.self_id,
                 access_hash=0,
             )
         elif isinstance(chat, types.InputPeerChat):
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.CHAT,
                 id=chat.chat_id,
                 access_hash=None,
             )
         elif isinstance(chat, types.InputPeerUser):
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.USER,
                 id=chat.user_id,
                 access_hash=chat.access_hash,
             )
         elif isinstance(chat, types.InputPeerChannel):
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.BROADCAST,
                 id=chat.channel_id,
                 access_hash=chat.access_hash,
@@ -182,19 +182,19 @@ async def resolve_to_packed(
         if packed is not None:
             return packed
         if isinstance(chat, types.PeerUser):
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.USER,
                 id=chat.user_id,
                 access_hash=0,
             )
         elif isinstance(chat, types.PeerChat):
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.CHAT,
                 id=chat.chat_id,
                 access_hash=0,
             )
         elif isinstance(chat, types.PeerChannel):
-            return PackedChat(
+            return PeerRef(
                 ty=PackedType.BROADCAST,
                 id=chat.channel_id,
                 access_hash=0,
@@ -207,7 +207,7 @@ async def resolve_to_packed(
             resolved = await resolve_phone(client, chat)
         elif chat == "me":
             if me := client._session.user:
-                return PackedChat(
+                return PeerRef(
                     ty=PackedType.BOT if me.bot else PackedType.USER,
                     id=me.id,
                     access_hash=0,

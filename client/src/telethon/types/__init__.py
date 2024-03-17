@@ -23,7 +23,7 @@ from .._impl.client.types import (
     User,
 )
 from .._impl.client.types.buttons import Button, InlineButton
-from .._impl.session import PackedChat, PackedType
+from .._impl.session import PackedType, PeerRef
 
 __all__ = [
     "AdminRight",
@@ -46,6 +46,6 @@ __all__ = [
     "User",
     "Button",
     "InlineButton",
-    "PackedChat",
+    "PeerRef",
     "PackedType",
 ]

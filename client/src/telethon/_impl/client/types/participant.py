@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Self, Sequence
 
-from ...session import PackedChat
+from ...session import PeerRef
 from ...tl import abcs, types
 from .admin_right import AdminRight
 from .chat_restriction import ChatRestriction
@@ -24,7 +24,7 @@ class Participant(metaclass=NoPublicConstructor):
     def __init__(
         self,
         client: Client,
-        chat: PackedChat,
+        chat: PeerRef,
         participant: (
             types.ChannelParticipant
             | types.ChannelParticipantSelf
@@ -47,7 +47,7 @@ class Participant(metaclass=NoPublicConstructor):
     def _from_raw_channel(
         cls,
         client: Client,
-        chat: PackedChat,
+        chat: PeerRef,
         participant: abcs.ChannelParticipant,
         chat_map: dict[int, Peer],
     ) -> Self:
@@ -70,7 +70,7 @@ class Participant(metaclass=NoPublicConstructor):
     def _from_raw_chat(
         cls,
         client: Client,
-        chat: PackedChat,
+        chat: PeerRef,
         participant: abcs.ChatParticipant,
         chat_map: dict[int, Peer],
     ) -> Self:

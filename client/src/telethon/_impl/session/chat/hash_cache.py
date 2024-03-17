@@ -1,7 +1,7 @@
 from typing import Any, Optional, Sequence
 
 from ...tl import abcs, types
-from .peer_ref import PackedChat, PackedType
+from .peer_ref import PackedType, PeerRef
 
 
 class ChatHashCache:
@@ -21,15 +21,15 @@ class ChatHashCache:
     def is_self_bot(self) -> bool:
         return self._self_bot
 
-    def set_self_user(self, user: PackedChat) -> None:
+    def set_self_user(self, user: PeerRef) -> None:
         assert user.ty in (PackedType.USER, PackedType.BOT)
         self._self_bot = user.ty == PackedType.BOT
         self._self_id = user.id
 
-    def get(self, id: int) -> Optional[PackedChat]:
+    def get(self, id: int) -> Optional[PeerRef]:
         if (entry := self._hash_map.get(id)) is not None:
             hash, ty = entry
-            return PackedChat(ty, id, hash)
+            return PeerRef(ty, id, hash)
         else:
             return None
 

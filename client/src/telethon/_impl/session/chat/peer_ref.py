@@ -7,7 +7,7 @@ from ...tl import abcs, types
 
 class PackedType(IntFlag):
     """
-    The type of a :class:`PackedChat`.
+    The type of a :class:`PeerRef`.
     """
 
     # bits: zero, has-access-hash, channel, broadcast, group, chat, user, bot
@@ -19,7 +19,7 @@ class PackedType(IntFlag):
     GIGAGROUP = 0b0011_1000
 
 
-class PackedChat:
+class PeerRef:
     """
     A compact representation of a :term:`chat`.
 

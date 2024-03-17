@@ -443,14 +443,14 @@ This doesn't mean the ``.chat`` or ``.sender`` will have all the information.
 Telegram may still choose to send their ``min`` version with only basic details.
 But it means you don't have to remember 5 different ways of using chats.
 
-To replace the concept of "input chats", v2 introduces :class:`types.PackedChat`.
+To replace the concept of "input chats", v2 introduces :class:`types.PeerRef`.
 A "packed chat" is a chat with *just* enough information that you can use it without relying on Telethon's cache.
 This is the most efficient way to call methods like :meth:`Client.send_message` too.
 
 The concept of "marked IDs" also no longer exists.
 This means v2 no longer supports the ``-`` or ``-100`` prefixes on identifiers.
 :tl:`Peer`-wrapping is gone, too.
-Instead, you're strongly encouraged to use :class:`types.PackedChat` instances.
+Instead, you're strongly encouraged to use :class:`types.PeerRef` instances.
 
 The concepts of of "entity" or "peer" are unified to simply :term:`chat`.
 Overall, dealing with users, groups and channels should feel a lot more natural.
@@ -477,7 +477,7 @@ The v1 cache that allowed you to use just chat identifiers to call methods is no
 Sessions now only contain crucial information to have a working client.
 This includes the server address, authorization key, update state, and some very basic details.
 
-To work around this, you can use :class:`types.PackedChat`, which is designed to be easy to store.
+To work around this, you can use :class:`types.PeerRef`, which is designed to be easy to store.
 This means your application can choose the best way to deal with them rather than being forced into Telethon's session.
 
 .. seealso::

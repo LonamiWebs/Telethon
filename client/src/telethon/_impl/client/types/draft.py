@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Self
 
-from ...session import PackedChat
+from ...session import PeerRef
 from ...tl import abcs, functions, types
 from ..parsers import generate_html_message, generate_markdown_message
 from .message import Message, generate_random_id
@@ -158,7 +158,7 @@ class Draft(metaclass=NoPublicConstructor):
             reply_to=reply_to,
         )
 
-    async def _packed_chat(self) -> PackedChat:
+    async def _packed_chat(self) -> PeerRef:
         packed = None
         if chat := self._chat_map.get(peer_id(self._peer)):
             packed = chat.pack()

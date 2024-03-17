@@ -1,7 +1,7 @@
 import abc
 from typing import Optional
 
-from ....session import PackedChat
+from ....session import PeerRef
 
 
 class Peer(abc.ABC):
@@ -45,7 +45,7 @@ class Peer(abc.ABC):
         """
 
     @abc.abstractmethod
-    def pack(self) -> Optional[PackedChat]:
+    def pack(self) -> Optional[PeerRef]:
         """
         Pack the chat into a compact and reusable object.
 
