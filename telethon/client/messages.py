@@ -929,7 +929,8 @@ class MessageMethods:
             with_my_score: bool = None,
             silent: bool = None,
             as_album: bool = None,
-            schedule: 'hints.DateLike' = None
+            schedule: 'hints.DateLike' = None,
+            drop_author: bool = None,
     ) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.
@@ -1041,7 +1042,8 @@ class MessageMethods:
                 silent=silent,
                 background=background,
                 with_my_score=with_my_score,
-                schedule_date=schedule
+                schedule_date=schedule,
+                drop_author=drop_author
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
