@@ -8,7 +8,7 @@ from ...tl import abcs, functions, types
 from ..parsers import generate_html_message, generate_markdown_message
 from .message import Message, generate_random_id
 from .meta import NoPublicConstructor
-from .peer import Chat, expand_peer, peer_id
+from .peer import Peer, expand_peer, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -27,7 +27,7 @@ class Draft(metaclass=NoPublicConstructor):
         peer: abcs.Peer,
         top_msg_id: Optional[int],
         raw: abcs.DraftMessage,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> None:
         assert isinstance(raw, (types.DraftMessage, types.DraftMessageEmpty))
         self._client = client
@@ -38,7 +38,7 @@ class Draft(metaclass=NoPublicConstructor):
 
     @classmethod
     def _from_raw_update(
-        cls, client: Client, draft: types.UpdateDraftMessage, chat_map: dict[int, Chat]
+        cls, client: Client, draft: types.UpdateDraftMessage, chat_map: dict[int, Peer]
     ) -> Self:
         return cls._create(client, draft.peer, draft.top_msg_id, draft.draft, chat_map)
 
@@ -49,12 +49,12 @@ class Draft(metaclass=NoPublicConstructor):
         peer: abcs.Peer,
         top_msg_id: int,
         draft: abcs.DraftMessage,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> Self:
         return cls._create(client, peer, top_msg_id, draft, chat_map)
 
     @property
-    def chat(self) -> Chat:
+    def chat(self) -> Peer:
         """
         The chat where the draft is saved.
 

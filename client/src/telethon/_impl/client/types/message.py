@@ -14,7 +14,7 @@ from ..parsers import (
 from .buttons import Button, as_concrete_row, create_button
 from .file import File
 from .meta import NoPublicConstructor
-from .peer import Chat, ChatLike, expand_peer, peer_id
+from .peer import ChatLike, Peer, expand_peer, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -58,7 +58,7 @@ class Message(metaclass=NoPublicConstructor):
     """
 
     def __init__(
-        self, client: Client, message: abcs.Message, chat_map: dict[int, Chat]
+        self, client: Client, message: abcs.Message, chat_map: dict[int, Peer]
     ) -> None:
         assert isinstance(
             message, (types.Message, types.MessageService, types.MessageEmpty)
@@ -69,7 +69,7 @@ class Message(metaclass=NoPublicConstructor):
 
     @classmethod
     def _from_raw(
-        cls, client: Client, message: abcs.Message, chat_map: dict[int, Chat]
+        cls, client: Client, message: abcs.Message, chat_map: dict[int, Peer]
     ) -> Self:
         return cls._create(client, message, chat_map)
 
@@ -77,7 +77,7 @@ class Message(metaclass=NoPublicConstructor):
     def _from_defaults(
         cls,
         client: Client,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
         id: int,
         peer_id: abcs.Peer,
         date: int,
@@ -184,7 +184,7 @@ class Message(metaclass=NoPublicConstructor):
         return adapt_date(getattr(self._raw, "date", None))
 
     @property
-    def chat(self) -> Chat:
+    def chat(self) -> Peer:
         """
         The :term:`chat` when the message was sent.
         """
@@ -197,7 +197,7 @@ class Message(metaclass=NoPublicConstructor):
         return self._chat_map[pid]
 
     @property
-    def sender(self) -> Optional[Chat]:
+    def sender(self) -> Optional[Peer]:
         """
         The :term:`chat` that sent the message.
 
@@ -502,7 +502,7 @@ class Message(metaclass=NoPublicConstructor):
 
 
 def build_msg_map(
-    client: Client, messages: Sequence[abcs.Message], chat_map: dict[int, Chat]
+    client: Client, messages: Sequence[abcs.Message], chat_map: dict[int, Peer]
 ) -> dict[int, Message]:
     return {
         msg.id: msg

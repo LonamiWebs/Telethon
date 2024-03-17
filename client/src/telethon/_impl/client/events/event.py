@@ -4,7 +4,7 @@ import abc
 from typing import TYPE_CHECKING, Optional, Self
 
 from ...tl import abcs
-from ..types import Chat, NoPublicConstructor
+from ..types import NoPublicConstructor, Peer
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -25,7 +25,7 @@ class Event(metaclass=NoPublicConstructor):
     @classmethod
     @abc.abstractmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         pass
 

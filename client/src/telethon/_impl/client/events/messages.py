@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Self, Sequence
 
 from ...tl import abcs, types
-from ..types import Chat, Message, expand_peer, peer_id
+from ..types import Message, Peer, expand_peer, peer_id
 from .event import Event
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ class NewMessage(Event, Message):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         if isinstance(update, (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if isinstance(update.message, types.Message):
@@ -47,7 +47,7 @@ class MessageEdited(Event, Message):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         if isinstance(
             update, (types.UpdateEditMessage, types.UpdateEditChannelMessage)
@@ -75,7 +75,7 @@ class MessageDeleted(Event):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         if isinstance(update, types.UpdateDeleteMessages):
             return cls._create(update.messages, None)
@@ -115,7 +115,7 @@ class MessageRead(Event):
             | types.UpdateReadChannelInbox
             | types.UpdateReadChannelOutbox
         ),
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> None:
         self._client = client
         self._raw = update
@@ -123,7 +123,7 @@ class MessageRead(Event):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         if isinstance(
             update,
@@ -147,7 +147,7 @@ class MessageRead(Event):
             return types.PeerChannel(channel_id=self._raw.channel_id)
 
     @property
-    def chat(self) -> Chat:
+    def chat(self) -> Peer:
         """
         The :term:`chat` when the messages were read.
         """

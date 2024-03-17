@@ -3,10 +3,10 @@ from typing import Optional, Self
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
-from .peer import Chat
+from .peer import Peer
 
 
-class Channel(Chat, metaclass=NoPublicConstructor):
+class Channel(Peer, metaclass=NoPublicConstructor):
     """
     A broadcast channel.
 

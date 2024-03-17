@@ -4,7 +4,7 @@ from typing import Optional
 from ....session import PackedChat
 
 
-class Chat(abc.ABC):
+class Peer(abc.ABC):
     """
     The base class for all chat types.
 

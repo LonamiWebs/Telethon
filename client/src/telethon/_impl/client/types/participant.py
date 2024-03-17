@@ -8,7 +8,7 @@ from ...tl import abcs, types
 from .admin_right import AdminRight
 from .chat_restriction import ChatRestriction
 from .meta import NoPublicConstructor
-from .peer import Chat, User, peer_id
+from .peer import Peer, User, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -36,7 +36,7 @@ class Participant(metaclass=NoPublicConstructor):
             | types.ChatParticipantCreator
             | types.ChatParticipantAdmin
         ),
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> None:
         self._client = client
         self._chat = chat
@@ -49,7 +49,7 @@ class Participant(metaclass=NoPublicConstructor):
         client: Client,
         chat: PackedChat,
         participant: abcs.ChannelParticipant,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> Self:
         if isinstance(
             participant,
@@ -72,7 +72,7 @@ class Participant(metaclass=NoPublicConstructor):
         client: Client,
         chat: PackedChat,
         participant: abcs.ChatParticipant,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> Self:
         if isinstance(
             participant,
@@ -129,7 +129,7 @@ class Participant(metaclass=NoPublicConstructor):
             return None
 
     @property
-    def banned(self) -> Optional[Chat]:
+    def banned(self) -> Optional[Peer]:
         """
         The banned participant.
 
@@ -141,7 +141,7 @@ class Participant(metaclass=NoPublicConstructor):
             return None
 
     @property
-    def left(self) -> Optional[Chat]:
+    def left(self) -> Optional[Peer]:
         """
         The participant that has left the group.
 

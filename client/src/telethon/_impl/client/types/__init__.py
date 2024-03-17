@@ -27,9 +27,9 @@ from .participant import Participant
 from .password_token import PasswordToken
 from .peer import (
     Channel,
-    Chat,
     ChatLike,
     Group,
+    Peer,
     User,
     build_chat_map,
     expand_peer,
@@ -44,7 +44,7 @@ __all__ = [
     "ChatRestriction",
     "CallbackAnswer",
     "Channel",
-    "Chat",
+    "Peer",
     "ChatLike",
     "Group",
     "User",

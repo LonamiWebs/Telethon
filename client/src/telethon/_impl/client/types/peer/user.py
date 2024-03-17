@@ -3,10 +3,10 @@ from typing import Optional, Self
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
-from .peer import Chat
+from .peer import Peer
 
 
-class User(Chat, metaclass=NoPublicConstructor):
+class User(Peer, metaclass=NoPublicConstructor):
     """
     A user, representing either a bot account or an account created with a phone number.
 

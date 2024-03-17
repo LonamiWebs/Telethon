@@ -9,18 +9,18 @@ from ....session import PackedChat
 from ....tl import abcs, types
 from .channel import Channel
 from .group import Group
-from .peer import Chat
+from .peer import Peer
 from .user import User
 
 if TYPE_CHECKING:
     from ...client.client import Client
 
-ChatLike = Chat | PackedChat | int | str
+ChatLike = Peer | PackedChat | int | str
 
 
 def build_chat_map(
     client: Client, users: Sequence[abcs.User], chats: Sequence[abcs.Chat]
-) -> dict[int, Chat]:
+) -> dict[int, Peer]:
     users_iter = (User._from_raw(u) for u in users)
     chats_iter = (
         (
@@ -31,7 +31,7 @@ def build_chat_map(
         for c in chats
     )
 
-    result: dict[int, Chat] = {c.id: c for c in itertools.chain(users_iter, chats_iter)}
+    result: dict[int, Peer] = {c.id: c for c in itertools.chain(users_iter, chats_iter)}
 
     if len(result) != len(users) + len(chats):
         # The fabled ID collision between different chat types.
@@ -66,7 +66,7 @@ def peer_id(peer: abcs.Peer) -> int:
         raise RuntimeError("unexpected case")
 
 
-def expand_peer(client: Client, peer: abcs.Peer, *, broadcast: Optional[bool]) -> Chat:
+def expand_peer(client: Client, peer: abcs.Peer, *, broadcast: Optional[bool]) -> Peer:
     if isinstance(peer, types.PeerUser):
         return User._from_raw(types.UserEmpty(id=peer.user_id))
     elif isinstance(peer, types.PeerChat):
@@ -93,4 +93,4 @@ def expand_peer(client: Client, peer: abcs.Peer, *, broadcast: Optional[bool]) -
         raise RuntimeError("unexpected case")
 
 
-__all__ = ["Channel", "Chat", "Group", "User"]
+__all__ = ["Channel", "Peer", "Group", "User"]

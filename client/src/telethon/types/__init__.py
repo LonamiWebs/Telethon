@@ -1,13 +1,13 @@
 """
 Classes for the various objects the library returns.
 """
+
 from .._impl.client.types import (
     AdminRight,
     AlbumBuilder,
     AsyncList,
     CallbackAnswer,
     Channel,
-    Chat,
     ChatRestriction,
     Dialog,
     Draft,
@@ -18,6 +18,7 @@ from .._impl.client.types import (
     Message,
     Participant,
     PasswordToken,
+    Peer,
     RecentAction,
     User,
 )
@@ -30,7 +31,7 @@ __all__ = [
     "AsyncList",
     "CallbackAnswer",
     "Channel",
-    "Chat",
+    "Peer",
     "ChatRestriction",
     "Dialog",
     "Draft",

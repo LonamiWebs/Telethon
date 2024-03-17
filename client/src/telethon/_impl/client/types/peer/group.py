@@ -7,13 +7,13 @@ from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..chat_restriction import ChatRestriction
 from ..meta import NoPublicConstructor
-from .peer import Chat
+from .peer import Peer
 
 if TYPE_CHECKING:
     from ...client.client import Client
 
 
-class Group(Chat, metaclass=NoPublicConstructor):
+class Group(Peer, metaclass=NoPublicConstructor):
     """
     A small group or supergroup.
 

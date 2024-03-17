@@ -8,9 +8,9 @@ from ...tl import abcs, functions, types
 from ..types import (
     AsyncList,
     Channel,
-    Chat,
     ChatLike,
     Group,
+    Peer,
     User,
     build_chat_map,
     expand_peer,
@@ -52,7 +52,7 @@ def get_contacts(self: Client) -> AsyncList[User]:
     return ContactList(self)
 
 
-def resolved_peer_to_chat(client: Client, resolved: abcs.contacts.ResolvedPeer) -> Chat:
+def resolved_peer_to_chat(client: Client, resolved: abcs.contacts.ResolvedPeer) -> Peer:
     assert isinstance(resolved, types.contacts.ResolvedPeer)
 
     map = build_chat_map(client, resolved.users, resolved.chats)
@@ -62,13 +62,13 @@ def resolved_peer_to_chat(client: Client, resolved: abcs.contacts.ResolvedPeer) 
         raise ValueError("no matching chat found in response")
 
 
-async def resolve_phone(client: Client, phone: str) -> Chat:
+async def resolve_phone(client: Client, phone: str) -> Peer:
     return resolved_peer_to_chat(
         client, await client(functions.contacts.resolve_phone(phone=phone))
     )
 
 
-async def resolve_username(self: Client, username: str) -> Chat:
+async def resolve_username(self: Client, username: str) -> Peer:
     return resolved_peer_to_chat(
         self, await self(functions.contacts.resolve_username(username=username))
     )
@@ -76,7 +76,7 @@ async def resolve_username(self: Client, username: str) -> Chat:
 
 async def get_chats(
     self: Client, chats: list[ChatLike] | tuple[ChatLike, ...]
-) -> list[Chat]:
+) -> list[Peer]:
     packed_chats: list[PackedChat] = []
     input_users: list[types.InputUser] = []
     input_chats: list[int] = []

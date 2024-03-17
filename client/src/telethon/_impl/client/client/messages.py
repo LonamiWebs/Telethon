@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Self
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
-from ..types import AsyncList, Chat, ChatLike, Message, build_chat_map
+from ..types import AsyncList, ChatLike, Message, Peer, build_chat_map
 from ..types import buttons as btns
 from ..types import generate_random_id, parse_message, peer_id
 
@@ -198,7 +198,7 @@ class MessageList(AsyncList[Message]):
 
     def _extend_buffer(
         self, client: Client, messages: abcs.messages.Messages
-    ) -> dict[int, Chat]:
+    ) -> dict[int, Peer]:
         if isinstance(messages, types.messages.MessagesNotModified):
             self._total = messages.count
             return {}

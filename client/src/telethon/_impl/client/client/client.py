@@ -25,7 +25,6 @@ from ..types import (
     AdminRight,
     AlbumBuilder,
     AsyncList,
-    Chat,
     ChatLike,
     ChatRestriction,
     Dialog,
@@ -38,6 +37,7 @@ from ..types import (
     OutFileLike,
     Participant,
     PasswordToken,
+    Peer,
     RecentAction,
     User,
 )
@@ -253,7 +253,7 @@ class Client:
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
         self._updates: asyncio.Queue[
-            tuple[abcs.Update, dict[int, Chat]]
+            tuple[abcs.Update, dict[int, Peer]]
         ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._handlers: dict[
@@ -676,11 +676,11 @@ class Client:
 
     async def get_chats(
         self, chats: list[ChatLike] | tuple[ChatLike, ...]
-    ) -> list[Chat]:
+    ) -> list[Peer]:
         """
         Get the latest basic information about the given chats.
 
-        This method is most commonly used to turn one or more :class:`~types.PackedChat` into the original :class:`~types.Chat`.
+        This method is most commonly used to turn one or more :class:`~types.PackedChat` into the original :class:`~types.Peer`.
         This includes users, groups and broadcast channels.
 
         :param chats:
@@ -1227,12 +1227,12 @@ class Client:
         """
         return await request_login_code(self, phone)
 
-    async def resolve_username(self, username: str) -> Chat:
+    async def resolve_username(self, username: str) -> Peer:
         """
         Resolve a username into a :term:`chat`.
 
         This method is rather expensive to call.
-        It is recommended to use it once and then :meth:`types.Chat.pack` the result.
+        It is recommended to use it once and then :meth:`types.Peer.pack` the result.
         The packed chat can then be used (and re-fetched) more cheaply.
 
         :param username:

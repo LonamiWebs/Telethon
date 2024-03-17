@@ -6,7 +6,7 @@ from ...tl import abcs, types
 from .draft import Draft
 from .message import Message
 from .meta import NoPublicConstructor
-from .peer import Chat, peer_id
+from .peer import Peer, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -27,7 +27,7 @@ class Dialog(metaclass=NoPublicConstructor):
         self,
         client: Client,
         raw: types.Dialog | types.DialogFolder,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
         msg_map: dict[int, Message],
     ) -> None:
         self._client = client
@@ -40,14 +40,14 @@ class Dialog(metaclass=NoPublicConstructor):
         cls,
         client: Client,
         dialog: abcs.Dialog,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
         msg_map: dict[int, Message],
     ) -> Self:
         assert isinstance(dialog, (types.Dialog, types.DialogFolder))
         return cls._create(client, dialog, chat_map, msg_map)
 
     @property
-    def chat(self) -> Chat:
+    def chat(self) -> Peer:
         """
         The chat where messages are sent in this dialog.
         """

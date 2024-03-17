@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional, Self
 
 from ...tl import abcs, functions, types
 from ..client.messages import CherryPickedList
-from ..types import Chat, Message
+from ..types import Message, Peer
 from ..types.peer import peer_id
 from .event import Event
 
@@ -23,7 +23,7 @@ class ButtonCallback(Event):
         self,
         client: Client,
         update: types.UpdateBotCallbackQuery,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ):
         self._client = client
         self._raw = update
@@ -31,7 +31,7 @@ class ButtonCallback(Event):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         if isinstance(update, types.UpdateBotCallbackQuery) and update.data is not None:
             return cls._create(client, update, chat_map)
@@ -105,7 +105,7 @@ class InlineQuery(Event):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
     ) -> Optional[Self]:
         if isinstance(update, types.UpdateBotInlineQuery):
             return cls._create(update)

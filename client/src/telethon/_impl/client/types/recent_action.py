@@ -1,6 +1,6 @@
 from ...tl import abcs, types
 from .meta import NoPublicConstructor
-from .peer import Chat
+from .peer import Peer
 
 
 class RecentAction(metaclass=NoPublicConstructor):
@@ -15,7 +15,7 @@ class RecentAction(metaclass=NoPublicConstructor):
     def __init__(
         self,
         event: abcs.ChannelAdminLogEvent,
-        chat_map: dict[int, Chat],
+        chat_map: dict[int, Peer],
     ) -> None:
         assert isinstance(event, types.ChannelAdminLogEvent)
         self._raw = event
