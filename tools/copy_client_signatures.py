@@ -88,7 +88,7 @@ def main() -> None:
     class_body: list[ast.stmt] = []
 
     for function in sorted(fm_visitor.methods, key=lambda f: f.name):
-        function_body: list[ast.stmt] = []
+        function.body.clear()
         if doc := m_visitor.method_docs.get(function.name):
             function.body.append(ast.Expr(value=ast.Constant(value=doc)))
 
@@ -112,7 +112,7 @@ def main() -> None:
             case _:
                 call = ast.Return(value=call)
 
-        function.body = function_body
+        function.body.append(call)
         class_body.append(function)
 
     generated = ast.unparse(
