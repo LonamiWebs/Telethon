@@ -3,7 +3,7 @@ from typing import Optional, Self
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
-from .chat import Chat
+from .peer import Chat
 
 
 class User(Chat, metaclass=NoPublicConstructor):

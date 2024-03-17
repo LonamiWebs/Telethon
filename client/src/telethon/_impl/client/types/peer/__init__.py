@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from ....session import PackedChat
 from ....tl import abcs, types
 from .channel import Channel
-from .chat import Chat
 from .group import Group
+from .peer import Chat
 from .user import User
 
 if TYPE_CHECKING:

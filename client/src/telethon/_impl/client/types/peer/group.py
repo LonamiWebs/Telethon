@@ -7,7 +7,7 @@ from ....session import PackedChat, PackedType
 from ....tl import abcs, types
 from ..chat_restriction import ChatRestriction
 from ..meta import NoPublicConstructor
-from .chat import Chat
+from .peer import Chat
 
 if TYPE_CHECKING:
     from ...client.client import Client
