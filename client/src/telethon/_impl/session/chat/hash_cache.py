@@ -1,7 +1,7 @@
 from typing import Any, Optional, Sequence
 
 from ...tl import abcs, types
-from .packed import PackedChat, PackedType
+from .peer_ref import PackedChat, PackedType
 
 
 class ChatHashCache:
