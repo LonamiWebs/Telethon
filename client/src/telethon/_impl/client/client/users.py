@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional
 
 from ...mtproto import RpcError
 from ...session import PackedChat, PackedType
@@ -75,12 +75,12 @@ async def resolve_username(self: Client, username: str) -> Chat:
 
 
 async def get_chats(
-    self: Client, chats: Union[List[ChatLike], Tuple[ChatLike, ...]]
-) -> List[Chat]:
-    packed_chats: List[PackedChat] = []
-    input_users: List[types.InputUser] = []
-    input_chats: List[int] = []
-    input_channels: List[types.InputChannel] = []
+    self: Client, chats: list[ChatLike] | tuple[ChatLike, ...]
+) -> list[Chat]:
+    packed_chats: list[PackedChat] = []
+    input_users: list[types.InputUser] = []
+    input_chats: list[int] = []
+    input_channels: list[types.InputChannel] = []
 
     for chat in chats:
         packed = await resolve_to_packed(self, chat)
@@ -121,7 +121,7 @@ async def get_chats(
 
 
 async def resolve_to_packed(
-    client: Client, chat: Union[ChatLike, abcs.InputPeer, abcs.Peer]
+    client: Client, chat: ChatLike | abcs.InputPeer | abcs.Peer
 ) -> PackedChat:
     if isinstance(chat, PackedChat):
         return chat

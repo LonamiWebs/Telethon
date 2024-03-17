@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from ....tl import types
 
@@ -9,24 +9,24 @@ if TYPE_CHECKING:
     from ..message import Message
 
 
-ButtonTypes = Union[
-    types.KeyboardButton,
-    types.KeyboardButtonUrl,
-    types.KeyboardButtonCallback,
-    types.KeyboardButtonRequestPhone,
-    types.KeyboardButtonRequestGeoLocation,
-    types.KeyboardButtonSwitchInline,
-    types.KeyboardButtonGame,
-    types.KeyboardButtonBuy,
-    types.KeyboardButtonUrlAuth,
-    types.InputKeyboardButtonUrlAuth,
-    types.KeyboardButtonRequestPoll,
-    types.InputKeyboardButtonUserProfile,
-    types.KeyboardButtonUserProfile,
-    types.KeyboardButtonWebView,
-    types.KeyboardButtonSimpleWebView,
-    types.KeyboardButtonRequestPeer,
-]
+ButtonTypes = (
+    types.KeyboardButton
+    | types.KeyboardButtonUrl
+    | types.KeyboardButtonCallback
+    | types.KeyboardButtonRequestPhone
+    | types.KeyboardButtonRequestGeoLocation
+    | types.KeyboardButtonSwitchInline
+    | types.KeyboardButtonGame
+    | types.KeyboardButtonBuy
+    | types.KeyboardButtonUrlAuth
+    | types.InputKeyboardButtonUrlAuth
+    | types.KeyboardButtonRequestPoll
+    | types.InputKeyboardButtonUserProfile
+    | types.KeyboardButtonUserProfile
+    | types.KeyboardButtonWebView
+    | types.KeyboardButtonSimpleWebView
+    | types.KeyboardButtonRequestPeer
+)
 
 
 class Button:

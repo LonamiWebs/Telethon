@@ -4,18 +4,9 @@ import struct
 import time
 from abc import ABC
 from asyncio import FIRST_COMPLETED, Event, Future
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import (
-    Generic,
-    Iterator,
-    List,
-    Optional,
-    Protocol,
-    Self,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import Generic, Optional, Protocol, Self, Type, TypeVar
 
 from ..crypto import AuthKey
 from ..mtproto import (
@@ -127,7 +118,7 @@ class Connector(Protocol):
         The :doc:`/concepts/datacenters` concept has examples on how to combine proxy libraries with Telethon.
     """
 
-    async def __call__(self, ip: str, port: int) -> Tuple[AsyncReader, AsyncWriter]:
+    async def __call__(self, ip: str, port: int) -> tuple[AsyncReader, AsyncWriter]:
         raise NotImplementedError
 
 
@@ -175,7 +166,7 @@ class Sender:
     _transport: Transport
     _mtp: Mtp
     _mtp_buffer: bytearray
-    _requests: List[Request[object]]
+    _requests: list[Request[object]]
     _request_event: Event
     _next_ping: float
     _read_buffer: bytearray
@@ -239,7 +230,7 @@ class Sender:
             if rx.done():
                 return rx.result()
 
-    async def step(self) -> List[Updates]:
+    async def step(self) -> list[Updates]:
         self._try_fill_write()
 
         recv_req = asyncio.create_task(self._request_event.wait())
@@ -296,13 +287,13 @@ class Sender:
             self._transport.pack(mtp_buffer, self._writer.write)
             self._write_drain_pending = True
 
-    def _on_net_read(self, read_buffer: bytes) -> List[Updates]:
+    def _on_net_read(self, read_buffer: bytes) -> list[Updates]:
         if not read_buffer:
             raise ConnectionResetError("read 0 bytes")
 
         self._read_buffer += read_buffer
 
-        updates: List[Updates] = []
+        updates: list[Updates] = []
         while self._read_buffer:
             self._mtp_buffer.clear()
             try:
@@ -331,7 +322,7 @@ class Sender:
         )
         self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
-    def _process_mtp_buffer(self, updates: List[Updates]) -> None:
+    def _process_mtp_buffer(self, updates: list[Updates]) -> None:
         results = self._mtp.deserialize(self._mtp_buffer)
 
         for result in results:
@@ -345,13 +336,13 @@ class Sender:
                 self._process_bad_message(result)
 
     def _process_update(
-        self, updates: List[Updates], update: bytes | bytearray | memoryview
+        self, updates: list[Updates], update: bytes | bytearray | memoryview
     ) -> None:
         try:
             updates.append(Updates.from_bytes(update))
         except ValueError:
             cid = struct.unpack_from("I", update)[0]
-            alt_classes: Tuple[Type[Serializable], ...] = (
+            alt_classes: tuple[Type[Serializable], ...] = (
                 AffectedFoundMessages,
                 AffectedHistory,
                 AffectedMessages,

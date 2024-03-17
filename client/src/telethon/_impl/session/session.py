@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from ..tl.core.serializable import obj_repr
 
@@ -13,7 +13,7 @@ class DataCenter:
     :param auth: See below.
     """
 
-    __slots__: Tuple[str, ...] = ("id", "ipv4_addr", "ipv6_addr", "auth")
+    __slots__: tuple[str, ...] = ("id", "ipv4_addr", "ipv6_addr", "auth")
 
     def __init__(
         self,
@@ -116,7 +116,7 @@ class UpdateState:
         qts: int,
         date: int,
         seq: int,
-        channels: List[ChannelState],
+        channels: list[ChannelState],
     ) -> None:
         self.pts = pts
         "The primary partial sequence number."
@@ -165,7 +165,7 @@ class Session:
     def __init__(
         self,
         *,
-        dcs: Optional[List[DataCenter]] = None,
+        dcs: Optional[list[DataCenter]] = None,
         user: Optional[User] = None,
         state: Optional[UpdateState] = None,
     ):

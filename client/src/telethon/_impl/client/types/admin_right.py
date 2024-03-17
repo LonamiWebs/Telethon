@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Set
 
 from ...tl import abcs, types
 
@@ -62,7 +61,7 @@ class AdminRight(Enum):
     """Allows deleting stories in a channel."""
 
     @classmethod
-    def _from_raw(cls, rights: abcs.ChatAdminRights) -> Set[AdminRight]:
+    def _from_raw(cls, rights: abcs.ChatAdminRights) -> set[AdminRight]:
         assert isinstance(rights, types.ChatAdminRights)
         all_rights = (
             cls.CHANGE_INFO if rights.change_info else None,
@@ -84,7 +83,7 @@ class AdminRight(Enum):
         return set(filter(None, iter(all_rights)))
 
     @classmethod
-    def _chat_rights(cls) -> Set[AdminRight]:
+    def _chat_rights(cls) -> set[AdminRight]:
         return {
             cls.CHANGE_INFO,
             cls.POST_MESSAGES,
@@ -104,7 +103,7 @@ class AdminRight(Enum):
         }
 
     @classmethod
-    def _set_to_raw(cls, all_rights: Set[AdminRight]) -> types.ChatAdminRights:
+    def _set_to_raw(cls, all_rights: set[AdminRight]) -> types.ChatAdminRights:
         return types.ChatAdminRights(
             change_info=cls.CHANGE_INFO in all_rights,
             post_messages=cls.POST_MESSAGES in all_rights,

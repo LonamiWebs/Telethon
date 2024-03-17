@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import mimetypes
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from ...tl import abcs, functions, types
 from .chat import ChatLike
@@ -23,11 +23,11 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
 
     def __init__(self, *, client: Client):
         self._client = client
-        self._medias: List[types.InputSingleMedia] = []
+        self._medias: list[types.InputSingleMedia] = []
 
     async def add_photo(
         self,
-        file: Union[str, Path, InFileLike],
+        file: str | Path | InFileLike,
         *,
         size: Optional[int] = None,
         caption: Optional[str] = None,
@@ -90,7 +90,7 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
 
     async def add_video(
         self,
-        file: Union[str, Path, InFileLike],
+        file: str | Path | InFileLike,
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
@@ -141,7 +141,7 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
                 if mime_type is None:
                     mime_type = "application/octet-stream"
 
-            attributes: List[abcs.DocumentAttribute] = []
+            attributes: list[abcs.DocumentAttribute] = []
             attributes.append(types.DocumentAttributeFilename(file_name=name))
             if duration is not None and width is not None and height is not None:
                 attributes.append(
@@ -198,7 +198,7 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
 
     async def send(
         self, chat: ChatLike, *, reply_to: Optional[int] = None
-    ) -> List[Message]:
+    ) -> list[Message]:
         """
         Send the album.
 
@@ -224,11 +224,13 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
                     noforwards=False,
                     update_stickersets_order=False,
                     peer=peer,
-                    reply_to=types.InputReplyToMessage(
-                        reply_to_msg_id=reply_to, top_msg_id=None
-                    )
-                    if reply_to
-                    else None,
+                    reply_to=(
+                        types.InputReplyToMessage(
+                            reply_to_msg_id=reply_to, top_msg_id=None
+                        )
+                        if reply_to
+                        else None
+                    ),
                     multi_media=self._medias,
                     schedule_date=None,
                     send_as=None,

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Set
 
 from ..tl_parser import NormalParameter, ParsedTl
 from .fakefs import FakeFs, SourceWriter
@@ -19,7 +18,7 @@ from .serde.serialization import generate_function, generate_write
 
 
 def generate_init(
-    writer: SourceWriter, namespaces: Set[str], classes: Set[str]
+    writer: SourceWriter, namespaces: set[str], classes: set[str]
 ) -> None:
     sorted_cls = list(sorted(classes))
     sorted_ns = list(sorted(namespaces))
@@ -46,14 +45,14 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
 
     ignored_types = {"true", "boolTrue", "boolFalse"}  # also "compiler built-ins"
 
-    abc_namespaces: Set[str] = set()
-    type_namespaces: Set[str] = set()
-    function_namespaces: Set[str] = set()
+    abc_namespaces: set[str] = set()
+    type_namespaces: set[str] = set()
+    function_namespaces: set[str] = set()
 
-    abc_class_names: Set[str] = set()
-    type_class_names: Set[str] = set()
-    function_def_names: Set[str] = set()
-    generated_type_names: Set[str] = set()
+    abc_class_names: set[str] = set()
+    type_class_names: set[str] = set()
+    function_def_names: set[str] = set()
+    generated_type_names: set[str] = set()
 
     for typedef in tl.typedefs:
         if typedef.ty.full_name not in generated_types:
@@ -193,10 +192,10 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     writer.write(
         "from .core import Serializable, Reader, deserialize_bool, deserialize_i32_list, deserialize_i64_list, deserialize_identity, single_deserializer, list_deserializer"
     )
-    writer.write("from typing import cast, Tuple, Type")
+    writer.write("from typing import cast, Type")
     writer.write(f"LAYER = {tl.layer!r}")
     writer.write(
-        "TYPE_MAPPING = {t.constructor_id(): t for t in cast(Tuple[Type[Serializable]], ("
+        "TYPE_MAPPING = {t.constructor_id(): t for t in cast(tuple[Type[Serializable]], ("
     )
     for name in sorted(generated_type_names):
         writer.write(f"  types.{name},")

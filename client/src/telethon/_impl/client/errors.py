@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Tuple, Type
+from typing import Type
 
 from ..mtproto import RpcError
 
@@ -20,14 +20,14 @@ def pretty_name(name: str) -> str:
     return "".join(map(str.title, name.split("_")))
 
 
-def from_code(code: int, *, _cache: Dict[int, Type[RpcError]] = {}) -> Type[RpcError]:
+def from_code(code: int, *, _cache: dict[int, Type[RpcError]] = {}) -> Type[RpcError]:
     code = canonicalize_code(code)
     if code not in _cache:
         _cache[code] = type(f"Code{code}", (RpcError,), {})
     return _cache[code]
 
 
-def from_name(name: str, *, _cache: Dict[str, Type[RpcError]] = {}) -> Type[RpcError]:
+def from_name(name: str, *, _cache: dict[str, Type[RpcError]] = {}) -> Type[RpcError]:
     name = canonicalize_name(name)
     if name not in _cache:
         _cache[name] = type(pretty_name(name), (RpcError,), {})
@@ -35,7 +35,7 @@ def from_name(name: str, *, _cache: Dict[str, Type[RpcError]] = {}) -> Type[RpcE
 
 
 def adapt_rpc(
-    error: RpcError, *, _cache: Dict[Tuple[int, str], Type[RpcError]] = {}
+    error: RpcError, *, _cache: dict[tuple[int, str], Type[RpcError]] = {}
 ) -> RpcError:
     code = canonicalize_code(error.code)
     name = canonicalize_name(error.name)

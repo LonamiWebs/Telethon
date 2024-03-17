@@ -1,9 +1,8 @@
 from math import gcd
 from random import randrange
-from typing import Tuple
 
 
-def factorize(pq: int) -> Tuple[int, int]:
+def factorize(pq: int) -> tuple[int, int]:
     """
     Factorize the given number into its two prime factors.
 

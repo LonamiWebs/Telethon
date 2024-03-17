@@ -1,4 +1,4 @@
-from typing import Optional, Self, Union
+from typing import Optional, Self
 
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
@@ -16,7 +16,7 @@ class Channel(Chat, metaclass=NoPublicConstructor):
 
     def __init__(
         self,
-        raw: Union[types.Channel, types.ChannelForbidden],
+        raw: types.Channel | types.ChannelForbidden,
     ) -> None:
         self._raw = raw
 
@@ -55,9 +55,11 @@ class Channel(Chat, metaclass=NoPublicConstructor):
             return None
         else:
             return PackedChat(
-                ty=PackedType.GIGAGROUP
-                if getattr(self._raw, "gigagroup", False)
-                else PackedType.BROADCAST,
+                ty=(
+                    PackedType.GIGAGROUP
+                    if getattr(self._raw, "gigagroup", False)
+                    else PackedType.BROADCAST
+                ),
                 id=self._raw.id,
                 access_hash=self._raw.access_hash,
             )

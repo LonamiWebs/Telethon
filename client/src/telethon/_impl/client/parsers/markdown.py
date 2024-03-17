@@ -1,5 +1,6 @@
 import re
-from typing import Any, Dict, Iterator, List, Tuple, Type
+from collections.abc import Iterator
+from typing import Any, Type
 
 import markdown_it
 import markdown_it.token
@@ -19,7 +20,7 @@ from ...tl.types import (
 from .strings import add_surrogate, del_surrogate, within_surrogate
 
 MARKDOWN = markdown_it.MarkdownIt().enable("strikethrough")
-DELIMITERS: Dict[Type[MessageEntity], Tuple[str, str]] = {
+DELIMITERS: dict[Type[MessageEntity], tuple[str, str]] = {
     MessageEntityBlockquote: ("> ", ""),
     MessageEntityBold: ("**", "**"),
     MessageEntityCode: ("`", "`"),
@@ -44,7 +45,7 @@ HTML_TO_TYPE = {
 
 
 def expand_inline_and_html(
-    tokens: List[markdown_it.token.Token],
+    tokens: list[markdown_it.token.Token],
 ) -> Iterator[markdown_it.token.Token]:
     for token in tokens:
         if token.type == "inline":
@@ -63,7 +64,7 @@ def expand_inline_and_html(
             yield token
 
 
-def parse(message: str) -> Tuple[str, List[MessageEntity]]:
+def parse(message: str) -> tuple[str, list[MessageEntity]]:
     """
     Parses the given markdown message and returns its stripped representation
     plus a list of the MessageEntity's that were found.
@@ -71,7 +72,7 @@ def parse(message: str) -> Tuple[str, List[MessageEntity]]:
     if not message:
         return message, []
 
-    entities: List[MessageEntity]
+    entities: list[MessageEntity]
     token: markdown_it.token.Token
 
     def push(ty: Any, **extra: object) -> None:
@@ -145,7 +146,7 @@ def parse(message: str) -> Tuple[str, List[MessageEntity]]:
     return del_surrogate(message), entities
 
 
-def unparse(text: str, entities: List[MessageEntity]) -> str:
+def unparse(text: str, entities: list[MessageEntity]) -> str:
     """
     Performs the reverse operation to .parse(), effectively returning
     markdown-like syntax given a normal text and its MessageEntity's.
@@ -157,7 +158,7 @@ def unparse(text: str, entities: List[MessageEntity]) -> str:
         return text
 
     text = add_surrogate(text)
-    insert_at: List[Tuple[int, str]] = []
+    insert_at: list[tuple[int, str]] = []
     for e in entities:
         offset, length = getattr(e, "offset", None), getattr(e, "length", None)
         assert isinstance(offset, int) and isinstance(length, int)

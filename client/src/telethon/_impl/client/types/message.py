@@ -2,17 +2,7 @@ from __future__ import annotations
 
 import datetime
 import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Optional,
-    Self,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Optional, Self, Sequence
 
 from ...tl import abcs, types
 from ..parsers import (
@@ -68,7 +58,7 @@ class Message(metaclass=NoPublicConstructor):
     """
 
     def __init__(
-        self, client: Client, message: abcs.Message, chat_map: Dict[int, Chat]
+        self, client: Client, message: abcs.Message, chat_map: dict[int, Chat]
     ) -> None:
         assert isinstance(
             message, (types.Message, types.MessageService, types.MessageEmpty)
@@ -79,7 +69,7 @@ class Message(metaclass=NoPublicConstructor):
 
     @classmethod
     def _from_raw(
-        cls, client: Client, message: abcs.Message, chat_map: Dict[int, Chat]
+        cls, client: Client, message: abcs.Message, chat_map: dict[int, Chat]
     ) -> Self:
         return cls._create(client, message, chat_map)
 
@@ -87,14 +77,14 @@ class Message(metaclass=NoPublicConstructor):
     def _from_defaults(
         cls,
         client: Client,
-        chat_map: Dict[int, Chat],
+        chat_map: dict[int, Chat],
         id: int,
         peer_id: abcs.Peer,
         date: int,
         message: str,
         **kwargs: Any,
     ) -> Self:
-        default_kwargs: Dict[str, Any] = {
+        default_kwargs: dict[str, Any] = {
             "out": False,
             "mentioned": False,
             "media_unread": False,
@@ -337,12 +327,12 @@ class Message(metaclass=NoPublicConstructor):
 
     async def respond(
         self,
-        text: Optional[Union[str, Message]] = None,
+        text: Optional[str | Message] = None,
         *,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[Union[List[Button], List[List[Button]]]] = None,
+        buttons: Optional[list[Button] | list[list[Button]]] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.send_message`.
@@ -364,12 +354,12 @@ class Message(metaclass=NoPublicConstructor):
 
     async def reply(
         self,
-        text: Optional[Union[str, Message]] = None,
+        text: Optional[str | Message] = None,
         *,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[Union[List[Button], List[List[Button]]]] = None,
+        buttons: Optional[list[Button] | list[list[Button]]] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.send_message` with the ``reply_to`` parameter set to this message.
@@ -404,7 +394,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[Union[List[Button], List[List[Button]]]] = None,
+        buttons: Optional[list[Button] | list[list[Button]]] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.edit_message`.
@@ -458,7 +448,7 @@ class Message(metaclass=NoPublicConstructor):
         pass
 
     @property
-    def buttons(self) -> Optional[List[List[Button]]]:
+    def buttons(self) -> Optional[list[list[Button]]]:
         """
         The buttons attached to the message.
 
@@ -512,8 +502,8 @@ class Message(metaclass=NoPublicConstructor):
 
 
 def build_msg_map(
-    client: Client, messages: Sequence[abcs.Message], chat_map: Dict[int, Chat]
-) -> Dict[int, Message]:
+    client: Client, messages: Sequence[abcs.Message], chat_map: dict[int, Chat]
+) -> dict[int, Message]:
     return {
         msg.id: msg
         for msg in (Message._from_raw(client, m, chat_map) for m in messages)
@@ -526,7 +516,7 @@ def parse_message(
     markdown: Optional[str],
     html: Optional[str],
     allow_empty: bool,
-) -> Tuple[str, Optional[List[abcs.MessageEntity]]]:
+) -> tuple[str, Optional[list[abcs.MessageEntity]]]:
     cnt = sum((text is not None, markdown is not None, html is not None))
     if cnt != 1:
         if cnt == 0 and allow_empty:

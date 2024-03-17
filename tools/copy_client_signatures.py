@@ -15,12 +15,11 @@ import ast
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Union
 
 
 class FunctionMethodsVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
-        self.methods: List[Union[ast.FunctionDef, ast.AsyncFunctionDef]] = []
+        self.methods: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._try_add_def(node)
@@ -28,7 +27,7 @@ class FunctionMethodsVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._try_add_def(node)
 
-    def _try_add_def(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> None:
+    def _try_add_def(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         match node.args.args:
             case [ast.arg(arg="self", annotation=ast.Name(id="Client")), *_]:
                 self.methods.append(node)
@@ -39,7 +38,7 @@ class FunctionMethodsVisitor(ast.NodeVisitor):
 class MethodVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self._in_client = False
-        self.method_docs: Dict[str, str] = {}
+        self.method_docs: dict[str, str] = {}
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         if node.name == "Client":
@@ -55,7 +54,7 @@ class MethodVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._try_add_doc(node)
 
-    def _try_add_doc(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> None:
+    def _try_add_doc(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         if not self._in_client:
             return
 
@@ -86,10 +85,10 @@ def main() -> None:
 
     m_visitor.visit(ast.parse(contents))
 
-    class_body: List[ast.stmt] = []
+    class_body: list[ast.stmt] = []
 
     for function in sorted(fm_visitor.methods, key=lambda f: f.name):
-        function_body: List[ast.stmt] = []
+        function_body: list[ast.stmt] = []
         if doc := m_visitor.method_docs.get(function.name):
             function.body.append(ast.Expr(value=ast.Constant(value=doc)))
 

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from pytest import raises
 from telethon._impl.mtproto import Intermediate
 
@@ -11,7 +9,7 @@ class Output(bytearray):
         self += data
 
 
-def setup_pack(n: int) -> Tuple[Intermediate, bytes, Output]:
+def setup_pack(n: int) -> tuple[Intermediate, bytes, Output]:
     input = bytes(x & 0xFF for x in range(n))
     return Intermediate(), input, Output()
 

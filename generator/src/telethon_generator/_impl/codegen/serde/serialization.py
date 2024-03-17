@@ -1,6 +1,6 @@
 import struct
+from collections.abc import Iterator
 from itertools import groupby
-from typing import Iterator
 
 from ....tl_parser import Definition, FlagsParameter, NormalParameter, Parameter, Type
 from ..fakefs import SourceWriter
@@ -104,9 +104,11 @@ def generate_write(writer: SourceWriter, defn: Definition) -> None:
             for param in group:
                 if isinstance(param.ty, FlagsParameter):
                     flags = " | ".join(
-                        f"({1 << p.ty.flag.index} if self.{p.name} else 0)"
-                        if p.ty.ty.name == "true"
-                        else f"(0 if self.{p.name} is None else {1 << p.ty.flag.index})"
+                        (
+                            f"({1 << p.ty.flag.index} if self.{p.name} else 0)"
+                            if p.ty.ty.name == "true"
+                            else f"(0 if self.{p.name} is None else {1 << p.ty.flag.index})"
+                        )
                         for p in defn.params
                         if isinstance(p.ty, NormalParameter)
                         and p.ty.flag
@@ -140,9 +142,11 @@ def generate_function(writer: SourceWriter, defn: Definition) -> None:
             for param in group:
                 if isinstance(param.ty, FlagsParameter):
                     flags = " | ".join(
-                        f"({1 << p.ty.flag.index} if {p.name} else 0)"
-                        if p.ty.ty.name == "true"
-                        else f"(0 if {p.name} is None else {1 << p.ty.flag.index})"
+                        (
+                            f"({1 << p.ty.flag.index} if {p.name} else 0)"
+                            if p.ty.ty.name == "true"
+                            else f"(0 if {p.name} is None else {1 << p.ty.flag.index})"
+                        )
                         for p in defn.params
                         if isinstance(p.ty, NormalParameter)
                         and p.ty.flag

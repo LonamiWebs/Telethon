@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import sys
 from collections import defaultdict
-from typing import TYPE_CHECKING, DefaultDict, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from ....session import PackedChat
 from ....tl import abcs, types
@@ -15,12 +15,12 @@ from .user import User
 if TYPE_CHECKING:
     from ...client.client import Client
 
-ChatLike = Union[Chat, PackedChat, int, str]
+ChatLike = Chat | PackedChat | int | str
 
 
 def build_chat_map(
     client: Client, users: Sequence[abcs.User], chats: Sequence[abcs.Chat]
-) -> Dict[int, Chat]:
+) -> dict[int, Chat]:
     users_iter = (User._from_raw(u) for u in users)
     chats_iter = (
         (
@@ -31,11 +31,11 @@ def build_chat_map(
         for c in chats
     )
 
-    result: Dict[int, Chat] = {c.id: c for c in itertools.chain(users_iter, chats_iter)}
+    result: dict[int, Chat] = {c.id: c for c in itertools.chain(users_iter, chats_iter)}
 
     if len(result) != len(users) + len(chats):
         # The fabled ID collision between different chat types.
-        counter: DefaultDict[int, List[Union[abcs.User, abcs.Chat]]] = defaultdict(list)
+        counter: defaultdict[int, list[abcs.User | abcs.Chat]] = defaultdict(list)
         for user in users:
             if (id := getattr(user, "id", None)) is not None:
                 counter[id].append(user)

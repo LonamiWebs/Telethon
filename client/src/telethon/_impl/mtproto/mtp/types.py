@@ -1,7 +1,7 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import List, NewType, Optional, Self, Tuple
+from typing import NewType, Optional, Self
 
 from ...tl.mtproto.types import RpcError as GeneratedRpcError
 
@@ -192,7 +192,7 @@ class Mtp(ABC):
         """
 
     @abstractmethod
-    def finalize(self) -> Optional[Tuple[MsgId, bytes]]:
+    def finalize(self) -> Optional[tuple[MsgId, bytes]]:
         """
         Finalize the buffer of serialized requests.
 
@@ -203,7 +203,7 @@ class Mtp(ABC):
     @abstractmethod
     def deserialize(
         self, payload: bytes | bytearray | memoryview
-    ) -> List[Deserialization]:
+    ) -> list[Deserialization]:
         """
         Deserialize incoming buffer payload.
         """

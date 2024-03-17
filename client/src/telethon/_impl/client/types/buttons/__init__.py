@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from ....tl import abcs, types
 from .button import Button
@@ -24,7 +24,7 @@ def as_concrete_row(row: abcs.KeyboardButtonRow) -> types.KeyboardButtonRow:
 
 
 def build_keyboard(
-    btns: Optional[Union[List[Button], List[List[Button]]]]
+    btns: Optional[list[Button] | list[list[Button]]],
 ) -> Optional[abcs.ReplyMarkup]:
     # list[button] -> list[list[button]]
     # This does allow for "invalid" inputs (mixing lists and non-lists), but that's acceptable.
@@ -37,7 +37,7 @@ def build_keyboard(
     if not buttons_lists:
         return None
 
-    rows: List[abcs.KeyboardButtonRow] = [
+    rows: list[abcs.KeyboardButtonRow] = [
         types.KeyboardButtonRow(buttons=[btn._raw for btn in btns])
         for btns in buttons_lists
     ]

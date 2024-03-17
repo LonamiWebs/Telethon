@@ -1,17 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-)
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar
 
 from ...session import Gap
 from ...tl import abcs
@@ -81,7 +72,7 @@ def set_handler_filter(
                 handlers[i] = (h, filter)
 
 
-def process_socket_updates(client: Client, all_updates: List[abcs.Updates]) -> None:
+def process_socket_updates(client: Client, all_updates: list[abcs.Updates]) -> None:
     if not all_updates:
         return
 
@@ -103,7 +94,7 @@ def process_socket_updates(client: Client, all_updates: List[abcs.Updates]) -> N
 
 def extend_update_queue(
     client: Client,
-    updates: List[abcs.Update],
+    updates: list[abcs.Update],
     users: Sequence[abcs.User],
     chats: Sequence[abcs.Chat],
 ) -> None:

@@ -4,7 +4,7 @@ import hashlib
 import mimetypes
 from inspect import isawaitable
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional
 
 from ...tl import abcs, functions, types
 from ..types import (
@@ -45,7 +45,7 @@ def prepare_album(self: Client) -> AlbumBuilder:
 async def send_photo(
     self: Client,
     chat: ChatLike,
-    file: Union[str, Path, InFileLike, File],
+    file: str | Path | InFileLike | File,
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
@@ -57,7 +57,7 @@ async def send_photo(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -65,9 +65,11 @@ async def send_photo(
         file,
         size=size,
         name=name,
-        mime_type="image/jpeg"  # specific mime doesn't matter, only that it's image
-        if compress
-        else mime_type,
+        mime_type=(
+            "image/jpeg"  # specific mime doesn't matter, only that it's image
+            if compress
+            else mime_type
+        ),
         compress=compress,
         width=width,
         height=height,
@@ -82,7 +84,7 @@ async def send_photo(
 async def send_audio(
     self: Client,
     chat: ChatLike,
-    file: Union[str, Path, InFileLike, File],
+    file: str | Path | InFileLike | File,
     mime_type: Optional[str] = None,
     *,
     size: Optional[int] = None,
@@ -95,7 +97,7 @@ async def send_audio(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -119,7 +121,7 @@ async def send_audio(
 async def send_video(
     self: Client,
     chat: ChatLike,
-    file: Union[str, Path, InFileLike, File],
+    file: str | Path | InFileLike | File,
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
@@ -134,7 +136,7 @@ async def send_video(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
 ) -> Message:
     return await send_file(
         self,
@@ -160,7 +162,7 @@ async def send_video(
 async def send_file(
     self: Client,
     chat: ChatLike,
-    file: Union[str, Path, InFileLike, File],
+    file: str | Path | InFileLike | File,
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
@@ -182,7 +184,7 @@ async def send_file(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
 ) -> Message:
     message, entities = parse_message(
         text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
@@ -237,7 +239,7 @@ async def send_file(
 
     # Only bother to calculate attributes when sending documents.
     else:
-        attributes: List[abcs.DocumentAttribute] = []
+        attributes: list[abcs.DocumentAttribute] = []
         attributes.append(types.DocumentAttributeFilename(file_name=name))
 
         if mime_type.startswith("image/"):
@@ -290,9 +292,9 @@ async def do_send_file(
     chat: ChatLike,
     input_media: abcs.InputMedia,
     message: str,
-    entities: Optional[List[abcs.MessageEntity]],
+    entities: Optional[list[abcs.MessageEntity]],
     reply_to: Optional[int],
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]],
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
 ) -> Message:
     peer = (await client._resolve_to_packed(chat))._to_input_peer()
     random_id = generate_random_id()
@@ -305,11 +307,11 @@ async def do_send_file(
                 noforwards=False,
                 update_stickersets_order=False,
                 peer=peer,
-                reply_to=types.InputReplyToMessage(
-                    reply_to_msg_id=reply_to, top_msg_id=None
-                )
-                if reply_to
-                else None,
+                reply_to=(
+                    types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
+                    if reply_to
+                    else None
+                ),
                 media=input_media,
                 message=message,
                 random_id=random_id,
@@ -325,10 +327,10 @@ async def do_send_file(
 
 async def upload(
     client: Client,
-    file: Union[str, Path, InFileLike],
+    file: str | Path | InFileLike,
     size: Optional[int],
     name: Optional[str],
-) -> Tuple[abcs.InputFile, str]:
+) -> tuple[abcs.InputFile, str]:
     # Paths are opened and closed by us. Anything else is *only* read, not closed.
     if isinstance(file, (str, Path)):
         path = Path(file) if isinstance(file, str) else file
@@ -360,7 +362,7 @@ async def do_upload(
     part = 0
     total_parts = (size + MAX_CHUNK_SIZE - 1) // MAX_CHUNK_SIZE
     buffer = bytearray()
-    to_store: Union[bytearray, bytes] = b""
+    to_store: bytearray | bytes = b""
     hash_md5 = hashlib.md5()
     is_big = size > BIG_FILE_SIZE
 
@@ -454,9 +456,7 @@ def get_file_bytes(self: Client, media: File) -> AsyncList[bytes]:
     return FileBytesList(self, media)
 
 
-async def download(
-    self: Client, media: File, file: Union[str, Path, OutFileLike]
-) -> None:
+async def download(self: Client, media: File, file: str | Path | OutFileLike) -> None:
     fd = OutWrapper(file)
     try:
         async for chunk in get_file_bytes(self, media):

@@ -1,24 +1,10 @@
 import asyncio
 import datetime
 import logging
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Self,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Literal, Optional, Self, Sequence, Type, TypeVar
 
 from ....version import __version__ as default_version
 from ...mtsender import Connector, Sender
@@ -215,7 +201,7 @@ class Client:
 
     def __init__(
         self,
-        session: Optional[Union[str, Path, Storage]],
+        session: Optional[str | Path | Storage],
         api_id: int,
         api_hash: Optional[str] = None,
         *,
@@ -253,9 +239,9 @@ class Client:
             lang_code=lang_code or "en",
             catch_up=catch_up or False,
             datacenter=datacenter,
-            flood_sleep_threshold=60
-            if flood_sleep_threshold is None
-            else flood_sleep_threshold,
+            flood_sleep_threshold=(
+                60 if flood_sleep_threshold is None else flood_sleep_threshold
+            ),
             update_queue_limit=update_queue_limit,
             base_logger=base_logger,
             connector=connector or (lambda ip, port: asyncio.open_connection(ip, port)),
@@ -267,11 +253,11 @@ class Client:
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
         self._updates: asyncio.Queue[
-            Tuple[abcs.Update, Dict[int, Chat]]
+            tuple[abcs.Update, dict[int, Chat]]
         ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
         self._dispatcher: Optional[asyncio.Task[None]] = None
-        self._handlers: Dict[
-            Type[Event], List[Tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
+        self._handlers: dict[
+            Type[Event], list[tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
         ] = {}
         self._check_all_handlers = check_all_handlers
 
@@ -356,9 +342,7 @@ class Client:
         """
         return await bot_sign_in(self, token)
 
-    async def check_password(
-        self, token: PasswordToken, password: Union[str, bytes]
-    ) -> User:
+    async def check_password(self, token: PasswordToken, password: str | bytes) -> User:
         """
         Check the two-factor-authentication (2FA) password.
         If it is correct, completes the login.
@@ -428,7 +412,7 @@ class Client:
         await delete_dialog(self, chat)
 
     async def delete_messages(
-        self, chat: ChatLike, message_ids: List[int], *, revoke: bool = True
+        self, chat: ChatLike, message_ids: list[int], *, revoke: bool = True
     ) -> int:
         """
         Delete messages.
@@ -484,7 +468,7 @@ class Client:
         """
         await disconnect(self)
 
-    async def download(self, media: File, file: Union[str, Path, OutFileLike]) -> None:
+    async def download(self, media: File, file: str | Path | OutFileLike) -> None:
         """
         Download a file.
 
@@ -585,7 +569,7 @@ class Client:
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
     ) -> Message:
         """
         Edit a message.
@@ -633,8 +617,8 @@ class Client:
         )
 
     async def forward_messages(
-        self, target: ChatLike, message_ids: List[int], source: ChatLike
-    ) -> List[Message]:
+        self, target: ChatLike, message_ids: list[int], source: ChatLike
+    ) -> list[Message]:
         """
         Forward messages from one :term:`chat` to another.
 
@@ -691,8 +675,8 @@ class Client:
         return get_admin_log(self, chat)
 
     async def get_chats(
-        self, chats: Union[List[ChatLike], Tuple[ChatLike, ...]]
-    ) -> List[Chat]:
+        self, chats: list[ChatLike] | tuple[ChatLike, ...]
+    ) -> list[Chat]:
         """
         Get the latest basic information about the given chats.
 
@@ -907,7 +891,7 @@ class Client:
         )
 
     def get_messages_with_ids(
-        self, chat: ChatLike, message_ids: List[int]
+        self, chat: ChatLike, message_ids: list[int]
     ) -> AsyncList[Message]:
         """
         Get the full message objects from the corresponding message identifiers.
@@ -1160,7 +1144,7 @@ class Client:
         return prepare_album(self)
 
     async def read_message(
-        self, chat: ChatLike, message_id: Union[int, Literal["all"]]
+        self, chat: ChatLike, message_id: int | Literal["all"]
     ) -> None:
         """
         Mark messages as read.
@@ -1361,7 +1345,7 @@ class Client:
     async def send_audio(
         self,
         chat: ChatLike,
-        file: Union[str, Path, InFileLike, File],
+        file: str | Path | InFileLike | File,
         mime_type: Optional[str] = None,
         *,
         size: Optional[int] = None,
@@ -1374,7 +1358,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
     ) -> Message:
         """
         Send an audio file.
@@ -1424,7 +1408,7 @@ class Client:
     async def send_file(
         self,
         chat: ChatLike,
-        file: Union[str, Path, InFileLike, File],
+        file: str | Path | InFileLike | File,
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
@@ -1446,7 +1430,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
     ) -> Message:
         """
         Send any type of file with any amount of attributes.
@@ -1606,13 +1590,13 @@ class Client:
     async def send_message(
         self,
         chat: ChatLike,
-        text: Optional[Union[str, Message]] = None,
+        text: Optional[str | Message] = None,
         *,
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
         reply_to: Optional[int] = None,
-        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
     ) -> Message:
         """
         Send a message.
@@ -1653,7 +1637,7 @@ class Client:
     async def send_photo(
         self,
         chat: ChatLike,
-        file: Union[str, Path, InFileLike, File],
+        file: str | Path | InFileLike | File,
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
@@ -1665,7 +1649,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
     ) -> Message:
         """
         Send a photo file.
@@ -1717,7 +1701,7 @@ class Client:
     async def send_video(
         self,
         chat: ChatLike,
-        file: Union[str, Path, InFileLike, File],
+        file: str | Path | InFileLike | File,
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
@@ -1732,7 +1716,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
     ) -> Message:
         """
         Send a video file.
@@ -1947,7 +1931,7 @@ class Client:
         """
         await set_participant_restrictions(self, chat, user, restrictions, until=until)
 
-    async def sign_in(self, token: LoginToken, code: str) -> Union[User, PasswordToken]:
+    async def sign_in(self, token: LoginToken, code: str) -> User | PasswordToken:
         """
         Sign in to a user account.
 
@@ -1993,7 +1977,7 @@ class Client:
         await sign_out(self)
 
     async def unpin_message(
-        self, chat: ChatLike, message_id: Union[int, Literal["all"]]
+        self, chat: ChatLike, message_id: int | Literal["all"]
     ) -> None:
         """
         Unpin one or all messages from the top.
@@ -2041,8 +2025,8 @@ class Client:
         return input_to_peer(self, input)
 
     async def _upload(
-        self, fd: Union[str, Path, InFileLike], size: Optional[int], name: Optional[str]
-    ) -> Tuple[abcs.InputFile, str]:
+        self, fd: str | Path | InFileLike, size: Optional[int], name: Optional[str]
+    ) -> tuple[abcs.InputFile, str]:
         return await upload(self, fd, size, name)
 
     async def __call__(self, request: Request[Return]) -> Return:

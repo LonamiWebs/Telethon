@@ -1,5 +1,3 @@
-from typing import Dict
-
 from ...tl import abcs, types
 from .chat import Chat
 from .meta import NoPublicConstructor
@@ -17,7 +15,7 @@ class RecentAction(metaclass=NoPublicConstructor):
     def __init__(
         self,
         event: abcs.ChannelAdminLogEvent,
-        chat_map: Dict[int, Chat],
+        chat_map: dict[int, Chat],
     ) -> None:
         assert isinstance(event, types.ChannelAdminLogEvent)
         self._raw = event

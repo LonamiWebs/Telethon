@@ -1,11 +1,10 @@
 import weakref
 from pathlib import Path
-from typing import Dict
 
 
 class FakeFs:
     def __init__(self) -> None:
-        self._files: Dict[Path, bytearray] = {}
+        self._files: dict[Path, bytearray] = {}
 
     def open(self, path: Path) -> "SourceWriter":
         return SourceWriter(self, path)

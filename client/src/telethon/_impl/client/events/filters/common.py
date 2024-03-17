@@ -1,4 +1,4 @@
-from typing import Sequence, Set, Type, Union
+from typing import Sequence, Type
 
 from ...types import Channel, Group, User
 from ..event import Event
@@ -18,7 +18,7 @@ class Chats(Combinable):
         self._chats = set(chat_ids)
 
     @property
-    def chat_ids(self) -> Set[int]:
+    def chat_ids(self) -> set[int]:
         """
         A copy of the set of chat identifiers this filter is filtering on.
         """
@@ -43,7 +43,7 @@ class Senders(Combinable):
         self._senders = set(sender_ids)
 
     @property
-    def sender_ids(self) -> Set[int]:
+    def sender_ids(self) -> set[int]:
         """
         A copy of the set of sender identifiers this filter is filtering on.
         """
@@ -79,12 +79,12 @@ class ChatType(Combinable):
 
     def __init__(
         self,
-        type: Type[Union[User, Group, Channel]],
+        type: Type[User | Group | Channel],
     ) -> None:
         self._type = type
 
     @property
-    def type(self) -> Type[Union[User, Group, Channel]]:
+    def type(self) -> Type[User | Group | Channel]:
         """
         The chat type this filter is filtering on.
         """

@@ -1,17 +1,17 @@
-from typing import List, Optional
+from typing import Optional
 
 from telethon_generator.codegen import FakeFs, generate
 from telethon_generator.tl_parser import Definition, ParsedTl, parse_tl_file
 
 
-def get_definitions(contents: str) -> List[Definition]:
+def get_definitions(contents: str) -> list[Definition]:
     return [defn for defn in parse_tl_file(contents) if not isinstance(defn, Exception)]
 
 
 def gen_py_code(
     *,
-    typedefs: Optional[List[Definition]] = None,
-    functiondefs: Optional[List[Definition]] = None,
+    typedefs: Optional[list[Definition]] = None,
+    functiondefs: Optional[list[Definition]] = None,
 ) -> str:
     fs = FakeFs()
     generate(

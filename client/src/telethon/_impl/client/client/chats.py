@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Sequence, Set
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
@@ -32,7 +32,7 @@ class ParticipantList(AsyncList[Participant]):
         self._chat = chat
         self._packed: Optional[PackedChat] = None
         self._offset = 0
-        self._seen: Set[int] = set()
+        self._seen: set[int] = set()
 
     async def _fetch_next(self) -> None:
         if self._packed is None:

@@ -1,6 +1,7 @@
 import abc
 from collections import deque
-from typing import Any, Deque, Generator, Generic, List, Self, TypeVar
+from collections.abc import Generator
+from typing import Any, Generic, Self, TypeVar
 
 T = TypeVar("T")
 
@@ -40,7 +41,7 @@ class AsyncList(abc.ABC, Generic[T]):
     """
 
     def __init__(self) -> None:
-        self._buffer: Deque[T] = deque()
+        self._buffer: deque[T] = deque()
         self._total: int = 0
         self._done = False
 
@@ -54,14 +55,14 @@ class AsyncList(abc.ABC, Generic[T]):
         The `_done` flag should be set if it is known that the end was reached
         """
 
-    async def _collect(self) -> List[T]:
+    async def _collect(self) -> list[T]:
         prev = -1
         while not self._done and prev != len(self._buffer):
             prev = len(self._buffer)
             await self._fetch_next()
         return list(self._buffer)
 
-    def __await__(self) -> Generator[Any, None, List[T]]:
+    def __await__(self) -> Generator[Any, None, list[T]]:
         return self._collect().__await__()
 
     def __aiter__(self) -> Self:

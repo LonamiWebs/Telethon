@@ -1,19 +1,8 @@
 from collections import deque
+from collections.abc import Callable, Iterable
 from html import escape
 from html.parser import HTMLParser
-from typing import (
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Any, Optional, Type, cast
 
 from ...tl.abcs import MessageEntity
 from ...tl.types import (
@@ -37,12 +26,12 @@ class HTMLToTelegramParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.text = ""
-        self.entities: List[MessageEntity] = []
-        self._building_entities: Dict[str, MessageEntity] = {}
-        self._open_tags: Deque[str] = deque()
-        self._open_tags_meta: Deque[Optional[str]] = deque()
+        self.entities: list[MessageEntity] = []
+        self._building_entities: dict[str, MessageEntity] = {}
+        self._open_tags: deque[str] = deque()
+        self._open_tags_meta: deque[Optional[str]] = deque()
 
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
         self._open_tags.appendleft(tag)
         self._open_tags_meta.appendleft(None)
 
@@ -128,7 +117,7 @@ class HTMLToTelegramParser(HTMLParser):
             self.entities.append(entity)
 
 
-def parse(html: str) -> Tuple[str, List[MessageEntity]]:
+def parse(html: str) -> tuple[str, list[MessageEntity]]:
     """
     Parses the given HTML message and returns its stripped representation
     plus a list of the MessageEntity's that were found.
@@ -144,8 +133,8 @@ def parse(html: str) -> Tuple[str, List[MessageEntity]]:
     return del_surrogate(parser.text), parser.entities
 
 
-ENTITY_TO_FORMATTER: Dict[
-    Type[MessageEntity], Union[Tuple[str, str], Callable[[Any, str], Tuple[str, str]]]
+ENTITY_TO_FORMATTER: dict[
+    Type[MessageEntity], tuple[str, str] | Callable[[Any, str], tuple[str, str]]
 ] = {
     MessageEntityBold: ("<strong>", "</strong>"),
     MessageEntityItalic: ("<em>", "</em>"),
@@ -183,7 +172,7 @@ def unparse(text: str, entities: Iterable[MessageEntity]) -> str:
         return escape(text)
 
     text = add_surrogate(text)
-    insert_at: List[Tuple[int, str]] = []
+    insert_at: list[tuple[int, str]] = []
     for e in entities:
         offset, length = getattr(e, "offset", None), getattr(e, "length", None)
         assert isinstance(offset, int) and isinstance(length, int)

@@ -2,7 +2,8 @@ import datetime
 import io
 import struct
 import timeit
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from .data_codegen import DATA, Obj
 

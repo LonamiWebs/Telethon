@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Union
+from typing import TYPE_CHECKING, Literal, Optional, Self
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
@@ -17,13 +17,13 @@ if TYPE_CHECKING:
 async def send_message(
     self: Client,
     chat: ChatLike,
-    text: Optional[Union[str, Message]] = None,
+    text: Optional[str | Message] = None,
     *,
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: bool = False,
     reply_to: Optional[int] = None,
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
 ) -> Message:
     packed = await self._resolve_to_packed(chat)
     peer = packed._to_input_peer()
@@ -121,7 +121,7 @@ async def edit_message(
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: bool = False,
-    buttons: Optional[Union[List[btns.Button], List[List[btns.Button]]]] = None,
+    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
 ) -> Message:
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
     message, entities = parse_message(
@@ -145,7 +145,7 @@ async def edit_message(
 
 
 async def delete_messages(
-    self: Client, chat: ChatLike, message_ids: List[int], *, revoke: bool = True
+    self: Client, chat: ChatLike, message_ids: list[int], *, revoke: bool = True
 ) -> int:
     packed_chat = await self._resolve_to_packed(chat)
     if packed_chat.is_channel():
@@ -163,8 +163,8 @@ async def delete_messages(
 
 
 async def forward_messages(
-    self: Client, target: ChatLike, message_ids: List[int], source: ChatLike
-) -> List[Message]:
+    self: Client, target: ChatLike, message_ids: list[int], source: ChatLike
+) -> list[Message]:
     to_peer = (await self._resolve_to_packed(target))._to_input_peer()
     from_peer = (await self._resolve_to_packed(source))._to_input_peer()
     random_ids = [generate_random_id() for _ in message_ids]
@@ -198,7 +198,7 @@ class MessageList(AsyncList[Message]):
 
     def _extend_buffer(
         self, client: Client, messages: abcs.messages.Messages
-    ) -> Dict[int, Chat]:
+    ) -> dict[int, Chat]:
         if isinstance(messages, types.messages.MessagesNotModified):
             self._total = messages.count
             return {}
@@ -224,7 +224,7 @@ class MessageList(AsyncList[Message]):
 
     def _last_non_empty_message(
         self,
-    ) -> Union[types.Message, types.MessageService, types.MessageEmpty]:
+    ) -> types.Message | types.MessageService | types.MessageEmpty:
         return next(
             (
                 m._raw
@@ -318,13 +318,13 @@ class CherryPickedList(MessageList):
         self,
         client: Client,
         chat: ChatLike,
-        ids: List[int],
+        ids: list[int],
     ):
         super().__init__()
         self._client = client
         self._chat = chat
         self._packed: Optional[PackedChat] = None
-        self._ids: List[abcs.InputMessage] = [types.InputMessageId(id=id) for id in ids]
+        self._ids: list[abcs.InputMessage] = [types.InputMessageId(id=id) for id in ids]
 
     async def _fetch_next(self) -> None:
         if not self._ids:
@@ -350,7 +350,7 @@ class CherryPickedList(MessageList):
 def get_messages_with_ids(
     self: Client,
     chat: ChatLike,
-    message_ids: List[int],
+    message_ids: list[int],
 ) -> AsyncList[Message]:
     return CherryPickedList(self, chat, message_ids)
 
@@ -509,7 +509,7 @@ async def pin_message(self: Client, chat: ChatLike, message_id: int) -> Message:
 
 
 async def unpin_message(
-    self: Client, chat: ChatLike, message_id: Union[int, Literal["all"]]
+    self: Client, chat: ChatLike, message_id: int | Literal["all"]
 ) -> None:
     peer = (await self._resolve_to_packed(chat))._to_input_peer()
     if message_id == "all":
@@ -528,7 +528,7 @@ async def unpin_message(
 
 
 async def read_message(
-    self: Client, chat: ChatLike, message_id: Union[int, Literal["all"]]
+    self: Client, chat: ChatLike, message_id: int | Literal["all"]
 ) -> None:
     packed = await self._resolve_to_packed(chat)
     if message_id == "all":
@@ -555,8 +555,8 @@ class MessageMap:
         self,
         client: Client,
         peer: Optional[abcs.InputPeer],
-        random_id_to_id: Dict[int, int],
-        id_to_message: Dict[int, Message],
+        random_id_to_id: dict[int, int],
+        id_to_message: dict[int, Message],
     ) -> None:
         self._client = client
         self._peer = peer
@@ -599,8 +599,8 @@ def build_message_map(
     else:
         return MessageMap(client, peer, {}, {})
 
-    random_id_to_id: Dict[int, int] = {}
-    id_to_message: Dict[int, Message] = {}
+    random_id_to_id: dict[int, int] = {}
+    id_to_message: dict[int, Message] = {}
     for update in updates:
         if isinstance(update, types.UpdateMessageId):
             random_id_to_id[update.random_id] = update.id

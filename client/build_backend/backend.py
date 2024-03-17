@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from setuptools import build_meta as _orig
 from setuptools.build_meta import *  # noqa: F403 # pyright: ignore [reportWildcardImportFromLibrary]
@@ -39,7 +39,7 @@ def gen_types_if_needed() -> None:
 
 def build_wheel(  # type: ignore [no-redef]
     wheel_directory: str,
-    config_settings: Optional[Dict[Any, Any]] = None,
+    config_settings: Optional[dict[Any, Any]] = None,
     metadata_directory: Optional[str] = None,
 ) -> str:
     gen_types_if_needed()
@@ -47,7 +47,7 @@ def build_wheel(  # type: ignore [no-redef]
 
 
 def build_sdist(  # type: ignore [no-redef]
-    sdist_directory: str, config_settings: Optional[Dict[Any, Any]] = None
+    sdist_directory: str, config_settings: Optional[dict[Any, Any]] = None
 ) -> str:
     gen_types_if_needed()
     return _orig.build_sdist(sdist_directory, config_settings)
@@ -55,7 +55,7 @@ def build_sdist(  # type: ignore [no-redef]
 
 def build_editable(  # type: ignore [no-redef]
     wheel_directory: str,
-    config_settings: Optional[Dict[Any, Any]] = None,
+    config_settings: Optional[dict[Any, Any]] = None,
     metadata_directory: Optional[str] = None,
 ) -> str:
     gen_types_if_needed()

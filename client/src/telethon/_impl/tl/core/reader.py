@@ -1,6 +1,7 @@
 import functools
 import struct
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Type, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 if TYPE_CHECKING:
     from .serializable import Serializable
@@ -96,8 +97,8 @@ def single_deserializer(cls: Type[T]) -> Callable[[bytes], T]:
 
 
 @functools.cache
-def list_deserializer(cls: Type[T]) -> Callable[[bytes], List[T]]:
-    def deserializer(body: bytes) -> List[T]:
+def list_deserializer(cls: Type[T]) -> Callable[[bytes], list[T]]:
+    def deserializer(body: bytes) -> list[T]:
         reader = Reader(body)
         vec_id, length = reader.read_fmt("<ii", 8)
         assert vec_id == 0x1CB5C415 and length >= 0
@@ -106,14 +107,14 @@ def list_deserializer(cls: Type[T]) -> Callable[[bytes], List[T]]:
     return deserializer
 
 
-def deserialize_i64_list(body: bytes) -> List[int]:
+def deserialize_i64_list(body: bytes) -> list[int]:
     reader = Reader(body)
     vec_id, length = reader.read_fmt("<ii", 8)
     assert vec_id == 0x1CB5C415 and length >= 0
     return [*reader.read_fmt(f"<{length}q", length * 8)]
 
 
-def deserialize_i32_list(body: bytes) -> List[int]:
+def deserialize_i32_list(body: bytes) -> list[int]:
     reader = Reader(body)
     vec_id, length = reader.read_fmt("<ii", 8)
     assert vec_id == 0x1CB5C415 and length >= 0

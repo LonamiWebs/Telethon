@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Self, Sequence, Set, Union
+from typing import TYPE_CHECKING, Optional, Self, Sequence
 
 from ...session import PackedChat
 from ...tl import abcs, types
@@ -25,18 +25,18 @@ class Participant(metaclass=NoPublicConstructor):
         self,
         client: Client,
         chat: PackedChat,
-        participant: Union[
-            types.ChannelParticipant,
-            types.ChannelParticipantSelf,
-            types.ChannelParticipantCreator,
-            types.ChannelParticipantAdmin,
-            types.ChannelParticipantBanned,
-            types.ChannelParticipantLeft,
-            types.ChatParticipant,
-            types.ChatParticipantCreator,
-            types.ChatParticipantAdmin,
-        ],
-        chat_map: Dict[int, Chat],
+        participant: (
+            types.ChannelParticipant
+            | types.ChannelParticipantSelf
+            | types.ChannelParticipantCreator
+            | types.ChannelParticipantAdmin
+            | types.ChannelParticipantBanned
+            | types.ChannelParticipantLeft
+            | types.ChatParticipant
+            | types.ChatParticipantCreator
+            | types.ChatParticipantAdmin
+        ),
+        chat_map: dict[int, Chat],
     ) -> None:
         self._client = client
         self._chat = chat
@@ -49,7 +49,7 @@ class Participant(metaclass=NoPublicConstructor):
         client: Client,
         chat: PackedChat,
         participant: abcs.ChannelParticipant,
-        chat_map: Dict[int, Chat],
+        chat_map: dict[int, Chat],
     ) -> Self:
         if isinstance(
             participant,
@@ -72,7 +72,7 @@ class Participant(metaclass=NoPublicConstructor):
         client: Client,
         chat: PackedChat,
         participant: abcs.ChatParticipant,
-        chat_map: Dict[int, Chat],
+        chat_map: dict[int, Chat],
     ) -> Self:
         if isinstance(
             participant,
@@ -162,7 +162,7 @@ class Participant(metaclass=NoPublicConstructor):
         )
 
     @property
-    def admin_rights(self) -> Optional[Set[AdminRight]]:
+    def admin_rights(self) -> Optional[set[AdminRight]]:
         """
         The set of administrator rights this participant has been granted, if they are an administrator.
         """
@@ -178,7 +178,7 @@ class Participant(metaclass=NoPublicConstructor):
             return None
 
     @property
-    def restrictions(self) -> Optional[Set[ChatRestriction]]:
+    def restrictions(self) -> Optional[set[ChatRestriction]]:
         """
         The set of restrictions applied to this participant, if they are banned.
         """

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from ...tl import abcs, functions, types
 from .chat import ChatLike
@@ -22,7 +22,7 @@ class InlineResult(metaclass=NoPublicConstructor):
         self,
         client: Client,
         results: types.messages.BotResults,
-        result: Union[types.BotInlineMediaResult, types.BotInlineResult],
+        result: types.BotInlineMediaResult | types.BotInlineResult,
         default_peer: abcs.InputPeer,
     ):
         self._client = client

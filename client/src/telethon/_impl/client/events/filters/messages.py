@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Literal, Optional
 
 from ..event import Event
 from .combinators import Combinable
@@ -28,7 +28,7 @@ class Text(Combinable):
 
     __slots__ = ("_pattern",)
 
-    def __init__(self, regexp: Union[str, re.Pattern[str]]) -> None:
+    def __init__(self, regexp: str | re.Pattern[str]) -> None:
         self._pattern = re.compile(regexp) if isinstance(regexp, str) else regexp
 
     def __call__(self, event: Event) -> bool:
@@ -164,7 +164,7 @@ class Media(Combinable):
     @property
     def types(
         self,
-    ) -> Tuple[Literal["photo", "audio", "video"], ...]:
+    ) -> tuple[Literal["photo", "audio", "video"], ...]:
         """
         The media types being checked.
         """

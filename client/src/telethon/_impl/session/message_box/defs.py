@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import List, Literal, Union
+from typing import Literal
 
 from ...tl import abcs
 
@@ -20,7 +20,7 @@ NO_UPDATES_TIMEOUT = 15 * 60
 
 ENTRY_ACCOUNT: Literal["ACCOUNT"] = "ACCOUNT"
 ENTRY_SECRET: Literal["SECRET"] = "SECRET"
-Entry = Union[Literal["ACCOUNT", "SECRET"], int]
+Entry = Literal["ACCOUNT", "SECRET"] | int
 
 # Python's logging doesn't define a TRACE level. Pick halfway between DEBUG and NOTSET.
 # We don't define a name for this as libraries shouldn't do that though.
@@ -64,7 +64,7 @@ class PossibleGap:
     def __init__(
         self,
         deadline: float,
-        updates: List[abcs.Update],
+        updates: list[abcs.Update],
     ) -> None:
         self.deadline = deadline
         self.updates = updates

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Self
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Optional, Self
 
 from ...tl import abcs, functions, types
 from ..types import ChatLike, InlineResult, NoPublicConstructor
@@ -22,7 +23,7 @@ class InlineResults(metaclass=NoPublicConstructor):
         self._query = query
         self._peer = chat or types.InputPeerEmpty()
         self._offset: Optional[str] = ""
-        self._buffer: List[InlineResult] = []
+        self._buffer: list[InlineResult] = []
         self._done = False
 
     def __aiter__(self) -> Self:

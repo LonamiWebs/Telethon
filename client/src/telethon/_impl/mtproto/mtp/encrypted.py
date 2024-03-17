@@ -2,7 +2,7 @@ import logging
 import os
 import struct
 import time
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from ...crypto import AuthKey, decrypt_data_v2, encrypt_data_v2
 from ...tl.core import Reader
@@ -107,12 +107,12 @@ class Encrypted(Mtp):
     ) -> None:
         self._auth_key = auth_key
         self._time_offset: int = time_offset or 0
-        self._salts: List[FutureSalt] = [
+        self._salts: list[FutureSalt] = [
             FutureSalt(valid_since=0, valid_until=0x7FFFFFFF, salt=first_salt or 0)
         ]
-        self._start_salt_time: Optional[Tuple[int, float]] = None
+        self._start_salt_time: Optional[tuple[int, float]] = None
         self._compression_threshold = compression_threshold
-        self._deserialization: List[Deserialization] = []
+        self._deserialization: list[Deserialization] = []
         self._buffer = bytearray()
         self._salt_request_msg_id: Optional[int] = None
 
@@ -141,7 +141,7 @@ class Encrypted(Mtp):
         self._client_id: int
         self._sequence: int
         self._last_msg_id: int
-        self._in_pending_ack: List[int] = []
+        self._in_pending_ack: list[int] = []
         self._msg_count: int
         self._reset_session()
 
@@ -196,7 +196,7 @@ class Encrypted(Mtp):
     def _get_current_salt(self) -> int:
         return self._salts[-1].salt if self._salts else 0
 
-    def _finalize_plain(self) -> Optional[Tuple[MsgId, bytes]]:
+    def _finalize_plain(self) -> Optional[tuple[MsgId, bytes]]:
         if not self._msg_count:
             return None
 
@@ -431,7 +431,7 @@ class Encrypted(Mtp):
 
         return self._serialize_msg(body, True)
 
-    def finalize(self) -> Optional[Tuple[MsgId, bytes]]:
+    def finalize(self) -> Optional[tuple[MsgId, bytes]]:
         result = self._finalize_plain()
         if not result:
             return None
@@ -441,7 +441,7 @@ class Encrypted(Mtp):
 
     def deserialize(
         self, payload: bytes | bytearray | memoryview
-    ) -> List[Deserialization]:
+    ) -> list[Deserialization]:
         check_message_buffer(payload)
 
         plaintext = decrypt_data_v2(payload, self._auth_key)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional, Self, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Self, Sequence
 
 from ...tl import abcs, types
 from ..types import Chat, Message, expand_peer, peer_id
@@ -25,7 +25,7 @@ class NewMessage(Event, Message):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
     ) -> Optional[Self]:
         if isinstance(update, (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if isinstance(update.message, types.Message):
@@ -47,7 +47,7 @@ class MessageEdited(Event, Message):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
     ) -> Optional[Self]:
         if isinstance(
             update, (types.UpdateEditMessage, types.UpdateEditChannelMessage)
@@ -75,7 +75,7 @@ class MessageDeleted(Event):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
     ) -> Optional[Self]:
         if isinstance(update, types.UpdateDeleteMessages):
             return cls._create(update.messages, None)
@@ -109,13 +109,13 @@ class MessageRead(Event):
     def __init__(
         self,
         client: Client,
-        update: Union[
-            types.UpdateReadHistoryInbox,
-            types.UpdateReadHistoryOutbox,
-            types.UpdateReadChannelInbox,
-            types.UpdateReadChannelOutbox,
-        ],
-        chat_map: Dict[int, Chat],
+        update: (
+            types.UpdateReadHistoryInbox
+            | types.UpdateReadHistoryOutbox
+            | types.UpdateReadChannelInbox
+            | types.UpdateReadChannelOutbox
+        ),
+        chat_map: dict[int, Chat],
     ) -> None:
         self._client = client
         self._raw = update
@@ -123,7 +123,7 @@ class MessageRead(Event):
 
     @classmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
     ) -> Optional[Self]:
         if isinstance(
             update,

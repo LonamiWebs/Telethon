@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Self, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Self, Sequence
 
 from ....session import PackedChat, PackedType
 from ....tl import abcs, types
@@ -24,13 +24,13 @@ class Group(Chat, metaclass=NoPublicConstructor):
     def __init__(
         self,
         client: Client,
-        chat: Union[
-            types.ChatEmpty,
-            types.Chat,
-            types.ChatForbidden,
-            types.Channel,
-            types.ChannelForbidden,
-        ],
+        chat: (
+            types.ChatEmpty
+            | types.Chat
+            | types.ChatForbidden
+            | types.Channel
+            | types.ChannelForbidden
+        ),
     ) -> None:
         self._client = client
         self._raw = chat

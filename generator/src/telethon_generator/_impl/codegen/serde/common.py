@@ -1,10 +1,10 @@
 import re
-from typing import Iterator, List
+from collections.abc import Iterator
 
 from ....tl_parser import BaseParameter, FlagsParameter, NormalParameter, Type
 
 
-def split_words(name: str) -> List[str]:
+def split_words(name: str) -> list[str]:
     return re.findall(
         r"""
         ^$

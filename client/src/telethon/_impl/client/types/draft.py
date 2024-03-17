@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Dict, Optional, Self
+from typing import TYPE_CHECKING, Optional, Self
 
 from ...session import PackedChat
 from ...tl import abcs, functions, types
@@ -27,7 +27,7 @@ class Draft(metaclass=NoPublicConstructor):
         peer: abcs.Peer,
         top_msg_id: Optional[int],
         raw: abcs.DraftMessage,
-        chat_map: Dict[int, Chat],
+        chat_map: dict[int, Chat],
     ) -> None:
         assert isinstance(raw, (types.DraftMessage, types.DraftMessageEmpty))
         self._client = client
@@ -38,7 +38,7 @@ class Draft(metaclass=NoPublicConstructor):
 
     @classmethod
     def _from_raw_update(
-        cls, client: Client, draft: types.UpdateDraftMessage, chat_map: Dict[int, Chat]
+        cls, client: Client, draft: types.UpdateDraftMessage, chat_map: dict[int, Chat]
     ) -> Self:
         return cls._create(client, draft.peer, draft.top_msg_id, draft.draft, chat_map)
 
@@ -49,7 +49,7 @@ class Draft(metaclass=NoPublicConstructor):
         peer: abcs.Peer,
         top_msg_id: int,
         draft: abcs.DraftMessage,
-        chat_map: Dict[int, Chat],
+        chat_map: dict[int, Chat],
     ) -> Self:
         return cls._create(client, peer, top_msg_id, draft, chat_map)
 
@@ -197,11 +197,11 @@ class Draft(metaclass=NoPublicConstructor):
                 noforwards=False,
                 update_stickersets_order=False,
                 peer=peer,
-                reply_to=types.InputReplyToMessage(
-                    reply_to_msg_id=reply_to, top_msg_id=None
-                )
-                if reply_to
-                else None,
+                reply_to=(
+                    types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
+                    if reply_to
+                    else None
+                ),
                 message=message,
                 random_id=random_id,
                 reply_markup=None,
@@ -216,19 +216,23 @@ class Draft(metaclass=NoPublicConstructor):
                 {},
                 out=result.out,
                 id=result.id,
-                from_id=types.PeerUser(user_id=self._client._session.user.id)
-                if self._client._session.user
-                else None,
+                from_id=(
+                    types.PeerUser(user_id=self._client._session.user.id)
+                    if self._client._session.user
+                    else None
+                ),
                 peer_id=packed._to_peer(),
-                reply_to=types.MessageReplyHeader(
-                    reply_to_scheduled=False,
-                    forum_topic=False,
-                    reply_to_msg_id=reply_to,
-                    reply_to_peer_id=None,
-                    reply_to_top_id=None,
-                )
-                if reply_to
-                else None,
+                reply_to=(
+                    types.MessageReplyHeader(
+                        reply_to_scheduled=False,
+                        forum_topic=False,
+                        reply_to_msg_id=reply_to,
+                        reply_to_peer_id=None,
+                        reply_to_top_id=None,
+                    )
+                    if reply_to
+                    else None
+                ),
                 date=result.date,
                 message=message,
                 media=result.media,

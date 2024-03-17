@@ -1,6 +1,6 @@
 import struct
 from itertools import groupby
-from typing import Optional, Tuple
+from typing import Optional
 
 from ....tl_parser import Definition, NormalParameter, Parameter, Type
 from ..fakefs import SourceWriter
@@ -14,7 +14,7 @@ SPECIAL_CASED_OBJECT_READS = {
 }
 
 
-def reader_read_fmt(ty: Type, constructor_id: int) -> Tuple[str, Optional[str]]:
+def reader_read_fmt(ty: Type, constructor_id: int) -> tuple[str, Optional[str]]:
     if is_trivial(NormalParameter(ty=ty, flag=None)):
         fmt = trivial_struct_fmt(NormalParameter(ty=ty, flag=None))
         size = struct.calcsize(f"<{fmt}")

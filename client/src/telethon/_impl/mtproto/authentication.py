@@ -3,7 +3,6 @@ import struct
 import time
 from dataclasses import dataclass
 from hashlib import sha1
-from typing import Tuple
 
 from ..crypto import (
     RSA_KEYS,
@@ -67,17 +66,17 @@ class DhGenData:
     nonce_number: int
 
 
-def _do_step1(random_bytes: bytes) -> Tuple[bytes, Step1]:
+def _do_step1(random_bytes: bytes) -> tuple[bytes, Step1]:
     assert len(random_bytes) == 16
     nonce = int.from_bytes(random_bytes)
     return req_pq_multi(nonce=nonce), Step1(nonce=nonce)
 
 
-def step1() -> Tuple[bytes, Step1]:
+def step1() -> tuple[bytes, Step1]:
     return _do_step1(os.urandom(16))
 
 
-def _do_step2(data: Step1, response: bytes, random_bytes: bytes) -> Tuple[bytes, Step2]:
+def _do_step2(data: Step1, response: bytes, random_bytes: bytes) -> tuple[bytes, Step2]:
     assert len(random_bytes) == 288
     nonce = data.nonce
     res_pq = ResPq.from_bytes(response)
@@ -130,13 +129,13 @@ def _do_step2(data: Step1, response: bytes, random_bytes: bytes) -> Tuple[bytes,
     ), Step2(nonce=nonce, server_nonce=res_pq.server_nonce, new_nonce=new_nonce)
 
 
-def step2(data: Step1, response: bytes) -> Tuple[bytes, Step2]:
+def step2(data: Step1, response: bytes) -> tuple[bytes, Step2]:
     return _do_step2(data, response, os.urandom(288))
 
 
 def _do_step3(
     data: Step2, response: bytes, random_bytes: bytes, now: int
-) -> Tuple[bytes, Step3]:
+) -> tuple[bytes, Step3]:
     assert len(random_bytes) == 272
 
     nonce = data.nonce
@@ -231,7 +230,7 @@ def _do_step3(
     )
 
 
-def step3(data: Step2, response: bytes) -> Tuple[bytes, Step3]:
+def step3(data: Step2, response: bytes) -> tuple[bytes, Step3]:
     return _do_step3(data, response, os.urandom(272), int(time.time()))
 
 

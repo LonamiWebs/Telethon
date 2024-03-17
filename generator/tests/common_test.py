@@ -1,5 +1,3 @@
-from typing import List
-
 from pytest import mark
 from telethon_generator._impl.codegen.serde.common import (
     split_words,
@@ -19,7 +17,7 @@ from telethon_generator._impl.codegen.serde.common import (
         ("fileMp4", ["file", "Mp4"]),
     ],
 )
-def test_split_name_words(name: str, expected: List[str]) -> None:
+def test_split_name_words(name: str, expected: list[str]) -> None:
     assert split_words(name) == expected
 
 

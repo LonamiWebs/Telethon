@@ -6,7 +6,7 @@ import logging
 import platform
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from ....version import __version__
 from ...mtproto import BadStatus, Full, RpcError
@@ -75,10 +75,10 @@ def as_concrete_dc_option(opt: abcs.DcOption) -> types.DcOption:
 
 async def connect_sender(
     config: Config,
-    known_dcs: List[DataCenter],
+    known_dcs: list[DataCenter],
     dc: DataCenter,
     force_auth_gen: bool = False,
-) -> Tuple[Sender, List[DataCenter]]:
+) -> tuple[Sender, list[DataCenter]]:
     # Only the ID of the input DC may be known.
     # Find the corresponding address and authentication key if needed.
     addr = dc.ipv4_addr or next(
@@ -143,7 +143,7 @@ async def connect_sender(
     ]
     dc_options.sort(key=lambda opt: opt.static, reverse=True)
 
-    latest_dcs: Dict[int, DataCenter] = {}
+    latest_dcs: dict[int, DataCenter] = {}
     for opt in dc_options:
         dc = latest_dcs.setdefault(opt.id, DataCenter(id=opt.id))
         if opt.ipv6:

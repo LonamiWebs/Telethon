@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from pytest import raises
 from telethon._impl.mtproto import Full
 
@@ -11,12 +9,12 @@ class Output(bytearray):
         self += data
 
 
-def setup_pack(n: int) -> Tuple[Full, bytes, Output]:
+def setup_pack(n: int) -> tuple[Full, bytes, Output]:
     input = bytes(x & 0xFF for x in range(n))
     return Full(), input, Output()
 
 
-def setup_unpack(n: int) -> Tuple[bytes, Full, bytes, bytearray]:
+def setup_unpack(n: int) -> tuple[bytes, Full, bytes, bytearray]:
     transport, expected_output, input = setup_pack(n)
     transport.pack(expected_output, input)
 

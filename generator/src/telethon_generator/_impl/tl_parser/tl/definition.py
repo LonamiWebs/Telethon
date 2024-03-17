@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Self, Set
+from typing import Self
 
 from ..utils import infer_id
 from .parameter import Parameter, TypeDefNotImplemented
@@ -9,10 +9,10 @@ from .ty import Type
 
 @dataclass
 class Definition:
-    namespace: List[str]
+    namespace: list[str]
     name: str
     id: int
-    params: List[Parameter]
+    params: list[Parameter]
     ty: Type
 
     @classmethod
@@ -58,9 +58,9 @@ class Definition:
             except ValueError:
                 raise ValueError("invalid id")
 
-        type_defs: List[str] = []
-        flag_defs: List[str] = []
-        params: List[Parameter] = []
+        type_defs: list[str] = []
+        flag_defs: list[str] = []
+        params: list[Parameter] = []
 
         for param_str in middle.split():
             try:
@@ -102,7 +102,7 @@ class Definition:
             res += f"{ns}."
         res += f"{self.name}#{self.id:x}"
 
-        def_set: Set[str] = set()
+        def_set: set[str] = set()
         for param in self.params:
             if isinstance(param.ty, NormalParameter):
                 def_set.update(param.ty.ty.find_generic_refs())

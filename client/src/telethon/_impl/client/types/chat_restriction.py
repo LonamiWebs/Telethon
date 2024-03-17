@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Set
 
 from ...tl import abcs, types
 
@@ -85,7 +84,7 @@ class ChatRestriction(Enum):
     """Prevents sending plain text messages with no media to the chat."""
 
     @classmethod
-    def _from_raw(cls, rights: abcs.ChatBannedRights) -> Set[ChatRestriction]:
+    def _from_raw(cls, rights: abcs.ChatBannedRights) -> set[ChatRestriction]:
         assert isinstance(rights, types.ChatBannedRights)
         restrictions = (
             cls.VIEW_MESSAGES if rights.view_messages else None,
@@ -113,7 +112,7 @@ class ChatRestriction(Enum):
 
     @classmethod
     def _set_to_raw(
-        cls, restrictions: Set[ChatRestriction], until_date: int
+        cls, restrictions: set[ChatRestriction], until_date: int
     ) -> types.ChatBannedRights:
         return types.ChatBannedRights(
             view_messages=cls.VIEW_MESSAGES in restrictions,

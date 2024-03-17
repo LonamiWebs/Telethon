@@ -1,5 +1,6 @@
 import struct
-from typing import Any, Callable, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, Generic, Optional, TypeVar
 
 Return = TypeVar("Return")
 

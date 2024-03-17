@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence
 
 from ...tl import abcs, types
 from .packed import PackedChat, PackedType
@@ -7,8 +7,8 @@ from .packed import PackedChat, PackedType
 class ChatHashCache:
     __slots__ = ("_hash_map", "_self_id", "_self_bot")
 
-    def __init__(self, self_user: Optional[Tuple[int, bool]]):
-        self._hash_map: Dict[int, Tuple[int, PackedType]] = {}
+    def __init__(self, self_user: Optional[tuple[int, bool]]):
+        self._hash_map: dict[int, tuple[int, PackedType]] = {}
         self._self_id = self_user[0] if self_user else None
         self._self_bot = self_user[1] if self_user else False
 

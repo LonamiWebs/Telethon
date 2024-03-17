@@ -1,10 +1,11 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, List, Optional, Self
+from typing import Optional, Self
 
 
 @dataclass
 class Type:
-    namespace: List[str]
+    namespace: list[str]
     name: str
     bare: bool
     generic_ref: bool

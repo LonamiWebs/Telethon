@@ -1,4 +1,5 @@
-from typing import Iterator, Type
+from collections.abc import Iterator
+from typing import Type
 
 from .tl.definition import Definition
 from .utils import remove_tl_comments

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Dict, Optional, Self
+from typing import TYPE_CHECKING, Optional, Self
 
 from ...tl import abcs
 from ..types import Chat, NoPublicConstructor
@@ -25,7 +25,7 @@ class Event(metaclass=NoPublicConstructor):
     @classmethod
     @abc.abstractmethod
     def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: Dict[int, Chat]
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Chat]
     ) -> Optional[Self]:
         pass
 

@@ -1,5 +1,5 @@
 import struct
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from ..utils import check_message_buffer
 from .types import Deserialization, MsgId, Mtp, RpcResult
@@ -23,7 +23,7 @@ class Plain(Mtp):
         self._buffer += request  # message_data
         return msg_id
 
-    def finalize(self) -> Optional[Tuple[MsgId, bytes]]:
+    def finalize(self) -> Optional[tuple[MsgId, bytes]]:
         if not self._buffer:
             return None
 
@@ -33,7 +33,7 @@ class Plain(Mtp):
 
     def deserialize(
         self, payload: bytes | bytearray | memoryview
-    ) -> List[Deserialization]:
+    ) -> list[Deserialization]:
         check_message_buffer(payload)
 
         auth_key_id, msg_id, length = struct.unpack_from("<qqi", payload)

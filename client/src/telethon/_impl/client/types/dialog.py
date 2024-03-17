@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional, Self, Union
+from typing import TYPE_CHECKING, Optional, Self
 
 from ...tl import abcs, types
 from .chat import Chat, peer_id
@@ -26,9 +26,9 @@ class Dialog(metaclass=NoPublicConstructor):
     def __init__(
         self,
         client: Client,
-        raw: Union[types.Dialog, types.DialogFolder],
-        chat_map: Dict[int, Chat],
-        msg_map: Dict[int, Message],
+        raw: types.Dialog | types.DialogFolder,
+        chat_map: dict[int, Chat],
+        msg_map: dict[int, Message],
     ) -> None:
         self._client = client
         self._raw = raw
@@ -40,8 +40,8 @@ class Dialog(metaclass=NoPublicConstructor):
         cls,
         client: Client,
         dialog: abcs.Dialog,
-        chat_map: Dict[int, Chat],
-        msg_map: Dict[int, Message],
+        chat_map: dict[int, Chat],
+        msg_map: dict[int, Message],
     ) -> Self:
         assert isinstance(dialog, (types.Dialog, types.DialogFolder))
         return cls._create(client, dialog, chat_map, msg_map)

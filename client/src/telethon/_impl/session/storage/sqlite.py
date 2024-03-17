@@ -1,6 +1,6 @@
 import sqlite3
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from ..session import ChannelState, DataCenter, Session, UpdateState, User
 from .storage import Storage
@@ -20,7 +20,7 @@ class SqliteSession(Storage):
     an VCS by accident (adding ``*.session`` to ``.gitignore`` will catch them).
     """
 
-    def __init__(self, file: Union[str, Path]):
+    def __init__(self, file: str | Path):
         path = Path(file)
         if not path.suffix:
             path = path.with_suffix(EXTENSION)
@@ -105,18 +105,22 @@ class SqliteSession(Storage):
                 DataCenter(id=id, ipv4_addr=ipv4_addr, ipv6_addr=ipv6_addr, auth=auth)
                 for (id, ipv4_addr, ipv6_addr, auth) in datacenter
             ],
-            user=User(id=user[0], dc=user[1], bot=bool(user[2]), username=user[3])
-            if user
-            else None,
-            state=UpdateState(
-                pts=state[0],
-                qts=state[1],
-                date=state[2],
-                seq=state[3],
-                channels=[ChannelState(id=id, pts=pts) for id, pts in channelstate],
-            )
-            if state
-            else None,
+            user=(
+                User(id=user[0], dc=user[1], bot=bool(user[2]), username=user[3])
+                if user
+                else None
+            ),
+            state=(
+                UpdateState(
+                    pts=state[0],
+                    qts=state[1],
+                    date=state[2],
+                    seq=state[3],
+                    channels=[ChannelState(id=id, pts=pts) for id, pts in channelstate],
+                )
+                if state
+                else None
+            ),
         )
 
     @staticmethod

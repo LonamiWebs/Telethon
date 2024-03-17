@@ -2,20 +2,11 @@ from __future__ import annotations
 
 import mimetypes
 import urllib.parse
+from collections.abc import Coroutine
 from inspect import isawaitable
 from io import BufferedWriter
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Coroutine,
-    List,
-    Optional,
-    Protocol,
-    Self,
-    Sequence,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Self, Sequence
 
 from ...tl import abcs, types
 from .meta import NoPublicConstructor
@@ -79,7 +70,7 @@ def photo_size_dimensions(
         raise RuntimeError("unexpected case")
 
 
-def try_get_url_path(maybe_url: Union[str, Path, InFileLike]) -> Optional[str]:
+def try_get_url_path(maybe_url: str | Path | InFileLike) -> Optional[str]:
     if not isinstance(maybe_url, str):
         return None
     lowercase = maybe_url.lower()
@@ -97,7 +88,7 @@ class InFileLike(Protocol):
     It's only used in function parameters.
     """
 
-    def read(self, n: int, /) -> Union[bytes, Coroutine[Any, Any, bytes]]:
+    def read(self, n: int, /) -> bytes | Coroutine[Any, Any, bytes]:
         """
         Read from the file or buffer.
 
@@ -116,7 +107,7 @@ class OutFileLike(Protocol):
     It's only used in function parameters.
     """
 
-    def write(self, data: bytes) -> Union[Any, Coroutine[Any, Any, Any]]:
+    def write(self, data: bytes) -> Any | Coroutine[Any, Any, Any]:
         """
         Write all the data into the file or buffer.
 
@@ -128,10 +119,10 @@ class OutFileLike(Protocol):
 class OutWrapper:
     __slots__ = ("_fd", "_owned_fd")
 
-    _fd: Union[OutFileLike, BufferedWriter]
+    _fd: OutFileLike | BufferedWriter
     _owned_fd: Optional[BufferedWriter]
 
-    def __init__(self, file: Union[str, Path, OutFileLike]):
+    def __init__(self, file: str | Path | OutFileLike):
         if isinstance(file, str):
             file = Path(file)
 
@@ -173,7 +164,7 @@ class File(metaclass=NoPublicConstructor):
         input_media: abcs.InputMedia,
         thumb: Optional[abcs.PhotoSize],
         thumbs: Optional[Sequence[abcs.PhotoSize]],
-        raw: Optional[Union[abcs.MessageMedia, abcs.Photo, abcs.Document]],
+        raw: Optional[abcs.MessageMedia | abcs.Photo | abcs.Document],
         client: Optional[Client],
     ):
         self._attributes = attributes
@@ -336,7 +327,7 @@ class File(metaclass=NoPublicConstructor):
             return mimetypes.guess_extension(self._mime) or ""
 
     @property
-    def thumbnails(self) -> List[File]:
+    def thumbnails(self) -> list[File]:
         """
         The file thumbnails.
 
@@ -393,7 +384,7 @@ class File(metaclass=NoPublicConstructor):
 
         return None
 
-    async def download(self, file: Union[str, Path, OutFileLike]) -> None:
+    async def download(self, file: str | Path | OutFileLike) -> None:
         """
         Alias for :meth:`telethon.Client.download`.
 

@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from abc import ABC
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 from .flag import Flag
 from .ty import Type
@@ -8,7 +10,7 @@ from .ty import Type
 
 class BaseParameter(ABC):
     @staticmethod
-    def from_str(ty: str) -> Union["FlagsParameter", "NormalParameter"]:
+    def from_str(ty: str) -> FlagsParameter | NormalParameter:
         if not ty:
             raise ValueError("empty")
         if ty == "#":

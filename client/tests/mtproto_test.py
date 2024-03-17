@@ -1,5 +1,5 @@
 import struct
-from typing import Optional, Tuple
+from typing import Optional
 
 from pytest import raises
 from telethon._impl.crypto import AuthKey
@@ -49,7 +49,7 @@ def test_rpc_error_parsing() -> None:
 PLAIN_REQUEST = b"Hey!"
 
 
-def unwrap_finalize(finalized: Optional[Tuple[MsgId, bytes]]) -> bytes:
+def unwrap_finalize(finalized: Optional[tuple[MsgId, bytes]]) -> bytes:
     assert finalized is not None
     _, buffer = finalized
     return buffer

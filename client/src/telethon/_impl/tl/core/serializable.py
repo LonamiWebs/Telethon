@@ -1,12 +1,12 @@
 import abc
 import struct
-from typing import Protocol, Self, Tuple
+from typing import Protocol, Self
 
 from .reader import Reader
 
 
 class HasSlots(Protocol):
-    __slots__: Tuple[str, ...]
+    __slots__: tuple[str, ...]
 
 
 def obj_repr(self: HasSlots) -> str:
@@ -16,7 +16,7 @@ def obj_repr(self: HasSlots) -> str:
 
 
 class Serializable(abc.ABC):
-    __slots__: Tuple[str, ...] = ()
+    __slots__: tuple[str, ...] = ()
 
     @classmethod
     @abc.abstractmethod

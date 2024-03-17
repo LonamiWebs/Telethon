@@ -1,6 +1,7 @@
 import abc
 import typing
-from typing import Callable, Tuple, TypeAlias
+from collections.abc import Callable
+from typing import TypeAlias
 
 from ..event import Event
 
@@ -74,7 +75,7 @@ class Any(Combinable):
         self._filters = (filter1, filter2, *filters)
 
     @property
-    def filters(self) -> Tuple[Filter, ...]:
+    def filters(self) -> tuple[Filter, ...]:
         """
         The filters being checked, in order.
         """
@@ -114,7 +115,7 @@ class All(Combinable):
         self._filters = (filter1, filter2, *filters)
 
     @property
-    def filters(self) -> Tuple[Filter, ...]:
+    def filters(self) -> tuple[Filter, ...]:
         """
         The filters being checked, in order.
         """

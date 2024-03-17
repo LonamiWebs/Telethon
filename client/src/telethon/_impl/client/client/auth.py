@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import getpass
 import re
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 from ...crypto import two_factor_auth
 from ...mtproto import RpcError
@@ -115,9 +115,7 @@ async def request_login_code(self: Client, phone: str) -> LoginToken:
     return LoginToken._new(result, phone)
 
 
-async def sign_in(
-    self: Client, token: LoginToken, code: str
-) -> Union[User, PasswordToken]:
+async def sign_in(self: Client, token: LoginToken, code: str) -> User | PasswordToken:
     try:
         result = await self(
             functions.auth.sign_in(
@@ -213,7 +211,7 @@ async def get_password_information(client: Client) -> PasswordToken:
 
 
 async def check_password(
-    self: Client, token: PasswordToken, password: Union[str, bytes]
+    self: Client, token: PasswordToken, password: str | bytes
 ) -> User:
     algo = token._password.current_algo
     if not isinstance(

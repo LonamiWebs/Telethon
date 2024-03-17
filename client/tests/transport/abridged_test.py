@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from pytest import raises
 from telethon._impl.mtproto import Abridged
 
@@ -11,7 +9,7 @@ class Output(bytearray):
         self += data
 
 
-def setup_pack(n: int) -> Tuple[Abridged, bytes, Output]:
+def setup_pack(n: int) -> tuple[Abridged, bytes, Output]:
     input = bytes(x & 0xFF for x in range(n))
     return Abridged(), input, Output()
 
