@@ -25,16 +25,7 @@ from .message import (
 from .meta import NoPublicConstructor
 from .participant import Participant
 from .password_token import PasswordToken
-from .peer import (
-    Channel,
-    ChatLike,
-    Group,
-    Peer,
-    User,
-    build_chat_map,
-    expand_peer,
-    peer_id,
-)
+from .peer import Channel, Group, Peer, User, build_chat_map, expand_peer, peer_id
 from .recent_action import RecentAction
 
 __all__ = [
@@ -45,7 +36,6 @@ __all__ = [
     "CallbackAnswer",
     "Channel",
     "Peer",
-    "ChatLike",
     "Group",
     "User",
     "build_chat_map",

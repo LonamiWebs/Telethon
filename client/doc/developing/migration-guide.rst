@@ -444,20 +444,21 @@ Telegram may still choose to send their ``min`` version with only basic details.
 But it means you don't have to remember 5 different ways of using chats.
 
 To replace the concept of "input chats", v2 introduces :class:`types.PeerRef`.
-A "packed chat" is a chat with *just* enough information that you can use it without relying on Telethon's cache.
+A "peer" represents either a :class:`~types.User`, :class:`~types.Group` or :class:`~types.Channel`, much like Telegram's :tl:`Peer`.
+A "peer reference" represents *just* enough information to reference that peer without relying on Telethon's cache.
 This is the most efficient way to call methods like :meth:`Client.send_message` too.
 
 The concept of "marked IDs" also no longer exists.
 This means v2 no longer supports the ``-`` or ``-100`` prefixes on identifiers.
-:tl:`Peer`-wrapping is gone, too.
+Using the raw :tl:`Peer` to wrap the identifiers is gone, too.
 Instead, you're strongly encouraged to use :class:`types.PeerRef` instances.
 
-The concepts of of "entity" or "peer" are unified to simply :term:`chat`.
+The concepts of of "entity" or "peer" are unified to :term:`peer`.
 Overall, dealing with users, groups and channels should feel a lot more natural.
 
 .. seealso::
 
-    In-depth explanation for :doc:`/concepts/chats`.
+    In-depth explanation for :doc:`/concepts/peers`.
 
 
 Other methods like ``client.get_peer_id``, ``client.get_input_entity`` and ``client.get_entity`` are gone too.

@@ -196,9 +196,7 @@ async def connect(self: Client) -> None:
                 self._session.user = SessionUser(
                     id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username
                 )
-                packed = me.pack()
-                assert packed is not None
-                self._chat_hashes.set_self_user(packed)
+                self._chat_hashes.set_self_user(me.id, me.bot)
 
     self._dispatcher = asyncio.create_task(dispatcher(self))
 

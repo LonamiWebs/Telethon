@@ -28,7 +28,7 @@ class FunctionMethodsVisitor(ast.NodeVisitor):
         self._try_add_def(node)
 
     def _try_add_def(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
-        match node.args.args:
+        match node.args.posonlyargs + node.args.args:
             case [ast.arg(arg="self", annotation=ast.Name(id="Client")), *_]:
                 self.methods.append(node)
             case _:
@@ -94,14 +94,20 @@ def main() -> None:
 
         call: ast.AST = ast.Call(
             func=ast.Name(id=function.name, ctx=ast.Load()),
-            args=[ast.Name(id=a.arg, ctx=ast.Load()) for a in function.args.args],
+            args=[
+                ast.Name(id=a.arg, ctx=ast.Load())
+                for a in function.args.posonlyargs + function.args.args
+            ],
             keywords=[
                 ast.keyword(arg=a.arg, value=ast.Name(id=a.arg, ctx=ast.Load()))
                 for a in function.args.kwonlyargs
             ],
         )
 
-        function.args.args[0].annotation = None
+        if function.args.posonlyargs:
+            function.args.posonlyargs[0].annotation = None
+        else:
+            function.args.args[0].annotation = None
 
         if isinstance(function, ast.AsyncFunctionDef):
             call = ast.Await(value=call)

@@ -4,6 +4,7 @@ import datetime
 import time
 from typing import TYPE_CHECKING, Any, Optional, Self, Sequence
 
+from ...session import PeerRef
 from ...tl import abcs, types
 from ..parsers import (
     generate_html_message,
@@ -14,7 +15,7 @@ from ..parsers import (
 from .buttons import Button, as_concrete_row, create_button
 from .file import File
 from .meta import NoPublicConstructor
-from .peer import ChatLike, Peer, expand_peer, peer_id
+from .peer import Peer, expand_peer, peer_id
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -186,7 +187,7 @@ class Message(metaclass=NoPublicConstructor):
     @property
     def chat(self) -> Peer:
         """
-        The :term:`chat` when the message was sent.
+        The :term:`peer` where the message was sent.
         """
         peer = self._raw.peer_id or types.PeerUser(user_id=0)
         pid = peer_id(peer)
@@ -199,7 +200,7 @@ class Message(metaclass=NoPublicConstructor):
     @property
     def sender(self) -> Optional[Peer]:
         """
-        The :term:`chat` that sent the message.
+        The :term:`peer` that sent the message.
 
         This will usually be a :class:`User`, but can also be a :class:`Channel`.
 
@@ -320,7 +321,7 @@ class Message(metaclass=NoPublicConstructor):
         if self.replied_message_id is not None:
             from ..client.messages import CherryPickedList
 
-            lst = CherryPickedList(self._client, self.chat, [])
+            lst = CherryPickedList(self._client, self.chat._ref, [])
             lst._ids.append(types.InputMessageReplyTo(id=self.id))
             return (await lst)[0]
         return None
@@ -415,7 +416,7 @@ class Message(metaclass=NoPublicConstructor):
             buttons=buttons,
         )
 
-    async def forward(self, target: ChatLike) -> Message:
+    async def forward(self, target: Peer | PeerRef) -> Message:
         """
         Alias for :meth:`telethon.Client.forward_messages`.
 

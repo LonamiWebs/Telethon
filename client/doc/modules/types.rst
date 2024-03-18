@@ -118,6 +118,16 @@ Private definitions
 
     New-type wrapper around :class:`int` used as a message identifier.
 
+.. currentmodule:: telethon._impl.session.chat.peer_ref
+
+.. class:: PeerIdentifier
+
+    New-type wrapper around :class:`int` used as a message identifier.
+
+.. class:: PeerAuth
+
+    New-type wrapper around :class:`int` used as a message identifier.
+
 .. currentmodule:: telethon._impl.mtsender.sender
 
 .. autoclass:: AsyncReader

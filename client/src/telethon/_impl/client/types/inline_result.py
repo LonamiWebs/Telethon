@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from ...tl import abcs, functions, types
+from ...session import PeerRef
+from ...tl import functions, types
 from .message import Message, generate_random_id
 from .meta import NoPublicConstructor
-from .peer import ChatLike
+from .peer import Peer
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -23,7 +24,7 @@ class InlineResult(metaclass=NoPublicConstructor):
         client: Client,
         results: types.messages.BotResults,
         result: types.BotInlineMediaResult | types.BotInlineResult,
-        default_peer: abcs.InputPeer,
+        default_peer: Optional[PeerRef],
     ):
         self._client = client
         self._raw_results = results
@@ -50,7 +51,7 @@ class InlineResult(metaclass=NoPublicConstructor):
 
     async def send(
         self,
-        chat: Optional[ChatLike] = None,
+        peer: Optional[Peer | PeerRef] = None,
     ) -> Message:
         """
         Send the result to the desired chat.
@@ -62,13 +63,12 @@ class InlineResult(metaclass=NoPublicConstructor):
 
         :return: The sent message.
         """
-        if chat is None and isinstance(self._default_peer, types.InputPeerEmpty):
-            raise ValueError("no target chat was specified")
-
-        if chat is not None:
-            peer = (await self._client._resolve_to_packed(chat))._to_input_peer()
-        else:
+        if peer is None:
+            if self._default_peer is None:
+                raise ValueError("no target chat was specified")
             peer = self._default_peer
+        else:
+            peer = peer._ref
 
         random_id = generate_random_id()
         return self._client._build_message_map(
@@ -78,7 +78,7 @@ class InlineResult(metaclass=NoPublicConstructor):
                     background=False,
                     clear_draft=False,
                     hide_via=False,
-                    peer=peer,
+                    peer=peer._to_input_peer(),
                     reply_to=None,
                     random_id=random_id,
                     query_id=self._raw_results.query_id,

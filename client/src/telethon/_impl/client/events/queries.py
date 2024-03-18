@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Self
 
+from ...session import PeerRef
 from ...tl import abcs, functions, types
 from ..client.messages import CherryPickedList
 from ..types import Message, Peer
@@ -79,9 +80,9 @@ class ButtonCallback(Event):
         """
 
         pid = peer_id(self._raw.peer)
-        chat = self._chat_map.get(pid) or await self._client._resolve_to_packed(pid)
+        chat = self._chat_map.get(pid) or PeerRef._empty_from_peer(self._raw.peer)
 
-        lst = CherryPickedList(self._client, chat, [])
+        lst = CherryPickedList(self._client, chat._ref, [])
         lst._ids.append(
             types.InputMessageCallbackQuery(
                 id=self._raw.msg_id, query_id=self._raw.query_id

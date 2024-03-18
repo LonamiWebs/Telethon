@@ -3,12 +3,13 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Optional
 
+from ...session import PeerRef
 from ...tl import functions, types
 from ..types import (
     AsyncList,
-    ChatLike,
     Dialog,
     Draft,
+    Peer,
     build_chat_map,
     build_msg_map,
     parse_message,
@@ -59,8 +60,8 @@ def get_dialogs(self: Client) -> AsyncList[Dialog]:
     return DialogList(self)
 
 
-async def delete_dialog(self: Client, chat: ChatLike) -> None:
-    peer = (await self._resolve_to_packed(chat))._to_input_peer()
+async def delete_dialog(self: Client, dialog: Peer | PeerRef, /) -> None:
+    peer = dialog._ref
     if isinstance(peer, types.InputPeerChannel):
         await self(
             functions.channels.leave_channel(
@@ -119,7 +120,8 @@ def get_drafts(self: Client) -> AsyncList[Draft]:
 
 async def edit_draft(
     self: Client,
-    chat: ChatLike,
+    peer: Peer | PeerRef,
+    /,
     text: Optional[str] = None,
     *,
     markdown: Optional[str] = None,
@@ -127,8 +129,7 @@ async def edit_draft(
     link_preview: bool = False,
     reply_to: Optional[int] = None,
 ) -> Draft:
-    packed = await self._resolve_to_packed(chat)
-    peer = (await self._resolve_to_packed(chat))._to_input_peer()
+    peer = peer._ref
     message, entities = parse_message(
         text=text, markdown=markdown, html=html, allow_empty=False
     )
@@ -138,7 +139,7 @@ async def edit_draft(
             no_webpage=not link_preview,
             reply_to_msg_id=reply_to,
             top_msg_id=None,
-            peer=peer,
+            peer=peer._to_input_peer(),
             message=message,
             entities=entities,
         )
@@ -147,7 +148,7 @@ async def edit_draft(
 
     return Draft._from_raw(
         client=self,
-        peer=packed._to_peer(),
+        peer=peer._to_peer(),
         top_msg_id=0,
         draft=types.DraftMessage(
             no_webpage=not link_preview,

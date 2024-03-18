@@ -6,16 +6,17 @@ from inspect import isawaitable
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from ...session import PeerRef
 from ...tl import abcs, functions, types
 from ..types import (
     AlbumBuilder,
     AsyncList,
-    ChatLike,
     File,
     InFileLike,
     Message,
     OutFileLike,
     OutWrapper,
+    Peer,
 )
 from ..types import buttons as btns
 from ..types import (
@@ -44,7 +45,8 @@ def prepare_album(self: Client) -> AlbumBuilder:
 
 async def send_photo(
     self: Client,
-    chat: ChatLike,
+    chat: Peer | PeerRef,
+    /,
     file: str | Path | InFileLike | File,
     *,
     size: Optional[int] = None,
@@ -83,12 +85,13 @@ async def send_photo(
 
 async def send_audio(
     self: Client,
-    chat: ChatLike,
+    chat: Peer | PeerRef,
+    /,
     file: str | Path | InFileLike | File,
-    mime_type: Optional[str] = None,
     *,
     size: Optional[int] = None,
     name: Optional[str] = None,
+    mime_type: Optional[str] = None,
     duration: Optional[float] = None,
     voice: bool = False,
     title: Optional[str] = None,
@@ -120,7 +123,8 @@ async def send_audio(
 
 async def send_video(
     self: Client,
-    chat: ChatLike,
+    chat: Peer | PeerRef,
+    /,
     file: str | Path | InFileLike | File,
     *,
     size: Optional[int] = None,
@@ -161,7 +165,8 @@ async def send_video(
 
 async def send_file(
     self: Client,
-    chat: ChatLike,
+    chat: Peer | PeerRef,
+    /,
     file: str | Path | InFileLike | File,
     *,
     size: Optional[int] = None,
@@ -289,14 +294,13 @@ async def send_file(
 
 async def do_send_file(
     client: Client,
-    chat: ChatLike,
+    chat: Peer | PeerRef,
     input_media: abcs.InputMedia,
     message: str,
     entities: Optional[list[abcs.MessageEntity]],
     reply_to: Optional[int],
     buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
 ) -> Message:
-    peer = (await client._resolve_to_packed(chat))._to_input_peer()
     random_id = generate_random_id()
     return client._build_message_map(
         await client(
@@ -306,7 +310,7 @@ async def do_send_file(
                 clear_draft=False,
                 noforwards=False,
                 update_stickersets_order=False,
-                peer=peer,
+                peer=chat._ref._to_input_peer(),
                 reply_to=(
                     types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
                     if reply_to
@@ -321,7 +325,7 @@ async def do_send_file(
                 send_as=None,
             )
         ),
-        peer,
+        chat._ref,
     ).with_random_id(random_id)
 
 
@@ -452,11 +456,13 @@ class FileBytesList(AsyncList[bytes]):
         self._done = len(result.bytes) < MAX_CHUNK_SIZE
 
 
-def get_file_bytes(self: Client, media: File) -> AsyncList[bytes]:
+def get_file_bytes(self: Client, media: File, /) -> AsyncList[bytes]:
     return FileBytesList(self, media)
 
 
-async def download(self: Client, media: File, file: str | Path | OutFileLike) -> None:
+async def download(
+    self: Client, media: File, /, file: str | Path | OutFileLike
+) -> None:
     fd = OutWrapper(file)
     try:
         async for chunk in get_file_bytes(self, media):

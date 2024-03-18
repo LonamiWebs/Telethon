@@ -1,43 +1,47 @@
-Chats
-=====
+Peers, users and chats
+======================
 
 .. currentmodule:: telethon
 
-The term :term:`chat` is extremely overloaded, so it's no surprise many are confused by what it means.
-This section should hopefully clear that up.
+The term :term:`peer` may sound strange at first, but it's the best we have after much consideration.
+This section aims to explain what peers are, and how they relate to users, group chats, and broadcast channels.
 
 
-Telethon Chat
+Telethon Peer
 -------------
 
-The word :term:`chat` in Telethon is used to refer a place where messages are sent to.
-Therefore, a Telethon :term:`chat` can be another user, a bot, a group, or a broadcast channel.
-All of those are places where messages can be sent.
+The :class:`~types.Peer` type in Telethon is the base class for :class:`~types.User`, :class:`~types.Group` and :class:`~types.Channel`.
+Therefore, a Telethon ":term:`peer`" represents an entity with various attributes: identifier, username, photo, title, and other information depending on its type.
 
-Of course, chats do more things than contain messages.
-They often have a name, username, photo, description, and other information.
+The :class:`~types.PeerRef` type represents a reference to a :class:`~types.Peer`, and can be obtained from its :attr:`~types.Peer.ref` attribute.
+Each peer type has its own reference type, namely :class:`~types.UserRef`, :class:`~types.GroupRef` and :class:`~types.ChannelRef`.
 
-When a :term:`chat` appears in a parameter or as a property,
-it means that it will be either a :class:`~types.User`, :class:`~types.Group` or :class:`~types.Channel`.
+| Most methods accept either the :class:`~types.Peer` or :class:`~types.PeerRef` (and their subclasses) as input.
+  You do not need to fetch the full :class:`~types.Peer` to :meth:`~Client.get_messages` or :meth:`~Client.send_file`\ s— a :class:`~types.PeerRef` is enough.
+| Some methods will only work on groups and channels (like :meth:`~Client.get_participants`), or users (like :meth:`~Client.inline_query`).
 
-When a parameter must be "chat-like", it means Telethon will accept anything that can be "converted" to a :term:`chat`.
-The following types are chat-like:
+A Telethon "chat" refers to either groups and channels, or the place where messages are sent to.
+In the latter case, the chat could also belong to a user, so it would be represented by a :class:`~types.Peer`.
 
-* The ``'me'`` literal string. This represents the account that is logged in ("yourself").
-* An ``'@username'``. The at-sign ``@`` is optional. Note that links are not supported.
-* An ``'+1 23'`` phone number string. It must be an :class:`str` and start with the plus-sign ``+`` character.
-* An ``123`` integer identifier. It must be an :class:`int` and cannot be negative.
-* An existing :class:`~types.User`, :class:`~types.Group` or :class:`~types.Channel`.
-* A :class:`~types.PeerRef`.
+A Telethon "group" is used to refer to either small group chats or supergroups.
+This matches what the interface of official applications call these entities.
 
-Previous versions of Telethon referred to this term as "entity" or "entities" instead.
+A Telethon "user" is used to refer to either user accounts or bot accounts.
+This matches Telegram's API, as both are represented by the same user object.
 
 
-Telegram Chat
+Telegram Peer
 -------------
 
-The Telegram API is very confusing when it comes to the word "chat".
-You only need to know about this if you plan to use the :term:`Raw API`.
+.. note::
+
+    This section is mainly of interest if you plan to use the :term:`Raw API`.
+
+Telegram uses :tl:`Peer`\ s to categorize users, groups and channels, much like how Telethon does.
+It also has the concept of :tl:`InputPeer`\ s, which are commonly used as input parameters when sending requests.
+These match the concept of Telethon's peer references.
+
+The main confusion in Telegram's API comes from the word "chat".
 
 In the :term:`TL` schema definitions, there are two boxed types, :tl:`User` and :tl:`Chat`.
 A boxed :tl:`User` can only be the bare :tl:`user`, but the boxed :tl:`Chat` can be either a bare :tl:`chat` or a bare :tl:`channel`.
@@ -63,33 +67,34 @@ In Telethon:
 Telethon classes aim to map to similar concepts in official applications.
 
 
-Bot API chat
+Bot API Peer
 ------------
 
-The Bot API follows a certain convention when it comes to identifiers:
+The Bot API does not use the word "peer", but instead opts to use "chat" and "user" only, despite chats also being able to reference users.
+The Bot API follows a certain convention when it comes to chat and user identifiers:
 
 * User IDs are positive.
 * Chat IDs are negative.
 * Channel IDs are *also* negative, but are prefixed by ``-100``.
 
-Telethon encourages the use of :class:`~types.PeerRef` instead of naked identifiers.
-As a reminder, negative identifiers are not supported in Telethon's chat-like parameters.
-
-If you got an Bot API-style ID from somewhere else, you will need to explicitly say what type it is:
+Telethon does not support Bot API's formatted identifiers, and instead expects you to create the appropriated :class:`~types.PeerRef`:
 
 .. code-block:: python
 
-    # If -1001234 is your ID...
-    from telethon.types import PackedChat, PackedType
-    chat = PackedChat(PackedType.BROADCAST, 1234, None)
-    # ...you need to explicitly create a PackedChat with id=1234 and set the corresponding type (a channel).
-    # The access hash (see below) will be None, which may or may not work.
+    from telethon.types import UserRef, GroupRef, ChannelRef
+
+    user = UserRef(123)  # user_id 123 from bot API becomes 123
+    group = GroupRef(456)  # chat_id -456 from bot API becomes 456
+    channel = ChannelRef(789)  # chat_id -100789 from bot API becomes 789
+
+While using a Telethon Client logged in to a bot account, the above may work for certain methods.
+However, user accounts often require what's known as an "access hash", obtained by encountering the peer first.
 
 
-Encountering chats
+Encountering peers
 ------------------
 
-The way you encounter chats in Telethon is no different from official clients.
+The way you encounter peers in Telethon is no different from official clients.
 If you:
 
 * …have joined a group or channel, or have sent private messages to some user, you can :meth:`~Client.get_dialogs`.
@@ -99,21 +104,19 @@ If you:
 * …are a bot responding to users, you will be able to access the :attr:`types.Message.sender`.
 
 
-Chats access hash
------------------
+Access hashes and authorizations
+--------------------------------
 
 Users, supergroups and channels all need an :term:`access hash`.
+This value is proof that you're authorized to access the peer in question.
+This value is also account-bound.
+You cannot obtain an :term:`access hash` in Account-A and use it in Account-B.
 
-In Telethon, the :class:`~types.PeerRef` is the recommended way to deal with the identifier-hash pairs.
-This compact type can be used anywhere a chat is expected.
+In Telethon, the :class:`~types.PeerRef` is the recommended way to deal with the identifier-authorization pairs.
+This compact type can be used anywhere a peer is expected.
 It's designed to be easy to store and cache in any way your application chooses.
+You can easily serialize it to a string and back via ``str(ref)`` and :meth:`types.PeerRef.from_str`.
 
 Bot accounts can get away with an invalid :term:`access hash` for certain operations under certain conditions.
 The same is true for user accounts, although to a lesser extent.
-
-When using just the identifier to refer to a chat, Telethon will attempt to retrieve its hash from its in-memory cache.
-If this fails, an invalid hash will be used. This may or may not make the API call succeed.
-For this reason, it is recommended that you always use :class:`~types.PeerRef` instead.
-
-Remember that an :term:`access hash` is account-bound.
-You cannot obtain an :term:`access hash` in Account-A and use it in Account-B.
+When you create a :class:`~types.PeerRef` without specifying an authorization, a bogus :term:`access hash` will be used.

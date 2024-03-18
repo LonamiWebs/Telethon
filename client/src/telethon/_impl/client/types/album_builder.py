@@ -4,11 +4,12 @@ import mimetypes
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from ...session import PeerRef
 from ...tl import abcs, functions, types
 from .file import InFileLike, try_get_url_path
 from .message import Message, generate_random_id, parse_message
 from .meta import NoPublicConstructor
-from .peer import ChatLike
+from .peer import Peer
 
 if TYPE_CHECKING:
     from ..client.client import Client
@@ -197,7 +198,7 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
         )
 
     async def send(
-        self, chat: ChatLike, *, reply_to: Optional[int] = None
+        self, peer: Peer | PeerRef, *, reply_to: Optional[int] = None
     ) -> list[Message]:
         """
         Send the album.
@@ -214,7 +215,6 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
 
             messages = await album.send(chat)
         """
-        peer = (await self._client._resolve_to_packed(chat))._to_input_peer()
         msg_map = self._client._build_message_map(
             await self._client(
                 functions.messages.send_multi_media(
@@ -223,7 +223,7 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
                     clear_draft=False,
                     noforwards=False,
                     update_stickersets_order=False,
-                    peer=peer,
+                    peer=peer._ref._to_input_peer(),
                     reply_to=(
                         types.InputReplyToMessage(
                             reply_to_msg_id=reply_to, top_msg_id=None
@@ -236,6 +236,6 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
                     send_as=None,
                 )
             ),
-            peer,
+            peer._ref,
         )
         return [msg_map.with_random_id(media.random_id) for media in self._medias]

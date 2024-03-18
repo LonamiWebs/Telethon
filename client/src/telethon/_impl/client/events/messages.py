@@ -149,7 +149,7 @@ class MessageRead(Event):
     @property
     def chat(self) -> Peer:
         """
-        The :term:`chat` when the messages were read.
+        The :term:`peer` where the messages were read.
         """
         peer = self._peer()
         pid = peer_id(peer)

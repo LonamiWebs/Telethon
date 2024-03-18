@@ -47,14 +47,12 @@ class Callback(InlineButton):
         The bot's answer will be returned, or :data:`None` if they don't answer in time.
         """
         message = self._message()
-        packed = message.chat.pack()
-        assert packed
 
         return CallbackAnswer._create(
             await message._client(
                 functions.messages.get_bot_callback_answer(
                     game=False,
-                    peer=packed._to_input_peer(),
+                    peer=message.chat._ref._to_input_peer(),
                     msg_id=message.id,
                     data=self.data,
                     password=None,

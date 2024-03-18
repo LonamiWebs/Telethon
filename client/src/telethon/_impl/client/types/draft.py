@@ -150,7 +150,7 @@ class Draft(metaclass=NoPublicConstructor):
             new_draft = await old_draft.edit('new text', link_preview=False)
         """
         return await self._client.edit_draft(
-            await self._packed_chat(),
+            self._peer_ref(),
             text,
             markdown=markdown,
             html=html,
@@ -158,13 +158,11 @@ class Draft(metaclass=NoPublicConstructor):
             reply_to=reply_to,
         )
 
-    async def _packed_chat(self) -> PeerRef:
-        packed = None
+    def _peer_ref(self) -> PeerRef:
         if chat := self._chat_map.get(peer_id(self._peer)):
-            packed = chat.pack()
-        if packed is None:
-            packed = await self._client._resolve_to_packed(peer_id(self._peer))
-        return packed
+            return chat._ref
+        else:
+            return PeerRef._empty_from_peer(self._peer)
 
     async def send(self) -> Message:
         """
@@ -180,9 +178,6 @@ class Draft(metaclass=NoPublicConstructor):
 
             await draft.send(clear=False)
         """
-        packed = await self._packed_chat()
-        peer = packed._to_input_peer()
-
         reply_to = self.replied_message_id
         message = getattr(self._raw, "message", "")
         entities = getattr(self._raw, "entities", None)
@@ -196,7 +191,7 @@ class Draft(metaclass=NoPublicConstructor):
                 clear_draft=True,
                 noforwards=False,
                 update_stickersets_order=False,
-                peer=peer,
+                peer=self._peer_ref()._to_input_peer(),
                 reply_to=(
                     types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
                     if reply_to
@@ -221,7 +216,7 @@ class Draft(metaclass=NoPublicConstructor):
                     if self._client._session.user
                     else None
                 ),
-                peer_id=packed._to_peer(),
+                peer_id=self._peer_ref()._to_peer(),
                 reply_to=(
                     types.MessageReplyHeader(
                         reply_to_scheduled=False,
@@ -240,9 +235,9 @@ class Draft(metaclass=NoPublicConstructor):
                 ttl_period=result.ttl_period,
             )
         else:
-            return self._client._build_message_map(result, peer).with_random_id(
-                random_id
-            )
+            return self._client._build_message_map(
+                result, self._peer_ref()
+            ).with_random_id(random_id)
 
     async def delete(self) -> None:
         """

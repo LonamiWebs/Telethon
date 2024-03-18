@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Self, Sequence
 
-from ...session import PeerRef
+from ...session import ChannelRef, GroupRef
 from ...tl import abcs, types
 from .admin_right import AdminRight
 from .chat_restriction import ChatRestriction
@@ -24,7 +24,7 @@ class Participant(metaclass=NoPublicConstructor):
     def __init__(
         self,
         client: Client,
-        chat: PeerRef,
+        chat: GroupRef | ChannelRef,
         participant: (
             types.ChannelParticipant
             | types.ChannelParticipantSelf
@@ -47,7 +47,7 @@ class Participant(metaclass=NoPublicConstructor):
     def _from_raw_channel(
         cls,
         client: Client,
-        chat: PeerRef,
+        chat: ChannelRef,
         participant: abcs.ChannelParticipant,
         chat_map: dict[int, Peer],
     ) -> Self:
@@ -70,7 +70,7 @@ class Participant(metaclass=NoPublicConstructor):
     def _from_raw_chat(
         cls,
         client: Client,
-        chat: PeerRef,
+        chat: GroupRef,
         participant: abcs.ChatParticipant,
         chat_map: dict[int, Peer],
     ) -> Self:
@@ -193,7 +193,14 @@ class Participant(metaclass=NoPublicConstructor):
         """
         participant = self.user or self.banned or self.left
         assert participant
-        await self._client.set_participant_admin_rights(self._chat, participant, rights)
+        if isinstance(participant, User):
+            await self._client.set_participant_admin_rights(
+                self._chat, participant, rights
+            )
+        else:
+            raise TypeError(
+                f"participant of type {participant.__class__.__name__} cannot be made admin"
+            )
 
     async def set_restrictions(
         self,

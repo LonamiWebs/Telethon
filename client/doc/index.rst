@@ -78,13 +78,13 @@ Concepts
 
 A more in-depth explanation of some of the concepts and words used in Telethon.
 
-:doc:`‣ Start reading Chat concept <concepts/chats>`
+:doc:`‣ Start reading Chat concept <concepts/peers>`
 
 .. toctree::
     :hidden:
     :caption: Concepts
 
-    concepts/chats
+    concepts/peers
     concepts/updates
     concepts/messages
     concepts/sessions

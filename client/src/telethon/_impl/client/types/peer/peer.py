@@ -1,7 +1,7 @@
 import abc
 from typing import Optional
 
-from ....session import PeerRef
+from ....session import ChannelRef, GroupRef, UserRef
 
 
 class Peer(abc.ABC):
@@ -15,7 +15,7 @@ class Peer(abc.ABC):
     @abc.abstractmethod
     def id(self) -> int:
         """
-        The chat's integer identifier.
+        The peer's integer identifier.
 
         This identifier is always a positive number.
 
@@ -39,20 +39,28 @@ class Peer(abc.ABC):
     @abc.abstractmethod
     def username(self) -> Optional[str]:
         """
-        The primary *@username* of the chat.
+        The primary *@username* of the user, group or chat.
 
         The returned string will *not* contain the at-sign ``@``.
         """
 
+    @property
     @abc.abstractmethod
-    def pack(self) -> Optional[PeerRef]:
+    def ref(self) -> UserRef | GroupRef | ChannelRef:
         """
-        Pack the chat into a compact and reusable object.
+        The reusable reference to this user, group or channel.
 
-        This object can be easily serialized and saved to persistent storage.
-        Unlike resolving usernames, packed chats can be reused without costly calls.
+        This can be used to persist the reference to a database or disk,
+        or to create inline mentions.
 
         .. seealso::
 
-            :doc:`/concepts/chats`
+            :doc:`/concepts/peers`
         """
+
+    @property
+    def _ref(self) -> UserRef | GroupRef | ChannelRef:
+        """
+        Private alias that also exists in refs to make conversion trivial.
+        """
+        return self.ref

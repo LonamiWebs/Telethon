@@ -546,12 +546,12 @@ class MessageBox:
         else:
             return None
 
-        packed = chat_hashes.get(id)
-        if packed:
-            assert packed.access_hash is not None
+        ref = chat_hashes.get(id)
+        if ref:
+            assert ref.authorization is not None
             channel = types.InputChannel(
-                channel_id=packed.id,
-                access_hash=packed.access_hash,
+                channel_id=ref.identifier,
+                access_hash=ref.authorization,
             )
             if state := self.map.get(entry):
                 gd = functions.updates.get_channel_difference(

@@ -35,9 +35,7 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
         id=user.id, dc=client._sender.dc_id, bot=user.bot, username=user.username
     )
 
-    packed = user.pack()
-    assert packed is not None
-    client._chat_hashes.set_self_user(packed)
+    client._chat_hashes.set_self_user(user.id, user.bot)
 
     try:
         state = await client(functions.updates.get_state())

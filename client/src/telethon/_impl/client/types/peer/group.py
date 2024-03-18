@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Self, Sequence
 
-from ....session import PackedType, PeerRef
+from ....session import ChannelRef, GroupRef
 from ....tl import abcs, types
 from ..chat_restriction import ChatRestriction
 from ..meta import NoPublicConstructor
@@ -65,17 +65,16 @@ class Group(Peer, metaclass=NoPublicConstructor):
     def username(self) -> Optional[str]:
         return getattr(self._raw, "username", None)
 
-    def pack(self) -> Optional[PeerRef]:
+    @property
+    def ref(self) -> GroupRef | ChannelRef:
         if isinstance(self._raw, (types.ChatEmpty, types.Chat, types.ChatForbidden)):
-            return PeerRef(ty=PackedType.CHAT, id=self._raw.id, access_hash=None)
-        elif self._raw.access_hash is None:
-            return None
+            return GroupRef(self._raw.id, None)
         else:
-            return PeerRef(
-                ty=PackedType.MEGAGROUP,
-                id=self._raw.id,
-                access_hash=self._raw.access_hash,
-            )
+            return ChannelRef(self._raw.id, self._raw.access_hash)
+
+    @property
+    def _ref(self) -> GroupRef | ChannelRef:
+        return self.ref
 
     # endregion Overrides
 

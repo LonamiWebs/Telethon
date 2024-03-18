@@ -1,6 +1,6 @@
 from typing import Optional, Self
 
-from ....session import PackedType, PeerRef
+from ....session import UserRef
 from ....tl import abcs, types
 from ..meta import NoPublicConstructor
 from .peer import Peer
@@ -87,15 +87,13 @@ class User(Peer, metaclass=NoPublicConstructor):
     def username(self) -> Optional[str]:
         return self._raw.username
 
-    def pack(self) -> Optional[PeerRef]:
-        if self._raw.access_hash is None:
-            return None
-        else:
-            return PeerRef(
-                ty=PackedType.BOT if self._raw.bot else PackedType.USER,
-                id=self._raw.id,
-                access_hash=self._raw.access_hash,
-            )
+    @property
+    def ref(self) -> UserRef:
+        return UserRef(self._raw.id, self._raw.access_hash)
+
+    @property
+    def _ref(self) -> UserRef:
+        return self.ref
 
     # endregion Overrides
 

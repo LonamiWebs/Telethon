@@ -20,7 +20,7 @@ UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN = 300
 
 
 def on(
-    self: Client, event_cls: Type[Event], filter: Optional[Filter] = None
+    self: Client, event_cls: Type[Event], /, filter: Optional[Filter] = None
 ) -> Callable[[Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]]:
     def wrapper(
         handler: Callable[[Event], Awaitable[Any]]
@@ -34,6 +34,7 @@ def on(
 def add_event_handler(
     self: Client,
     handler: Callable[[Event], Awaitable[Any]],
+    /,
     event_cls: Type[Event],
     filter: Optional[Filter] = None,
 ) -> None:
@@ -41,7 +42,7 @@ def add_event_handler(
 
 
 def remove_event_handler(
-    self: Client, handler: Callable[[Event], Awaitable[Any]]
+    self: Client, handler: Callable[[Event], Awaitable[Any]], /
 ) -> None:
     for event_cls, handlers in tuple(self._handlers.items()):
         for i in reversed(range(len(handlers))):
@@ -52,7 +53,7 @@ def remove_event_handler(
 
 
 def get_handler_filter(
-    self: Client, handler: Callable[[Event], Awaitable[Any]]
+    self: Client, handler: Callable[[Event], Awaitable[Any]], /
 ) -> Optional[Filter]:
     for handlers in self._handlers.values():
         for h, f in handlers:
@@ -64,6 +65,7 @@ def get_handler_filter(
 def set_handler_filter(
     self: Client,
     handler: Callable[[Event], Awaitable[Any]],
+    /,
     filter: Optional[Filter] = None,
 ) -> None:
     for handlers in self._handlers.values():

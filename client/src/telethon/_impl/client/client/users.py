@@ -1,21 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from ...mtproto import RpcError
-from ...session import PackedType, PeerRef
+from ...session import GroupRef, PeerRef, UserRef
 from ...tl import abcs, functions, types
-from ..types import (
-    AsyncList,
-    Channel,
-    ChatLike,
-    Group,
-    Peer,
-    User,
-    build_chat_map,
-    expand_peer,
-    peer_id,
-)
+from ..types import AsyncList, Peer, User, build_chat_map, expand_peer, peer_id
 
 if TYPE_CHECKING:
     from .client import Client
@@ -62,35 +52,33 @@ def resolved_peer_to_chat(client: Client, resolved: abcs.contacts.ResolvedPeer) 
         raise ValueError("no matching chat found in response")
 
 
-async def resolve_phone(client: Client, phone: str) -> Peer:
+async def resolve_phone(self: Client, phone: str, /) -> Peer:
     return resolved_peer_to_chat(
-        client, await client(functions.contacts.resolve_phone(phone=phone))
+        self, await self(functions.contacts.resolve_phone(phone=phone))
     )
 
 
-async def resolve_username(self: Client, username: str) -> Peer:
+async def resolve_username(self: Client, username: str, /) -> Peer:
     return resolved_peer_to_chat(
         self, await self(functions.contacts.resolve_username(username=username))
     )
 
 
-async def get_chats(
-    self: Client, chats: list[ChatLike] | tuple[ChatLike, ...]
-) -> list[Peer]:
-    packed_chats: list[PeerRef] = []
+async def resolve_peers(self: Client, peers: Sequence[Peer | PeerRef], /) -> list[Peer]:
+    refs: list[PeerRef] = []
     input_users: list[types.InputUser] = []
     input_chats: list[int] = []
     input_channels: list[types.InputChannel] = []
 
-    for chat in chats:
-        packed = await resolve_to_packed(self, chat)
-        packed_chats.append(packed)
-        if packed.is_user():
-            input_users.append(packed._to_input_user())
-        elif packed.is_chat():
-            input_chats.append(packed.id)
+    for peer in peers:
+        peer = peer._ref
+        refs.append(peer)
+        if isinstance(peer, UserRef):
+            input_users.append(peer._to_input_user())
+        elif isinstance(peer, GroupRef):
+            input_chats.append(peer._to_input_chat())
         else:
-            input_channels.append(packed._to_input_channel())
+            input_channels.append(peer._to_input_channel())
 
     if input_users:
         ret_users = await self(functions.users.get_users(id=input_users))
@@ -101,152 +89,18 @@ async def get_chats(
     if input_chats:
         ret_chats = await self(functions.messages.get_chats(id=input_chats))
         assert isinstance(ret_chats, types.messages.Chats)
-        groups = list(ret_chats.chats)
+        chats = list(ret_chats.chats)
     else:
-        groups = []
+        chats = []
 
     if input_channels:
         ret_chats = await self(functions.channels.get_channels(id=input_channels))
         assert isinstance(ret_chats, types.messages.Chats)
-        channels = list(ret_chats.chats)
-    else:
-        channels = []
+        chats.extend(ret_chats.chats)
 
-    chat_map = build_chat_map(self, users, groups + channels)
+    chat_map = build_chat_map(self, users, chats)
     return [
-        chat_map.get(chat.id)
-        or expand_peer(self, chat._to_peer(), broadcast=chat.ty == PackedType.BROADCAST)
-        for chat in packed_chats
+        chat_map.get(ref.identifier)
+        or expand_peer(self, ref._to_peer(), broadcast=None)
+        for ref in refs
     ]
-
-
-async def resolve_to_packed(
-    client: Client, chat: ChatLike | abcs.InputPeer | abcs.Peer
-) -> PeerRef:
-    if isinstance(chat, PeerRef):
-        return chat
-
-    if isinstance(chat, (User, Group, Channel)):
-        packed = chat.pack() or client._chat_hashes.get(chat.id)
-        if packed is not None:
-            return packed
-
-        # Try anyway (may work for contacts or bot users).
-        if isinstance(chat, User):
-            ty = PackedType.USER
-        elif isinstance(chat, Group):
-            ty = PackedType.MEGAGROUP if chat.is_megagroup else PackedType.CHAT
-        else:
-            ty = PackedType.BROADCAST
-
-        return PeerRef(ty=ty, id=chat.id, access_hash=0)
-
-    if isinstance(chat, abcs.InputPeer):
-        if isinstance(chat, types.InputPeerEmpty):
-            raise ValueError("Cannot resolve chat")
-        elif isinstance(chat, types.InputPeerSelf):
-            if not client._session.user:
-                raise ValueError("Cannot resolve chat")
-            return PeerRef(
-                ty=PackedType.BOT if client._session.user.bot else PackedType.USER,
-                id=client._chat_hashes.self_id,
-                access_hash=0,
-            )
-        elif isinstance(chat, types.InputPeerChat):
-            return PeerRef(
-                ty=PackedType.CHAT,
-                id=chat.chat_id,
-                access_hash=None,
-            )
-        elif isinstance(chat, types.InputPeerUser):
-            return PeerRef(
-                ty=PackedType.USER,
-                id=chat.user_id,
-                access_hash=chat.access_hash,
-            )
-        elif isinstance(chat, types.InputPeerChannel):
-            return PeerRef(
-                ty=PackedType.BROADCAST,
-                id=chat.channel_id,
-                access_hash=chat.access_hash,
-            )
-        elif isinstance(chat, types.InputPeerUserFromMessage):
-            raise ValueError("Cannot resolve chat")
-        elif isinstance(chat, types.InputPeerChannelFromMessage):
-            raise ValueError("Cannot resolve chat")
-        else:
-            raise RuntimeError("unexpected case")
-
-    if isinstance(chat, abcs.Peer):
-        packed = client._chat_hashes.get(peer_id(chat))
-        if packed is not None:
-            return packed
-        if isinstance(chat, types.PeerUser):
-            return PeerRef(
-                ty=PackedType.USER,
-                id=chat.user_id,
-                access_hash=0,
-            )
-        elif isinstance(chat, types.PeerChat):
-            return PeerRef(
-                ty=PackedType.CHAT,
-                id=chat.chat_id,
-                access_hash=0,
-            )
-        elif isinstance(chat, types.PeerChannel):
-            return PeerRef(
-                ty=PackedType.BROADCAST,
-                id=chat.channel_id,
-                access_hash=0,
-            )
-        else:
-            raise RuntimeError("unexpected case")
-
-    if isinstance(chat, str):
-        if chat.startswith("+"):
-            resolved = await resolve_phone(client, chat)
-        elif chat == "me":
-            if me := client._session.user:
-                return PeerRef(
-                    ty=PackedType.BOT if me.bot else PackedType.USER,
-                    id=me.id,
-                    access_hash=0,
-                )
-            else:
-                resolved = None
-        else:
-            resolved = await resolve_username(client, username=chat)
-
-        if resolved and (packed := resolved.pack()) is not None:
-            return packed
-
-    if isinstance(chat, int):
-        packed = client._chat_hashes.get(chat)
-        if packed is None:
-            raise ValueError("Cannot resolve chat")
-        return packed
-
-    raise ValueError("Cannot resolve chat")
-
-
-def input_to_peer(
-    client: Client, input: Optional[abcs.InputPeer]
-) -> Optional[abcs.Peer]:
-    if input is None:
-        return None
-    elif isinstance(input, types.InputPeerEmpty):
-        return None
-    elif isinstance(input, types.InputPeerSelf):
-        return types.PeerUser(user_id=client._chat_hashes.self_id)
-    elif isinstance(input, types.InputPeerChat):
-        return types.PeerChat(chat_id=input.chat_id)
-    elif isinstance(input, types.InputPeerUser):
-        return types.PeerUser(user_id=input.user_id)
-    elif isinstance(input, types.InputPeerChannel):
-        return types.PeerChannel(channel_id=input.channel_id)
-    elif isinstance(input, types.InputPeerUserFromMessage):
-        return None
-    elif isinstance(input, types.InputPeerChannelFromMessage):
-        return None
-    else:
-        raise RuntimeError("unexpected case")

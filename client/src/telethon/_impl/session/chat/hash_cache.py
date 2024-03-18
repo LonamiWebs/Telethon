@@ -1,14 +1,16 @@
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Type, TypeAlias
 
 from ...tl import abcs, types
-from .peer_ref import PackedType, PeerRef
+from .peer_ref import ChannelRef, GroupRef, PeerRef, UserRef
+
+PeerRefType: TypeAlias = Type[UserRef] | Type[ChannelRef] | Type[GroupRef]
 
 
 class ChatHashCache:
     __slots__ = ("_hash_map", "_self_id", "_self_bot")
 
     def __init__(self, self_user: Optional[tuple[int, bool]]):
-        self._hash_map: dict[int, tuple[int, PackedType]] = {}
+        self._hash_map: dict[int, tuple[PeerRefType, int]] = {}
         self._self_id = self_user[0] if self_user else None
         self._self_bot = self_user[1] if self_user else False
 
@@ -21,15 +23,14 @@ class ChatHashCache:
     def is_self_bot(self) -> bool:
         return self._self_bot
 
-    def set_self_user(self, user: PeerRef) -> None:
-        assert user.ty in (PackedType.USER, PackedType.BOT)
-        self._self_bot = user.ty == PackedType.BOT
-        self._self_id = user.id
+    def set_self_user(self, identifier: int, bot: bool) -> None:
+        self._self_id = identifier
+        self._self_bot = bot
 
-    def get(self, id: int) -> Optional[PeerRef]:
-        if (entry := self._hash_map.get(id)) is not None:
-            hash, ty = entry
-            return PeerRef(ty, id, hash)
+    def get(self, identifier: int) -> Optional[PeerRef]:
+        if (entry := self._hash_map.get(identifier)) is not None:
+            cls, authorization = entry
+            return cls(identifier, authorization)
         else:
             return None
 
@@ -38,8 +39,8 @@ class ChatHashCache:
         self._self_id = None
         self._self_bot = False
 
-    def _has(self, id: int) -> bool:
-        return id in self._hash_map
+    def _has(self, identifier: int) -> bool:
+        return identifier in self._hash_map
 
     def _has_peer(self, peer: abcs.Peer) -> bool:
         if isinstance(peer, types.PeerUser):
@@ -140,8 +141,7 @@ class ChatHashCache:
                 pass
             elif isinstance(user, types.User):
                 if not user.min and user.access_hash is not None:
-                    ty = PackedType.BOT if user.bot else PackedType.USER
-                    self._hash_map[user.id] = (user.access_hash, ty)
+                    self._hash_map[user.id] = (UserRef, user.access_hash)
                 else:
                     success &= user.id in self._hash_map
             else:
@@ -152,18 +152,11 @@ class ChatHashCache:
                 pass
             elif isinstance(chat, types.Channel):
                 if not chat.min and chat.access_hash is not None:
-                    if chat.megagroup:
-                        ty = PackedType.MEGAGROUP
-                    elif chat.gigagroup:
-                        ty = PackedType.GIGAGROUP
-                    else:
-                        ty = PackedType.BROADCAST
-                    self._hash_map[chat.id] = (chat.access_hash, ty)
+                    self._hash_map[chat.id] = (ChannelRef, chat.access_hash)
                 else:
                     success &= chat.id in self._hash_map
             elif isinstance(chat, types.ChannelForbidden):
-                ty = PackedType.MEGAGROUP if chat.megagroup else PackedType.BROADCAST
-                self._hash_map[chat.id] = (chat.access_hash, ty)
+                self._hash_map[chat.id] = (ChannelRef, chat.access_hash)
             else:
                 raise RuntimeError("unexpected case")
 

@@ -3,16 +3,19 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from ...session import PeerRef
-from ...tl import abcs, functions, types
+from ...session import ChannelRef, GroupRef, PeerRef, UserRef
+from ...tl import functions, types
 from ..types import (
     AdminRight,
     AsyncList,
-    ChatLike,
+    Channel,
     ChatRestriction,
     File,
+    Group,
     Participant,
+    Peer,
     RecentAction,
+    User,
     build_chat_map,
 )
 from .messages import SearchList
@@ -25,23 +28,19 @@ class ParticipantList(AsyncList[Participant]):
     def __init__(
         self,
         client: Client,
-        chat: ChatLike,
+        peer: ChannelRef | GroupRef,
     ):
         super().__init__()
         self._client = client
-        self._chat = chat
-        self._packed: Optional[PeerRef] = None
+        self._peer = peer
         self._offset = 0
         self._seen: set[int] = set()
 
     async def _fetch_next(self) -> None:
-        if self._packed is None:
-            self._packed = await self._client._resolve_to_packed(self._chat)
-
-        if self._packed.is_channel():
+        if isinstance(self._peer, ChannelRef):
             chanp = await self._client(
                 functions.channels.get_participants(
-                    channel=self._packed._to_input_channel(),
+                    channel=self._peer._to_input_channel(),
                     filter=types.ChannelParticipantsRecent(),
                     offset=self._offset,
                     limit=200,
@@ -55,7 +54,7 @@ class ParticipantList(AsyncList[Participant]):
             seen_count = len(self._seen)
             for p in chanp.participants:
                 part = Participant._from_raw_channel(
-                    self._client, self._packed, p, chat_map
+                    self._client, self._peer, p, chat_map
                 )
                 pid = part._peer_id()
                 if pid not in self._seen:
@@ -66,9 +65,9 @@ class ParticipantList(AsyncList[Participant]):
             self._offset += len(chanp.participants)
             self._done = len(self._seen) == seen_count
 
-        elif self._packed.is_chat():
+        else:
             chatp = await self._client(
-                functions.messages.get_full_chat(chat_id=self._packed.id)
+                functions.messages.get_full_chat(chat_id=self._peer._to_input_chat())
             )
             assert isinstance(chatp, types.messages.ChatFull)
             assert isinstance(chatp.full_chat, types.ChatFull)
@@ -81,48 +80,45 @@ class ParticipantList(AsyncList[Participant]):
                     self._buffer.append(
                         Participant._from_raw_chat(
                             self._client,
-                            self._packed,
+                            self._peer,
                             participants.self_participant,
                             chat_map,
                         )
                     )
             elif isinstance(participants, types.ChatParticipants):
                 self._buffer.extend(
-                    Participant._from_raw_chat(self._client, self._packed, p, chat_map)
+                    Participant._from_raw_chat(self._client, self._peer, p, chat_map)
                     for p in participants.participants
                 )
 
             self._total = len(self._buffer)
             self._done = True
-        else:
-            raise TypeError("can only get participants from channels and groups")
 
 
-def get_participants(self: Client, chat: ChatLike) -> AsyncList[Participant]:
-    return ParticipantList(self, chat)
+def get_participants(
+    self: Client, chat: Group | Channel | GroupRef | ChannelRef, /
+) -> AsyncList[Participant]:
+    return ParticipantList(self, chat._ref)
 
 
 class RecentActionList(AsyncList[RecentAction]):
     def __init__(
         self,
         client: Client,
-        chat: ChatLike,
+        peer: ChannelRef | GroupRef,
     ):
         super().__init__()
         self._client = client
-        self._chat = chat
-        self._peer: Optional[types.InputChannel] = None
+        self._peer = peer
         self._offset = 0
 
     async def _fetch_next(self) -> None:
-        if self._peer is None:
-            self._peer = (
-                await self._client._resolve_to_packed(self._chat)
-            )._to_input_channel()
+        if not isinstance(self._peer, ChannelRef):
+            return  # small group chats have no recent actions
 
         result = await self._client(
             functions.channels.get_admin_log(
-                channel=self._peer,
+                channel=self._peer._to_input_channel(),
                 q="",
                 min_id=0,
                 max_id=self._offset,
@@ -141,34 +137,28 @@ class RecentActionList(AsyncList[RecentAction]):
             self._offset = min(e.id for e in self._buffer)
 
 
-def get_admin_log(self: Client, chat: ChatLike) -> AsyncList[RecentAction]:
-    return RecentActionList(self, chat)
+def get_admin_log(
+    self: Client, chat: Group | Channel | GroupRef | ChannelRef, /
+) -> AsyncList[RecentAction]:
+    return RecentActionList(self, chat._ref)
 
 
 class ProfilePhotoList(AsyncList[File]):
     def __init__(
         self,
         client: Client,
-        chat: ChatLike,
+        peer: PeerRef,
     ):
         super().__init__()
         self._client = client
-        self._chat = chat
-        self._peer: Optional[abcs.InputPeer] = None
+        self._peer = peer
         self._search_iter: Optional[SearchList] = None
 
     async def _fetch_next(self) -> None:
-        if self._peer is None:
-            self._peer = (
-                await self._client._resolve_to_packed(self._chat)
-            )._to_input_peer()
-
-        if isinstance(self._peer, types.InputPeerUser):
+        if isinstance(self._peer, UserRef):
             result = await self._client(
                 functions.photos.get_user_photos(
-                    user_id=types.InputUser(
-                        user_id=self._peer.user_id, access_hash=self._peer.access_hash
-                    ),
+                    user_id=self._peer._to_input_user(),
                     offset=0,
                     max_id=0,
                     limit=0,
@@ -191,86 +181,86 @@ class ProfilePhotoList(AsyncList[File]):
             )
 
 
-def get_profile_photos(self: Client, chat: ChatLike) -> AsyncList[File]:
-    return ProfilePhotoList(self, chat)
+def get_profile_photos(self: Client, peer: Peer | PeerRef, /) -> AsyncList[File]:
+    return ProfilePhotoList(self, peer._ref)
 
 
 async def set_participant_admin_rights(
-    self: Client, chat: ChatLike, user: ChatLike, rights: Sequence[AdminRight]
+    self: Client,
+    chat: Group | Channel | GroupRef | ChannelRef,
+    /,
+    participant: User | UserRef,
+    rights: Sequence[AdminRight],
 ) -> None:
-    packed = await self._resolve_to_packed(chat)
-    participant = await self._resolve_to_packed(user)
-
-    if packed.is_channel():
+    chat = chat._ref
+    user = participant._ref
+    if isinstance(chat, ChannelRef):
         admin_rights = AdminRight._set_to_raw(set(rights))
         await self(
             functions.channels.edit_admin(
-                channel=packed._to_input_channel(),
-                user_id=participant._to_input_user(),
+                channel=chat._to_input_channel(),
+                user_id=user._to_input_user(),
                 admin_rights=admin_rights,
                 rank="",
             )
         )
-    elif packed.is_chat():
+    else:
         await self(
             functions.messages.edit_chat_admin(
-                chat_id=packed.id,
-                user_id=participant._to_input_user(),
+                chat_id=chat._to_input_chat(),
+                user_id=user._to_input_user(),
                 is_admin=bool(rights),
             )
         )
-    else:
-        raise TypeError(f"Cannot set admin rights in {packed.ty}")
 
 
 async def set_participant_restrictions(
     self: Client,
-    chat: ChatLike,
-    user: ChatLike,
+    chat: Group | Channel | GroupRef | ChannelRef,
+    /,
+    participant: Peer | PeerRef,
     restrictions: Sequence[ChatRestriction],
     *,
     until: Optional[datetime.datetime] = None,
 ) -> None:
-    packed = await self._resolve_to_packed(chat)
-    participant = await self._resolve_to_packed(user)
-    if packed.is_channel():
+    chat = chat._ref
+    peer = participant._ref
+    if isinstance(chat, ChannelRef):
         banned_rights = ChatRestriction._set_to_raw(
             set(restrictions),
             until_date=int(until.timestamp()) if until else 0x7FFFFFFF,
         )
         await self(
             functions.channels.edit_banned(
-                channel=packed._to_input_channel(),
-                participant=participant._to_input_peer(),
+                channel=chat._to_input_channel(),
+                participant=peer._to_input_peer(),
                 banned_rights=banned_rights,
             )
         )
-    elif packed.is_chat():
+    elif isinstance(peer, UserRef):
         if restrictions:
             await self(
                 functions.messages.delete_chat_user(
                     revoke_history=ChatRestriction.VIEW_MESSAGES in restrictions,
-                    chat_id=packed.id,
-                    user_id=participant._to_input_user(),
+                    chat_id=chat._to_input_chat(),
+                    user_id=peer._to_input_user(),
                 )
             )
-    else:
-        raise TypeError(f"Cannot set banned rights in {packed.ty}")
 
 
 async def set_chat_default_restrictions(
     self: Client,
-    chat: ChatLike,
+    chat: Peer | PeerRef,
+    /,
     restrictions: Sequence[ChatRestriction],
     *,
     until: Optional[datetime.datetime] = None,
 ) -> None:
-    peer = (await self._resolve_to_packed(chat))._to_input_peer()
     banned_rights = ChatRestriction._set_to_raw(
         set(restrictions), int(until.timestamp()) if until else 0x7FFFFFFF
     )
     await self(
         functions.messages.edit_chat_default_banned_rights(
-            peer=peer, banned_rights=banned_rights
+            peer=chat._ref._to_input_peer(), banned_rights=banned_rights
         )
     )

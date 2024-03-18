@@ -9,14 +9,17 @@ from typing import Any, Literal, Optional, Self, Sequence, Type, TypeVar
 from ....version import __version__ as default_version
 from ...mtsender import Connector, Sender
 from ...session import (
+    ChannelRef,
     ChatHashCache,
     DataCenter,
+    GroupRef,
     MemorySession,
     MessageBox,
     PeerRef,
     Session,
     SqliteSession,
     Storage,
+    UserRef,
 )
 from ...tl import Request, abcs
 from ..events import Event
@@ -25,11 +28,12 @@ from ..types import (
     AdminRight,
     AlbumBuilder,
     AsyncList,
-    ChatLike,
+    Channel,
     ChatRestriction,
     Dialog,
     Draft,
     File,
+    Group,
     InFileLike,
     InlineResult,
     LoginToken,
@@ -103,14 +107,7 @@ from .updates import (
     remove_event_handler,
     set_handler_filter,
 )
-from .users import (
-    get_chats,
-    get_contacts,
-    get_me,
-    input_to_peer,
-    resolve_to_packed,
-    resolve_username,
-)
+from .users import get_contacts, get_me, resolve_peers, resolve_phone, resolve_username
 
 Return = TypeVar("Return")
 T = TypeVar("T")
@@ -252,9 +249,9 @@ class Client:
         self._message_box = MessageBox(base_logger=base_logger)
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
-        self._updates: asyncio.Queue[
-            tuple[abcs.Update, dict[int, Peer]]
-        ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
+        self._updates: asyncio.Queue[tuple[abcs.Update, dict[int, Peer]]] = (
+            asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
+        )
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._handlers: dict[
             Type[Event], list[tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
@@ -269,6 +266,7 @@ class Client:
     def add_event_handler(
         self,
         handler: Callable[[Event], Awaitable[Any]],
+        /,
         event_cls: Type[Event],
         filter: Optional[Filter] = None,
     ) -> None:
@@ -387,7 +385,7 @@ class Client:
         """
         await connect(self)
 
-    async def delete_dialog(self, chat: ChatLike) -> None:
+    async def delete_dialog(self, dialog: Peer | PeerRef, /) -> None:
         """
         Delete a dialog.
 
@@ -397,8 +395,8 @@ class Client:
 
         Note that bot accounts do not have dialogs, so this method will fail when used in a bot account.
 
-        :param chat:
-            The :term:`chat` representing the dialog to delete.
+        :param dialog:
+            The :term:`peer` representing the dialog to delete.
 
         .. rubric:: Example
 
@@ -409,16 +407,16 @@ class Client:
                     # You've realized you're more of a cat person
                     await client.delete_dialog(dialog.chat)
         """
-        await delete_dialog(self, chat)
+        await delete_dialog(self, dialog)
 
     async def delete_messages(
-        self, chat: ChatLike, message_ids: list[int], *, revoke: bool = True
+        self, chat: Peer | PeerRef, /, message_ids: list[int], *, revoke: bool = True
     ) -> int:
         """
         Delete messages.
 
         :param chat:
-            The :term:`chat` where the messages are.
+            The :term:`peer` where the messages are.
 
             .. warning::
 
@@ -468,7 +466,7 @@ class Client:
         """
         await disconnect(self)
 
-    async def download(self, media: File, file: str | Path | OutFileLike) -> None:
+    async def download(self, media: File, /, file: str | Path | OutFileLike) -> None:
         """
         Download a file.
 
@@ -504,7 +502,8 @@ class Client:
 
     async def edit_draft(
         self,
-        chat: ChatLike,
+        peer: Peer | PeerRef,
+        /,
         text: Optional[str] = None,
         *,
         markdown: Optional[str] = None,
@@ -517,8 +516,8 @@ class Client:
 
         This can also be used to clear the draft by setting the text to an empty string ``""``.
 
-        :param chat:
-            The :term:`chat` where the draft will be saved to.
+        :param peer:
+            The :term:`peer` where the draft will be saved to.
 
         :param text: See :ref:`formatting`.
         :param markdown: See :ref:`formatting`.
@@ -552,7 +551,7 @@ class Client:
         """
         return await edit_draft(
             self,
-            chat,
+            peer,
             text,
             markdown=markdown,
             html=html,
@@ -562,7 +561,8 @@ class Client:
 
     async def edit_message(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         message_id: int,
         *,
         text: Optional[str] = None,
@@ -575,7 +575,7 @@ class Client:
         Edit a message.
 
         :param chat:
-            The :term:`chat` where the message to edit is.
+            The :term:`peer` where the message to edit is.
 
         :param message_id:
             The identifier of the message to edit.
@@ -617,19 +617,19 @@ class Client:
         )
 
     async def forward_messages(
-        self, target: ChatLike, message_ids: list[int], source: ChatLike
+        self, target: Peer | PeerRef, message_ids: list[int], source: Peer | PeerRef
     ) -> list[Message]:
         """
-        Forward messages from one :term:`chat` to another.
+        Forward messages from one :term:`peer` to another.
 
         :param target:
-            The :term:`chat` where the messages will be forwarded to.
+            The :term:`peer` where the messages will be forwarded to.
 
         :param message_ids:
             The list of message identifiers to forward.
 
         :param source:
-            The source :term:`chat` where the messages to forward exist.
+            The source :term:`peer` where the messages to forward exist.
 
         :return: The forwarded messages.
 
@@ -651,16 +651,18 @@ class Client:
         """
         return await forward_messages(self, target, message_ids, source)
 
-    def get_admin_log(self, chat: ChatLike) -> AsyncList[RecentAction]:
+    def get_admin_log(
+        self, chat: Group | Channel | GroupRef | ChannelRef, /
+    ) -> AsyncList[RecentAction]:
         """
         Get the recent actions from the administrator's log.
 
-        This method requires you to be an administrator in the :term:`chat`.
+        This method requires you to be an administrator in the :term:`peer`.
 
         The returned actions are also known as "admin log events".
 
         :param chat:
-            The :term:`chat` to fetch recent actions from.
+            The :term:`peer` to fetch recent actions from.
 
         :return: The recent actions.
 
@@ -673,42 +675,6 @@ class Client:
                     print('Deleted:', message.text)
         """
         return get_admin_log(self, chat)
-
-    async def get_chats(
-        self, chats: list[ChatLike] | tuple[ChatLike, ...]
-    ) -> list[Peer]:
-        """
-        Get the latest basic information about the given chats.
-
-        This method is most commonly used to turn one or more :class:`~types.PeerRef` into the original :class:`~types.Peer`.
-        This includes users, groups and broadcast channels.
-
-        :param chats:
-            The users, groups or channels to fetch.
-
-        :return: The fetched chats.
-
-        .. rubric:: Example
-
-        .. code-block:: python
-
-            # Retrieve a PackedChat from somewhere
-            packed_user = my_database.get_packed_winner()
-
-            # Fetch it
-            users = await client.get_chats([packed_user])
-            user = users[0]  # user will be a User if our packed_user was a user
-
-            # Notify the user they won, using their current full name in the message
-            await client.send_message(packed_user, f'Congratulations {user.name}, you won!')
-
-        .. caution::
-
-            This method supports being called with anything that looks like a chat, like every other method.
-            However, calling it with usernames or phone numbers will fetch the chats twice.
-            If that's the case, consider using :meth:`resolve_username` or :meth:`get_contacts` instead.
-        """
-        return await get_chats(self, chats)
 
     def get_contacts(self) -> AsyncList[User]:
         """
@@ -763,7 +729,7 @@ class Client:
         """
         return get_drafts(self)
 
-    def get_file_bytes(self, media: File) -> AsyncList[bytes]:
+    def get_file_bytes(self, media: File, /) -> AsyncList[bytes]:
         """
         Get the contents of an uploaded media file as chunks of :class:`bytes`.
 
@@ -790,7 +756,7 @@ class Client:
         return get_file_bytes(self, media)
 
     def get_handler_filter(
-        self, handler: Callable[[Event], Awaitable[Any]]
+        self, handler: Callable[[Event], Awaitable[Any]], /
     ) -> Optional[Filter]:
         """
         Get the filter associated to the given event handler.
@@ -841,19 +807,20 @@ class Client:
 
     def get_messages(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         limit: Optional[int] = None,
         *,
         offset_id: Optional[int] = None,
         offset_date: Optional[datetime.datetime] = None,
     ) -> AsyncList[Message]:
         """
-        Get the message history from a :term:`chat`, from the newest message to the oldest.
+        Get the message history from a :term:`peer`, from the newest message to the oldest.
 
         The returned iterator can be :func:`reversed` to fetch from the first to the last instead.
 
         :param chat:
-            The :term:`chat` where the messages should be fetched from.
+            The :term:`peer` where the messages should be fetched from.
 
         :param limit:
             How many messages to fetch at most.
@@ -891,13 +858,13 @@ class Client:
         )
 
     def get_messages_with_ids(
-        self, chat: ChatLike, message_ids: list[int]
+        self, chat: Peer | PeerRef, /, message_ids: list[int]
     ) -> AsyncList[Message]:
         """
         Get the full message objects from the corresponding message identifiers.
 
         :param chat:
-            The :term:`chat` where the message to fetch is.
+            The :term:`peer` where the message to fetch is.
 
         :param message_ids:
             The message identifiers of the messages to fetch.
@@ -916,7 +883,9 @@ class Client:
         """
         return get_messages_with_ids(self, chat, message_ids)
 
-    def get_participants(self, chat: ChatLike) -> AsyncList[Participant]:
+    def get_participants(
+        self, chat: Group | Channel | GroupRef | ChannelRef, /
+    ) -> AsyncList[Participant]:
         """
         Get the participants in a group or channel, along with their permissions.
 
@@ -927,7 +896,7 @@ class Client:
             There is no way to bypass this.
 
         :param chat:
-            The :term:`chat` to fetch participants from.
+            The :term:`peer` to fetch participants from.
 
         :return: The participants.
 
@@ -940,12 +909,12 @@ class Client:
         """
         return get_participants(self, chat)
 
-    def get_profile_photos(self, chat: ChatLike) -> AsyncList[File]:
+    def get_profile_photos(self, peer: Peer | PeerRef, /) -> AsyncList[File]:
         """
         Get the profile pictures set in a chat, or user avatars.
 
-        :param chat:
-            The :term:`chat` to fetch the profile photo files from.
+        :param peer:
+            The :term:`peer` to fetch the profile photo files from.
 
         :return: The photo files.
 
@@ -958,10 +927,15 @@ class Client:
                 await client.download(photo, f'{i}.jpg')
                 i += 1
         """
-        return get_profile_photos(self, chat)
+        return get_profile_photos(self, peer)
 
     async def inline_query(
-        self, bot: ChatLike, query: str = "", *, chat: Optional[ChatLike] = None
+        self,
+        bot: User | UserRef,
+        /,
+        query: str = "",
+        *,
+        peer: Optional[Peer | PeerRef] = None,
     ) -> AsyncIterator[InlineResult]:
         """
         Perform a *@bot inline query*.
@@ -975,7 +949,7 @@ class Client:
         :param query:
             The query string to send to the bot.
 
-        :param chat:
+        :param peer:
             Where the query is being made and will be sent.
             Some bots display different results based on the type of chat.
 
@@ -997,7 +971,7 @@ class Client:
                 if i == 10:
                     break  # did not find 'keyword' in the first few results
         """
-        return await inline_query(self, bot, query, chat=chat)
+        return await inline_query(self, bot, query, peer=peer)
 
     async def interactive_login(
         self, phone_or_token: Optional[str] = None, *, password: Optional[str] = None
@@ -1052,7 +1026,7 @@ class Client:
         return await is_authorized(self)
 
     def on(
-        self, event_cls: Type[Event], filter: Optional[Filter] = None
+        self, event_cls: Type[Event], /, filter: Optional[Filter] = None
     ) -> Callable[
         [Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]
     ]:
@@ -1093,12 +1067,12 @@ class Client:
         """
         return on(self, event_cls, filter)
 
-    async def pin_message(self, chat: ChatLike, message_id: int) -> Message:
+    async def pin_message(self, chat: Peer | PeerRef, /, message_id: int) -> Message:
         """
         Pin a message to be at the top.
 
         :param chat:
-            The :term:`chat` where the message to pin is.
+            The :term:`peer` where the message to pin is.
 
         :param message_id:
             The identifier of the message to pin.
@@ -1144,7 +1118,7 @@ class Client:
         return prepare_album(self)
 
     async def read_message(
-        self, chat: ChatLike, message_id: int | Literal["all"]
+        self, chat: Peer | PeerRef, /, message_id: int | Literal["all"]
     ) -> None:
         """
         Mark messages as read.
@@ -1176,7 +1150,9 @@ class Client:
         """
         await read_message(self, chat, message_id)
 
-    def remove_event_handler(self, handler: Callable[[Event], Awaitable[Any]]) -> None:
+    def remove_event_handler(
+        self, handler: Callable[[Event], Awaitable[Any]], /
+    ) -> None:
         """
         Remove the handler as a function to be called when events occur.
         This is simply the opposite of :meth:`add_event_handler`.
@@ -1227,16 +1203,60 @@ class Client:
         """
         return await request_login_code(self, phone)
 
-    async def resolve_username(self, username: str) -> Peer:
+    async def resolve_peers(self, peers: Sequence[Peer | PeerRef], /) -> list[Peer]:
         """
-        Resolve a username into a :term:`chat`.
+        Resolve one or more peer references into peer objects.
+
+        This methods also accepts peer objects as input, which will be refetched but not mutated in-place.
+
+        :param peers:
+            The peers to fetch.
+
+        :return: The fetched peers, in the same order as the input.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            [user, group, channel] = await client.resolve_peers([
+                user_ref, group_ref, channel_ref
+            ])
+        """
+        return await resolve_peers(self, peers)
+
+    async def resolve_phone(self, phone: str, /) -> Peer:
+        """
+        Resolve a phone number into a :term:`peer`.
 
         This method is rather expensive to call.
-        It is recommended to use it once and then :meth:`types.Peer.pack` the result.
-        The packed chat can then be used (and re-fetched) more cheaply.
+        It is recommended to use it once and then store the :attr:`types.Peer.ref`.
+
+        :param phone:
+            The phone number "+1 23 456" to resolve.
+            The phone number must contain the `International Calling Code <https://en.wikipedia.org/wiki/List_of_mobile_telephone_prefixes_by_country>`_.
+            You do not need to use include the ``'+'`` prefix, but the parameter must be a :class:`str`, not :class:`int`.
+
+        :return: The matching chat.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            print(await client.resolve_phone('+1 23 456'))
+        """
+        return await resolve_phone(self, phone)
+
+    async def resolve_username(self, username: str, /) -> Peer:
+        """
+        Resolve a username into a :term:`peer`.
+
+        This method is rather expensive to call.
+        It is recommended to use it once and then store the :attr:`types.Peer.ref`.
 
         :param username:
             The public "@username" to resolve.
+            You do not need to use include the ``'@'`` prefix.
+            Links cannot be used.
 
         :return: The matching chat.
 
@@ -1268,9 +1288,6 @@ class Client:
         Perform a global message search.
         This is used to search messages in no particular chat (i.e. everywhere possible).
 
-        :param chat:
-            The :term:`chat` where the message to edit is.
-
         :param limit:
             How many messages to fetch at most.
 
@@ -1301,7 +1318,8 @@ class Client:
 
     def search_messages(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         limit: Optional[int] = None,
         *,
         query: Optional[str] = None,
@@ -1312,7 +1330,7 @@ class Client:
         Search messages in a chat.
 
         :param chat:
-            The :term:`chat` where messages will be searched.
+            The :term:`peer` where messages will be searched.
 
         :param limit:
             How many messages to fetch at most.
@@ -1344,12 +1362,13 @@ class Client:
 
     async def send_audio(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         file: str | Path | InFileLike | File,
-        mime_type: Optional[str] = None,
         *,
         size: Optional[int] = None,
         name: Optional[str] = None,
+        mime_type: Optional[str] = None,
         duration: Optional[float] = None,
         voice: bool = False,
         title: Optional[str] = None,
@@ -1367,7 +1386,7 @@ class Client:
         duration, title and performer if they are not provided.
 
         :param chat:
-            The :term:`chat` where the audio media will be sent to.
+            The :term:`peer` where the audio media will be sent to.
 
         :param file: See :meth:`send_file`.
         :param size: See :meth:`send_file`.
@@ -1391,9 +1410,9 @@ class Client:
             self,
             chat,
             file,
-            mime_type,
             size=size,
             name=name,
+            mime_type=mime_type,
             duration=duration,
             voice=voice,
             title=title,
@@ -1407,7 +1426,8 @@ class Client:
 
     async def send_file(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         file: str | Path | InFileLike | File,
         *,
         size: Optional[int] = None,
@@ -1430,7 +1450,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
     ) -> Message:
         """
         Send any type of file with any amount of attributes.
@@ -1442,7 +1462,7 @@ class Client:
         Unlike :meth:`send_photo`, image files will be sent as documents by default.
 
         :param chat:
-            The :term:`chat` where the message will be sent to.
+            The :term:`peer` where the message will be sent to.
 
         :param path:
             A local file path or :class:`~telethon.types.File` to send.
@@ -1589,7 +1609,8 @@ class Client:
 
     async def send_message(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         text: Optional[str | Message] = None,
         *,
         markdown: Optional[str] = None,
@@ -1602,7 +1623,7 @@ class Client:
         Send a message.
 
         :param chat:
-            The :term:`chat` where the message will be sent to.
+            The :term:`peer` where the message will be sent to.
 
         :param text: See :ref:`formatting`.
         :param markdown: See :ref:`formatting`.
@@ -1636,7 +1657,8 @@ class Client:
 
     async def send_photo(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         file: str | Path | InFileLike | File,
         *,
         size: Optional[int] = None,
@@ -1662,7 +1684,7 @@ class Client:
         width and height if they are not provided.
 
         :param chat:
-            The :term:`chat` where the photo media will be sent to.
+            The :term:`peer` where the photo media will be sent to.
 
         :param file: See :meth:`send_file`.
         :param size: See :meth:`send_file`.
@@ -1700,7 +1722,8 @@ class Client:
 
     async def send_video(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         file: str | Path | InFileLike | File,
         *,
         size: Optional[int] = None,
@@ -1716,7 +1739,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
     ) -> Message:
         """
         Send a video file.
@@ -1725,7 +1748,7 @@ class Client:
         duration, width and height if they are not provided.
 
         :param chat:
-            The :term:`chat` where the message will be sent to.
+            The :term:`peer` where the message will be sent to.
 
         :param file: See :meth:`send_file`.
         :param size: See :meth:`send_file`.
@@ -1768,7 +1791,8 @@ class Client:
 
     async def set_chat_default_restrictions(
         self,
-        chat: ChatLike,
+        chat: Peer | PeerRef,
+        /,
         restrictions: Sequence[ChatRestriction],
         *,
         until: Optional[datetime.datetime] = None,
@@ -1777,7 +1801,7 @@ class Client:
         Set the default restrictions to apply to all participant in a chat.
 
         :param chat:
-            The :term:`chat` where the restrictions will be applied.
+            The :term:`peer` where the restrictions will be applied.
 
         :param restrictions:
             The sequence of restrictions to apply.
@@ -1810,6 +1834,7 @@ class Client:
     def set_handler_filter(
         self,
         handler: Callable[[Event], Awaitable[Any]],
+        /,
         filter: Optional[Filter] = None,
     ) -> None:
         """
@@ -1836,7 +1861,11 @@ class Client:
         set_handler_filter(self, handler, filter)
 
     async def set_participant_admin_rights(
-        self, chat: ChatLike, user: ChatLike, rights: Sequence[AdminRight]
+        self,
+        chat: Group | Channel | GroupRef | ChannelRef,
+        /,
+        participant: User | UserRef,
+        rights: Sequence[AdminRight],
     ) -> None:
         """
         Set the administrator rights granted to the participant in the chat.
@@ -1847,7 +1876,7 @@ class Client:
         In this case, granting any right will make the user an administrator with all rights.
 
         :param chat:
-            The :term:`chat` where the rights will be granted.
+            The :term:`peer` where the rights will be granted.
 
         :param participant:
             The participant to promote to administrator, usually a :class:`types.User`.
@@ -1873,12 +1902,13 @@ class Client:
 
             :meth:`telethon.types.Participant.set_admin_rights`
         """
-        await set_participant_admin_rights(self, chat, user, rights)
+        await set_participant_admin_rights(self, chat, participant, rights)
 
     async def set_participant_restrictions(
         self,
-        chat: ChatLike,
-        user: ChatLike,
+        chat: Group | Channel | GroupRef | ChannelRef,
+        /,
+        participant: Peer | PeerRef,
         restrictions: Sequence[ChatRestriction],
         *,
         until: Optional[datetime.datetime] = None,
@@ -1893,7 +1923,7 @@ class Client:
         The participant's history will be revoked if the restriction to :attr:`~types.ChatRestriction.VIEW_MESSAGES` is applied.
 
         :param chat:
-            The :term:`chat` where the restrictions will be applied.
+            The :term:`peer` where the restrictions will be applied.
 
         :param participant:
             The participant to restrict or ban, usually a :class:`types.User`.
@@ -1929,7 +1959,9 @@ class Client:
 
             :meth:`telethon.types.Participant.set_restrictions`
         """
-        await set_participant_restrictions(self, chat, user, restrictions, until=until)
+        await set_participant_restrictions(
+            self, chat, participant, restrictions, until=until
+        )
 
     async def sign_in(self, token: LoginToken, code: str) -> User | PasswordToken:
         """
@@ -1977,13 +2009,13 @@ class Client:
         await sign_out(self)
 
     async def unpin_message(
-        self, chat: ChatLike, message_id: int | Literal["all"]
+        self, chat: Peer | PeerRef, /, message_id: int | Literal["all"]
     ) -> None:
         """
         Unpin one or all messages from the top.
 
         :param chat:
-            The :term:`chat` where the message pinned message is.
+            The :term:`peer` where the message pinned message is.
 
         :param message_id:
             The identifier of the message to unpin, or ``'all'`` to unpin them all.
@@ -2014,15 +2046,9 @@ class Client:
     def _build_message_map(
         self,
         result: abcs.Updates,
-        peer: Optional[abcs.InputPeer],
+        peer: Optional[PeerRef],
     ) -> MessageMap:
         return build_message_map(self, result, peer)
-
-    async def _resolve_to_packed(self, chat: ChatLike) -> PeerRef:
-        return await resolve_to_packed(self, chat)
-
-    def _input_to_peer(self, input: Optional[abcs.InputPeer]) -> Optional[abcs.Peer]:
-        return input_to_peer(self, input)
 
     async def _upload(
         self, fd: str | Path | InFileLike, size: Optional[int], name: Optional[str]

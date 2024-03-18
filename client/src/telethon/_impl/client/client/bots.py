@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Optional, Self
 
-from ...tl import abcs, functions, types
-from ..types import ChatLike, InlineResult, NoPublicConstructor
+from ...session import PeerRef, UserRef
+from ...tl import functions, types
+from ..types import InlineResult, NoPublicConstructor, Peer, User
 
 if TYPE_CHECKING:
     from .client import Client
@@ -16,12 +17,12 @@ class InlineResults(metaclass=NoPublicConstructor):
         client: Client,
         bot: types.InputUser,
         query: str,
-        chat: abcs.InputPeer,
+        peer: Optional[PeerRef],
     ):
         self._client = client
         self._bot = bot
         self._query = query
-        self._peer = chat or types.InputPeerEmpty()
+        self._peer = peer
         self._offset: Optional[str] = ""
         self._buffer: list[InlineResult] = []
         self._done = False
@@ -37,7 +38,11 @@ class InlineResults(metaclass=NoPublicConstructor):
             result = await self._client(
                 functions.messages.get_inline_bot_results(
                     bot=self._bot,
-                    peer=self._peer,
+                    peer=(
+                        self._peer._to_input_peer()
+                        if self._peer
+                        else types.InputPeerEmpty()
+                    ),
                     geo_point=None,
                     query=self._query,
                     offset=self._offset,
@@ -61,13 +66,16 @@ class InlineResults(metaclass=NoPublicConstructor):
 
 
 async def inline_query(
-    self: Client, bot: ChatLike, query: str = "", *, chat: Optional[ChatLike] = None
+    self: Client,
+    bot: User | UserRef,
+    /,
+    query: str = "",
+    *,
+    peer: Optional[Peer | PeerRef] = None,
 ) -> AsyncIterator[InlineResult]:
-    packed_bot = await self._resolve_to_packed(bot)
-    packed_chat = await self._resolve_to_packed(chat) if chat else None
     return InlineResults._create(
         self,
-        packed_bot._to_input_user(),
+        bot._ref._to_input_user(),
         query,
-        packed_chat._to_input_peer() if packed_chat else types.InputPeerEmpty(),
+        peer._ref if peer else None,
     )

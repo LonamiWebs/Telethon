@@ -6,10 +6,10 @@ Glossary
 .. glossary::
     :sorted:
 
-    chat
+    peer
         A :class:`~types.User`, :class:`~types.Group` or :class:`~types.Channel`.
 
-        .. seealso:: The :doc:`../concepts/chats` concept.
+        .. seealso:: The :doc:`../concepts/peers` concept.
 
     yourself
         The logged-in account, whether that represents a bot or a user with a phone number.
