@@ -242,7 +242,7 @@ In Telethon:
     from telethon.events import NewMessage, filters
 
     async def start(update: NewMessage):
-        await update.client.send_message(chat=update.chat.id, text="I'm a bot, please talk to me!")
+        await update.client.send_message(chat=update.chat, text="I'm a bot, please talk to me!")
 
     async def main():
         application = Client('bot', api_id, api_hash)
