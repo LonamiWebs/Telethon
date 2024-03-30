@@ -285,7 +285,7 @@ class TelegramBaseClient(abc.ABC):
         self._log = _Loggers()
 
         # Determine what session object we have
-        if isinstance(session, (str, pathlib.Path)) or session is None:
+        if isinstance(session, (str, pathlib.Path)):
             try:
                 session = SQLiteSession(str(session))
             except ImportError:
@@ -298,6 +298,8 @@ class TelegramBaseClient(abc.ABC):
                     'you use another session storage'
                 )
                 session = MemorySession()
+        elif session is None:
+            session = MemorySession()
         elif not isinstance(session, Session):
             raise TypeError(
                 'The given session must be a str or a Session instance.'
