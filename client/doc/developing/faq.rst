@@ -93,7 +93,7 @@ For more information, see the :doc:`/concepts/datacenters` concept.
 AttributeError: 'coroutine' object has no attribute 'id'
 --------------------------------------------------------
 
-Telethon is an asynchronous library, which means you must ``await`` calls that require network access:
+Telethon is an asynchronous library, which means you must :keyword:`await` calls that require network access:
 
 .. code-block:: python
 

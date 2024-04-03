@@ -825,6 +825,12 @@ class Client:
         :param limit:
             How many messages to fetch at most.
 
+            .. caution::
+
+                By default, there is no limit, so the method will fetch all messages.
+                This means :keyword:`await` may appear to hang if there are thousands of messages in the chat.
+                You can either set a smaller limit or use the ``async for`` syntax instead.
+
         :param offset_id:
             Start getting messages with an identifier lower than this one.
             This means only messages older than the message with ``id = offset_id`` will be fetched.
@@ -1291,6 +1297,10 @@ class Client:
         :param limit:
             How many messages to fetch at most.
 
+            .. note::
+
+                Like :meth:`get_messages`, there is no limit by default, so :keyword:`await` may appear to hang.
+
         :param query:
             Text query to use for fuzzy matching messages.
             The rules for how "fuzzy" works are an implementation detail of the server.
@@ -1334,6 +1344,10 @@ class Client:
 
         :param limit:
             How many messages to fetch at most.
+
+            .. note::
+
+                Like :meth:`get_messages`, there is no limit by default, so :keyword:`await` may appear to hang.
 
         :param query:
             Text query to use for fuzzy matching messages.
