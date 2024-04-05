@@ -11,6 +11,8 @@ from ...tl import abcs, types
 PeerIdentifier: TypeAlias = int
 PeerAuth: TypeAlias = Optional[int]
 
+SELF_USER_SENTINEL_ID = 0
+
 USER_PREFIX = "u."
 GROUP_PREFIX = "g."
 CHANNEL_PREFIX = "c."
@@ -49,6 +51,13 @@ class PeerRef(abc.ABC):
         ), "PeerRef identifiers must be positive; see the documentation for Peers"
         self.identifier = identifier
         self.authorization = authorization
+
+    SELF: UserRef
+    """
+    A special :class:`UserRef` that can be used to refer to the logged-in user.
+
+    Who this user is will depend on the client instance making the request.
+    """
 
     @classmethod
     def from_str(cls, string: str, /) -> UserRef | GroupRef | ChannelRef:
@@ -166,14 +175,20 @@ class UserRef(PeerRef):
         return ref
 
     def _to_peer(self) -> abcs.Peer:
+        if self.identifier == SELF_USER_SENTINEL_ID:
+            raise ValueError("cannot obtain Peer from PeerRef.SELF")
         return types.PeerUser(user_id=self.identifier)
 
     def _to_input_peer(self) -> abcs.InputPeer:
+        if self.identifier == SELF_USER_SENTINEL_ID:
+            return types.InputPeerSelf()
         return types.InputPeerUser(
             user_id=self.identifier, access_hash=self.authorization or 0
         )
 
-    def _to_input_user(self) -> types.InputUser:
+    def _to_input_user(self) -> abcs.InputUser:
+        if self.identifier == SELF_USER_SENTINEL_ID:
+            return types.InputUserSelf()
         return types.InputUser(
             user_id=self.identifier, access_hash=self.authorization or 0
         )
@@ -252,3 +267,6 @@ class ChannelRef(PeerRef):
     @property
     def _ref(self) -> Self:
         return self
+
+
+PeerRef.SELF = UserRef(SELF_USER_SENTINEL_ID)
