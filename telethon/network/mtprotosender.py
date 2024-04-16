@@ -416,6 +416,8 @@ class MTProtoSender:
 
     def _start_reconnect(self, error):
         """Starts a reconnection in the background."""
+        if not self._auto_reconnect and error is not None:
+            raise error
         if self._user_connected and not self._reconnecting:
             # We set reconnecting to True here and not inside the new task
             # because it may happen that send/recv loop calls this again
