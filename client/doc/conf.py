@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.curdir))  # for custom extensions
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Telethon"
-copyright = "2023, Lonami"
+copyright = "2024, Lonami"
 author = "Lonami"
 release = "2.0.0a0"
 
