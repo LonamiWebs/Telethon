@@ -6,13 +6,15 @@
 import os
 import sys
 
+from datetime import datetime
+
 sys.path.insert(0, os.path.abspath(os.curdir))  # for custom extensions
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Telethon"
-copyright = "2023, Lonami"
+copyright = f"{datetime.now().year}, Lonami"
 author = "Lonami"
 release = "2.0.0a0"
 
