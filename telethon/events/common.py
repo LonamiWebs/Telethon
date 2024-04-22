@@ -5,6 +5,7 @@ import warnings
 from .. import utils
 from ..tl import TLObject, types
 from ..tl.custom.chatgetter import ChatGetter
+from ..tl.custom.sendergetter import SenderGetter
 
 
 async def _into_id_set(client, chats):
@@ -127,13 +128,14 @@ class EventBuilder(abc.ABC):
         return self.func(event)
 
 
-class EventCommon(ChatGetter, abc.ABC):
+class EventCommon(SenderGetter, ChatGetter, abc.ABC):
     """
     Intermediate class with common things to all events.
 
     Remember that this class implements `ChatGetter
-    <telethon.tl.custom.chatgetter.ChatGetter>` which
-    means you have access to all chat properties and methods.
+    <telethon.tl.custom.chatgetter.ChatGetter>` and `SenderGetter
+    <telethon.tl.custom.sendergetter.SenderGetter>` which means you
+    have access to all their sender and chat properties and methods.
 
     In addition, you can access the `original_update`
     field which contains the original :tl:`Update`.
