@@ -553,7 +553,9 @@ class MessageMethods:
             scheduled=scheduled
         )
 
-    async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
+    async def get_messages(
+            self: 'TelegramClient', *args, **kwargs
+    ) -> typing.Union['hints.TotalList', typing.Optional['types.Message']]:
         """
         Same as `iter_messages()`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
