@@ -13,6 +13,34 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.35)
+=================
+
++------------------------+
+| Scheme layer used: 178 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=173&to=178>`__.
+
+Additions
+~~~~~~~~~
+
+* ``drop_author`` parameter now exposed in ``forward_messages``.
+
+Enhancements
+~~~~~~~~~~~~
+
+* "Custom secret support" should work with ``TcpMTProxy``.
+* Some type hints should now be more accurate.
+
+Bug fixes
+~~~~~~~~~
+
+* Session path couldn't be a ``pathlib.Path`` or ``None``.
+* Python versions older than 3.9 should now be supported again.
+* Readthedocs should hopefully build the v1 documentation again.
+
+
 New layer (v1.34)
 =================
 
@@ -23,7 +51,7 @@ New layer (v1.34)
 `View new and changed raw API methods <https://diff.telethon.dev/?from=167&to=173>`__.
 
 Additions
-~~~~~~~~~~~~
+~~~~~~~~~
 
 * ``reply_to_chat`` and ``reply_to_sender`` are now in ``Message``.
   This is useful when you lack access to the chat, but Telegram still included some basic information.
