@@ -715,6 +715,10 @@ class MTProtoSender:
                 )
                 upd._self_outgoing = True
                 self._updates_queue.put_nowait(upd)
+            elif obj.CONSTRUCTOR_ID == _tl.messages.InvitedUsers.CONSTRUCTOR_ID:
+                obj.updates._self_outgoing = True
+                self._updates_queue.put_nowait(obj.updates)
+
         except AttributeError:
             pass
 
