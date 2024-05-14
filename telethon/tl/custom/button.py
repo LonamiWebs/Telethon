@@ -307,3 +307,14 @@ class Button:
         documentation for more information on using games.
         """
         return types.KeyboardButtonGame(text)
+
+    @staticmethod
+    def web_view(text, url=None):
+        """
+        Creates a new inline button to open the desired URL in a WebView.
+        If no `url` is given, the `text` will be used as the URL instead.
+        You cannot detect that the user clicked this button directly.
+        When the user clicks this button, the URL will open in the Telegram
+        app's WebView directly.
+        """
+        return types.KeyboardButtonWebView(text, url or text)
