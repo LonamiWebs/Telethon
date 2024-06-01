@@ -177,7 +177,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             id: int, peer_id: types.TypePeer,
             date: Optional[datetime]=None, message: Optional[str]=None,
             # Copied from Message.__init__ signature
-            out: Optional[bool]=None, mentioned: Optional[bool]=None, media_unread: Optional[bool]=None, silent: Optional[bool]=None, post: Optional[bool]=None, from_scheduled: Optional[bool]=None, legacy: Optional[bool]=None, edit_hide: Optional[bool]=None, pinned: Optional[bool]=None, noforwards: Optional[bool]=None, invert_media: Optional[bool]=None, offline: Optional[bool]=None, from_id: Optional[types.TypePeer]=None, from_boosts_applied: Optional[int]=None, saved_peer_id: Optional[types.TypePeer]=None, fwd_from: Optional[types.TypeMessageFwdHeader]=None, via_bot_id: Optional[int]=None, via_business_bot_id: Optional[int]=None, reply_to: Optional[types.TypeMessageReplyHeader]=None, media: Optional[types.TypeMessageMedia]=None, reply_markup: Optional[types.TypeReplyMarkup]=None, entities: Optional[List[types.TypeMessageEntity]]=None, views: Optional[int]=None, forwards: Optional[int]=None, replies: Optional[types.TypeMessageReplies]=None, edit_date: Optional[datetime]=None, post_author: Optional[str]=None, grouped_id: Optional[int]=None, reactions: Optional[types.TypeMessageReactions]=None, restriction_reason: Optional[List[types.TypeRestrictionReason]]=None, ttl_period: Optional[int]=None, quick_reply_shortcut_id: Optional[int]=None,
+            out: Optional[bool]=None, mentioned: Optional[bool]=None, media_unread: Optional[bool]=None, silent: Optional[bool]=None, post: Optional[bool]=None, from_scheduled: Optional[bool]=None, legacy: Optional[bool]=None, edit_hide: Optional[bool]=None, pinned: Optional[bool]=None, noforwards: Optional[bool]=None, invert_media: Optional[bool]=None, offline: Optional[bool]=None, from_id: Optional[types.TypePeer]=None, from_boosts_applied: Optional[int]=None, saved_peer_id: Optional[types.TypePeer]=None, fwd_from: Optional[types.TypeMessageFwdHeader]=None, via_bot_id: Optional[int]=None, via_business_bot_id: Optional[int]=None, reply_to: Optional[types.TypeMessageReplyHeader]=None, media: Optional[types.TypeMessageMedia]=None, reply_markup: Optional[types.TypeReplyMarkup]=None, entities: Optional[List[types.TypeMessageEntity]]=None, views: Optional[int]=None, forwards: Optional[int]=None, replies: Optional[types.TypeMessageReplies]=None, edit_date: Optional[datetime]=None, post_author: Optional[str]=None, grouped_id: Optional[int]=None, reactions: Optional[types.TypeMessageReactions]=None, restriction_reason: Optional[List[types.TypeRestrictionReason]]=None, ttl_period: Optional[int]=None, quick_reply_shortcut_id: Optional[int]=None, effect: Optional[int]=None, factcheck: Optional[types.TypeFactCheck]=None,
             # Copied from MessageService.__init__ signature
             action: Optional[types.TypeMessageAction]=None
     ):
@@ -218,6 +218,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.restriction_reason = restriction_reason
         self.ttl_period = ttl_period
         self.quick_reply_shortcut_id = quick_reply_shortcut_id
+        self.effect = effect
+        self.factcheck = factcheck
         # Copied from MessageService.__init__ body
         self.action = action
 
