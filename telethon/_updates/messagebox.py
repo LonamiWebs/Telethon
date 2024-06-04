@@ -111,8 +111,7 @@ class PtsInfo:
 
         qts = getattr(update, 'qts', None)
         if qts:
-            pts_count = 1 if isinstance(update, tl.UpdateNewEncryptedMessage) else 0
-            return cls(pts=qts, pts_count=pts_count, entry=ENTRY_SECRET)
+            return cls(pts=qts, pts_count=1, entry=ENTRY_SECRET)
 
         return None
 
