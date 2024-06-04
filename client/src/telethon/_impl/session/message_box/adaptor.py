@@ -232,12 +232,12 @@ def pts_info_from_update(update: abcs.Update) -> Optional[PtsInfo]:
     elif isinstance(update, types.UpdatePinnedChannelMessages):
         return PtsInfo(update.channel_id, update.pts, update.pts_count)
     elif isinstance(update, types.UpdateChatParticipant):
-        return PtsInfo(ENTRY_SECRET, update.qts, 0)
+        return PtsInfo(ENTRY_SECRET, update.qts, 1)
     elif isinstance(update, types.UpdateChannelParticipant):
-        return PtsInfo(ENTRY_SECRET, update.qts, 0)
+        return PtsInfo(ENTRY_SECRET, update.qts, 1)
     elif isinstance(update, types.UpdateBotStopped):
-        return PtsInfo(ENTRY_SECRET, update.qts, 0)
+        return PtsInfo(ENTRY_SECRET, update.qts, 1)
     elif isinstance(update, types.UpdateBotChatInviteRequester):
-        return PtsInfo(ENTRY_SECRET, update.qts, 0)
+        return PtsInfo(ENTRY_SECRET, update.qts, 1)
     else:
         return None
