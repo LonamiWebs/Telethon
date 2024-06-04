@@ -5,6 +5,7 @@ Classes related to the different event types that wrap incoming Telegram updates
 
     The :doc:`/concepts/updates` concept to learn how to listen to these events.
 """
+
 from .._impl.client.events import (
     ButtonCallback,
     Continue,
@@ -14,6 +15,7 @@ from .._impl.client.events import (
     MessageEdited,
     MessageRead,
     NewMessage,
+    Raw,
 )
 
 __all__ = [
@@ -25,4 +27,5 @@ __all__ = [
     "MessageEdited",
     "MessageRead",
     "NewMessage",
+    "Raw",
 ]

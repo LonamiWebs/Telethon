@@ -30,6 +30,34 @@ class Event(metaclass=NoPublicConstructor):
         pass
 
 
+class Raw(Event):
+    """
+    Raw update type received from Telegram.
+
+    This event occurs when *any* update is received.
+
+    Like every other event, the raw update type is under the private member ``event._raw``.
+
+    Additionally, all peers received along with this update are present under ``self._chat_map``.
+    """
+
+    def __init__(
+        self,
+        client: Client,
+        update: abcs.Update,
+        chat_map: dict[int, Peer],
+    ):
+        self._client = client
+        self._raw = update
+        self._chat_map = chat_map
+
+    @classmethod
+    def _try_from_update(
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
+    ) -> Optional[Self]:
+        return cls._create(client, update, chat_map)
+
+
 class Continue:
     """
     This is **not** an event type you can listen to.
