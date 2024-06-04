@@ -269,7 +269,7 @@ class MessageBox:
                 combined.seq,
                 combined.seq_start,
                 combined.date,
-                updates,
+                updates.__class__.__name__,
             )
 
         if combined.seq_start != NO_SEQ:
@@ -350,7 +350,8 @@ class MessageBox:
         if not pts:
             if __debug__:
                 self._trace(
-                    "no pts in update, so it can be applied in any order: %s", update
+                    "no pts in update, so it can be applied in any order: %s",
+                    update.__class__.__name__,
                 )
             return None, update
 
@@ -370,7 +371,7 @@ class MessageBox:
                         "skipping update since local-pts=%r > pts=%r: %s",
                         local_pts,
                         pts,
-                        update,
+                        update.__class__.__name__,
                     )
                 return pts.entry, None
             elif local_pts + pts.pts_count < pts.pts:
@@ -379,7 +380,7 @@ class MessageBox:
                         "possible gap since local-pts=%r < pts=%r: %s",
                         local_pts,
                         pts,
-                        update,
+                        update.__class__.__name__,
                     )
                 if pts.entry not in self.possible_gaps:
                     self.possible_gaps[pts.entry] = PossibleGap(
@@ -396,7 +397,7 @@ class MessageBox:
                         "applying update pts since local-pts=%r = pts=%r: %s",
                         local_pts,
                         pts,
-                        update,
+                        update.__class__.__name__,
                     )
 
         if pts.entry not in self.map:
