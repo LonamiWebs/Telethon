@@ -49,9 +49,12 @@ def test_rpc_error_parsing() -> None:
 PLAIN_REQUEST = b"Hey!"
 
 
-def unwrap_finalize(finalized: Optional[tuple[MsgId, bytes]]) -> bytes:
+def unwrap_finalize(finalized: Optional[tuple[MsgId, bytes] | bytes]) -> bytes:
     assert finalized is not None
-    _, buffer = finalized
+    if isinstance(finalized, tuple):
+        _, buffer = finalized
+    else:
+        buffer = finalized
     return buffer
 
 

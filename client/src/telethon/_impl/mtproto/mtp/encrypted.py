@@ -196,7 +196,7 @@ class Encrypted(Mtp):
     def _get_current_salt(self) -> int:
         return self._salts[-1].salt if self._salts else 0
 
-    def _finalize_plain(self) -> Optional[tuple[MsgId, bytes]]:
+    def _finalize_plain(self) -> Optional[bytes]:
         if not self._msg_count:
             return None
 
@@ -207,13 +207,10 @@ class Encrypted(Mtp):
             "<qq", self._get_current_salt(), self._client_id
         )
 
-        if self._msg_count == 1:
-            container_msg_id = self._last_msg_id
-        else:
-            container_msg_id = self._get_new_msg_id()
+        if self._msg_count != 1:
             self._buffer[HEADER_LEN : HEADER_LEN + CONTAINER_HEADER_LEN] = struct.pack(
                 "<qiiIi",
-                container_msg_id,
+                self._get_new_msg_id(),
                 self._get_seq_no(False),
                 len(self._buffer) - HEADER_LEN - CONTAINER_HEADER_LEN + 8,
                 MsgContainer.constructor_id(),
@@ -223,7 +220,7 @@ class Encrypted(Mtp):
         self._msg_count = 0
         result = bytes(self._buffer)
         self._buffer.clear()
-        return MsgId(container_msg_id), result
+        return result
 
     def _process_message(self, message: Message) -> None:
         if message_requires_ack(message):
@@ -436,8 +433,7 @@ class Encrypted(Mtp):
         if not result:
             return None
 
-        msg_id, buffer = result
-        return msg_id, encrypt_data_v2(buffer, self._auth_key)
+        return MsgId(self._last_msg_id), encrypt_data_v2(result, self._auth_key)
 
     def deserialize(
         self, payload: bytes | bytearray | memoryview
