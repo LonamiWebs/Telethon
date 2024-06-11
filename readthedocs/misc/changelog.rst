@@ -13,6 +13,21 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.36)
+=================
+
++------------------------+
+| Scheme layer used: 181 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=178&to=181>`__.
+
+Bug fixes
+~~~~~~~~~
+
+* Certain updates, such as :tl:`UpdateBotStopped`, should now be processed reliably.
+
+
 New layer (v1.35)
 =================
 
