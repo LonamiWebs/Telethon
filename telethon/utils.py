@@ -1254,8 +1254,7 @@ def pack_bot_file_id(file):
 
         if not size:
             return None
-
-        size = size.location
+    
         return _encode_telegram_base64(_rle_encode(struct.pack(
             '<iiqqqqib', 2, file.dc_id, file.id, file.access_hash,
             size.volume_id, 0, size.local_id, 2  # 0 = old `secret`
