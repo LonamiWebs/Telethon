@@ -48,7 +48,7 @@ class HTMLToTelegramParser(HTMLParser):
             EntityType = MessageEntityStrike
         elif tag == "blockquote":
             EntityType = MessageEntityBlockquote
-        elif tag == "spoiler":
+        elif tag == "spoiler" or tag == "tg-spoiler":
             EntityType = MessageEntitySpoiler
         elif tag == "code":
             try:
