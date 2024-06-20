@@ -43,6 +43,7 @@ HTML_TO_TYPE = {
     "del": ("s_close", "s_open"),
     "u": ("heading_open", "heading_close"),
     "mark": ("heading_open", "heading_close"),
+    "details": ("details_close", "details_open")
 }
 
 
@@ -138,6 +139,8 @@ def parse(message: str) -> tuple[str, list[MessageEntity]]:
                 push(MessageEntityTextUrl, url=token.attrs.get("href"))
         elif token.type in ("s_close", "s_open"):
             push(MessageEntityStrike)
+        elif token.type in ("details_close", "details_open"):
+            push(MessageEntitySpoiler)
         elif token.type == "softbreak":
             message += "\n"
         elif token.type in ("strong_close", "strong_open"):
