@@ -16,6 +16,7 @@ from ...tl.types import (
     MessageEntityStrike,
     MessageEntityTextUrl,
     MessageEntityUnderline,
+    MessageEntitySpoiler
 )
 from .strings import add_surrogate, del_surrogate, within_surrogate
 
@@ -27,6 +28,7 @@ DELIMITERS: dict[Type[MessageEntity], tuple[str, str]] = {
     MessageEntityItalic: ("_", "_"),
     MessageEntityStrike: ("~~", "~~"),
     MessageEntityUnderline: ("# ", ""),
+    MessageEntitySpoiler: ("||", "||")
 }
 
 # Not trying to be complete; just enough to have an alternative (mostly for inline underline).

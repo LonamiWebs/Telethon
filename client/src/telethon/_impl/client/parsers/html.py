@@ -48,7 +48,7 @@ class HTMLToTelegramParser(HTMLParser):
             EntityType = MessageEntityStrike
         elif tag == "blockquote":
             EntityType = MessageEntityBlockquote
-        elif tag == "details":
+        elif tag == "spoiler":
             EntityType = MessageEntitySpoiler
         elif tag == "code":
             try:
@@ -142,7 +142,7 @@ ENTITY_TO_FORMATTER: dict[
     MessageEntityUnderline: ("<u>", "</u>"),
     MessageEntityStrike: ("<del>", "</del>"),
     MessageEntityBlockquote: ("<blockquote>", "</blockquote>"),
-    MessageEntitySpoiler: ("<details>", "</details>"),
+    MessageEntitySpoiler: ("<spoiler>", "</spoiler>"),
     MessageEntityPre: lambda e, _: (
         '<pre><code class="language-{}">'.format(e.language) if e.language else "<pre>",
         "</code></pre>" if e.language else "</pre>",
