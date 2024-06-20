@@ -1,11 +1,10 @@
 """
 Simple HTML -> Telegram entity parser.
 """
-import struct
 from collections import deque
 from html import escape
 from html.parser import HTMLParser
-from typing import Iterable, Optional, Tuple, List
+from typing import Iterable, Tuple, List
 
 from ..helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
 from ..tl import TLObject
@@ -14,7 +13,7 @@ from ..tl.types import (
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl, MessageEntityMentionName,
     MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
-    TypeMessageEntity
+    TypeMessageEntity, MessageEntitySpoiler
 )
 
 
@@ -42,6 +41,8 @@ class HTMLToTelegramParser(HTMLParser):
             EntityType = MessageEntityUnderline
         elif tag == 'del' or tag == 's':
             EntityType = MessageEntityStrike
+        elif tag == 'spoiler':
+            EntityType = MessageEntitySpoiler
         elif tag == 'blockquote':
             EntityType = MessageEntityBlockquote
         elif tag == 'code':
