@@ -219,6 +219,7 @@ class Client:
 
         self._sender: Optional[Sender] = None
         self._sender_lock = asyncio.Lock()
+        self._sender_lock_flag = False
         if isinstance(session, Storage):
             self._storage = session
         elif session is None:

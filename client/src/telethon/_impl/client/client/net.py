@@ -268,19 +268,23 @@ async def step(client: Client) -> None:
 
 
 async def step_sender(client: Client, sender: Sender, lock: asyncio.Lock) -> None:
-    if lock.locked():
-        async with lock:
-            pass
-    else:
-        async with lock:
-            try:
-                updates = await sender.step()
-            except ConnectionError:
-                if client.connected:
-                    raise
-                else:
-                    # disconnect was called, so the socket returning 0 bytes is expected
-                    return
+    flag = client._sender_lock_flag
+    async with lock:
+        if client._sender_lock_flag != flag:
+            # different task already received an item from the network
+            return
+        # current task is responsible for receiving
+        # toggle the flag so any other task that comes after does not run again
+        client._sender_lock_flag = not client._sender_lock_flag
+
+        try:
+            updates = await sender.step()
+        except ConnectionError:
+            if client.connected:
+                raise
+            else:
+                # disconnect was called, so the socket returning 0 bytes is expected
+                return
 
         process_socket_updates(client, updates)
 
