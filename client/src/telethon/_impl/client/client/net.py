@@ -193,10 +193,9 @@ async def connect(self: Client) -> None:
             me = await self.get_me()
             assert me is not None
             self._chat_hashes.set_self_user(me.id, me.bot)
-            if not self._session.user:
-                self._session.user = SessionUser(
-                    id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username
-                )
+            self._session.user = SessionUser(
+                id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username
+            )
 
     self._dispatcher = asyncio.create_task(dispatcher(self))
 
