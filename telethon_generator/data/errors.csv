@@ -179,6 +179,7 @@ FILTER_TITLE_EMPTY,400,The title field of the filter is empty
 FIRSTNAME_INVALID,400,The first name is invalid
 FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test servers
 FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
+FLOOD_PREMIUM_WAIT_X,420,A wait of {seconds} seconds is required in non-premium accounts
 FOLDER_ID_EMPTY,400,The folder you tried to delete was already empty
 FOLDER_ID_INVALID,400,The folder you tried to use was not valid
 FRESH_CHANGE_ADMINS_FORBIDDEN,400 406,Recently logged-in users cannot add or change admins
