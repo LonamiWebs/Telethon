@@ -401,6 +401,7 @@ class TelegramBaseClient(abc.ABC):
         # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders
         self._borrowed_senders = {}
         self._borrow_sender_lock = asyncio.Lock()
+        self._exported_sessions = {}
 
         self._loop = None  # only used as a sanity check
         self._updates_error = None
@@ -785,7 +786,8 @@ class TelegramBaseClient(abc.ABC):
         if cdn and not self._cdn_config:
             cls._cdn_config = await self(functions.help.GetCdnConfigRequest())
             for pk in cls._cdn_config.public_keys:
-                rsa.add_key(pk.public_key)
+                if pk.dc_id == dc_id:
+                    rsa.add_key(pk.public_key, old=False)
 
         try:
             return next(
@@ -890,7 +892,8 @@ class TelegramBaseClient(abc.ABC):
     async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""
         # TODO Implement
-        raise NotImplementedError
+        # raise NotImplementedError
+        from .telegramclient import TelegramClient
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
@@ -899,10 +902,11 @@ class TelegramBaseClient(abc.ABC):
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')
-        client = TelegramBaseClient(
+        client = TelegramClient(
             session, self.api_id, self.api_hash,
-            proxy=self._sender.connection.conn.proxy,
-            timeout=self._sender.connection.get_timeout()
+            proxy=self._proxy,
+            timeout=self._timeout,
+            loop=self.loop
         )
 
         # This will make use of the new RSA keys for this specific CDN.
@@ -910,7 +914,12 @@ class TelegramBaseClient(abc.ABC):
         # We won't be calling GetConfigRequest because it's only called
         # when needed by ._get_dc, and also it's static so it's likely
         # set already. Avoid invoking non-CDN methods by not syncing updates.
-        client.connect(_sync_updates=False)
+        
+        self_id = self._mb_entity_cache.self_id
+        self_user = self.session.get_input_entity(self_id)
+        client._mb_entity_cache.set_self_user(self_id, True, self_user.access_hash)
+        
+        await client.start()
         return client
 
     # endregion
