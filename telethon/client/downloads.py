@@ -84,7 +84,6 @@ class _DirectDownloadIter(RequestIter):
     async def _request(self):
         try:
             result = await self._client._call(self._sender, self.request)
-            self.client._log[__name__].debug('result: %s', result)
             self._timed_out = False
             if isinstance(result, types.upload.FileCdnRedirect):
                 if self.client._mb_entity_cache.self_bot:
