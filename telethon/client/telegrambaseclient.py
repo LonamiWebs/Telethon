@@ -800,10 +800,13 @@ class TelegramBaseClient(abc.ABC):
                 'Failed to get DC %s (cdn = %s) with use_ipv6 = %s; retrying ignoring IPv6 check',
                 dc_id, cdn, self._use_ipv6
             )
-            return next(
-                dc for dc in cls._config.dc_options
-                if dc.id == dc_id and bool(dc.cdn) == cdn
-            )
+            try:
+                return next(
+                    dc for dc in cls._config.dc_options
+                    if dc.id == dc_id and bool(dc.cdn) == cdn
+                )
+            except StopIteration:
+                raise ValueError(f'Failed to get DC {dc_id} (cdn = {cdn})')
 
     async def _create_exported_sender(self: 'TelegramClient', dc_id):
         """
@@ -891,9 +894,6 @@ class TelegramBaseClient(abc.ABC):
 
     async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""
-        # TODO Implement
-        # raise NotImplementedError
-        from .telegramclient import TelegramClient
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
@@ -902,24 +902,22 @@ class TelegramBaseClient(abc.ABC):
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')
-        client = TelegramClient(
+        client = self.__class__(
             session, self.api_id, self.api_hash,
             proxy=self._proxy,
             timeout=self._timeout,
             loop=self.loop
         )
 
-        # This will make use of the new RSA keys for this specific CDN.
-        #
-        # We won't be calling GetConfigRequest because it's only called
-        # when needed by ._get_dc, and also it's static so it's likely
-        # set already. Avoid invoking non-CDN methods by not syncing updates.
-        
-        self_id = self._mb_entity_cache.self_id
-        self_user = self.session.get_input_entity(self_id)
-        client._mb_entity_cache.set_self_user(self_id, True, self_user.access_hash)
-        
-        await client.start()
+        session.auth_key = self._sender.auth_key
+        await client._sender.connect(self._connection(
+            session.server_address,
+            session.port,
+            session.dc_id,
+            loggers=self._log,
+            proxy=self._proxy,
+            local_addr=self._local_addr
+        ))
         return client
 
     # endregion

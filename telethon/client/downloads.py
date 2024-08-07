@@ -39,7 +39,7 @@ class _DirectDownloadIter(RequestIter):
         self.request = functions.upload.GetFileRequest(
             file, offset=offset, limit=request_size) 
         self._client = self.client
-        self.cdn_redirect = cdn_redirect
+        self._cdn_redirect = cdn_redirect
         if cdn_redirect is not None:
           self.request = functions.upload.GetCdnFileRequest(cdn_redirect.file_token, offset=offset, limit=request_size)
           self._client = await self.client._get_cdn_client(cdn_redirect)
@@ -54,22 +54,22 @@ class _DirectDownloadIter(RequestIter):
         self._exported = dc_id and self._client.session.dc_id != dc_id
         if not self._exported:
             # The used sender will also change if ``FileMigrateError`` occurs
-            self._sender = self._client._sender
+            self._sender = self.client._sender
         else:
             try:
-                self._sender = await self._client._borrow_exported_sender(dc_id)
+                self._sender = await self.client._borrow_exported_sender(dc_id)
             except errors.DcIdInvalidError:
                 # Can't export a sender for the ID we are currently in
-                config = await self._client(functions.help.GetConfigRequest())
+                config = await self.client(functions.help.GetConfigRequest())
                 for option in config.dc_options:
-                    if option.ip_address == self._client.session.server_address:
-                        self._client.session.set_dc(
+                    if option.ip_address == self.client.session.server_address:
+                        self.client.session.set_dc(
                             option.id, option.ip_address, option.port)
-                        self._client.session.save()
+                        self.client.session.save()
                         break
 
                 # TODO Figure out why the session may have the wrong DC ID
-                self._sender = self._client._sender
+                self._sender = self.client._sender
                 self._exported = False
 
     async def _load_next_chunk(self):
@@ -84,12 +84,14 @@ class _DirectDownloadIter(RequestIter):
     async def _request(self):
         try:
             result = await self._client._call(self._sender, self.request)
+            self.client._log[__name__].debug('result: %s', result)
             self._timed_out = False
             if isinstance(result, types.upload.FileCdnRedirect):
-                # raise NotImplementedError  # TODO Implement
+                if self.client._mb_entity_cache.self_bot:
+                    raise ValueError('FileCdnRedirect but the GetCdnFileRequest API access for bot users is restricted. Try to change api_id to avoid FileCdnRedirect')
                 raise _CdnRedirect(result)
             if isinstance(result, types.upload.CdnFileReuploadNeeded):
-                result = await self._client._call(self._sender, functions.upload.reuploadCdnFile(file_token=self.cdn_redirect.file_token, request_token=result.request_token))
+                await self.client._call(self.client._sender, functions.upload.ReuploadCdnFileRequest(file_token=self._cdn_redirect.file_token, request_token=result.request_token))
                 result = await self._client._call(self._sender, self.request)
                 return result.bytes
             else:
@@ -579,7 +581,7 @@ class DownloadMethods:
             if in_memory:
                 return f.getvalue()
         except _CdnRedirect as e:
-          self._log[__name__].info('FileCdnRedirect')
+          self._log[__name__].info('FileCdnRedirect to CDN data center %s', e.cdn_redirect.dc_id)
           return await self._download_file(
               input_location=input_location,
               file=file,
