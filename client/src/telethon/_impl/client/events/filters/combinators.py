@@ -1,11 +1,11 @@
 import abc
 import typing
 from collections.abc import Callable
-from typing import TypeAlias
+from typing import Awaitable, TypeAlias
 
 from ..event import Event
 
-Filter: TypeAlias = Callable[[Event], bool]
+Filter: TypeAlias = Callable[[Event], bool | Awaitable[bool]]
 
 
 class Combinable(abc.ABC):
