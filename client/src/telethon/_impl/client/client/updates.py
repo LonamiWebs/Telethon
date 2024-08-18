@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from inspect import isawaitable
 from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar
 
 from ...session import Gap
@@ -23,7 +24,7 @@ def on(
     self: Client, event_cls: Type[Event], /, filter: Optional[Filter] = None
 ) -> Callable[[Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]]:
     def wrapper(
-        handler: Callable[[Event], Awaitable[Any]]
+        handler: Callable[[Event], Awaitable[Any]],
     ) -> Callable[[Event], Awaitable[Any]]:
         add_event_handler(self, handler, event_cls, filter)
         return handler
@@ -145,7 +146,7 @@ async def dispatch_next(client: Client) -> None:
     for event_cls, handlers in client._handlers.items():
         if event := event_cls._try_from_update(client, update, chat_map):
             for handler, filter in handlers:
-                if not filter or filter(event):
+                if not filter or (await r if isawaitable(r := filter(event)) else r):
                     ret = await handler(event)
                     if not (ret is Continue or client._check_all_handlers):
                         return
