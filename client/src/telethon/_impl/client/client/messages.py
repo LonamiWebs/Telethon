@@ -15,7 +15,7 @@ from ..types import (
     parse_message,
     peer_id,
 )
-from ..types.buttons.reply_markup import ReplyMarkupType
+from ..types.buttons.keyboard import KeyboardType
 
 if TYPE_CHECKING:
     from .client import Client
@@ -31,7 +31,7 @@ async def send_message(
     html: Optional[str] = None,
     link_preview: bool = False,
     reply_to: Optional[int] = None,
-    buttons: Optional[ReplyMarkupType] = None,
+    keyboard: Optional[KeyboardType] = None,
 ) -> Message:
     random_id = generate_random_id()
 
@@ -78,7 +78,7 @@ async def send_message(
             ),
             message=message,
             random_id=random_id,
-            reply_markup=buttons._build() if buttons is not None else None,
+            reply_markup=keyboard._raw if keyboard else None,
             entities=entities,
             schedule_date=None,
             send_as=None,
@@ -128,7 +128,7 @@ async def edit_message(
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: bool = False,
-    buttons: Optional[ReplyMarkupType] = None,
+    keyboard: Optional[KeyboardType] = None,
 ) -> Message:
     message, entities = parse_message(
         text=text, markdown=markdown, html=html, allow_empty=False
@@ -141,7 +141,7 @@ async def edit_message(
                 id=message_id,
                 message=message,
                 media=None,
-                reply_markup=buttons._build() if buttons is not None else None,
+                reply_markup=keyboard._raw if keyboard else None,
                 entities=entities,
                 schedule_date=None,
             )

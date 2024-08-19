@@ -25,8 +25,8 @@ from .._impl.client.types import (
 from .._impl.client.types.buttons import (
     Button,
     InlineButton,
-    ReplyInlineMarkup,
-    ReplyKeyboardMarkup,
+    InlineKeyboard,
+    Keyboard,
 )
 from .._impl.session import ChannelRef, GroupRef, PeerRef, UserRef
 
@@ -42,13 +42,13 @@ __all__ = [
     "Draft",
     "File",
     "Group",
+    "InlineKeyboard",
     "InlineResult",
+    "Keyboard",
     "LoginToken",
     "Message",
     "Participant",
     "PasswordToken",
-    "ReplyInlineMarkup",
-    "ReplyKeyboardMarkup",
     "RecentAction",
     "User",
     "Button",

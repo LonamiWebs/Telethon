@@ -7,7 +7,7 @@ from ....tl import abcs, types
 from .button import Button
 from .callback import Callback
 from .inline_button import InlineButton
-from .reply_markup import ReplyInlineMarkup, ReplyKeyboardMarkup
+from .keyboard import InlineKeyboard, Keyboard
 from .request_geo_location import RequestGeoLocation
 from .request_phone import RequestPhone
 from .request_poll import RequestPoll
@@ -80,8 +80,8 @@ __all__ = [
     "Button",
     "Callback",
     "InlineButton",
-    "ReplyInlineMarkup",
-    "ReplyKeyboardMarkup",
+    "InlineKeyboard",
+    "Keyboard",
     "RequestGeoLocation",
     "RequestPhone",
     "RequestPoll",
