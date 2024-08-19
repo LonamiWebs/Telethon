@@ -7,6 +7,7 @@ When the return value is :data:`True`, the associated :mod:`~telethon.events` ha
 
     The :doc:`/concepts/updates` concept to learn to combine filters or define your own.
 """
+
 from .._impl.client.events.filters import (
     All,
     Any,
@@ -14,7 +15,7 @@ from .._impl.client.events.filters import (
     ChatType,
     Command,
     Data,
-    Filter,
+    FilterType,
     Forward,
     Incoming,
     Media,
@@ -31,7 +32,7 @@ __all__ = [
     "Chats",
     "ChatType",
     "Command",
-    "Filter",
+    "FilterType",
     "Forward",
     "Incoming",
     "Media",

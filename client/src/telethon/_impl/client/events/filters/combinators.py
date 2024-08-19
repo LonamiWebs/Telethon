@@ -6,7 +6,7 @@ from typing import Awaitable, TypeAlias
 
 from ..event import Event
 
-Filter: TypeAlias = Callable[[Event], bool | Awaitable[bool]]
+FilterType: TypeAlias = Callable[[Event], bool | Awaitable[bool]]
 
 
 class Combinable(abc.ABC):
@@ -22,7 +22,7 @@ class Combinable(abc.ABC):
     Multiple ``~`` will toggle between using :class:`Not` and not using it.
     """
 
-    def __or__(self, other: typing.Any) -> Filter:
+    def __or__(self, other: typing.Any) -> FilterType:
         if not callable(other):
             return NotImplemented
 
@@ -30,7 +30,7 @@ class Combinable(abc.ABC):
         rhs = other.filters if isinstance(other, Any) else (other,)
         return Any(*lhs, *rhs)  # type: ignore [arg-type]
 
-    def __and__(self, other: typing.Any) -> Filter:
+    def __and__(self, other: typing.Any) -> FilterType:
         if not callable(other):
             return NotImplemented
 
@@ -38,7 +38,7 @@ class Combinable(abc.ABC):
         rhs = other.filters if isinstance(other, All) else (other,)
         return All(*lhs, *rhs)  # type: ignore [arg-type]
 
-    def __invert__(self) -> Filter:
+    def __invert__(self) -> FilterType:
         return self.filter if isinstance(self, Not) else Not(self)  # type: ignore [return-value]
 
     @abc.abstractmethod
@@ -72,11 +72,13 @@ class Any(Combinable):
 
     __slots__ = ("_filters",)
 
-    def __init__(self, filter1: Filter, filter2: Filter, *filters: Filter) -> None:
+    def __init__(
+        self, filter1: FilterType, filter2: FilterType, *filters: FilterType
+    ) -> None:
         self._filters = (filter1, filter2, *filters)
 
     @property
-    def filters(self) -> tuple[Filter, ...]:
+    def filters(self) -> tuple[FilterType, ...]:
         """
         The filters being checked, in order.
         """
@@ -116,11 +118,13 @@ class All(Combinable):
 
     __slots__ = ("_filters",)
 
-    def __init__(self, filter1: Filter, filter2: Filter, *filters: Filter) -> None:
+    def __init__(
+        self, filter1: FilterType, filter2: FilterType, *filters: FilterType
+    ) -> None:
         self._filters = (filter1, filter2, *filters)
 
     @property
-    def filters(self) -> tuple[Filter, ...]:
+    def filters(self) -> tuple[FilterType, ...]:
         """
         The filters being checked, in order.
         """
@@ -158,11 +162,11 @@ class Not(Combinable):
 
     __slots__ = ("_filter",)
 
-    def __init__(self, filter: Filter) -> None:
+    def __init__(self, filter: FilterType) -> None:
         self._filter = filter
 
     @property
-    def filter(self) -> Filter:
+    def filter(self) -> FilterType:
         """
         The filter being negated.
         """

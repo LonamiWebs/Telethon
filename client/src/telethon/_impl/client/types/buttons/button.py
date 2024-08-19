@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypeAlias
 
 from ....tl import types
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ..message import Message
 
 
-ButtonTypes = (
+ButtonType: TypeAlias = (
     types.KeyboardButton
     | types.KeyboardButtonUrl
     | types.KeyboardButtonCallback
@@ -53,7 +53,7 @@ class Button:
                 f"Can't instantiate abstract class {self.__class__.__name__}"
             )
 
-        self._raw: ButtonTypes = types.KeyboardButton(text=text)
+        self._raw: ButtonType = types.KeyboardButton(text=text)
         self._msg: Optional[weakref.ReferenceType[Message]] = None
 
     @property

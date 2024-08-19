@@ -23,7 +23,7 @@ from ...session import (
 )
 from ...tl import Request, abcs
 from ..events import Event
-from ..events.filters import Filter
+from ..events.filters import FilterType
 from ..types import (
     AdminRight,
     AlbumBuilder,
@@ -258,7 +258,7 @@ class Client:
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._handlers: dict[
             Type[Event],
-            list[tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]],
+            list[tuple[Callable[[Any], Awaitable[Any]], Optional[FilterType]]],
         ] = {}
         self._check_all_handlers = check_all_handlers
 
@@ -272,7 +272,7 @@ class Client:
         handler: Callable[[AnyEvent], Awaitable[Any]],
         /,
         event_cls: Type[AnyEvent],
-        filter: Optional[Filter] = None,
+        filter: Optional[FilterType] = None,
     ) -> None:
         """
         Register a callable to be invoked when the provided event type occurs.
@@ -761,7 +761,7 @@ class Client:
 
     def get_handler_filter(
         self, handler: Callable[[AnyEvent], Awaitable[Any]], /
-    ) -> Optional[Filter]:
+    ) -> Optional[FilterType]:
         """
         Get the filter associated to the given event handler.
 
@@ -1036,7 +1036,7 @@ class Client:
         return await is_authorized(self)
 
     def on(
-        self, event_cls: Type[AnyEvent], /, filter: Optional[Filter] = None
+        self, event_cls: Type[AnyEvent], /, filter: Optional[FilterType] = None
     ) -> Callable[
         [Callable[[AnyEvent], Awaitable[Any]]], Callable[[AnyEvent], Awaitable[Any]]
     ]:
@@ -1853,7 +1853,7 @@ class Client:
         self,
         handler: Callable[[AnyEvent], Awaitable[Any]],
         /,
-        filter: Optional[Filter] = None,
+        filter: Optional[FilterType] = None,
     ) -> None:
         """
         Set the filter to use for the given event handler.
