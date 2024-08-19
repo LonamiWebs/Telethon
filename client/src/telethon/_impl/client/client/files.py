@@ -22,7 +22,7 @@ from ..types import (
     parse_message,
     try_get_url_path,
 )
-from ..types.buttons.keyboard import KeyboardType
+from ..types.buttons import KeyboardType
 
 if TYPE_CHECKING:
     from .client import Client

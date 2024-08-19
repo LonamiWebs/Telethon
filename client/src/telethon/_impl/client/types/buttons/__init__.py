@@ -7,7 +7,7 @@ from ....tl import abcs, types
 from .button import Button
 from .callback import Callback
 from .inline_button import InlineButton
-from .keyboard import InlineKeyboard, Keyboard
+from .keyboard import InlineKeyboard, Keyboard, KeyboardType
 from .request_geo_location import RequestGeoLocation
 from .request_phone import RequestPhone
 from .request_poll import RequestPoll
@@ -82,6 +82,7 @@ __all__ = [
     "InlineButton",
     "InlineKeyboard",
     "Keyboard",
+    "KeyboardType",
     "RequestGeoLocation",
     "RequestPhone",
     "RequestPoll",

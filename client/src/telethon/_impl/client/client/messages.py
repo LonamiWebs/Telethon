@@ -15,7 +15,7 @@ from ..types import (
     parse_message,
     peer_id,
 )
-from ..types.buttons.keyboard import KeyboardType
+from ..types.buttons import KeyboardType
 
 if TYPE_CHECKING:
     from .client import Client

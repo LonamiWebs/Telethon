@@ -12,8 +12,7 @@ from ..parsers import (
     parse_html_message,
     parse_markdown_message,
 )
-from .buttons import Button, as_concrete_row, create_button
-from .buttons.keyboard import KeyboardType
+from .buttons import Button, KeyboardType, as_concrete_row, create_button
 from .file import File
 from .meta import NoPublicConstructor
 from .peer import Peer, expand_peer, peer_id

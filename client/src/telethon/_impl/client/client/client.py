@@ -45,7 +45,7 @@ from ..types import (
     RecentAction,
     User,
 )
-from ..types.buttons.keyboard import KeyboardType
+from ..types.buttons import KeyboardType
 from .auth import (
     bot_sign_in,
     check_password,
