@@ -45,7 +45,7 @@ from ..types import (
     RecentAction,
     User,
 )
-from ..types import buttons as btns
+from ..types.buttons.reply_markup import ReplyMarkupType
 from .auth import (
     bot_sign_in,
     check_password,
@@ -216,6 +216,7 @@ class Client:
         datacenter: Optional[DataCenter] = None,
         connector: Optional[Connector] = None,
     ) -> None:
+        assert isinstance(__package__, str)
         base_logger = logger or logging.getLogger(__package__[: __package__.index(".")])
 
         self._sender: Optional[Sender] = None
@@ -571,7 +572,7 @@ class Client:
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        buttons: Optional[ReplyMarkupType] = None,
     ) -> Message:
         """
         Edit a message.
@@ -1393,7 +1394,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        buttons: Optional[ReplyMarkupType] = None,
     ) -> Message:
         """
         Send an audio file.
@@ -1466,7 +1467,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+        buttons: Optional[ReplyMarkupType],
     ) -> Message:
         """
         Send any type of file with any amount of attributes.
@@ -1633,7 +1634,7 @@ class Client:
         html: Optional[str] = None,
         link_preview: bool = False,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        buttons: Optional[ReplyMarkupType] = None,
     ) -> Message:
         """
         Send a message.
@@ -1687,7 +1688,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        buttons: Optional[ReplyMarkupType] = None,
     ) -> Message:
         """
         Send a photo file.
@@ -1755,7 +1756,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+        buttons: Optional[ReplyMarkupType],
     ) -> Message:
         """
         Send a video file.

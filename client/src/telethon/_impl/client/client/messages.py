@@ -6,9 +6,16 @@ from typing import TYPE_CHECKING, Literal, Optional, Self
 
 from ...session import ChannelRef, PeerRef
 from ...tl import abcs, functions, types
-from ..types import AsyncList, Message, Peer, build_chat_map
-from ..types import buttons as btns
-from ..types import generate_random_id, parse_message, peer_id
+from ..types import (
+    AsyncList,
+    Message,
+    Peer,
+    build_chat_map,
+    generate_random_id,
+    parse_message,
+    peer_id,
+)
+from ..types.buttons.reply_markup import ReplyMarkupType
 
 if TYPE_CHECKING:
     from .client import Client
@@ -24,7 +31,7 @@ async def send_message(
     html: Optional[str] = None,
     link_preview: bool = False,
     reply_to: Optional[int] = None,
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+    buttons: Optional[ReplyMarkupType] = None,
 ) -> Message:
     random_id = generate_random_id()
 
@@ -71,7 +78,7 @@ async def send_message(
             ),
             message=message,
             random_id=random_id,
-            reply_markup=btns.build_keyboard(buttons),
+            reply_markup=buttons.build() if buttons is not None else None,
             entities=entities,
             schedule_date=None,
             send_as=None,
@@ -121,7 +128,7 @@ async def edit_message(
     markdown: Optional[str] = None,
     html: Optional[str] = None,
     link_preview: bool = False,
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+    buttons: Optional[ReplyMarkupType] = None,
 ) -> Message:
     message, entities = parse_message(
         text=text, markdown=markdown, html=html, allow_empty=False
@@ -134,7 +141,7 @@ async def edit_message(
                 id=message_id,
                 message=message,
                 media=None,
-                reply_markup=btns.build_keyboard(buttons),
+                reply_markup=buttons.build() if buttons is not None else None,
                 entities=entities,
                 schedule_date=None,
             )

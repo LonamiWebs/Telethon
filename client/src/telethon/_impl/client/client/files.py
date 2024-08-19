@@ -17,14 +17,12 @@ from ..types import (
     OutFileLike,
     OutWrapper,
     Peer,
-)
-from ..types import buttons as btns
-from ..types import (
     expand_stripped_size,
     generate_random_id,
     parse_message,
     try_get_url_path,
 )
+from ..types.buttons.reply_markup import ReplyMarkupType
 
 if TYPE_CHECKING:
     from .client import Client
@@ -59,7 +57,7 @@ async def send_photo(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+    buttons: Optional[ReplyMarkupType] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -100,7 +98,7 @@ async def send_audio(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+    buttons: Optional[ReplyMarkupType] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -140,7 +138,7 @@ async def send_video(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+    buttons: Optional[ReplyMarkupType],
 ) -> Message:
     return await send_file(
         self,
@@ -189,7 +187,7 @@ async def send_file(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+    buttons: Optional[ReplyMarkupType],
 ) -> Message:
     message, entities = parse_message(
         text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
@@ -299,7 +297,7 @@ async def do_send_file(
     message: str,
     entities: Optional[list[abcs.MessageEntity]],
     reply_to: Optional[int],
-    buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+    buttons: Optional[ReplyMarkupType],
 ) -> Message:
     random_id = generate_random_id()
     return client._build_message_map(
@@ -319,7 +317,7 @@ async def do_send_file(
                 media=input_media,
                 message=message,
                 random_id=random_id,
-                reply_markup=btns.build_keyboard(buttons),
+                reply_markup=buttons.build() if buttons is not None else None,
                 entities=entities,
                 schedule_date=None,
                 send_as=None,

@@ -22,7 +22,12 @@ from .._impl.client.types import (
     RecentAction,
     User,
 )
-from .._impl.client.types.buttons import Button, InlineButton
+from .._impl.client.types.buttons import (
+    Button,
+    InlineButton,
+    ReplyInlineMarkup,
+    ReplyKeyboardMarkup,
+)
 from .._impl.session import ChannelRef, GroupRef, PeerRef, UserRef
 
 __all__ = [
@@ -42,6 +47,8 @@ __all__ = [
     "Message",
     "Participant",
     "PasswordToken",
+    "ReplyInlineMarkup",
+    "ReplyKeyboardMarkup",
     "RecentAction",
     "User",
     "Button",
