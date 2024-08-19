@@ -47,7 +47,7 @@ class ReplyKeyboardMarkup:
         self.persistent = persistent
         self.placeholder = placeholder
 
-    def build(self) -> abcs.ReplyMarkup:
+    def _build(self) -> abcs.ReplyMarkup:
         return types.ReplyKeyboardMarkup(
             resize=self.resize,
             single_use=self.single_use,
@@ -64,7 +64,7 @@ class ReplyInlineMarkup:
     def __init__(self, btns: list[Button] | list[list[Button]]) -> None:
         self._btns = build_keyboard_rows(btns)
 
-    def build(self) -> abcs.ReplyMarkup:
+    def _build(self) -> abcs.ReplyMarkup:
         return types.ReplyInlineMarkup(rows=self._btns)
 
 

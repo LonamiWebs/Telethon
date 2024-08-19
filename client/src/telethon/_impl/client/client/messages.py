@@ -78,7 +78,7 @@ async def send_message(
             ),
             message=message,
             random_id=random_id,
-            reply_markup=buttons.build() if buttons is not None else None,
+            reply_markup=buttons._build() if buttons is not None else None,
             entities=entities,
             schedule_date=None,
             send_as=None,
@@ -141,7 +141,7 @@ async def edit_message(
                 id=message_id,
                 message=message,
                 media=None,
-                reply_markup=buttons.build() if buttons is not None else None,
+                reply_markup=buttons._build() if buttons is not None else None,
                 entities=entities,
                 schedule_date=None,
             )
