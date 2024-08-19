@@ -83,9 +83,11 @@ class Any(Combinable):
         return self._filters
 
     async def __call__(self, event: Event) -> bool:
-        return any(
-            [await r if isawaitable(r := f(event)) else r for f in self._filters]
-        )
+        for f in self._filters:
+            if await r if isawaitable(r := f(event)) else r:
+                return True
+
+        return False
 
 
 class All(Combinable):
@@ -125,9 +127,11 @@ class All(Combinable):
         return self._filters
 
     async def __call__(self, event: Event) -> bool:
-        return all(
-            [await r if isawaitable(r := f(event)) else r for f in self._filters]
-        )
+        for f in self._filters:
+            if not (await r if isawaitable(r := f(event)) else r):
+                return False
+
+        return True
 
 
 class Not(Combinable):
