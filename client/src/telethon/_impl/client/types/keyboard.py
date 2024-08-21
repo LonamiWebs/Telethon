@@ -1,9 +1,10 @@
 from typing import Generic, Optional, TypeAlias, TypeVar
 
 from ...tl import abcs, types
-from .buttons.button import Button
+from .buttons import Button, InlineButton
 
 AnyButton = TypeVar("AnyButton", bound=Button)
+AnyInlineButton = TypeVar("AnyInlineButton", bound=InlineButton)
 
 
 def _build_keyboard_rows(
@@ -45,10 +46,12 @@ class Keyboard(Generic[AnyButton]):
         )
 
 
-class InlineKeyboard(Generic[AnyButton]):
+class InlineKeyboard(Generic[AnyInlineButton]):
     __slots__ = ("_raw",)
 
-    def __init__(self, buttons: list[AnyButton] | list[list[AnyButton]]) -> None:
+    def __init__(
+        self, buttons: list[AnyInlineButton] | list[list[AnyInlineButton]]
+    ) -> None:
         self._raw = types.ReplyInlineMarkup(rows=_build_keyboard_rows(buttons))
 
 
