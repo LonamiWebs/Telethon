@@ -23,7 +23,7 @@ from ...session import (
 )
 from ...tl import Request, abcs
 from ..events import Event
-from ..events.filters import Filter
+from ..events.filters import FilterType
 from ..types import (
     AdminRight,
     AlbumBuilder,
@@ -36,6 +36,7 @@ from ..types import (
     Group,
     InFileLike,
     InlineResult,
+    KeyboardType,
     LoginToken,
     Message,
     OutFileLike,
@@ -45,7 +46,6 @@ from ..types import (
     RecentAction,
     User,
 )
-from ..types import buttons as btns
 from .auth import (
     bot_sign_in,
     check_password,
@@ -216,6 +216,7 @@ class Client:
         datacenter: Optional[DataCenter] = None,
         connector: Optional[Connector] = None,
     ) -> None:
+        assert isinstance(__package__, str)
         base_logger = logger or logging.getLogger(__package__[: __package__.index(".")])
 
         self._sender: Optional[Sender] = None
@@ -251,12 +252,13 @@ class Client:
         self._message_box = MessageBox(base_logger=base_logger)
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
-        self._updates: asyncio.Queue[
-            tuple[abcs.Update, dict[int, Peer]]
-        ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
+        self._updates: asyncio.Queue[tuple[abcs.Update, dict[int, Peer]]] = (
+            asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
+        )
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._handlers: dict[
-            Type[Event], list[tuple[Callable[[Any], Awaitable[Any]], Optional[Filter]]]
+            Type[Event],
+            list[tuple[Callable[[Any], Awaitable[Any]], Optional[FilterType]]],
         ] = {}
         self._check_all_handlers = check_all_handlers
 
@@ -270,7 +272,7 @@ class Client:
         handler: Callable[[AnyEvent], Awaitable[Any]],
         /,
         event_cls: Type[AnyEvent],
-        filter: Optional[Filter] = None,
+        filter: Optional[FilterType] = None,
     ) -> None:
         """
         Register a callable to be invoked when the provided event type occurs.
@@ -571,7 +573,7 @@ class Client:
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Edit a message.
@@ -586,10 +588,10 @@ class Client:
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :ref:`formatting`.
-        :param buttons:
-            The buttons to use for the message.
+        :param keyboard:
+            The keyboard to use for the message.
 
-            Only bot accounts can send buttons.
+            Only bot accounts can send keyboard.
 
         :return: The edited message.
 
@@ -615,7 +617,7 @@ class Client:
             markdown=markdown,
             html=html,
             link_preview=link_preview,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def forward_messages(
@@ -759,7 +761,7 @@ class Client:
 
     def get_handler_filter(
         self, handler: Callable[[AnyEvent], Awaitable[Any]], /
-    ) -> Optional[Filter]:
+    ) -> Optional[FilterType]:
         """
         Get the filter associated to the given event handler.
 
@@ -1034,7 +1036,7 @@ class Client:
         return await is_authorized(self)
 
     def on(
-        self, event_cls: Type[AnyEvent], /, filter: Optional[Filter] = None
+        self, event_cls: Type[AnyEvent], /, filter: Optional[FilterType] = None
     ) -> Callable[
         [Callable[[AnyEvent], Awaitable[Any]]], Callable[[AnyEvent], Awaitable[Any]]
     ]:
@@ -1393,7 +1395,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Send an audio file.
@@ -1437,7 +1439,7 @@ class Client:
             caption_markdown=caption_markdown,
             caption_html=caption_html,
             reply_to=reply_to,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def send_file(
@@ -1466,7 +1468,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+        keyboard: Optional[KeyboardType],
     ) -> Message:
         """
         Send any type of file with any amount of attributes.
@@ -1620,7 +1622,7 @@ class Client:
             caption_markdown=caption_markdown,
             caption_html=caption_html,
             reply_to=reply_to,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def send_message(
@@ -1633,7 +1635,7 @@ class Client:
         html: Optional[str] = None,
         link_preview: bool = False,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Send a message.
@@ -1649,10 +1651,10 @@ class Client:
         :param reply_to:
             The message identifier of the message to reply to.
 
-        :param buttons:
-            The buttons to use for the message.
+        :param keyboard:
+            The keyboard to use for the message.
 
-            Only bot accounts can send buttons.
+            Only bot accounts can send keyboard.
 
         .. rubric:: Example
 
@@ -1668,7 +1670,7 @@ class Client:
             html=html,
             link_preview=link_preview,
             reply_to=reply_to,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def send_photo(
@@ -1687,7 +1689,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Send a photo file.
@@ -1733,7 +1735,7 @@ class Client:
             caption_markdown=caption_markdown,
             caption_html=caption_html,
             reply_to=reply_to,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def send_video(
@@ -1755,7 +1757,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        buttons: Optional[list[btns.Button] | list[list[btns.Button]]],
+        keyboard: Optional[KeyboardType],
     ) -> Message:
         """
         Send a video file.
@@ -1802,7 +1804,7 @@ class Client:
             caption_markdown=caption_markdown,
             caption_html=caption_html,
             reply_to=reply_to,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def set_chat_default_restrictions(
@@ -1851,7 +1853,7 @@ class Client:
         self,
         handler: Callable[[AnyEvent], Awaitable[Any]],
         /,
-        filter: Optional[Filter] = None,
+        filter: Optional[FilterType] = None,
     ) -> None:
         """
         Set the filter to use for the given event handler.

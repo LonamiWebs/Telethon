@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import time
-from typing import TYPE_CHECKING, Any, Optional, Self, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Self, Sequence, cast
 
 from ...session import PeerRef
 from ...tl import abcs, types
@@ -12,8 +12,9 @@ from ..parsers import (
     parse_html_message,
     parse_markdown_message,
 )
-from .buttons import Button, as_concrete_row, create_button
+from .buttons import Button, create_button
 from .file import File
+from .keyboard import KeyboardType
 from .meta import NoPublicConstructor
 from .peer import Peer, expand_peer, peer_id
 
@@ -333,7 +334,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[list[Button] | list[list[Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.send_message`.
@@ -342,7 +343,7 @@ class Message(metaclass=NoPublicConstructor):
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :meth:`~telethon.Client.send_message`.
-        :param buttons: See :meth:`~telethon.Client.send_message`.
+        :param keyboard: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.send_message(
             self.chat,
@@ -350,7 +351,7 @@ class Message(metaclass=NoPublicConstructor):
             markdown=markdown,
             html=html,
             link_preview=link_preview,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def reply(
@@ -360,7 +361,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[list[Button] | list[list[Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.send_message` with the ``reply_to`` parameter set to this message.
@@ -369,7 +370,7 @@ class Message(metaclass=NoPublicConstructor):
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :meth:`~telethon.Client.send_message`.
-        :param buttons: See :meth:`~telethon.Client.send_message`.
+        :param keyboard: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.send_message(
             self.chat,
@@ -378,7 +379,7 @@ class Message(metaclass=NoPublicConstructor):
             html=html,
             link_preview=link_preview,
             reply_to=self.id,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def delete(self, *, revoke: bool = True) -> None:
@@ -395,7 +396,7 @@ class Message(metaclass=NoPublicConstructor):
         markdown: Optional[str] = None,
         html: Optional[str] = None,
         link_preview: bool = False,
-        buttons: Optional[list[Button] | list[list[Button]]] = None,
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Alias for :meth:`telethon.Client.edit_message`.
@@ -404,7 +405,7 @@ class Message(metaclass=NoPublicConstructor):
         :param markdown: See :ref:`formatting`.
         :param html: See :ref:`formatting`.
         :param link_preview: See :meth:`~telethon.Client.send_message`.
-        :param buttons: See :meth:`~telethon.Client.send_message`.
+        :param keyboard: See :meth:`~telethon.Client.send_message`.
         """
         return await self._client.edit_message(
             self.chat,
@@ -413,7 +414,7 @@ class Message(metaclass=NoPublicConstructor):
             markdown=markdown,
             html=html,
             link_preview=link_preview,
-            buttons=buttons,
+            keyboard=keyboard,
         )
 
     async def forward(self, target: Peer | PeerRef) -> Message:
@@ -476,8 +477,11 @@ class Message(metaclass=NoPublicConstructor):
             return None
 
         return [
-            [create_button(self, button) for button in row.buttons]
-            for row in map(as_concrete_row, markup.rows)
+            [
+                create_button(self, button)
+                for button in cast(types.KeyboardButtonRow, row).buttons
+            ]
+            for row in markup.rows
         ]
 
     @property

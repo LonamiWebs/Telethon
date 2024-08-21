@@ -9,7 +9,7 @@ from ...session import Gap
 from ...tl import abcs
 from ..events import Continue
 from ..events import Event as EventBase
-from ..events.filters import Filter
+from ..events.filters import FilterType
 from ..types import build_chat_map
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN = 300
 
 
 def on(
-    self: Client, event_cls: Type[Event], /, filter: Optional[Filter] = None
+    self: Client, event_cls: Type[Event], /, filter: Optional[FilterType] = None
 ) -> Callable[[Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]]:
     def wrapper(
         handler: Callable[[Event], Awaitable[Any]],
@@ -37,7 +37,7 @@ def add_event_handler(
     handler: Callable[[Event], Awaitable[Any]],
     /,
     event_cls: Type[Event],
-    filter: Optional[Filter] = None,
+    filter: Optional[FilterType] = None,
 ) -> None:
     self._handlers.setdefault(event_cls, []).append((handler, filter))
 
@@ -55,7 +55,7 @@ def remove_event_handler(
 
 def get_handler_filter(
     self: Client, handler: Callable[[Event], Awaitable[Any]], /
-) -> Optional[Filter]:
+) -> Optional[FilterType]:
     for handlers in self._handlers.values():
         for h, f in handlers:
             if h == handler:
@@ -67,7 +67,7 @@ def set_handler_filter(
     self: Client,
     handler: Callable[[Event], Awaitable[Any]],
     /,
-    filter: Optional[Filter] = None,
+    filter: Optional[FilterType] = None,
 ) -> None:
     for handlers in self._handlers.values():
         for i, (h, _) in enumerate(handlers):
