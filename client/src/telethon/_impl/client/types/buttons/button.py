@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ..message import Message
 
 
-ButtonType: TypeAlias = (
+RawButtonType: TypeAlias = (
     types.KeyboardButton
     | types.KeyboardButtonUrl
     | types.KeyboardButtonCallback
@@ -53,7 +53,7 @@ class Button:
                 f"Can't instantiate abstract class {self.__class__.__name__}"
             )
 
-        self._raw: ButtonType = types.KeyboardButton(text=text)
+        self._raw: RawButtonType = types.KeyboardButton(text=text)
         self._msg: Optional[weakref.ReferenceType[Message]] = None
 
     @property
