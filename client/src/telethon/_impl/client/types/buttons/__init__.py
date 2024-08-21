@@ -7,7 +7,6 @@ from ....tl import abcs, types
 from .button import Button
 from .callback import Callback
 from .inline_button import InlineButton
-from .keyboard import InlineKeyboard, Keyboard, KeyboardType
 from .request_geo_location import RequestGeoLocation
 from .request_phone import RequestPhone
 from .request_poll import RequestPoll
@@ -17,11 +16,6 @@ from .url import Url
 
 if TYPE_CHECKING:
     from ..message import Message
-
-
-def as_concrete_row(row: abcs.KeyboardButtonRow) -> types.KeyboardButtonRow:
-    assert isinstance(row, types.KeyboardButtonRow)
-    return row
 
 
 def create_button(message: Message, raw: abcs.KeyboardButton) -> Button:
@@ -80,9 +74,6 @@ __all__ = [
     "Button",
     "Callback",
     "InlineButton",
-    "InlineKeyboard",
-    "Keyboard",
-    "KeyboardType",
     "RequestGeoLocation",
     "RequestPhone",
     "RequestPoll",

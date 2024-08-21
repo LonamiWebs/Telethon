@@ -13,6 +13,7 @@ from ..types import (
     AsyncList,
     File,
     InFileLike,
+    KeyboardType,
     Message,
     OutFileLike,
     OutWrapper,
@@ -22,7 +23,6 @@ from ..types import (
     parse_message,
     try_get_url_path,
 )
-from ..types.buttons import KeyboardType
 
 if TYPE_CHECKING:
     from .client import Client

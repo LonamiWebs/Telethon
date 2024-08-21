@@ -36,6 +36,7 @@ from ..types import (
     Group,
     InFileLike,
     InlineResult,
+    KeyboardType,
     LoginToken,
     Message,
     OutFileLike,
@@ -45,7 +46,6 @@ from ..types import (
     RecentAction,
     User,
 )
-from ..types.buttons import KeyboardType
 from .auth import (
     bot_sign_in,
     check_password,

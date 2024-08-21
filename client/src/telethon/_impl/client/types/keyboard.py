@@ -1,7 +1,7 @@
 from typing import Optional, TypeAlias
 
-from ....tl import abcs, types
-from .button import Button
+from ...tl import abcs, types
+from .buttons.button import Button
 
 
 def _build_keyboard_rows(

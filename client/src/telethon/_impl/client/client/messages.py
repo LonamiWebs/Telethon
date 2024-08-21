@@ -8,6 +8,7 @@ from ...session import ChannelRef, PeerRef
 from ...tl import abcs, functions, types
 from ..types import (
     AsyncList,
+    KeyboardType,
     Message,
     Peer,
     build_chat_map,
@@ -15,7 +16,6 @@ from ..types import (
     parse_message,
     peer_id,
 )
-from ..types.buttons import KeyboardType
 
 if TYPE_CHECKING:
     from .client import Client

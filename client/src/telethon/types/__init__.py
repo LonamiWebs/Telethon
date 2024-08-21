@@ -13,7 +13,9 @@ from .._impl.client.types import (
     Draft,
     File,
     Group,
+    InlineKeyboard,
     InlineResult,
+    Keyboard,
     LoginToken,
     Message,
     Participant,
@@ -22,12 +24,7 @@ from .._impl.client.types import (
     RecentAction,
     User,
 )
-from .._impl.client.types.buttons import (
-    Button,
-    InlineButton,
-    InlineKeyboard,
-    Keyboard,
-)
+from .._impl.client.types.buttons import Button, InlineButton
 from .._impl.session import ChannelRef, GroupRef, PeerRef, UserRef
 
 __all__ = [

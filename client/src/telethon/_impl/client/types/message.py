@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import time
-from typing import TYPE_CHECKING, Any, Optional, Self, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Self, Sequence, cast
 
 from ...session import PeerRef
 from ...tl import abcs, types
@@ -12,8 +12,9 @@ from ..parsers import (
     parse_html_message,
     parse_markdown_message,
 )
-from .buttons import Button, KeyboardType, as_concrete_row, create_button
+from .buttons import Button, create_button
 from .file import File
+from .keyboard import KeyboardType
 from .meta import NoPublicConstructor
 from .peer import Peer, expand_peer, peer_id
 
@@ -476,8 +477,11 @@ class Message(metaclass=NoPublicConstructor):
             return None
 
         return [
-            [create_button(self, button) for button in row.buttons]
-            for row in map(as_concrete_row, markup.rows)
+            [
+                create_button(self, button)
+                for button in cast(types.KeyboardButtonRow, row).buttons
+            ]
+            for row in markup.rows
         ]
 
     @property
