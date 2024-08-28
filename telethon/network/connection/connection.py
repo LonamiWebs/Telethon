@@ -116,9 +116,15 @@ class Connection(abc.ABC):
             # python_socks internal errors are not inherited from
             # builtin IOError (just from Exception). Instead of adding those
             # in exceptions clauses everywhere through the code, we
-            # rather monkey-patch them in place.
+            # rather monkey-patch them in place. Keep in mind that
+            # ProxyError takes error_code as keyword argument.
 
-            python_socks._errors.ProxyError = ConnectionError
+            class ConnectionErrorExtra(ConnectionError):
+                def __init__(self, message, error_code=None):
+                    super().__init__()
+                    self.error_code = error_code
+
+            python_socks._errors.ProxyError = ConnectionErrorExtra
             python_socks._errors.ProxyConnectionError = ConnectionError
             python_socks._errors.ProxyTimeoutError = ConnectionError
 
