@@ -121,7 +121,7 @@ class Connection(abc.ABC):
 
             class ConnectionErrorExtra(ConnectionError):
                 def __init__(self, message, error_code=None):
-                    super().__init__()
+                    super().__init__(message)
                     self.error_code = error_code
 
             python_socks._errors.ProxyError = ConnectionErrorExtra
