@@ -5,7 +5,7 @@ from typing import Awaitable, TypeAlias
 
 from ..event import Event
 
-FilterType: TypeAlias = Callable[[Event], bool | Awaitable[bool]] | "Combinable"
+FilterType: TypeAlias = "Callable[[Event], bool | Awaitable[bool]] | Combinable"
 
 
 class Combinable(abc.ABC):
