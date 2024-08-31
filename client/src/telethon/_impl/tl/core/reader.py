@@ -1,15 +1,15 @@
 import functools
 import struct
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Optional, Protocol, Type, runtime_checkable
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 if TYPE_CHECKING:
-
-    @runtime_checkable
-    class Buffer(Protocol):
-        def __buffer__(self, flags: int, /) -> memoryview: ...
+    from typing import Protocol
 
     from .serializable import Serializable
+
+    class Buffer(Protocol):
+        def __buffer__(self, flags: int, /) -> memoryview: ...
 
 
 def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
