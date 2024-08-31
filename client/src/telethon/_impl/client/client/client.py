@@ -214,7 +214,7 @@ class Client:
         datacenter: Optional[DataCenter] = None,
         connector: Optional[Connector] = None,
     ) -> None:
-        assert isinstance(__package__, str)
+        assert __package__
         base_logger = logger or logging.getLogger(__package__[: __package__.index(".")])
 
         self._sender: Optional[Sender] = None
