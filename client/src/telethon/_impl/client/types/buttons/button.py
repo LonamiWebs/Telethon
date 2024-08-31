@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import weakref
 from typing import TYPE_CHECKING, Optional, TypeAlias
 
@@ -29,7 +30,7 @@ RawButtonType: TypeAlias = (
 )
 
 
-class Button:
+class Button(abc.ABC):
     """
     The button base type.
 

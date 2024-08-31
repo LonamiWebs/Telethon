@@ -110,8 +110,6 @@ from .updates import (
 from .users import get_contacts, get_me, resolve_peers, resolve_phone, resolve_username
 
 Return = TypeVar("Return")
-T = TypeVar("T")
-AnyEvent = TypeVar("AnyEvent", bound=Event)
 
 
 class Client:
@@ -269,9 +267,9 @@ class Client:
 
     def add_event_handler(
         self,
-        handler: Callable[[AnyEvent], Awaitable[Any]],
+        handler: Callable[[Event], Awaitable[Any]],
         /,
-        event_cls: Type[AnyEvent],
+        event_cls: Type[Event],
         filter: Optional[FilterType] = None,
     ) -> None:
         """
@@ -760,7 +758,7 @@ class Client:
         return get_file_bytes(self, media)
 
     def get_handler_filter(
-        self, handler: Callable[[AnyEvent], Awaitable[Any]], /
+        self, handler: Callable[[Event], Awaitable[Any]], /
     ) -> Optional[FilterType]:
         """
         Get the filter associated to the given event handler.
@@ -1036,9 +1034,9 @@ class Client:
         return await is_authorized(self)
 
     def on(
-        self, event_cls: Type[AnyEvent], /, filter: Optional[FilterType] = None
+        self, event_cls: Type[Event], /, filter: Optional[FilterType] = None
     ) -> Callable[
-        [Callable[[AnyEvent], Awaitable[Any]]], Callable[[AnyEvent], Awaitable[Any]]
+        [Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]
     ]:
         """
         Register the decorated function to be invoked when the provided event type occurs.
@@ -1161,7 +1159,7 @@ class Client:
         await read_message(self, chat, message_id)
 
     def remove_event_handler(
-        self, handler: Callable[[AnyEvent], Awaitable[Any]], /
+        self, handler: Callable[[Event], Awaitable[Any]], /
     ) -> None:
         """
         Remove the handler as a function to be called when events occur.
@@ -1851,7 +1849,7 @@ class Client:
 
     def set_handler_filter(
         self,
-        handler: Callable[[AnyEvent], Awaitable[Any]],
+        handler: Callable[[Event], Awaitable[Any]],
         /,
         filter: Optional[FilterType] = None,
     ) -> None:

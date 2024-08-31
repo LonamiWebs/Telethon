@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ..client.client import Client
 
 
-class Event(metaclass=NoPublicConstructor):
+class Event(abc.ABC, metaclass=NoPublicConstructor):
     """
     The base type of all events.
     """

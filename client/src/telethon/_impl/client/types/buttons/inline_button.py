@@ -1,7 +1,9 @@
+import abc
+
 from .button import Button
 
 
-class InlineButton(Button):
+class InlineButton(Button, abc.ABC):
     """
     Inline button base type.
 
