@@ -1,7 +1,7 @@
 import functools
 import struct
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 if TYPE_CHECKING:
     from typing import Protocol
@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 
     class Buffer(Protocol):
         def __buffer__(self, flags: int, /) -> memoryview: ...
+
+
+SerializableType = TypeVar("SerializableType", bound="Serializable")
 
 
 def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
@@ -76,7 +79,7 @@ class Reader:
 
     _get_ty = staticmethod(_bootstrap_get_ty)
 
-    def read_serializable(self, cls: Type["Serializable"]) -> "Serializable":
+    def read_serializable(self, cls: Type[SerializableType]) -> SerializableType:
         # Calls to this method likely need to ignore "type-abstract".
         # See https://github.com/python/mypy/issues/4717.
         # Unfortunately `typing.cast` would add a tiny amount of runtime overhead
@@ -91,8 +94,10 @@ class Reader:
 
 
 @functools.cache
-def single_deserializer(cls: Type["Serializable"]) -> Callable[[bytes], "Serializable"]:
-    def deserializer(body: bytes) -> "Serializable":
+def single_deserializer(
+    cls: Type[SerializableType],
+) -> Callable[[bytes], SerializableType]:
+    def deserializer(body: bytes) -> SerializableType:
         return Reader(body).read_serializable(cls)
 
     return deserializer
@@ -100,9 +105,9 @@ def single_deserializer(cls: Type["Serializable"]) -> Callable[[bytes], "Seriali
 
 @functools.cache
 def list_deserializer(
-    cls: Type["Serializable"],
-) -> Callable[[bytes], list["Serializable"]]:
-    def deserializer(body: bytes) -> list["Serializable"]:
+    cls: Type[SerializableType],
+) -> Callable[[bytes], list[SerializableType]]:
+    def deserializer(body: bytes) -> list[SerializableType]:
         reader = Reader(body)
         vec_id, length = reader.read_fmt("<ii", 8)
         assert vec_id == 0x1CB5C415 and length >= 0
