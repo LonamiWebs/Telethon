@@ -31,7 +31,7 @@ class Combinable(abc.ABC):
         rhs = other.filters if isinstance(other, All) else (other,)
         return All(*lhs, *rhs)
 
-    def __invert__(self) -> "Not" | FilterType:
+    def __invert__(self) -> "Not | FilterType":
         return self.filter if isinstance(self, Not) else Not(self)
 
     @abc.abstractmethod
