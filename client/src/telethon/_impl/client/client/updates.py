@@ -3,19 +3,17 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable
 from inspect import isawaitable
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Type
 
 from ...session import Gap
 from ...tl import abcs
-from ..events import Continue
-from ..events import Event as EventBase
+from ..events import Continue, Event
 from ..events.filters import FilterType
 from ..types import build_chat_map
 
 if TYPE_CHECKING:
     from .client import Client
 
-Event = TypeVar("Event", bound=EventBase)
 
 UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN = 300
 

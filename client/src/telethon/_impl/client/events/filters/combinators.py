@@ -1,12 +1,11 @@
 import abc
-import typing
 from collections.abc import Callable
 from inspect import isawaitable
 from typing import Awaitable, TypeAlias
 
 from ..event import Event
 
-FilterType: TypeAlias = Callable[[Event], bool | Awaitable[bool]]
+FilterType: TypeAlias = "Callable[[Event], bool | Awaitable[bool]] | Combinable"
 
 
 class Combinable(abc.ABC):
@@ -22,24 +21,18 @@ class Combinable(abc.ABC):
     Multiple ``~`` will toggle between using :class:`Not` and not using it.
     """
 
-    def __or__(self, other: typing.Any) -> FilterType:
-        if not callable(other):
-            return NotImplemented
-
+    def __or__(self, other: FilterType) -> "Any":
         lhs = self.filters if isinstance(self, Any) else (self,)
         rhs = other.filters if isinstance(other, Any) else (other,)
-        return Any(*lhs, *rhs)  # type: ignore [arg-type]
+        return Any(*lhs, *rhs)
 
-    def __and__(self, other: typing.Any) -> FilterType:
-        if not callable(other):
-            return NotImplemented
-
+    def __and__(self, other: FilterType) -> "All":
         lhs = self.filters if isinstance(self, All) else (self,)
         rhs = other.filters if isinstance(other, All) else (other,)
-        return All(*lhs, *rhs)  # type: ignore [arg-type]
+        return All(*lhs, *rhs)
 
-    def __invert__(self) -> FilterType:
-        return self.filter if isinstance(self, Not) else Not(self)  # type: ignore [return-value]
+    def __invert__(self) -> "Not | FilterType":
+        return self.filter if isinstance(self, Not) else Not(self)
 
     @abc.abstractmethod
     async def __call__(self, event: Event) -> bool:

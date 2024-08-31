@@ -4,10 +4,15 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 if TYPE_CHECKING:
+    from typing import Protocol
+
     from .serializable import Serializable
 
+    class Buffer(Protocol):
+        def __buffer__(self, flags: int, /) -> memoryview: ...
 
-T = TypeVar("T", bound="Serializable")
+
+SerializableType = TypeVar("SerializableType", bound="Serializable")
 
 
 def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
@@ -33,7 +38,7 @@ def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
 class Reader:
     __slots__ = ("_view", "_pos", "_len")
 
-    def __init__(self, buffer: bytes | bytearray | memoryview) -> None:
+    def __init__(self, buffer: "Buffer") -> None:
         self._view = (
             memoryview(buffer) if not isinstance(buffer, memoryview) else buffer
         )
@@ -74,7 +79,7 @@ class Reader:
 
     _get_ty = staticmethod(_bootstrap_get_ty)
 
-    def read_serializable(self, cls: Type[T]) -> T:
+    def read_serializable(self, cls: Type[SerializableType]) -> SerializableType:
         # Calls to this method likely need to ignore "type-abstract".
         # See https://github.com/python/mypy/issues/4717.
         # Unfortunately `typing.cast` would add a tiny amount of runtime overhead
@@ -89,16 +94,20 @@ class Reader:
 
 
 @functools.cache
-def single_deserializer(cls: Type[T]) -> Callable[[bytes], T]:
-    def deserializer(body: bytes) -> T:
+def single_deserializer(
+    cls: Type[SerializableType],
+) -> Callable[[bytes], SerializableType]:
+    def deserializer(body: bytes) -> SerializableType:
         return Reader(body).read_serializable(cls)
 
     return deserializer
 
 
 @functools.cache
-def list_deserializer(cls: Type[T]) -> Callable[[bytes], list[T]]:
-    def deserializer(body: bytes) -> list[T]:
+def list_deserializer(
+    cls: Type[SerializableType],
+) -> Callable[[bytes], list[SerializableType]]:
+    def deserializer(body: bytes) -> list[SerializableType]:
         reader = Reader(body)
         vec_id, length = reader.read_fmt("<ii", 8)
         assert vec_id == 0x1CB5C415 and length >= 0
