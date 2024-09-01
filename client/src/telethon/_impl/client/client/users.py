@@ -66,9 +66,9 @@ async def resolve_username(self: Client, username: str, /) -> Peer:
 
 async def resolve_peers(self: Client, peers: Sequence[Peer | PeerRef], /) -> list[Peer]:
     refs: list[PeerRef] = []
-    input_users: list[types.InputUser] = []
+    input_users: list[abcs.InputUser] = []
     input_chats: list[int] = []
-    input_channels: list[types.InputChannel] = []
+    input_channels: list[abcs.InputChannel] = []
 
     for peer in peers:
         peer = peer._ref
