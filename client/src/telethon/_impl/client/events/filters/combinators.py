@@ -35,7 +35,7 @@ class Combinable(abc.ABC):
         return self.filter if isinstance(self, Not) else Not(self)
 
     @abc.abstractmethod
-    async def __call__(self, event: Event) -> bool:
+    def __call__(self, event: Event) -> bool | Awaitable[bool]:
         pass
 
 

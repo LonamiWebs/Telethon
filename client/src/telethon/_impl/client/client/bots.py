@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Optional, Self
 
 from ...session import PeerRef, UserRef
-from ...tl import functions, types
+from ...tl import abcs, functions, types
 from ..types import InlineResult, NoPublicConstructor, Peer, User
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ class InlineResults(metaclass=NoPublicConstructor):
     def __init__(
         self,
         client: Client,
-        bot: types.InputUser,
+        bot: abcs.InputUser,
         query: str,
         peer: Optional[PeerRef],
     ):

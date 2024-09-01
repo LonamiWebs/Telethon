@@ -1,14 +1,14 @@
-from typing import Optional, TypeAlias
+from typing import Optional, TypeAlias, TypeVar
 
 from ...tl import abcs, types
 from .buttons import Button, InlineButton
 
+AnyButton = TypeVar("AnyButton", bound=Button)
+AnyInlineButton = TypeVar("AnyInlineButton", bound=InlineButton)
+
 
 def _build_keyboard_rows(
-    btns: list[Button]
-    | list[list[Button]]
-    | list[InlineButton]
-    | list[list[InlineButton]],
+    btns: list[AnyButton] | list[list[AnyButton]],
 ) -> list[abcs.KeyboardButtonRow]:
     # list[button] -> list[list[button]]
     # This does allow for "invalid" inputs (mixing lists and non-lists), but that's acceptable.
@@ -29,7 +29,7 @@ class Keyboard:
 
     def __init__(
         self,
-        buttons: list[Button] | list[list[Button]],
+        buttons: list[AnyButton] | list[list[AnyButton]],
         resize: bool,
         single_use: bool,
         selective: bool,
@@ -49,7 +49,9 @@ class Keyboard:
 class InlineKeyboard:
     __slots__ = ("_raw",)
 
-    def __init__(self, buttons: list[InlineButton] | list[list[InlineButton]]) -> None:
+    def __init__(
+        self, buttons: list[AnyInlineButton] | list[list[AnyInlineButton]]
+    ) -> None:
         self._raw = types.ReplyInlineMarkup(rows=_build_keyboard_rows(buttons))
 
 
