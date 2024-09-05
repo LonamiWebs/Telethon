@@ -221,7 +221,7 @@ class _MessagesIter(RequestIter):
         #
         # We also assume the API will always return, at least, one message if
         # there is more to fetch.
-        if not r.messages or r.messages[0].id <= self.request.limit:
+        if not r.messages or (not self.reverse and r.messages[0].id <= self.request.limit):
             return True
 
         # Get the last message that's not empty (in some rare cases
