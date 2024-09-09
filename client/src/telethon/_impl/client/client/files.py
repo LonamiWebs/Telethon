@@ -138,7 +138,7 @@ async def send_video(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    keyboard: Optional[KeyboardType],
+    keyboard: Optional[KeyboardType] = None,
 ) -> Message:
     return await send_file(
         self,
@@ -187,7 +187,7 @@ async def send_file(
     caption_markdown: Optional[str] = None,
     caption_html: Optional[str] = None,
     reply_to: Optional[int] = None,
-    keyboard: Optional[KeyboardType],
+    keyboard: Optional[KeyboardType] = None,
 ) -> Message:
     message, entities = parse_message(
         text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
