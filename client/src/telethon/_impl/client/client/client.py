@@ -1466,7 +1466,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        keyboard: Optional[KeyboardType],
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Send any type of file with any amount of attributes.
@@ -1755,7 +1755,7 @@ class Client:
         caption_markdown: Optional[str] = None,
         caption_html: Optional[str] = None,
         reply_to: Optional[int] = None,
-        keyboard: Optional[KeyboardType],
+        keyboard: Optional[KeyboardType] = None,
     ) -> Message:
         """
         Send a video file.
