@@ -16,7 +16,7 @@ For that, you can use **events**.
     .. code-block:: python
 
         import logging
-        logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
+        logging.basicConfig(format='[%(levelname) %(asctime)s] %(name)s: %(message)s',
                             level=logging.WARNING)
 
 
