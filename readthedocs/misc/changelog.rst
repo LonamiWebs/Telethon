@@ -13,6 +13,32 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.37)
+=================
+
++------------------------+
+| Scheme layer used: 188 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=181&to=188>`__.
+
+Additions
+~~~~~~~~~
+
+* Support for CDN downloads should be back. Telethon still prefers no CDN by default.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``FloodWaitPremium`` should now be handled like any other floodwaits.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixed edge-case when using ``get_messages(..., reverse=True)``.
+* ``ConnectionError`` when using proxies should be raised properly.
+
+
 New layer (v1.36)
 =================
 
