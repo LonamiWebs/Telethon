@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pytest import mark, raises
+
 from telethon_generator.tl_parser import Type
 
 
