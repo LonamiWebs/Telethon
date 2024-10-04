@@ -53,9 +53,7 @@ class ParticipantList(AsyncList[Participant]):
 
             seen_count = len(self._seen)
             for p in chanp.participants:
-                part = Participant._from_raw_channel(
-                    self._client, self._peer, p, chat_map
-                )
+                part = Participant._from_raw_channel(self._client, self._peer, p, chat_map)
                 pid = part._peer_id()
                 if pid not in self._seen:
                     self._seen.add(pid)
@@ -66,9 +64,7 @@ class ParticipantList(AsyncList[Participant]):
             self._done = len(self._seen) == seen_count
 
         else:
-            chatp = await self._client(
-                functions.messages.get_full_chat(chat_id=self._peer._to_input_chat())
-            )
+            chatp = await self._client(functions.messages.get_full_chat(chat_id=self._peer._to_input_chat()))
             assert isinstance(chatp, types.messages.ChatFull)
             assert isinstance(chatp.full_chat, types.ChatFull)
 
@@ -87,17 +83,14 @@ class ParticipantList(AsyncList[Participant]):
                     )
             elif isinstance(participants, types.ChatParticipants):
                 self._buffer.extend(
-                    Participant._from_raw_chat(self._client, self._peer, p, chat_map)
-                    for p in participants.participants
+                    Participant._from_raw_chat(self._client, self._peer, p, chat_map) for p in participants.participants
                 )
 
             self._total = len(self._buffer)
             self._done = True
 
 
-def get_participants(
-    self: Client, chat: Group | Channel | GroupRef | ChannelRef, /
-) -> AsyncList[Participant]:
+def get_participants(self: Client, chat: Group | Channel | GroupRef | ChannelRef, /) -> AsyncList[Participant]:
     return ParticipantList(self, chat._ref)
 
 
@@ -137,9 +130,7 @@ class RecentActionList(AsyncList[RecentAction]):
             self._offset = min(e.id for e in self._buffer)
 
 
-def get_admin_log(
-    self: Client, chat: Group | Channel | GroupRef | ChannelRef, /
-) -> AsyncList[RecentAction]:
+def get_admin_log(self: Client, chat: Group | Channel | GroupRef | ChannelRef, /) -> AsyncList[RecentAction]:
     return RecentActionList(self, chat._ref)
 
 
@@ -174,11 +165,7 @@ class ProfilePhotoList(AsyncList[File]):
             else:
                 raise RuntimeError("unexpected case")
 
-            self._buffer.extend(
-                filter(
-                    None, (File._try_from_raw_photo(self._client, p) for p in photos)
-                )
-            )
+            self._buffer.extend(filter(None, (File._try_from_raw_photo(self._client, p) for p in photos)))
 
 
 def get_profile_photos(self: Client, peer: Peer | PeerRef, /) -> AsyncList[File]:
@@ -256,11 +243,7 @@ async def set_chat_default_restrictions(
     *,
     until: Optional[datetime.datetime] = None,
 ) -> None:
-    banned_rights = ChatRestriction._set_to_raw(
-        set(restrictions), int(until.timestamp()) if until else 0x7FFFFFFF
-    )
+    banned_rights = ChatRestriction._set_to_raw(set(restrictions), int(until.timestamp()) if until else 0x7FFFFFFF)
     await self(
-        functions.messages.edit_chat_default_banned_rights(
-            peer=chat._ref._to_input_peer(), banned_rights=banned_rights
-        )
+        functions.messages.edit_chat_default_banned_rights(peer=chat._ref._to_input_peer(), banned_rights=banned_rights)
     )

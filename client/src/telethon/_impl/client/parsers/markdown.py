@@ -82,9 +82,7 @@ def parse(message: str) -> tuple[str, list[MessageEntity]]:
         else:
             for entity in reversed(entities):
                 if isinstance(entity, ty):
-                    setattr(
-                        entity, "length", len(message) - getattr(entity, "offset", 0)
-                    )
+                    setattr(entity, "length", len(message) - getattr(entity, "offset", 0))
                     break
 
     parsed = MARKDOWN.parse(add_surrogate(message.strip()))
@@ -103,25 +101,15 @@ def parse(message: str) -> tuple[str, list[MessageEntity]]:
         if token.type in ("blockquote_close", "blockquote_open"):
             push(MessageEntityBlockquote)
         elif token.type == "code_block":
-            entities.append(
-                MessageEntityPre(
-                    offset=len(message), length=len(token.content), language=""
-                )
-            )
+            entities.append(MessageEntityPre(offset=len(message), length=len(token.content), language=""))
             message += token.content
         elif token.type == "code_inline":
-            entities.append(
-                MessageEntityCode(offset=len(message), length=len(token.content))
-            )
+            entities.append(MessageEntityCode(offset=len(message), length=len(token.content)))
             message += token.content
         elif token.type in ("em_close", "em_open"):
             push(MessageEntityItalic)
         elif token.type == "fence":
-            entities.append(
-                MessageEntityPre(
-                    offset=len(message), length=len(token.content), language=token.info
-                )
-            )
+            entities.append(MessageEntityPre(offset=len(message), length=len(token.content), language=token.info))
             message += token.content[:-1]  # remove a single trailing newline
         elif token.type == "hardbreak":
             message += "\n"
@@ -130,9 +118,7 @@ def parse(message: str) -> tuple[str, list[MessageEntity]]:
         elif token.type == "hr":
             message += "\u2015\n\n"
         elif token.type in ("link_close", "link_open"):
-            if (
-                token.markup != "autolink"
-            ):  # telegram already picks up on these automatically
+            if token.markup != "autolink":  # telegram already picks up on these automatically
                 push(MessageEntityTextUrl, url=token.attrs.get("href"))
         elif token.type in ("s_close", "s_open"):
             push(MessageEntityStrike)

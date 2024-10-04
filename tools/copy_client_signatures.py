@@ -110,13 +110,13 @@ def main() -> None:
             function.args.args[0].annotation = None
 
         if isinstance(function, ast.AsyncFunctionDef):
-            call = ast.Await(value=call)
+            call = ast.Await(value=call)  # type: ignore [arg-type]
 
         match function.returns:
             case ast.Constant(value=None):
-                call = ast.Expr(value=call)
+                call = ast.Expr(value=call)  # type: ignore [arg-type]
             case _:
-                call = ast.Return(value=call)
+                call = ast.Return(value=call)  # type: ignore [arg-type]
 
         function.body.append(call)
         class_body.append(function)

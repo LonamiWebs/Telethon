@@ -24,13 +24,7 @@ class Group(Peer, metaclass=NoPublicConstructor):
     def __init__(
         self,
         client: Client,
-        chat: (
-            types.ChatEmpty
-            | types.Chat
-            | types.ChatForbidden
-            | types.Channel
-            | types.ChannelForbidden
-        ),
+        chat: (types.ChatEmpty | types.Chat | types.ChatForbidden | types.Channel | types.ChannelForbidden),
     ) -> None:
         self._client = client
         self._raw = chat
@@ -96,6 +90,4 @@ class Group(Peer, metaclass=NoPublicConstructor):
         """
         Alias for :meth:`telethon.Client.set_chat_default_restrictions`.
         """
-        await self._client.set_chat_default_restrictions(
-            self, restrictions, until=until
-        )
+        await self._client.set_chat_default_restrictions(self, restrictions, until=until)

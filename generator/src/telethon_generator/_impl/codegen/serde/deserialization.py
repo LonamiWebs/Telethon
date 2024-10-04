@@ -38,9 +38,7 @@ def reader_read_fmt(ty: Type, constructor_id: int) -> tuple[str, Optional[str]]:
         return f"reader.read_serializable({inner_type_fmt(ty)})", "type-abstract"
 
 
-def generate_normal_param_read(
-    writer: SourceWriter, name: str, param: NormalParameter, constructor_id: int
-) -> None:
+def generate_normal_param_read(writer: SourceWriter, name: str, param: NormalParameter, constructor_id: int) -> None:
     flag_check = f"_{param.flag.name} & {1 << param.flag.index}" if param.flag else None
     if param.ty.name == "true":
         if not flag_check:
@@ -55,9 +53,7 @@ def generate_normal_param_read(
 
         if param.ty.generic_arg:
             if param.ty.name not in ("Vector", "vector"):
-                raise ValueError(
-                    "generic_arg deserialization for non-vectors is not supported"
-                )
+                raise ValueError("generic_arg deserialization for non-vectors is not supported")
 
             if param.ty.bare:
                 writer.write("__len = reader.read_fmt('<i', 4)[0]")
@@ -70,18 +66,12 @@ def generate_normal_param_read(
             if is_trivial(generic):
                 fmt = trivial_struct_fmt(generic)
                 size = struct.calcsize(f"<{fmt}")
-                writer.write(
-                    f"_{name} = [*reader.read_fmt(f'<{{__len}}{fmt}', __len * {size})]"
-                )
+                writer.write(f"_{name} = [*reader.read_fmt(f'<{{__len}}{fmt}', __len * {size})]")
                 if param.ty.generic_arg.name == "Bool":
-                    writer.write(
-                        f"assert all(__x in (0xbc799737, 0x0x997275b5) for __x in _{name})"
-                    )
+                    writer.write(f"assert all(__x in (0xbc799737, 0x0x997275b5) for __x in _{name})")
                     writer.write(f"_{name} = [_{name} == 0x997275b5]")
             else:
-                fmt_read, type_ignore = reader_read_fmt(
-                    param.ty.generic_arg, constructor_id
-                )
+                fmt_read, type_ignore = reader_read_fmt(param.ty.generic_arg, constructor_id)
                 comment = f"  # type: ignore [{type_ignore}]" if type_ignore else ""
                 writer.write(f"_{name} = [{fmt_read} for _ in range(__len)]{comment}")
         else:
@@ -127,9 +117,7 @@ def param_value_fmt(param: Parameter) -> str:
 def function_deserializer_fmt(defn: Definition) -> str:
     if defn.ty.generic_arg:
         if defn.ty.name != ("Vector"):
-            raise ValueError(
-                "generic_arg return for non-boxed-vectors is not supported"
-            )
+            raise ValueError("generic_arg return for non-boxed-vectors is not supported")
         elif defn.ty.generic_ref:
             raise ValueError("return for generic refs inside vector is not supported")
         elif is_trivial(NormalParameter(ty=defn.ty.generic_arg, flag=None)):
@@ -138,13 +126,9 @@ def function_deserializer_fmt(defn: Definition) -> str:
             elif defn.ty.generic_arg.name == "long":
                 return "deserialize_i64_list"
             else:
-                raise ValueError(
-                    f"return for trivial arg {defn.ty.generic_arg} is not supported"
-                )
+                raise ValueError(f"return for trivial arg {defn.ty.generic_arg} is not supported")
         elif defn.ty.generic_arg.bare:
-            raise ValueError(
-                "return for non-boxed serializables inside a vector is not supported"
-            )
+            raise ValueError("return for non-boxed serializables inside a vector is not supported")
         else:
             return f"list_deserializer({inner_type_fmt(defn.ty.generic_arg)})"
     elif defn.ty.generic_ref:

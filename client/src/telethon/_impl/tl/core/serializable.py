@@ -49,9 +49,7 @@ class Serializable(abc.ABC):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return all(
-            getattr(self, attr) == getattr(other, attr) for attr in self.__slots__
-        )
+        return all(getattr(self, attr) == getattr(other, attr) for attr in self.__slots__)
 
 
 def serialize_bytes_to(buffer: bytearray, data: bytes | bytearray | memoryview) -> None:

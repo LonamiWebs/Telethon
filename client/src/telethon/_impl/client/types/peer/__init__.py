@@ -15,9 +15,7 @@ if TYPE_CHECKING:
     from ...client.client import Client
 
 
-def build_chat_map(
-    client: Client, users: Sequence[abcs.User], chats: Sequence[abcs.Chat]
-) -> dict[int, Peer]:
+def build_chat_map(client: Client, users: Sequence[abcs.User], chats: Sequence[abcs.Chat]) -> dict[int, Peer]:
     users_iter = (User._from_raw(u) for u in users)
     chats_iter = (
         (
@@ -45,9 +43,7 @@ def build_chat_map(
                 for x in v:
                     print(x, file=sys.stderr)
 
-                raise RuntimeError(
-                    f"chat identifier collision: {k}; please report this"
-                )
+                raise RuntimeError(f"chat identifier collision: {k}; please report this")
 
     return result
 
@@ -81,11 +77,7 @@ def expand_peer(client: Client, peer: abcs.Peer, *, broadcast: Optional[bool]) -
             until_date=None,
         )
 
-        return (
-            Channel._from_raw(channel)
-            if broadcast
-            else Group._from_raw(client, channel)
-        )
+        return Channel._from_raw(channel) if broadcast else Group._from_raw(client, channel)
     else:
         raise RuntimeError("unexpected case")
 

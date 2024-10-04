@@ -157,22 +157,16 @@ class Participant(metaclass=NoPublicConstructor):
         """
         :data:`True` if the participant is the creator of the chat.
         """
-        return isinstance(
-            self._raw, (types.ChannelParticipantCreator, types.ChatParticipantCreator)
-        )
+        return isinstance(self._raw, (types.ChannelParticipantCreator, types.ChatParticipantCreator))
 
     @property
     def admin_rights(self) -> Optional[set[AdminRight]]:
         """
         The set of administrator rights this participant has been granted, if they are an administrator.
         """
-        if isinstance(
-            self._raw, (types.ChannelParticipantCreator, types.ChannelParticipantAdmin)
-        ):
+        if isinstance(self._raw, (types.ChannelParticipantCreator, types.ChannelParticipantAdmin)):
             return AdminRight._from_raw(self._raw.admin_rights)
-        elif isinstance(
-            self._raw, (types.ChatParticipantCreator, types.ChatParticipantAdmin)
-        ):
+        elif isinstance(self._raw, (types.ChatParticipantCreator, types.ChatParticipantAdmin)):
             return AdminRight._chat_rights()
         else:
             return None
@@ -194,13 +188,9 @@ class Participant(metaclass=NoPublicConstructor):
         participant = self.user or self.banned or self.left
         assert participant
         if isinstance(participant, User):
-            await self._client.set_participant_admin_rights(
-                self._chat, participant, rights
-            )
+            await self._client.set_participant_admin_rights(self._chat, participant, rights)
         else:
-            raise TypeError(
-                f"participant of type {participant.__class__.__name__} cannot be made admin"
-            )
+            raise TypeError(f"participant of type {participant.__class__.__name__} cannot be made admin")
 
     async def set_restrictions(
         self,
@@ -213,6 +203,4 @@ class Participant(metaclass=NoPublicConstructor):
         """
         participant = self.user or self.banned or self.left
         assert participant
-        await self._client.set_participant_restrictions(
-            self._chat, participant, restrictions, until=until
-        )
+        await self._client.set_participant_restrictions(self._chat, participant, restrictions, until=until)

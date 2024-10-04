@@ -40,9 +40,7 @@ def add_event_handler(
     self._handlers.setdefault(event_cls, []).append((handler, filter))
 
 
-def remove_event_handler(
-    self: Client, handler: Callable[[Event], Awaitable[Any]], /
-) -> None:
+def remove_event_handler(self: Client, handler: Callable[[Event], Awaitable[Any]], /) -> None:
     for event_cls, handlers in tuple(self._handlers.items()):
         for i in reversed(range(len(handlers))):
             if handlers[i][0] == handler:
@@ -51,9 +49,7 @@ def remove_event_handler(
             del self._handlers[event_cls]
 
 
-def get_handler_filter(
-    self: Client, handler: Callable[[Event], Awaitable[Any]], /
-) -> Optional[FilterType]:
+def get_handler_filter(self: Client, handler: Callable[[Event], Awaitable[Any]], /) -> Optional[FilterType]:
     for handlers in self._handlers.values():
         for h, f in handlers:
             if h == handler:
@@ -84,9 +80,7 @@ def process_socket_updates(client: Client, all_updates: list[abcs.Updates]) -> N
             return
 
         try:
-            result, users, chats = client._message_box.process_updates(
-                updates, client._chat_hashes
-            )
+            result, users, chats = client._message_box.process_updates(updates, client._chat_hashes)
         except Gap:
             return
 
@@ -107,8 +101,7 @@ def extend_update_queue(
         except asyncio.QueueFull:
             now = asyncio.get_running_loop().time()
             if client._last_update_limit_warn is None or (
-                now - client._last_update_limit_warn
-                > UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN
+                now - client._last_update_limit_warn > UPDATE_LIMIT_EXCEEDED_LOG_COOLDOWN
             ):
                 client._config.base_logger.warning(
                     "updates are being dropped because limit=%d has been reached",

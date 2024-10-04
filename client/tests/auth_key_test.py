@@ -26,25 +26,16 @@ def test_auth_key_id() -> None:
 def test_calc_new_nonce_hash1() -> None:
     auth_key = get_auth_key()
     new_nonce = get_new_nonce()
-    assert (
-        auth_key.calc_new_nonce_hash(new_nonce, 1)
-        == 258944117842285651226187582903746985063
-    )
+    assert auth_key.calc_new_nonce_hash(new_nonce, 1) == 258944117842285651226187582903746985063
 
 
 def test_calc_new_nonce_hash2() -> None:
     auth_key = get_auth_key()
     new_nonce = get_new_nonce()
-    assert (
-        auth_key.calc_new_nonce_hash(new_nonce, 2)
-        == 324588944215647649895949797213421233055
-    )
+    assert auth_key.calc_new_nonce_hash(new_nonce, 2) == 324588944215647649895949797213421233055
 
 
 def test_calc_new_nonce_hash3() -> None:
     auth_key = get_auth_key()
     new_nonce = get_new_nonce()
-    assert (
-        auth_key.calc_new_nonce_hash(new_nonce, 3)
-        == 100989356540453064705070297823778556733
-    )
+    assert auth_key.calc_new_nonce_hash(new_nonce, 3) == 100989356540453064705070297823778556733

@@ -108,13 +108,9 @@ def _do_step2(data: Step1, response: bytes, random_bytes: bytes) -> tuple[bytes,
     )
 
     try:
-        fingerprint = next(
-            fp for fp in res_pq.server_public_key_fingerprints if fp in RSA_KEYS
-        )
+        fingerprint = next(fp for fp in res_pq.server_public_key_fingerprints if fp in RSA_KEYS)
     except StopIteration:
-        raise ValueError(
-            f"unknown fingerprints: {res_pq.server_public_key_fingerprints}"
-        )
+        raise ValueError(f"unknown fingerprints: {res_pq.server_public_key_fingerprints}")
 
     key = RSA_KEYS[fingerprint]
     ciphertext = encrypt_hashed(pq_inner_data, key, random_bytes)
@@ -133,9 +129,7 @@ def step2(data: Step1, response: bytes) -> tuple[bytes, Step2]:
     return _do_step2(data, response, os.urandom(288))
 
 
-def _do_step3(
-    data: Step2, response: bytes, random_bytes: bytes, now: int
-) -> tuple[bytes, Step3]:
+def _do_step3(data: Step2, response: bytes, random_bytes: bytes, now: int) -> tuple[bytes, Step3]:
     assert len(random_bytes) == 272
 
     nonce = data.nonce
@@ -158,9 +152,7 @@ def _do_step3(
     check_server_nonce(server_dh_params.server_nonce, server_nonce)
 
     if len(server_dh_params.encrypted_answer) % 16 != 0:
-        raise ValueError(
-            f"encrypted response not padded with size: {len(server_dh_params.encrypted_answer)}"
-        )
+        raise ValueError(f"encrypted response not padded with size: {len(server_dh_params.encrypted_answer)}")
 
     key, iv = generate_key_data_from_nonce(server_nonce, new_nonce)
     assert isinstance(server_dh_params.encrypted_answer, bytes)
@@ -172,9 +164,7 @@ def _do_step3(
     server_dh_inner = AbcServerDhInnerData._read_from(plain_text_reader)
     assert isinstance(server_dh_inner, ServerDhInnerData)
 
-    expected_answer_hash = sha1(
-        plain_text_answer[20 : 20 + plain_text_reader._pos]
-    ).digest()
+    expected_answer_hash = sha1(plain_text_answer[20 : 20 + plain_text_reader._pos]).digest()
 
     if got_answer_hash != expected_answer_hash:
         raise ValueError("invalid answer hash")
@@ -213,15 +203,11 @@ def _do_step3(
     )
 
     client_dh_inner_hashed = sha1(client_dh_inner).digest() + client_dh_inner
-    client_dh_inner_hashed += random_bytes[
-        : (16 - (len(client_dh_inner_hashed) % 16)) % 16
-    ]
+    client_dh_inner_hashed += random_bytes[: (16 - (len(client_dh_inner_hashed) % 16)) % 16]
 
     client_dh_encrypted = encrypt_ige(client_dh_inner_hashed, key, iv)
 
-    return set_client_dh_params(
-        nonce=nonce, server_nonce=server_nonce, encrypted_data=client_dh_encrypted
-    ), Step3(
+    return set_client_dh_params(nonce=nonce, server_nonce=server_nonce, encrypted_data=client_dh_encrypted), Step3(
         nonce=nonce,
         server_nonce=server_nonce,
         new_nonce=new_nonce,
@@ -277,10 +263,7 @@ def create_key(data: Step3, response: bytes) -> CreatedKey:
 
     first_salt = struct.unpack(
         "<q",
-        bytes(
-            a ^ b
-            for a, b in zip(new_nonce.to_bytes(32)[:8], server_nonce.to_bytes(16)[:8])
-        ),
+        bytes(a ^ b for a, b in zip(new_nonce.to_bytes(32)[:8], server_nonce.to_bytes(16)[:8])),
     )[0]
 
     if dh_gen.nonce_number == 1:
@@ -310,4 +293,4 @@ def check_new_nonce_hash(got: int, expected: int) -> None:
 
 def check_g_in_range(value: int, low: int, high: int) -> None:
     if not (low < value < high):
-        raise ValueError(f"g parameter {value} not in range({low+1}, {high})")
+        raise ValueError(f"g parameter {value} not in range({low + 1}, {high})")

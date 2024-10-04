@@ -66,14 +66,8 @@ def test_key_from_nonce() -> None:
     new_nonce = int.from_bytes(bytes(range(32)))
 
     key, iv = generate_key_data_from_nonce(server_nonce, new_nonce)
-    assert (
-        key
-        == b'\x07X\xf1S;a]$\xf6\xe8\xa9Jo\xcb\xee\nU\xea\xab"\x17\xd7)\\\xa9!=\x1a-}\x16\xa6'
-    )
-    assert (
-        iv
-        == b"Z\x84\x10\x8e\x98\x05el\xe8d\x07\x0e\x16nb\x18\xf6x>\x85\x11G\x1aZ\xb7\x80,\xf2\x00\x01\x02\x03"
-    )
+    assert key == b'\x07X\xf1S;a]$\xf6\xe8\xa9Jo\xcb\xee\nU\xea\xab"\x17\xd7)\\\xa9!=\x1a-}\x16\xa6'
+    assert iv == b"Z\x84\x10\x8e\x98\x05el\xe8d\x07\x0e\x16nb\x18\xf6x>\x85\x11G\x1aZ\xb7\x80,\xf2\x00\x01\x02\x03"
 
 
 def test_verify_ige_encryption() -> None:
@@ -88,5 +82,7 @@ def test_verify_ige_decryption() -> None:
     ciphertext = get_test_aes_key_or_iv()
     key = get_test_aes_key_or_iv()
     iv = get_test_aes_key_or_iv()
-    expected = b"\xe5wz\xfa\xcd{,\x16\xf7\xac@\xca\xe6\x1e\xf6\x03\xfe\xe6\t\x8f\xb8\xa8\x86\n\xb9\xeeg,\xd7\xe5\xba\xcc"
+    expected = (
+        b"\xe5wz\xfa\xcd{,\x16\xf7\xac@\xca\xe6\x1e\xf6\x03\xfe\xe6\t\x8f\xb8\xa8\x86\n\xb9\xeeg,\xd7\xe5\xba\xcc"
+    )
     assert decrypt_ige(ciphertext, key, iv) == expected

@@ -65,9 +65,7 @@ class ChatHashCache:
             return self._has_peer(peer.peer)
         elif isinstance(peer, types.NotifyForumTopic):
             return self._has_peer(peer.peer)
-        elif isinstance(
-            peer, (types.NotifyUsers, types.NotifyChats, types.NotifyBroadcasts)
-        ):
+        elif isinstance(peer, (types.NotifyUsers, types.NotifyChats, types.NotifyBroadcasts)):
             return True
         else:
             raise RuntimeError("unexpected case")
@@ -120,9 +118,7 @@ class ChatHashCache:
         elif isinstance(participant, types.ChannelParticipantAdmin):
             return (
                 self._has(participant.user_id)
-                and (
-                    participant.inviter_id is None or self._has(participant.inviter_id)
-                )
+                and (participant.inviter_id is None or self._has(participant.inviter_id))
                 and self._has(participant.promoted_by)
             )
         elif isinstance(participant, types.ChannelParticipantBanned):

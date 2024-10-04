@@ -107,9 +107,7 @@ class Encrypted(Mtp):
     ) -> None:
         self._auth_key = auth_key
         self._time_offset: int = time_offset or 0
-        self._salts: list[FutureSalt] = [
-            FutureSalt(valid_since=0, valid_until=0x7FFFFFFF, salt=first_salt or 0)
-        ]
+        self._salts: list[FutureSalt] = [FutureSalt(valid_since=0, valid_until=0x7FFFFFFF, salt=first_salt or 0)]
         self._start_salt_time: Optional[tuple[int, float]] = None
         self._compression_threshold = compression_threshold
         self._deserialization: list[Deserialization] = []
@@ -203,9 +201,7 @@ class Encrypted(Mtp):
         if self._msg_count == 1:
             del self._buffer[:CONTAINER_HEADER_LEN]
 
-        self._buffer[:HEADER_LEN] = struct.pack(
-            "<qq", self._get_current_salt(), self._client_id
-        )
+        self._buffer[:HEADER_LEN] = struct.pack("<qq", self._get_current_salt(), self._client_id)
 
         if self._msg_count != 1:
             self._buffer[HEADER_LEN : HEADER_LEN + CONTAINER_HEADER_LEN] = struct.pack(
@@ -283,11 +279,7 @@ class Encrypted(Mtp):
 
         if isinstance(bad_msg, BadServerSalt):
             self._salts.clear()
-            self._salts.append(
-                FutureSalt(
-                    valid_since=0, valid_until=0x7FFFFFFF, salt=bad_msg.new_server_salt
-                )
-            )
+            self._salts.append(FutureSalt(valid_since=0, valid_until=0x7FFFFFFF, salt=bad_msg.new_server_salt))
             self._salt_request_msg_id = None
         elif bad_msg.error_code in (16, 17):
             self._correct_time_offset(message.msg_id)
@@ -324,9 +316,7 @@ class Encrypted(Mtp):
             # Response to internal request, do not propagate.
             self._salt_request_msg_id = None
         else:
-            self._deserialization.append(
-                RpcResult(MsgId(salts.req_msg_id), message.body)
-            )
+            self._deserialization.append(RpcResult(MsgId(salts.req_msg_id), message.body))
 
         self._start_salt_time = (salts.now, self._adjusted_now())
         self._salts = list(salts.salts)
@@ -346,11 +336,7 @@ class Encrypted(Mtp):
     def _handle_new_session_created(self, message: Message) -> None:
         new_session = NewSessionCreated.from_bytes(message.body)
         self._salts.clear()
-        self._salts.append(
-            FutureSalt(
-                valid_since=0, valid_until=0x7FFFFFFF, salt=new_session.server_salt
-            )
-        )
+        self._salts.append(FutureSalt(valid_since=0, valid_until=0x7FFFFFFF, salt=new_session.server_salt))
 
     def _handle_container(self, message: Message) -> None:
         container = MsgContainer.from_bytes(message.body)
@@ -376,11 +362,7 @@ class Encrypted(Mtp):
         self._deserialization.append(Update(message.body))
 
     def _try_request_salts(self) -> None:
-        if (
-            len(self._salts) == 1
-            and self._salt_request_msg_id is None
-            and self._get_current_salt() != 0
-        ):
+        if len(self._salts) == 1 and self._salt_request_msg_id is None and self._get_current_salt() != 0:
             # If salts are requested in a container leading to bad_msg,
             # the bad_msg_id will refer to the container, not the salts request.
             #
@@ -388,9 +370,7 @@ class Encrypted(Mtp):
             # This would break, because we couldn't identify the response.
             #
             # So salts are only requested once we have a valid salt to reduce the chances of this happening.
-            self._salt_request_msg_id = self._serialize_msg(
-                bytes(get_future_salts(num=NUM_FUTURE_SALTS)), True
-            )
+            self._salt_request_msg_id = self._serialize_msg(bytes(get_future_salts(num=NUM_FUTURE_SALTS)), True)
 
     def push(self, request: bytes) -> Optional[MsgId]:
         if self._start_salt_time and len(self._salts) >= 2:
@@ -435,9 +415,7 @@ class Encrypted(Mtp):
 
         return MsgId(self._last_msg_id), encrypt_data_v2(result, self._auth_key)
 
-    def deserialize(
-        self, payload: bytes | bytearray | memoryview
-    ) -> list[Deserialization]:
+    def deserialize(self, payload: bytes | bytearray | memoryview) -> list[Deserialization]:
         check_message_buffer(payload)
 
         plaintext = decrypt_data_v2(payload, self._auth_key)

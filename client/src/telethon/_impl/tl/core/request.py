@@ -14,9 +14,7 @@ def _bootstrap_get_deserializer(
         from ..mtproto.layer import RESPONSE_MAPPING as MTPROTO_DESER
 
         if API_DESER.keys() & MTPROTO_DESER.keys():
-            raise RuntimeError(
-                "generated api and mtproto schemas cannot have colliding constructor identifiers"
-            )
+            raise RuntimeError("generated api and mtproto schemas cannot have colliding constructor identifiers")
         ALL_DESER = API_DESER | MTPROTO_DESER
 
         Request._get_deserializer = ALL_DESER.get  # type: ignore [assignment]

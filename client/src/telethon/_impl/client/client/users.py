@@ -53,15 +53,11 @@ def resolved_peer_to_chat(client: Client, resolved: abcs.contacts.ResolvedPeer) 
 
 
 async def resolve_phone(self: Client, phone: str, /) -> Peer:
-    return resolved_peer_to_chat(
-        self, await self(functions.contacts.resolve_phone(phone=phone))
-    )
+    return resolved_peer_to_chat(self, await self(functions.contacts.resolve_phone(phone=phone)))
 
 
 async def resolve_username(self: Client, username: str, /) -> Peer:
-    return resolved_peer_to_chat(
-        self, await self(functions.contacts.resolve_username(username=username))
-    )
+    return resolved_peer_to_chat(self, await self(functions.contacts.resolve_username(username=username)))
 
 
 async def resolve_peers(self: Client, peers: Sequence[Peer | PeerRef], /) -> list[Peer]:
@@ -99,8 +95,4 @@ async def resolve_peers(self: Client, peers: Sequence[Peer | PeerRef], /) -> lis
         chats.extend(ret_chats.chats)
 
     chat_map = build_chat_map(self, users, chats)
-    return [
-        chat_map.get(ref.identifier)
-        or expand_peer(self, ref._to_peer(), broadcast=None)
-        for ref in refs
-    ]
+    return [chat_map.get(ref.identifier) or expand_peer(self, ref._to_peer(), broadcast=None) for ref in refs]

@@ -29,8 +29,6 @@ class InlineButton(Button, abc.ABC):
 
     def __init__(self, text: str) -> None:
         if self.__class__ == InlineButton:
-            raise TypeError(
-                f"Can't instantiate abstract class {self.__class__.__name__}"
-            )
+            raise TypeError(f"Can't instantiate abstract class {self.__class__.__name__}")
         else:
             super().__init__(text)

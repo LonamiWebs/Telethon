@@ -313,13 +313,7 @@ class Sender:
 
     def _on_ping_timeout(self) -> None:
         ping_id = generate_random_id()
-        self._enqueue_body(
-            bytes(
-                ping_delay_disconnect(
-                    ping_id=ping_id, disconnect_delay=NO_PING_DISCONNECT
-                )
-            )
-        )
+        self._enqueue_body(bytes(ping_delay_disconnect(ping_id=ping_id, disconnect_delay=NO_PING_DISCONNECT)))
         self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
     def _process_mtp_buffer(self, updates: list[Updates]) -> None:
@@ -335,9 +329,7 @@ class Sender:
             else:
                 self._process_bad_message(result)
 
-    def _process_update(
-        self, updates: list[Updates], update: bytes | bytearray | memoryview
-    ) -> None:
+    def _process_update(self, updates: list[Updates], update: bytes | bytearray | memoryview) -> None:
         try:
             updates.append(Updates.from_bytes(update))
         except ValueError:
@@ -441,9 +433,7 @@ class Sender:
                 req.state.msg_id == msg_id or req.state.container_msg_id == msg_id
             ):
                 raise RuntimeError("got response for unsent request")
-            elif isinstance(req.state, Sent) and (
-                req.state.msg_id == msg_id or req.state.container_msg_id == msg_id
-            ):
+            elif isinstance(req.state, Sent) and (req.state.msg_id == msg_id or req.state.container_msg_id == msg_id):
                 yield self._requests.pop(i)
 
     @property

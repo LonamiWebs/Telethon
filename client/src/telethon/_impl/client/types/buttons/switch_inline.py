@@ -14,9 +14,7 @@ class SwitchInline(InlineButton):
 
     def __init__(self, text: str, query: Optional[str] = None) -> None:
         super().__init__(text)
-        self._raw = types.KeyboardButtonSwitchInline(
-            same_peer=False, text=text, query=query or "", peer_types=None
-        )
+        self._raw = types.KeyboardButtonSwitchInline(same_peer=False, text=text, query=query or "", peer_types=None)
 
     @property
     def query(self) -> str:

@@ -24,15 +24,11 @@ class NewMessage(Event, Message):
     """
 
     @classmethod
-    def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
-    ) -> Optional[Self]:
+    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
         if isinstance(update, (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if isinstance(update.message, types.Message):
                 return cls._from_raw(client, update.message, chat_map)
-        elif isinstance(
-            update, (types.UpdateShortMessage, types.UpdateShortChatMessage)
-        ):
+        elif isinstance(update, (types.UpdateShortMessage, types.UpdateShortChatMessage)):
             raise RuntimeError("should have been handled by adaptor")
 
         return None
@@ -46,12 +42,8 @@ class MessageEdited(Event, Message):
     """
 
     @classmethod
-    def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
-    ) -> Optional[Self]:
-        if isinstance(
-            update, (types.UpdateEditMessage, types.UpdateEditChannelMessage)
-        ):
+    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
+        if isinstance(update, (types.UpdateEditMessage, types.UpdateEditChannelMessage)):
             return cls._from_raw(client, update.message, chat_map)
         else:
             return None
@@ -74,9 +66,7 @@ class MessageDeleted(Event):
         self._channel_id = channel_id
 
     @classmethod
-    def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
-    ) -> Optional[Self]:
+    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
         if isinstance(update, types.UpdateDeleteMessages):
             return cls._create(update.messages, None)
         elif isinstance(update, types.UpdateDeleteChannelMessages):
@@ -122,9 +112,7 @@ class MessageRead(Event):
         self._chat_map = chat_map
 
     @classmethod
-    def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
-    ) -> Optional[Self]:
+    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
         if isinstance(
             update,
             (
@@ -139,9 +127,7 @@ class MessageRead(Event):
             return None
 
     def _peer(self) -> abcs.Peer:
-        if isinstance(
-            self._raw, (types.UpdateReadHistoryInbox, types.UpdateReadHistoryOutbox)
-        ):
+        if isinstance(self._raw, (types.UpdateReadHistoryInbox, types.UpdateReadHistoryOutbox)):
             return self._raw.peer
         else:
             return types.PeerChannel(channel_id=self._raw.channel_id)
@@ -154,9 +140,7 @@ class MessageRead(Event):
         peer = self._peer()
         pid = peer_id(peer)
         if pid not in self._chat_map:
-            self._chat_map[pid] = expand_peer(
-                self._client, peer, broadcast=getattr(self._raw, "post", None)
-            )
+            self._chat_map[pid] = expand_peer(self._client, peer, broadcast=getattr(self._raw, "post", None))
         return self._chat_map[pid]
 
     @property

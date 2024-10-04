@@ -35,6 +35,4 @@ def load_tl_file(path: str | Path) -> ParsedTl:
         else:
             functiondefs.append(definition)
 
-    return ParsedTl(
-        layer=layer, typedefs=list(typedefs), functiondefs=list(functiondefs)
-    )
+    return ParsedTl(layer=layer, typedefs=list(typedefs), functiondefs=list(functiondefs))

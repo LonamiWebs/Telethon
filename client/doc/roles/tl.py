@@ -15,9 +15,7 @@ def make_link_node(rawtext, app, name, options):
         base += "/"
 
     set_classes(options)
-    node = nodes.reference(
-        rawtext, utils.unescape(name), refuri="{}?q={}".format(base, name), **options
-    )
+    node = nodes.reference(rawtext, utils.unescape(name), refuri="{}?q={}".format(base, name), **options)
     return node
 
 

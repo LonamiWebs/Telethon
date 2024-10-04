@@ -42,10 +42,7 @@ class Intermediate(Transport):
             raise MissingBytes(expected=length, got=len(input))
 
         if length <= 4:
-            if (
-                length >= 4
-                and (status := struct.unpack("<i", input[4 : 4 + length])[0]) < 0
-            ):
+            if length >= 4 and (status := struct.unpack("<i", input[4 : 4 + length])[0]) < 0:
                 raise BadStatus(status=-status)
 
             raise ValueError(f"bad length, expected > 0, got: {length}")

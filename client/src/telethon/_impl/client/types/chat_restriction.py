@@ -111,9 +111,7 @@ class ChatRestriction(Enum):
         return set(filter(None, iter(restrictions)))
 
     @classmethod
-    def _set_to_raw(
-        cls, restrictions: set[ChatRestriction], until_date: int
-    ) -> types.ChatBannedRights:
+    def _set_to_raw(cls, restrictions: set[ChatRestriction], until_date: int) -> types.ChatBannedRights:
         return types.ChatBannedRights(
             view_messages=cls.VIEW_MESSAGES in restrictions,
             send_messages=cls.SEND_MESSAGES in restrictions,

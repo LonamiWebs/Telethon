@@ -46,9 +46,7 @@ async def send_message(
             update_stickersets_order=False,
             peer=chat._ref._to_input_peer(),
             reply_to=(
-                types.InputReplyToMessage(
-                    reply_to_msg_id=text.replied_message_id, top_msg_id=None
-                )
+                types.InputReplyToMessage(reply_to_msg_id=text.replied_message_id, top_msg_id=None)
                 if text.replied_message_id
                 else None
             ),
@@ -60,9 +58,7 @@ async def send_message(
             send_as=None,
         )
     else:
-        message, entities = parse_message(
-            text=text, markdown=markdown, html=html, allow_empty=False
-        )
+        message, entities = parse_message(text=text, markdown=markdown, html=html, allow_empty=False)
         request = functions.messages.send_message(
             no_webpage=not link_preview,
             silent=False,
@@ -71,11 +67,7 @@ async def send_message(
             noforwards=False,
             update_stickersets_order=False,
             peer=chat._ref._to_input_peer(),
-            reply_to=(
-                types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
-                if reply_to
-                else None
-            ),
+            reply_to=(types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None) if reply_to else None),
             message=message,
             random_id=random_id,
             reply_markup=keyboard._raw if keyboard else None,
@@ -91,11 +83,7 @@ async def send_message(
             {},
             out=result.out,
             id=result.id,
-            from_id=(
-                types.PeerUser(user_id=self._session.user.id)
-                if self._session.user
-                else None
-            ),
+            from_id=(types.PeerUser(user_id=self._session.user.id) if self._session.user else None),
             peer_id=chat._ref._to_peer(),
             reply_to=(
                 types.MessageReplyHeader(
@@ -130,9 +118,7 @@ async def edit_message(
     link_preview: bool = False,
     keyboard: Optional[KeyboardType] = None,
 ) -> Message:
-    message, entities = parse_message(
-        text=text, markdown=markdown, html=html, allow_empty=False
-    )
+    message, entities = parse_message(text=text, markdown=markdown, html=html, allow_empty=False)
     return self._build_message_map(
         await self(
             functions.messages.edit_message(
@@ -160,15 +146,9 @@ async def delete_messages(
 ) -> int:
     peer = chat._ref
     if isinstance(peer, ChannelRef):
-        affected = await self(
-            functions.channels.delete_messages(
-                channel=peer._to_input_channel(), id=message_ids
-            )
-        )
+        affected = await self(functions.channels.delete_messages(channel=peer._to_input_channel(), id=message_ids))
     else:
-        affected = await self(
-            functions.messages.delete_messages(revoke=revoke, id=message_ids)
-        )
+        affected = await self(functions.messages.delete_messages(revoke=revoke, id=message_ids))
     assert isinstance(affected, types.messages.AffectedMessages)
     return affected.pts_count
 
@@ -205,9 +185,7 @@ class MessageList(AsyncList[Message]):
         super().__init__()
         self._reversed = False
 
-    def _extend_buffer(
-        self, client: Client, messages: abcs.messages.Messages
-    ) -> dict[int, Peer]:
+    def _extend_buffer(self, client: Client, messages: abcs.messages.Messages) -> dict[int, Peer]:
         if isinstance(messages, types.messages.MessagesNotModified):
             self._total = messages.count
             return {}
@@ -215,9 +193,7 @@ class MessageList(AsyncList[Message]):
         if isinstance(messages, types.messages.Messages):
             self._total = len(messages.messages)
             self._done = True
-        elif isinstance(
-            messages, (types.messages.MessagesSlice, types.messages.ChannelMessages)
-        ):
+        elif isinstance(messages, (types.messages.MessagesSlice, types.messages.ChannelMessages)):
             self._total = messages.count
         else:
             raise RuntimeError("unexpected case")
@@ -225,9 +201,7 @@ class MessageList(AsyncList[Message]):
         chat_map = build_chat_map(client, messages.users, messages.chats)
         self._buffer.extend(
             Message._from_raw(client, m, chat_map)
-            for m in (
-                reversed(messages.messages) if self._reversed else messages.messages
-            )
+            for m in (reversed(messages.messages) if self._reversed else messages.messages)
         )
         return chat_map
 
@@ -235,11 +209,7 @@ class MessageList(AsyncList[Message]):
         self,
     ) -> types.Message | types.MessageService | types.MessageEmpty:
         return next(
-            (
-                m._raw
-                for m in reversed(self._buffer)
-                if not isinstance(m._raw, types.MessageEmpty)
-            ),
+            (m._raw for m in reversed(self._buffer) if not isinstance(m._raw, types.MessageEmpty)),
             types.MessageEmpty(id=0, peer_id=None),
         )
 
@@ -335,14 +305,10 @@ class CherryPickedList(MessageList):
 
         if isinstance(self._peer, ChannelRef):
             result = await self._client(
-                functions.channels.get_messages(
-                    channel=self._peer._to_input_channel(), id=self._ids[:100]
-                )
+                functions.channels.get_messages(channel=self._peer._to_input_channel(), id=self._ids[:100])
             )
         else:
-            result = await self._client(
-                functions.messages.get_messages(id=self._ids[:100])
-            )
+            result = await self._client(functions.messages.get_messages(id=self._ids[:100]))
 
         self._extend_buffer(self._client, result)
         self._ids = self._ids[100:]
@@ -492,9 +458,7 @@ def search_all_messages(
     )
 
 
-async def pin_message(
-    self: Client, chat: Peer | PeerRef, /, message_id: int
-) -> Message:
+async def pin_message(self: Client, chat: Peer | PeerRef, /, message_id: int) -> Message:
     return self._build_message_map(
         await self(
             functions.messages.update_pinned_message(
@@ -509,9 +473,7 @@ async def pin_message(
     ).get_single()
 
 
-async def unpin_message(
-    self: Client, chat: Peer | PeerRef, /, message_id: int | Literal["all"]
-) -> None:
+async def unpin_message(self: Client, chat: Peer | PeerRef, /, message_id: int | Literal["all"]) -> None:
     if message_id == "all":
         await self(
             functions.messages.unpin_all_messages(
@@ -531,25 +493,15 @@ async def unpin_message(
         )
 
 
-async def read_message(
-    self: Client, chat: Peer | PeerRef, /, message_id: int | Literal["all"]
-) -> None:
+async def read_message(self: Client, chat: Peer | PeerRef, /, message_id: int | Literal["all"]) -> None:
     if message_id == "all":
         message_id = 0
 
     peer = chat._ref
     if isinstance(peer, ChannelRef):
-        await self(
-            functions.channels.read_history(
-                channel=peer._to_input_channel(), max_id=message_id
-            )
-        )
+        await self(functions.channels.read_history(channel=peer._to_input_channel(), max_id=message_id))
     else:
-        await self(
-            functions.messages.read_history(
-                peer=peer._ref._to_input_peer(), max_id=message_id
-            )
-        )
+        await self(functions.messages.read_history(peer=peer._ref._to_input_peer(), max_id=message_id))
 
 
 class MessageMap:
@@ -584,9 +536,7 @@ class MessageMap:
     def _empty(self, id: int = 0) -> Message:
         return Message._from_raw(
             self._client,
-            types.MessageEmpty(
-                id=id, peer_id=self._peer._to_peer() if self._peer else None
-            ),
+            types.MessageEmpty(id=id, peer_id=self._peer._to_peer() if self._peer else None),
             {},
         )
 

@@ -2,6 +2,7 @@
 Run `telethon_generator.codegen` on both `api.tl` and `mtproto.tl` to output
 corresponding Python code in the default directories under the `client/`.
 """
+
 import subprocess
 import sys
 

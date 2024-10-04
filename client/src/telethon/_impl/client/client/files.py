@@ -189,15 +189,11 @@ async def send_file(
     reply_to: Optional[int] = None,
     keyboard: Optional[KeyboardType] = None,
 ) -> Message:
-    message, entities = parse_message(
-        text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
-    )
+    message, entities = parse_message(text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True)
 
     # Re-send existing file.
     if isinstance(file, File):
-        return await do_send_file(
-            self, chat, file._input_media, message, entities, reply_to, keyboard
-        )
+        return await do_send_file(self, chat, file._input_media, message, entities, reply_to, keyboard)
 
     # URLs are handled early as they can't use any other attributes either.
     input_media: abcs.InputMedia
@@ -212,16 +208,10 @@ async def send_file(
         else:
             as_photo = False
         if as_photo:
-            input_media = types.InputMediaPhotoExternal(
-                spoiler=False, url=file, ttl_seconds=None
-            )
+            input_media = types.InputMediaPhotoExternal(spoiler=False, url=file, ttl_seconds=None)
         else:
-            input_media = types.InputMediaDocumentExternal(
-                spoiler=False, url=file, ttl_seconds=None
-            )
-        return await do_send_file(
-            self, chat, input_media, message, entities, reply_to, keyboard
-        )
+            input_media = types.InputMediaDocumentExternal(spoiler=False, url=file, ttl_seconds=None)
+        return await do_send_file(self, chat, input_media, message, entities, reply_to, keyboard)
 
     input_file, name = await upload(self, file, size, name)
 
@@ -285,9 +275,7 @@ async def send_file(
             ttl_seconds=None,
         )
 
-    return await do_send_file(
-        self, chat, input_media, message, entities, reply_to, keyboard
-    )
+    return await do_send_file(self, chat, input_media, message, entities, reply_to, keyboard)
 
 
 async def do_send_file(
@@ -309,11 +297,7 @@ async def do_send_file(
                 noforwards=False,
                 update_stickersets_order=False,
                 peer=chat._ref._to_input_peer(),
-                reply_to=(
-                    types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
-                    if reply_to
-                    else None
-                ),
+                reply_to=(types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None) if reply_to else None),
                 media=input_media,
                 message=message,
                 random_id=random_id,
@@ -395,11 +379,7 @@ async def do_upload(
                 )
             )
         else:
-            await client(
-                functions.upload.save_file_part(
-                    file_id=file_id, file_part=part, bytes=to_store
-                )
-            )
+            await client(functions.upload.save_file_part(file_id=file_id, file_part=part, bytes=to_store))
             hash_md5.update(to_store)
 
         buffer.clear()
@@ -458,9 +438,7 @@ def get_file_bytes(self: Client, media: File, /) -> AsyncList[bytes]:
     return FileBytesList(self, media)
 
 
-async def download(
-    self: Client, media: File, /, file: str | Path | OutFileLike
-) -> None:
+async def download(self: Client, media: File, /, file: str | Path | OutFileLike) -> None:
     fd = OutWrapper(file)
     try:
         async for chunk in get_file_bytes(self, media):

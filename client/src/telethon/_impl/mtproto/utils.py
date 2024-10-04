@@ -12,9 +12,7 @@ MESSAGE_SIZE_OVERHEAD = 8 + 4 + 4  # msg_id, seq_no, bytes
 
 def check_message_buffer(message: bytes | bytearray | memoryview) -> None:
     if len(message) < 20:
-        raise ValueError(
-            f"server payload is too small to be a valid message: {message.hex()}"
-        )
+        raise ValueError(f"server payload is too small to be a valid message: {message.hex()}")
 
 
 # https://core.telegram.org/mtproto/description#content-related-message

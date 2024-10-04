@@ -19,6 +19,7 @@ and those you can define when using :meth:`telethon.Client.send_message`:
         buttons.Callback('Demo', b'data')
     ])
 """
+
 from .._impl.client.types.buttons import (
     Callback,
     RequestGeoLocation,

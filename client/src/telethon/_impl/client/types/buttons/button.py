@@ -50,9 +50,7 @@ class Button(abc.ABC):
 
     def __init__(self, text: str) -> None:
         if self.__class__ == Button:
-            raise TypeError(
-                f"Can't instantiate abstract class {self.__class__.__name__}"
-            )
+            raise TypeError(f"Can't instantiate abstract class {self.__class__.__name__}")
 
         self._raw: RawButtonType = types.KeyboardButton(text=text)
         self._msg: Optional[weakref.ReferenceType[Message]] = None

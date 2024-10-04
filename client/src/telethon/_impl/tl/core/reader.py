@@ -23,9 +23,7 @@ def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
         from ..mtproto.layer import TYPE_MAPPING as MTPROTO_TYPES
 
         if API_TYPES.keys() & MTPROTO_TYPES.keys():
-            raise RuntimeError(
-                "generated api and mtproto schemas cannot have colliding constructor identifiers"
-            )
+            raise RuntimeError("generated api and mtproto schemas cannot have colliding constructor identifiers")
         ALL_TYPES = API_TYPES | MTPROTO_TYPES
 
         # Signatures don't fully match, but this is a private method
@@ -39,9 +37,7 @@ class Reader:
     __slots__ = ("_view", "_pos", "_len")
 
     def __init__(self, buffer: "Buffer") -> None:
-        self._view = (
-            memoryview(buffer) if not isinstance(buffer, memoryview) else buffer
-        )
+        self._view = memoryview(buffer) if not isinstance(buffer, memoryview) else buffer
         self._pos = 0
         self._len = len(self._view)
 

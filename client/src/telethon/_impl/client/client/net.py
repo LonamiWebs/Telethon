@@ -82,16 +82,9 @@ async def connect_sender(
     # Only the ID of the input DC may be known.
     # Find the corresponding address and authentication key if needed.
     addr = dc.ipv4_addr or next(
-        d.ipv4_addr
-        for d in itertools.chain(known_dcs, KNOWN_DCS)
-        if d.id == dc.id and d.ipv4_addr
+        d.ipv4_addr for d in itertools.chain(known_dcs, KNOWN_DCS) if d.id == dc.id and d.ipv4_addr
     )
-    auth = (
-        None
-        if force_auth_gen
-        else dc.auth
-        or (next((d.auth for d in known_dcs if d.id == dc.id and d.auth), None))
-    )
+    auth = None if force_auth_gen else dc.auth or (next((d.auth for d in known_dcs if d.id == dc.id and d.auth), None))
 
     sender = await do_connect_sender(
         Full(),
@@ -122,9 +115,7 @@ async def connect_sender(
         )
     except BadStatus as e:
         if e.status == 404 and auth:
-            dc = DataCenter(
-                id=dc.id, ipv4_addr=dc.ipv4_addr, ipv6_addr=dc.ipv6_addr, auth=None
-            )
+            dc = DataCenter(id=dc.id, ipv4_addr=dc.ipv4_addr, ipv6_addr=dc.ipv6_addr, auth=None)
             config.base_logger.warning(
                 "datacenter could not find stored auth; will retry generating a new one: %s",
                 dc,
@@ -174,12 +165,8 @@ async def connect(self: Client) -> None:
     if session := await self._storage.load():
         self._session = session
 
-    datacenter = self._config.datacenter or DataCenter(
-        id=self._session.user.dc if self._session.user else DEFAULT_DC
-    )
-    self._sender, self._session.dcs = await connect_sender(
-        self._config, self._session.dcs, datacenter
-    )
+    datacenter = self._config.datacenter or DataCenter(id=self._session.user.dc if self._session.user else DEFAULT_DC)
+    self._sender, self._session.dcs = await connect_sender(self._config, self._session.dcs, datacenter)
 
     if self._message_box.is_empty() and self._session.user:
         try:
@@ -193,9 +180,7 @@ async def connect(self: Client) -> None:
             me = await self.get_me()
             assert me is not None
             self._chat_hashes.set_self_user(me.id, me.bot)
-            self._session.user = SessionUser(
-                id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username
-            )
+            self._session.user = SessionUser(id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username)
 
     self._dispatcher = asyncio.create_task(dispatcher(self))
 
@@ -214,18 +199,14 @@ async def disconnect(self: Client) -> None:
     except asyncio.CancelledError:
         pass
     except Exception:
-        self._config.base_logger.exception(
-            "unhandled exception when cancelling dispatcher; this is a bug"
-        )
+        self._config.base_logger.exception("unhandled exception when cancelling dispatcher; this is a bug")
     finally:
         self._dispatcher = None
 
     try:
         await sender.disconnect()
     except Exception:
-        self._config.base_logger.exception(
-            "unhandled exception during disconnect; this is a bug"
-        )
+        self._config.base_logger.exception("unhandled exception during disconnect; this is a bug")
 
     try:
         if self._session.user:

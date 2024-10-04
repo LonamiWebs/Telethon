@@ -34,17 +34,13 @@ def from_name(name: str, *, _cache: dict[str, Type[RpcError]] = {}) -> Type[RpcE
     return _cache[name]
 
 
-def adapt_rpc(
-    error: RpcError, *, _cache: dict[tuple[int, str], Type[RpcError]] = {}
-) -> RpcError:
+def adapt_rpc(error: RpcError, *, _cache: dict[tuple[int, str], Type[RpcError]] = {}) -> RpcError:
     code = canonicalize_code(error.code)
     name = canonicalize_name(error.name)
     tup = code, name
     if tup not in _cache:
         _cache[tup] = type(pretty_name(name), (from_code(code), from_name(name)), {})
-    return _cache[tup](
-        code=error.code, name=error.name, value=error.value, caused_by=error._caused_by
-    )
+    return _cache[tup](code=error.code, name=error.name, value=error.value, caused_by=error._caused_by)
 
 
 class ErrorFactory:
@@ -55,9 +51,7 @@ class ErrorFactory:
             return from_code(int(m[1]))
         else:
             adapted = adapt_user_name(name)
-            if pretty_name(canonicalize_name(adapted)) != name or re.match(
-                r"[A-Z]{2}", name
-            ):
+            if pretty_name(canonicalize_name(adapted)) != name or re.match(r"[A-Z]{2}", name):
                 raise AttributeError(f"error subclass names must be CamelCase: {name}")
             return from_name(adapted)
 

@@ -31,9 +31,7 @@ class Plain(Mtp):
         self._buffer.clear()
         return MsgId(0), result
 
-    def deserialize(
-        self, payload: bytes | bytearray | memoryview
-    ) -> list[Deserialization]:
+    def deserialize(self, payload: bytes | bytearray | memoryview) -> list[Deserialization]:
         check_message_buffer(payload)
 
         auth_key_id, msg_id, length = struct.unpack_from("<qqi", payload)
@@ -48,8 +46,6 @@ class Plain(Mtp):
             raise ValueError(f"bad length: expected >= 0, got: {length}")
 
         if 20 + length > len(payload):
-            raise ValueError(
-                f"message too short, expected: {20 + length}, got {len(payload)}"
-            )
+            raise ValueError(f"message too short, expected: {20 + length}, got {len(payload)}")
 
         return [RpcResult(MsgId(0), bytes(payload[20 : 20 + length]))]

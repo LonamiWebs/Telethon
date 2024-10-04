@@ -24,9 +24,7 @@ class Event(abc.ABC, metaclass=NoPublicConstructor):
 
     @classmethod
     @abc.abstractmethod
-    def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
-    ) -> Optional[Self]:
+    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
         pass
 
 
@@ -52,9 +50,7 @@ class Raw(Event):
         self._chat_map = chat_map
 
     @classmethod
-    def _try_from_update(
-        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
-    ) -> Optional[Self]:
+    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
         return cls._create(client, update, chat_map)
 
 

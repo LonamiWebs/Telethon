@@ -20,9 +20,7 @@ def h(*data: bytes | bytearray | memoryview) -> bytes:
 
 
 # SH(data, salt) := H(salt | data | salt)
-def sh(
-    data: bytes | bytearray | memoryview, salt: bytes | bytearray | memoryview
-) -> bytes:
+def sh(data: bytes | bytearray | memoryview, salt: bytes | bytearray | memoryview) -> bytes:
     return h(salt, data, salt)
 
 

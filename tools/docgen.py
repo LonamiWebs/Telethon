@@ -1,6 +1,7 @@
 """
 Run `sphinx-build` to create HTML documentation and detect errors.
 """
+
 import subprocess
 import sys
 

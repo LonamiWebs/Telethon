@@ -11,9 +11,7 @@ def test_empty_simple() -> None:
 
 
 def test_simple() -> None:
-    assert Type.from_str("foo") == Type(
-        namespace=[], name="foo", bare=True, generic_ref=False, generic_arg=None
-    )
+    assert Type.from_str("foo") == Type(namespace=[], name="foo", bare=True, generic_ref=False, generic_arg=None)
 
 
 @mark.parametrize("ty", [".", "..", ".foo", "foo.", "foo..foo", ".foo."])

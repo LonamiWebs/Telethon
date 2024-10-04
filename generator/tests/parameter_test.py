@@ -54,18 +54,14 @@ def test_valid_param() -> None:
     assert Parameter.from_str("foo:!bar") == Parameter(
         name="foo",
         ty=NormalParameter(
-            ty=Type(
-                namespace=[], name="bar", bare=True, generic_ref=True, generic_arg=None
-            ),
+            ty=Type(namespace=[], name="bar", bare=True, generic_ref=True, generic_arg=None),
             flag=None,
         ),
     )
     assert Parameter.from_str("foo:bar.1?baz") == Parameter(
         name="foo",
         ty=NormalParameter(
-            ty=Type(
-                namespace=[], name="baz", bare=True, generic_ref=False, generic_arg=None
-            ),
+            ty=Type(namespace=[], name="baz", bare=True, generic_ref=False, generic_arg=None),
             flag=Flag(
                 name="bar",
                 index=1,

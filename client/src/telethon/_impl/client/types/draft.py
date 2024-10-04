@@ -37,9 +37,7 @@ class Draft(metaclass=NoPublicConstructor):
         self._chat_map = chat_map
 
     @classmethod
-    def _from_raw_update(
-        cls, client: Client, draft: types.UpdateDraftMessage, chat_map: dict[int, Peer]
-    ) -> Self:
+    def _from_raw_update(cls, client: Client, draft: types.UpdateDraftMessage, chat_map: dict[int, Peer]) -> Self:
         return cls._create(client, draft.peer, draft.top_msg_id, draft.draft, chat_map)
 
     @classmethod
@@ -60,9 +58,7 @@ class Draft(metaclass=NoPublicConstructor):
 
         This is also the chat where the message will be sent to by :meth:`send`.
         """
-        return self._chat_map.get(peer_id(self._peer)) or expand_peer(
-            self._client, self._peer, broadcast=None
-        )
+        return self._chat_map.get(peer_id(self._peer)) or expand_peer(self._client, self._peer, broadcast=None)
 
     @property
     def link_preview(self) -> bool:
@@ -91,9 +87,7 @@ class Draft(metaclass=NoPublicConstructor):
         The :attr:`~Message.text_html` of the message that will be sent.
         """
         if text := getattr(self._raw, "message", None):
-            return generate_html_message(
-                text, getattr(self._raw, "entities", None) or []
-            )
+            return generate_html_message(text, getattr(self._raw, "entities", None) or [])
         else:
             return None
 
@@ -103,9 +97,7 @@ class Draft(metaclass=NoPublicConstructor):
         The :attr:`~Message.text_markdown` of the message that will be sent.
         """
         if text := getattr(self._raw, "message", None):
-            return generate_markdown_message(
-                text, getattr(self._raw, "entities", None) or []
-            )
+            return generate_markdown_message(text, getattr(self._raw, "entities", None) or [])
         else:
             return None
 
@@ -115,11 +107,7 @@ class Draft(metaclass=NoPublicConstructor):
         The date when the draft was last updated.
         """
         date = getattr(self._raw, "date", None)
-        return (
-            datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc)
-            if date is not None
-            else None
-        )
+        return datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc) if date is not None else None
 
     async def edit(
         self,
@@ -192,11 +180,7 @@ class Draft(metaclass=NoPublicConstructor):
                 noforwards=False,
                 update_stickersets_order=False,
                 peer=self._peer_ref()._to_input_peer(),
-                reply_to=(
-                    types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None)
-                    if reply_to
-                    else None
-                ),
+                reply_to=(types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None) if reply_to else None),
                 message=message,
                 random_id=random_id,
                 reply_markup=None,
@@ -211,11 +195,7 @@ class Draft(metaclass=NoPublicConstructor):
                 {},
                 out=result.out,
                 id=result.id,
-                from_id=(
-                    types.PeerUser(user_id=self._client._session.user.id)
-                    if self._client._session.user
-                    else None
-                ),
+                from_id=(types.PeerUser(user_id=self._client._session.user.id) if self._client._session.user else None),
                 peer_id=self._peer_ref()._to_peer(),
                 reply_to=(
                     types.MessageReplyHeader(
@@ -235,9 +215,7 @@ class Draft(metaclass=NoPublicConstructor):
                 ttl_period=result.ttl_period,
             )
         else:
-            return self._client._build_message_map(
-                result, self._peer_ref()
-            ).with_random_id(random_id)
+            return self._client._build_message_map(result, self._peer_ref()).with_random_id(random_id)
 
     async def delete(self) -> None:
         """
