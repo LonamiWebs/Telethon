@@ -6,13 +6,11 @@ import pathlib
 import re
 import typing
 from io import BytesIO
-from typing import List, Any, Dict
 
 from ..crypto import AES
 
 from .. import utils, helpers, hints
 from ..tl import types, functions, custom
-from ..tl.types import MessageEmpty, Message, MessageService
 
 try:
     import PIL
@@ -135,7 +133,7 @@ class UploadMethods:
             comment_to: 'typing.Union[int, types.Message]' = None,
             ttl: int = None,
             nosound_video: bool = None,
-            **kwargs) -> list[Any] | Any:
+            **kwargs) -> list[typing.Any] | typing.Any:
         """
         Sends message with the given file to the specified entity.
 
