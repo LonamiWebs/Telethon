@@ -18,7 +18,6 @@ try:
 except ImportError:
     PIL = None
 
-
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
@@ -119,7 +118,11 @@ class UploadMethods:
             thumb: 'hints.FileLike' = None,
             allow_cache: bool = True,
             parse_mode: str = (),
-            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+            formatting_entities: typing.Optional[
+                typing.Union[
+                    typing.List[types.TypeMessageEntity], typing.List[typing.List[types.TypeMessageEntity]]
+                ]
+            ] = None,
             voice_note: bool = False,
             video_note: bool = False,
             buttons: typing.Optional['hints.MarkupLike'] = None,
@@ -130,7 +133,7 @@ class UploadMethods:
             comment_to: 'typing.Union[int, types.Message]' = None,
             ttl: int = None,
             nosound_video: bool = None,
-            **kwargs) -> 'types.Message':
+            **kwargs) -> list[typing.Any] | typing.Any:
         """
         Sends message with the given file to the specified entity.
 
@@ -243,7 +246,11 @@ class UploadMethods:
                 default.
 
             formatting_entities (`list`, optional):
-                A list of message formatting entities. When provided, the ``parse_mode`` is ignored.
+                Optional formatting entities for the sent media message. When sending an album,
+                `formatting_entities` can be a list of lists, where each inner list contains
+                `types.TypeMessageEntity`. Each inner list will be assigned to the corresponding
+                file in a pairwise manner with the caption. If provided, the ``parse_mode``
+                parameter will be ignored.
 
             voice_note (`bool`, optional):
                 If `True` the audio will be sent as a voice note.
@@ -365,6 +372,9 @@ class UploadMethods:
         if not caption:
             caption = ''
 
+        if not formatting_entities:
+            formatting_entities = []
+
         entity = await self.get_input_entity(entity)
         if comment_to is not None:
             entity, reply_to = await self._get_comment_data(entity, comment_to)
@@ -384,10 +394,22 @@ class UploadMethods:
             else:
                 captions = [caption]
 
+            # Check that formatting_entities list is valid
+            if all(utils.is_list_like(obj) for obj in formatting_entities):
+                formatting_entities = formatting_entities
+            elif utils.is_list_like(formatting_entities):
+                formatting_entities = [formatting_entities]
+            else:
+                raise TypeError('The formatting_entities argument must be a list or a sequence of lists')
+
+            # Check that all entities in all lists are of the correct type
+            if not all(isinstance(ent, types.TypeMessageEntity) for sublist in formatting_entities for ent in sublist):
+                raise TypeError('All entities must be instances of <types.TypeMessageEntity>')
+
             result = []
             while file:
                 result += await self._send_album(
-                    entity, file[:10], caption=captions[:10],
+                    entity, file[:10], caption=captions[:10], formatting_entities=formatting_entities[:10],
                     progress_callback=used_callback, reply_to=reply_to,
                     parse_mode=parse_mode, silent=silent, schedule=schedule,
                     supports_streaming=supports_streaming, clear_draft=clear_draft,
@@ -395,6 +417,7 @@ class UploadMethods:
                 )
                 file = file[10:]
                 captions = captions[10:]
+                formatting_entities = formatting_entities[10:]
                 sent_count += 10
 
             return result
@@ -409,7 +432,7 @@ class UploadMethods:
             file, force_document=force_document,
             file_size=file_size,
             progress_callback=progress_callback,
-            attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
+            attributes=attributes, allow_cache=allow_cache, thumb=thumb,
             voice_note=voice_note, video_note=video_note,
             supports_streaming=supports_streaming, ttl=ttl,
             nosound_video=nosound_video,
@@ -430,6 +453,7 @@ class UploadMethods:
         return self._get_response_message(request, await self(request), entity)
 
     async def _send_album(self: 'TelegramClient', entity, files, caption='',
+                          formatting_entities=None,
                           progress_callback=None, reply_to=None,
                           parse_mode=(), silent=None, schedule=None,
                           supports_streaming=None, clear_draft=None,
@@ -441,16 +465,25 @@ class UploadMethods:
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change.
         #
-        # In theory documents can be sent inside the albums but they appear
+        # In theory documents can be sent inside the albums, but they appear
         # as different messages (not inside the album), and the logic to set
         # the attributes/avoid cache is already written in .send_file().
         entity = await self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
+        if not all(isinstance(obj, list) for obj in formatting_entities):
+            formatting_entities = (formatting_entities,)
 
         captions = []
-        for c in reversed(caption):  # Pop from the end (so reverse)
-            captions.append(await self._parse_message_text(c or '', parse_mode))
+        # If the formatting_entities argument is provided, we don't use parse_mode
+        if formatting_entities:
+            # Pop from the end (so reverse)
+            capt_with_ent = itertools.zip_longest(reversed(caption), reversed(formatting_entities), fillvalue=None)
+            for msg_caption, msg_entities in capt_with_ent:
+                captions.append((msg_caption, msg_entities))
+        else:
+            for c in reversed(caption):  # Pop from the end (so reverse)
+                captions.append(await self._parse_message_text(c or '', parse_mode))
 
         reply_to = utils.get_message_id(reply_to)
 
@@ -482,7 +515,7 @@ class UploadMethods:
                 ))
 
                 fm = utils.get_input_media(
-                   r.document, supports_streaming=supports_streaming)
+                    r.document, supports_streaming=supports_streaming)
 
             if captions:
                 caption, msg_entities = captions.pop()
@@ -635,7 +668,7 @@ class UploadMethods:
 
             part_count = (file_size + part_size - 1) // part_size
             self._log[__name__].info('Uploading file of %d bytes in %d chunks of %d',
-                                    file_size, part_count, part_size)
+                                     file_size, part_count, part_size)
 
             pos = 0
             for part_index in range(part_count):
@@ -712,7 +745,7 @@ class UploadMethods:
 
         # `aiofiles` do not base `io.IOBase` but do have `read`, so we
         # just check for the read attribute to see if it's file-like.
-        if not isinstance(file, (str, bytes, types.InputFile, types.InputFileBig))\
+        if not isinstance(file, (str, bytes, types.InputFile, types.InputFileBig)) \
                 and not hasattr(file, 'read'):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
