@@ -25,7 +25,7 @@ async def get_me(self: Client) -> Optional[User]:
 
 
 class ContactList(AsyncList[User]):
-    def __init__(self, client: Client):
+    def __init__(self, client: Client) -> None:
         super().__init__()
         self._client = client
 

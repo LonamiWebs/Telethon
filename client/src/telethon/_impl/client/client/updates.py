@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any, Optional, Sequence, Type
 
-from ...session import Gap
+from ...session import GapError
 from ...tl import abcs
 from ..events import Continue, Event
 from ..events.filters import FilterType
@@ -80,14 +80,14 @@ def process_socket_updates(client: Client, all_updates: list[abcs.Updates]) -> N
     for updates in all_updates:
         try:
             client._message_box.ensure_known_peer_hashes(updates, client._chat_hashes)
-        except Gap:
+        except GapError:
             return
 
         try:
             result, users, chats = client._message_box.process_updates(
                 updates, client._chat_hashes
             )
-        except Gap:
+        except GapError:
             return
 
         extend_update_queue(client, result, users, chats)

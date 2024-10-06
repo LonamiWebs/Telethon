@@ -2,7 +2,7 @@ from typing import Optional
 
 from ...tl import abcs, types
 from ..chat import ChatHashCache
-from .defs import ENTRY_ACCOUNT, ENTRY_SECRET, NO_SEQ, Gap, PtsInfo
+from .defs import ENTRY_ACCOUNT, ENTRY_SECRET, NO_SEQ, GapError, PtsInfo
 
 
 def updates_(updates: types.Updates) -> types.UpdatesCombined:
@@ -147,7 +147,7 @@ def update_short_sent_message(
 
 def adapt(updates: abcs.Updates, chat_hashes: ChatHashCache) -> types.UpdatesCombined:
     if isinstance(updates, types.UpdatesTooLong):
-        raise Gap
+        raise GapError
     elif isinstance(updates, types.UpdateShortMessage):
         return update_short_message(updates, chat_hashes.self_id)
     elif isinstance(updates, types.UpdateShortChatMessage):

@@ -17,9 +17,9 @@ def _bootstrap_get_deserializer(
             raise RuntimeError(
                 "generated api and mtproto schemas cannot have colliding constructor identifiers"
             )
-        ALL_DESER = API_DESER | MTPROTO_DESER
+        all_deser = API_DESER | MTPROTO_DESER
 
-        Request._get_deserializer = ALL_DESER.get  # type: ignore [assignment]
+        Request._get_deserializer = all_deser.get  # type: ignore [assignment]
 
     return Request._get_deserializer(constructor_id)
 

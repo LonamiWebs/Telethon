@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, TypeVar
 
 from ....version import __version__
-from ...mtproto import BadStatus, Full, RpcError
+from ...mtproto import BadStatusError, Full, RpcError
 from ...mtsender import Connector, Sender
 from ...mtsender import connect as do_connect_sender
 from ...session import DataCenter
@@ -120,7 +120,7 @@ async def connect_sender(
                 ),
             )
         )
-    except BadStatus as e:
+    except BadStatusError as e:
         if e.status == 404 and auth:
             dc = DataCenter(
                 id=dc.id, ipv4_addr=dc.ipv4_addr, ipv6_addr=dc.ipv6_addr, auth=None

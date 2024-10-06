@@ -15,7 +15,7 @@ class Update:
 
     __slots__ = ("body",)
 
-    def __init__(self, body: bytes | bytearray | memoryview):
+    def __init__(self, body: bytes | bytearray | memoryview) -> None:
         self.body = body
 
 
@@ -26,7 +26,7 @@ class RpcResult:
 
     __slots__ = ("msg_id", "body")
 
-    def __init__(self, msg_id: MsgId, body: bytes | bytearray | memoryview):
+    def __init__(self, msg_id: MsgId, body: bytes | bytearray | memoryview) -> None:
         self.msg_id = msg_id
         self.body = body
 
@@ -142,7 +142,7 @@ RETRYABLE_MSG_IDS = {16, 17, 48}
 NON_FATAL_MSG_IDS = RETRYABLE_MSG_IDS & {32, 33}
 
 
-class BadMessage(ValueError):
+class BadMessageError(ValueError):
     def __init__(
         self,
         *args: object,
@@ -178,7 +178,7 @@ class BadMessage(ValueError):
         return self._code == other._code
 
 
-Deserialization = Update | RpcResult | RpcError | BadMessage
+Deserialization = Update | RpcResult | RpcError | BadMessageError
 
 
 # https://core.telegram.org/mtproto/description

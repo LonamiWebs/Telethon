@@ -13,7 +13,7 @@ class MemorySession(Storage):
 
     __slots__ = ("session",)
 
-    def __init__(self, session: Optional[Session] = None):
+    def __init__(self, session: Optional[Session] = None) -> None:
         self.session = session
 
     async def load(self) -> Optional[Session]:

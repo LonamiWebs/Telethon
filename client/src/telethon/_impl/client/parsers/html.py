@@ -36,20 +36,20 @@ class HTMLToTelegramParser(HTMLParser):
         self._open_tags_meta.appendleft(None)
 
         attributes = dict(attrs)
-        EntityType: Optional[Type[MessageEntity]] = None
+        entity_type: Optional[Type[MessageEntity]] = None
         args = {}
         if tag == "strong" or tag == "b":
-            EntityType = MessageEntityBold
+            entity_type = MessageEntityBold
         elif tag == "em" or tag == "i":
-            EntityType = MessageEntityItalic
+            entity_type = MessageEntityItalic
         elif tag == "u":
-            EntityType = MessageEntityUnderline
+            entity_type = MessageEntityUnderline
         elif tag == "del" or tag == "s":
-            EntityType = MessageEntityStrike
+            entity_type = MessageEntityStrike
         elif tag == "blockquote":
-            EntityType = MessageEntityBlockquote
+            entity_type = MessageEntityBlockquote
         elif tag == "details":
-            EntityType = MessageEntitySpoiler
+            entity_type = MessageEntitySpoiler
         elif tag == "code":
             try:
                 # If we're in the middle of a <pre> tag, this <code> tag is
@@ -63,9 +63,9 @@ class HTMLToTelegramParser(HTMLParser):
                 if cls := attributes.get("class"):
                     pre.language = cls[len("language-") :]
             except KeyError:
-                EntityType = MessageEntityCode
+                entity_type = MessageEntityCode
         elif tag == "pre":
-            EntityType = MessageEntityPre
+            entity_type = MessageEntityPre
             args["language"] = ""
         elif tag == "a":
             url = attributes.get("href")
@@ -73,20 +73,20 @@ class HTMLToTelegramParser(HTMLParser):
                 return
             if url.startswith("mailto:"):
                 url = url[len("mailto:") :]
-                EntityType = MessageEntityEmail
+                entity_type = MessageEntityEmail
             else:
                 if self.get_starttag_text() == url:
-                    EntityType = MessageEntityUrl
+                    entity_type = MessageEntityUrl
                 else:
-                    EntityType = MessageEntityTextUrl
+                    entity_type = MessageEntityTextUrl
                     args["url"] = del_surrogate(url)
                     url = None
             self._open_tags_meta.popleft()
             self._open_tags_meta.appendleft(url)
 
-        if EntityType and tag not in self._building_entities:
-            Et = cast(Any, EntityType)
-            self._building_entities[tag] = Et(
+        if entity_type and tag not in self._building_entities:
+            any_entity_type_ = cast(Any, entity_type)
+            self._building_entities[tag] = any_entity_type_(
                 offset=len(self.text),
                 # The length will be determined when closing the tag.
                 length=0,

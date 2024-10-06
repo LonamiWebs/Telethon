@@ -3,7 +3,7 @@ from .authentication import step1 as auth_step1
 from .authentication import step2 as auth_step2
 from .authentication import step3 as auth_step3
 from .mtp import (
-    BadMessage,
+    BadMessageError,
     Deserialization,
     Encrypted,
     MsgId,
@@ -13,7 +13,14 @@ from .mtp import (
     RpcResult,
     Update,
 )
-from .transport import Abridged, BadStatus, Full, Intermediate, MissingBytes, Transport
+from .transport import (
+    Abridged,
+    BadStatusError,
+    Full,
+    Intermediate,
+    MissingBytesError,
+    Transport,
+)
 from .utils import DEFAULT_COMPRESSION_THRESHOLD
 
 __all__ = [
@@ -25,7 +32,7 @@ __all__ = [
     "auth_step1",
     "auth_step2",
     "auth_step3",
-    "BadMessage",
+    "BadMessageError",
     "Deserialization",
     "Encrypted",
     "MsgId",
@@ -35,10 +42,10 @@ __all__ = [
     "RpcResult",
     "Update",
     "Abridged",
-    "BadStatus",
+    "BadStatusError",
     "Full",
     "Intermediate",
-    "MissingBytes",
+    "MissingBytesError",
     "Transport",
     "DEFAULT_COMPRESSION_THRESHOLD",
 ]

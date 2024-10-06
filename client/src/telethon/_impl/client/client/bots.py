@@ -18,7 +18,7 @@ class InlineResults(metaclass=NoPublicConstructor):
         bot: abcs.InputUser,
         query: str,
         peer: Optional[PeerRef],
-    ):
+    ) -> None:
         self._client = client
         self._bot = bot
         self._query = query

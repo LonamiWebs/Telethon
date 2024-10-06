@@ -7,7 +7,7 @@ from .tl import (
     NormalParameter,
     Parameter,
     Type,
-    TypeDefNotImplemented,
+    TypeDefNotImplementedError,
 )
 from .tl_iterator import FunctionDef, TypeDef
 from .tl_iterator import iterate as parse_tl_file
@@ -19,7 +19,7 @@ __all__ = [
     "Definition",
     "Flag",
     "Parameter",
-    "TypeDefNotImplemented",
+    "TypeDefNotImplementedError",
     "BaseParameter",
     "FlagsParameter",
     "NormalParameter",

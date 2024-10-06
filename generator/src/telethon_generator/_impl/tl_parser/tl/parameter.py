@@ -4,8 +4,8 @@ from typing import Self
 from .parameter_type import BaseParameter
 
 
-class TypeDefNotImplemented(NotImplementedError):
-    def __init__(self, name: str):
+class TypeDefNotImplementedError(NotImplementedError):
+    def __init__(self, name: str) -> None:
         super().__init__(f"typedef not implemented: {name}")
         self.name = name
 
@@ -19,7 +19,7 @@ class Parameter:
     def from_str(cls, param: str) -> Self:
         if param.startswith("{"):
             if param.endswith(":Type}"):
-                raise TypeDefNotImplemented(param[1 : param.index(":")])
+                raise TypeDefNotImplementedError(param[1 : param.index(":")])
             else:
                 raise ValueError("missing def")
 

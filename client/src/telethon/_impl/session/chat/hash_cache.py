@@ -9,7 +9,7 @@ PeerRefType: TypeAlias = Type[UserRef] | Type[ChannelRef] | Type[GroupRef]
 class ChatHashCache:
     __slots__ = ("_hash_map", "_self_id", "_self_bot")
 
-    def __init__(self, self_user: Optional[tuple[int, bool]]):
+    def __init__(self, self_user: Optional[tuple[int, bool]]) -> None:
         self._hash_map: dict[int, tuple[PeerRefType, int]] = {}
         self._self_id = self_user[0] if self_user else None
         self._self_bot = self_user[1] if self_user else False

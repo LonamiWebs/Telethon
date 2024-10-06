@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class DialogList(AsyncList[Dialog]):
-    def __init__(self, client: Client):
+    def __init__(self, client: Client) -> None:
         super().__init__()
         self._client = client
         self._offset = 0
@@ -93,7 +93,7 @@ async def delete_dialog(self: Client, dialog: Peer | PeerRef, /) -> None:
 
 
 class DraftList(AsyncList[Draft]):
-    def __init__(self, client: Client):
+    def __init__(self, client: Client) -> None:
         super().__init__()
         self._client = client
         self._offset = 0

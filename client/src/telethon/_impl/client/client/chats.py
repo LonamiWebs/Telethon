@@ -29,7 +29,7 @@ class ParticipantList(AsyncList[Participant]):
         self,
         client: Client,
         peer: ChannelRef | GroupRef,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._peer = peer
@@ -106,7 +106,7 @@ class RecentActionList(AsyncList[RecentAction]):
         self,
         client: Client,
         peer: ChannelRef | GroupRef,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._peer = peer
@@ -148,7 +148,7 @@ class ProfilePhotoList(AsyncList[File]):
         self,
         client: Client,
         peer: PeerRef,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._peer = peer

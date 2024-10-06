@@ -20,7 +20,7 @@ from .defs import (
     POSSIBLE_GAP_TIMEOUT,
     USER_CHANNEL_DIFF_LIMIT,
     Entry,
-    Gap,
+    GapError,
     PossibleGap,
     PrematureEndReason,
     State,
@@ -252,7 +252,7 @@ class MessageBox:
             )
             if can_recover:
                 self.try_begin_get_diff(ENTRY_ACCOUNT, "missing hash")
-                raise Gap
+                raise GapError
 
     # https://core.telegram.org/api/updates
     def process_updates(
@@ -281,7 +281,7 @@ class MessageBox:
                 return result, combined.users, combined.chats
             elif self.seq + 1 < combined.seq_start:
                 self.try_begin_get_diff(ENTRY_ACCOUNT, "detected gap")
-                raise Gap
+                raise GapError
 
         def update_sort_key(update: abcs.Update) -> int:
             pts = pts_info_from_update(update)
