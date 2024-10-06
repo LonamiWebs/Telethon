@@ -46,7 +46,7 @@ class Raw(Event):
         client: Client,
         update: abcs.Update,
         chat_map: dict[int, Peer],
-    ):
+    ) -> None:
         self._client = client
         self._raw = update
         self._chat_map = chat_map

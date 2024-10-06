@@ -2,6 +2,7 @@ import struct
 from typing import Optional
 
 from pytest import raises
+
 from telethon._impl.crypto import AuthKey
 from telethon._impl.mtproto import Encrypted, Plain, RpcError
 from telethon._impl.mtproto.mtp.types import MsgId

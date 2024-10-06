@@ -10,9 +10,9 @@ from typing import Generic, Optional, Protocol, Self, Type, TypeVar
 
 from ..crypto import AuthKey
 from ..mtproto import (
-    BadMessage,
+    BadMessageError,
     Encrypted,
-    MissingBytes,
+    MissingBytesError,
     MsgId,
     Mtp,
     Plain,
@@ -133,7 +133,7 @@ class NotSerialized(RequestState):
 class Serialized(RequestState):
     __slots__ = ("msg_id", "container_msg_id")
 
-    def __init__(self, msg_id: MsgId):
+    def __init__(self, msg_id: MsgId) -> None:
         self.msg_id = msg_id
         self.container_msg_id = msg_id
 
@@ -141,7 +141,7 @@ class Serialized(RequestState):
 class Sent(RequestState):
     __slots__ = ("msg_id", "container_msg_id")
 
-    def __init__(self, msg_id: MsgId, container_msg_id: MsgId):
+    def __init__(self, msg_id: MsgId, container_msg_id: MsgId) -> None:
         self.msg_id = msg_id
         self.container_msg_id = container_msg_id
 
@@ -298,7 +298,7 @@ class Sender:
             self._mtp_buffer.clear()
             try:
                 n = self._transport.unpack(self._read_buffer, self._mtp_buffer)
-            except MissingBytes:
+            except MissingBytesError:
                 break
             else:
                 del self._read_buffer[:n]
@@ -403,7 +403,7 @@ class Sender:
                 result,
             )
 
-    def _process_bad_message(self, result: BadMessage) -> None:
+    def _process_bad_message(self, result: BadMessageError) -> None:
         for req in self._drain_requests(result.msg_id):
             if result.retryable:
                 self._logger.log(

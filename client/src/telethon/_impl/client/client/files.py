@@ -425,7 +425,7 @@ class FileBytesList(AsyncList[bytes]):
         self,
         client: Client,
         file: File,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._loc = file._input_location()

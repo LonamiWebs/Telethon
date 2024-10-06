@@ -20,7 +20,7 @@ class SqliteSession(Storage):
     an VCS by accident (adding ``*.session`` to ``.gitignore`` will catch them).
     """
 
-    def __init__(self, file: str | Path):
+    def __init__(self, file: str | Path) -> None:
         path = Path(file)
         if not path.suffix:
             path = path.with_suffix(EXTENSION)

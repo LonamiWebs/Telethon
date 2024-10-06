@@ -253,7 +253,7 @@ class HistoryList(MessageList):
         *,
         offset_id: int,
         offset_date: int,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._peer = peer
@@ -323,7 +323,7 @@ class CherryPickedList(MessageList):
         client: Client,
         peer: PeerRef,
         ids: list[int],
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._peer = peer
@@ -367,7 +367,7 @@ class SearchList(MessageList):
         query: str,
         offset_id: int,
         offset_date: int,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._peer = peer
@@ -434,7 +434,7 @@ class GlobalSearchList(MessageList):
         query: str,
         offset_id: int,
         offset_date: int,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._limit = limit

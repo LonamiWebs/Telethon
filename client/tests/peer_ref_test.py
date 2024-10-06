@@ -1,6 +1,7 @@
 import inspect
 
 from pytest import raises
+
 from telethon._impl.session import ChannelRef, GroupRef, PeerRef, UserRef
 
 USER = UserRef(12, 34)

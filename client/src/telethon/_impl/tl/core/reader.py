@@ -26,11 +26,11 @@ def _bootstrap_get_ty(constructor_id: int) -> Optional[Type["Serializable"]]:
             raise RuntimeError(
                 "generated api and mtproto schemas cannot have colliding constructor identifiers"
             )
-        ALL_TYPES = API_TYPES | MTPROTO_TYPES
+        all_types = API_TYPES | MTPROTO_TYPES
 
         # Signatures don't fully match, but this is a private method
         # and all previous uses are compatible with `dict.get`.
-        Reader._get_ty = ALL_TYPES.get  # type: ignore [assignment]
+        Reader._get_ty = all_types.get  # type: ignore [assignment]
 
     return Reader._get_ty(constructor_id)
 

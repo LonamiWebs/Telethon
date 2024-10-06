@@ -80,6 +80,6 @@ class PrematureEndReason(Enum):
     BANNED = "ban"
 
 
-class Gap(ValueError):
+class GapError(ValueError):
     def __repr__(self) -> str:
         return "Gap()"

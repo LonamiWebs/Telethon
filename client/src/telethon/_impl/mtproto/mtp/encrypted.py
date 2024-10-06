@@ -60,7 +60,15 @@ from ..utils import (
     gzip_decompress,
     message_requires_ack,
 )
-from .types import BadMessage, Deserialization, MsgId, Mtp, RpcError, RpcResult, Update
+from .types import (
+    BadMessageError,
+    Deserialization,
+    MsgId,
+    Mtp,
+    RpcError,
+    RpcResult,
+    Update,
+)
 
 NUM_FUTURE_SALTS = 64
 
@@ -269,7 +277,7 @@ class Encrypted(Mtp):
         bad_msg = AbcBadMsgNotification.from_bytes(message.body)
         assert isinstance(bad_msg, (BadServerSalt, BadMsgNotification))
 
-        exc = BadMessage(msg_id=MsgId(bad_msg.bad_msg_id), code=bad_msg.error_code)
+        exc = BadMessageError(msg_id=MsgId(bad_msg.bad_msg_id), code=bad_msg.error_code)
 
         if bad_msg.bad_msg_id == self._salt_request_msg_id:
             # Response to internal request, do not propagate.

@@ -25,7 +25,7 @@ class InlineResult(metaclass=NoPublicConstructor):
         results: types.messages.BotResults,
         result: types.BotInlineMediaResult | types.BotInlineResult,
         default_peer: Optional[PeerRef],
-    ):
+    ) -> None:
         self._client = client
         self._raw_results = results
         self._raw = result

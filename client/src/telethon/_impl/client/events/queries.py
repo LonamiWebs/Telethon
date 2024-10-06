@@ -25,7 +25,7 @@ class ButtonCallback(Event):
         client: Client,
         update: types.UpdateBotCallbackQuery,
         chat_map: dict[int, Peer],
-    ):
+    ) -> None:
         self._client = client
         self._raw = update
         self._chat_map = chat_map
@@ -101,7 +101,7 @@ class InlineQuery(Event):
     Only bot accounts can receive this event.
     """
 
-    def __init__(self, update: types.UpdateBotInlineQuery):
+    def __init__(self, update: types.UpdateBotInlineQuery) -> None:
         self._raw = update
 
     @classmethod

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Self
 
 from ..utils import infer_id
-from .parameter import Parameter, TypeDefNotImplemented
+from .parameter import Parameter, TypeDefNotImplementedError
 from .parameter_type import FlagsParameter, NormalParameter
 from .ty import Type
 
@@ -65,7 +65,7 @@ class Definition:
         for param_str in middle.split():
             try:
                 param = Parameter.from_str(param_str)
-            except TypeDefNotImplemented as e:
+            except TypeDefNotImplementedError as e:
                 type_defs.append(e.name)
                 continue
 

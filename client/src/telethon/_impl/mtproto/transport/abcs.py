@@ -16,12 +16,12 @@ class Transport(ABC):
         pass
 
 
-class MissingBytes(ValueError):
+class MissingBytesError(ValueError):
     def __init__(self, *, expected: int, got: int) -> None:
         super().__init__(f"missing bytes, expected: {expected}, got: {got}")
 
 
-class BadStatus(ValueError):
+class BadStatusError(ValueError):
     def __init__(self, *, status: int) -> None:
         super().__init__(f"transport reported bad status: {status}")
         self.status = status

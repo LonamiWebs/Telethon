@@ -122,7 +122,7 @@ class OutWrapper:
     _fd: OutFileLike | BufferedWriter
     _owned_fd: Optional[BufferedWriter]
 
-    def __init__(self, file: str | Path | OutFileLike):
+    def __init__(self, file: str | Path | OutFileLike) -> None:
         if isinstance(file, str):
             file = Path(file)
 
@@ -166,7 +166,7 @@ class File(metaclass=NoPublicConstructor):
         thumbs: Optional[Sequence[abcs.PhotoSize]],
         raw: Optional[abcs.MessageMedia | abcs.Photo | abcs.Document],
         client: Optional[Client],
-    ):
+    ) -> None:
         self._attributes = attributes
         self._size = size
         self._name = name

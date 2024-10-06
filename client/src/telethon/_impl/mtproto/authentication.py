@@ -310,4 +310,4 @@ def check_new_nonce_hash(got: int, expected: int) -> None:
 
 def check_g_in_range(value: int, low: int, high: int) -> None:
     if not (low < value < high):
-        raise ValueError(f"g parameter {value} not in range({low+1}, {high})")
+        raise ValueError(f"g parameter {value} not in range({low + 1}, {high})")

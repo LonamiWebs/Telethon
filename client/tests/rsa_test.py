@@ -1,4 +1,5 @@
 from rsa import PublicKey
+
 from telethon._impl.crypto.rsa import (
     PRODUCTION_RSA_KEY,
     TESTMODE_RSA_KEY,

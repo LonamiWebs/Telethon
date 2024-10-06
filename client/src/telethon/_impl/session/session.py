@@ -168,7 +168,7 @@ class Session:
         dcs: Optional[list[DataCenter]] = None,
         user: Optional[User] = None,
         state: Optional[UpdateState] = None,
-    ):
+    ) -> None:
         self.dcs = dcs or []
         "List of known data-centers."
         self.user = user

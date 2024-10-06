@@ -1,6 +1,7 @@
 """
 Sort imports and format code.
 """
+
 import subprocess
 import sys
 

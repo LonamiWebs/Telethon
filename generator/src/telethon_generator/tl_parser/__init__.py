@@ -9,7 +9,7 @@ from .._impl.tl_parser import (
     ParsedTl,
     Type,
     TypeDef,
-    TypeDefNotImplemented,
+    TypeDefNotImplementedError,
     load_tl_file,
     parse_tl_file,
 )
@@ -19,7 +19,7 @@ __all__ = [
     "Flag",
     "Parameter",
     "ParsedTl",
-    "TypeDefNotImplemented",
+    "TypeDefNotImplementedError",
     "BaseParameter",
     "FlagsParameter",
     "NormalParameter",

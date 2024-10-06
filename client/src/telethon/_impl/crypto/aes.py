@@ -1,5 +1,5 @@
 try:
-    import cryptg
+    import cryptg  # type: ignore [import-untyped]
 
     def ige_encrypt(
         plaintext: bytes | bytearray | memoryview, key: bytes, iv: bytes
@@ -18,7 +18,7 @@ try:
         )
 
 except ImportError:
-    import pyaes
+    import pyaes  # type: ignore [import-untyped]
 
     def ige_encrypt(
         plaintext: bytes | bytearray | memoryview, key: bytes, iv: bytes

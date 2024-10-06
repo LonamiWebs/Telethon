@@ -22,7 +22,7 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
     This class is constructed by calling :meth:`telethon.Client.prepare_album`.
     """
 
-    def __init__(self, *, client: Client):
+    def __init__(self, *, client: Client) -> None:
         self._client = client
         self._medias: list[types.InputSingleMedia] = []
 
