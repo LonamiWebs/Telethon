@@ -51,7 +51,9 @@ class DialogList(AsyncList[Dialog]):
         chat_map = build_chat_map(self._client, result.users, result.chats)
         msg_map = build_msg_map(self._client, result.messages, chat_map)
 
-        self._buffer.extend(Dialog._from_raw(self._client, d, chat_map, msg_map) for d in result.dialogs)
+        self._buffer.extend(
+            Dialog._from_raw(self._client, d, chat_map, msg_map) for d in result.dialogs
+        )
 
 
 def get_dialogs(self: Client) -> AsyncList[Dialog]:
@@ -128,7 +130,9 @@ async def edit_draft(
     reply_to: Optional[int] = None,
 ) -> Draft:
     peer = peer._ref
-    message, entities = parse_message(text=text, markdown=markdown, html=html, allow_empty=False)
+    message, entities = parse_message(
+        text=text, markdown=markdown, html=html, allow_empty=False
+    )
 
     result = await self(
         functions.messages.save_draft(

@@ -17,7 +17,9 @@ from .serde.deserialization import (
 from .serde.serialization import generate_function, generate_write
 
 
-def generate_init(writer: SourceWriter, namespaces: set[str], classes: set[str]) -> None:
+def generate_init(
+    writer: SourceWriter, namespaces: set[str], classes: set[str]
+) -> None:
     sorted_cls = list(sorted(classes))
     sorted_ns = list(sorted(namespaces))
 
@@ -91,7 +93,9 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         writer = fs.open(type_path)
 
         if type_path not in fs:
-            writer.write("# pyright: reportUnusedImport=false, reportConstantRedefinition=false")
+            writer.write(
+                "# pyright: reportUnusedImport=false, reportConstantRedefinition=false"
+            )
             writer.write("import struct")
             writer.write("from typing import Optional, Self, Sequence")
             writer.write("from .. import abcs")
@@ -102,7 +106,9 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         generated_type_names.add(f"{ns}{to_class_name(typedef.name)}")
 
         # class Type(BaseType)
-        writer.write(f"class {to_class_name(typedef.name)}({inner_type_fmt(typedef.ty)}):")
+        writer.write(
+            f"class {to_class_name(typedef.name)}({inner_type_fmt(typedef.ty)}):"
+        )
 
         #   __slots__ = ('params', ...)
         slots = " ".join(f"'{p.name}'," for p in property_params)
@@ -115,7 +121,9 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
 
         #   def __init__()
         if property_params:
-            params = "".join(f", {p.name}: {param_type_fmt(p.ty)}" for p in property_params)
+            params = "".join(
+                f", {p.name}: {param_type_fmt(p.ty)}" for p in property_params
+            )
             writer.write(f"  def __init__(_s, *{params}) -> None:")
             for p in property_params:
                 writer.write(f"    _s.{p.name} = {p.name}")
@@ -143,7 +151,9 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
             raise ValueError("nested function-namespaces are not supported")
         elif len(functiondef.namespace) == 1:
             function_namespaces.add(functiondef.namespace[0])
-            function_path = (Path("functions") / functiondef.namespace[0]).with_suffix(".py")
+            function_path = (Path("functions") / functiondef.namespace[0]).with_suffix(
+                ".py"
+            )
         else:
             function_def_names.add(to_method_name(functiondef.name))
             function_path = Path("functions/_nons.py")
@@ -163,14 +173,18 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         params = "".join(f", {p.name}: {param_type_fmt(p.ty)}" for p in required_params)
         star = "*" if params else ""
         return_ty = param_type_fmt(NormalParameter(ty=functiondef.ty, flag=None))
-        writer.write(f"def {to_method_name(functiondef.name)}({star}{params}) -> Request[{return_ty}]:")
+        writer.write(
+            f"def {to_method_name(functiondef.name)}({star}{params}) -> Request[{return_ty}]:"
+        )
         writer.indent(2)
         generate_function(writer, functiondef)
         writer.dedent(2)
 
     generate_init(fs.open(Path("abcs/__init__.py")), abc_namespaces, abc_class_names)
     generate_init(fs.open(Path("types/__init__.py")), type_namespaces, type_class_names)
-    generate_init(fs.open(Path("functions/__init__.py")), function_namespaces, function_def_names)
+    generate_init(
+        fs.open(Path("functions/__init__.py")), function_namespaces, function_def_names
+    )
 
     writer = fs.open(Path("layer.py"))
     writer.write("# pyright: reportUnusedImport=false")
@@ -180,12 +194,16 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     )
     writer.write("from typing import cast, Type")
     writer.write(f"LAYER = {tl.layer!r}")
-    writer.write("TYPE_MAPPING = {t.constructor_id(): t for t in cast(tuple[Type[Serializable]], (")
+    writer.write(
+        "TYPE_MAPPING = {t.constructor_id(): t for t in cast(tuple[Type[Serializable]], ("
+    )
     for name in sorted(generated_type_names):
         writer.write(f"  types.{name},")
     writer.write("))}")
     writer.write("RESPONSE_MAPPING = {")
     for functiondef in tl.functiondefs:
-        writer.write(f"  {hex(functiondef.id)}: {function_deserializer_fmt(functiondef)},")
+        writer.write(
+            f"  {hex(functiondef.id)}: {function_deserializer_fmt(functiondef)},"
+        )
     writer.write("}")
     writer.write("__all__ = ['LAYER', 'TYPE_MAPPING', 'RESPONSE_MAPPING']")

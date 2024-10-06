@@ -50,7 +50,9 @@ _TRIVIAL_STRUCT_MAP = {"int": "i", "long": "q", "double": "d", "Bool": "I"}
 
 def trivial_struct_fmt(ty: BaseParameter) -> str:
     try:
-        return _TRIVIAL_STRUCT_MAP[ty.ty.name] if isinstance(ty, NormalParameter) else "I"
+        return (
+            _TRIVIAL_STRUCT_MAP[ty.ty.name] if isinstance(ty, NormalParameter) else "I"
+        )
     except KeyError:
         raise ValueError("input param was not trivial")
 

@@ -34,7 +34,11 @@ def generate_random_id() -> int:
 
 
 def adapt_date(date: Optional[int]) -> Optional[datetime.datetime]:
-    return datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc) if date is not None else None
+    return (
+        datetime.datetime.fromtimestamp(date, tz=datetime.timezone.utc)
+        if date is not None
+        else None
+    )
 
 
 class Message(metaclass=NoPublicConstructor):
@@ -55,14 +59,20 @@ class Message(metaclass=NoPublicConstructor):
                 print('Found empty message with ID', message.id)
     """
 
-    def __init__(self, client: Client, message: abcs.Message, chat_map: dict[int, Peer]) -> None:
-        assert isinstance(message, (types.Message, types.MessageService, types.MessageEmpty))
+    def __init__(
+        self, client: Client, message: abcs.Message, chat_map: dict[int, Peer]
+    ) -> None:
+        assert isinstance(
+            message, (types.Message, types.MessageService, types.MessageEmpty)
+        )
         self._client = client
         self._raw = message
         self._chat_map = chat_map
 
     @classmethod
-    def _from_raw(cls, client: Client, message: abcs.Message, chat_map: dict[int, Peer]) -> Self:
+    def _from_raw(
+        cls, client: Client, message: abcs.Message, chat_map: dict[int, Peer]
+    ) -> Self:
         return cls._create(client, message, chat_map)
 
     @classmethod
@@ -148,7 +158,9 @@ class Message(metaclass=NoPublicConstructor):
         See :ref:`formatting` to learn the HTML elements used.
         """
         if text := getattr(self._raw, "message", None):
-            return generate_html_message(text, getattr(self._raw, "entities", None) or [])
+            return generate_html_message(
+                text, getattr(self._raw, "entities", None) or []
+            )
         else:
             return None
 
@@ -160,7 +172,9 @@ class Message(metaclass=NoPublicConstructor):
         See :ref:`formatting` to learn the formatting characters used.
         """
         if text := getattr(self._raw, "message", None):
-            return generate_markdown_message(text, getattr(self._raw, "entities", None) or [])
+            return generate_markdown_message(
+                text, getattr(self._raw, "entities", None) or []
+            )
         else:
             return None
 
@@ -179,7 +193,9 @@ class Message(metaclass=NoPublicConstructor):
         peer = self._raw.peer_id or types.PeerUser(user_id=0)
         pid = peer_id(peer)
         if pid not in self._chat_map:
-            self._chat_map[pid] = expand_peer(self._client, peer, broadcast=getattr(self._raw, "post", None))
+            self._chat_map[pid] = expand_peer(
+                self._client, peer, broadcast=getattr(self._raw, "post", None)
+            )
         return self._chat_map[pid]
 
     @property
@@ -223,7 +239,14 @@ class Message(metaclass=NoPublicConstructor):
         This can also be used as a way to check that the message media is an audio.
         """
         audio = self._file()
-        return audio if audio and any(isinstance(a, types.DocumentAttributeAudio) for a in audio._attributes) else None
+        return (
+            audio
+            if audio
+            and any(
+                isinstance(a, types.DocumentAttributeAudio) for a in audio._attributes
+            )
+            else None
+        )
 
     @property
     def video(self) -> Optional[File]:
@@ -233,7 +256,14 @@ class Message(metaclass=NoPublicConstructor):
         This can also be used as a way to check that the message media is a video.
         """
         audio = self._file()
-        return audio if audio and any(isinstance(a, types.DocumentAttributeVideo) for a in audio._attributes) else None
+        return (
+            audio
+            if audio
+            and any(
+                isinstance(a, types.DocumentAttributeVideo) for a in audio._attributes
+            )
+            else None
+        )
 
     @property
     def file(self) -> Optional[File]:
@@ -447,7 +477,10 @@ class Message(metaclass=NoPublicConstructor):
             return None
 
         return [
-            [create_button(self, button) for button in cast(types.KeyboardButtonRow, row).buttons]
+            [
+                create_button(self, button)
+                for button in cast(types.KeyboardButtonRow, row).buttons
+            ]
             for row in markup.rows
         ]
 
@@ -473,8 +506,13 @@ class Message(metaclass=NoPublicConstructor):
         return not isinstance(self._raw, types.MessageEmpty)
 
 
-def build_msg_map(client: Client, messages: Sequence[abcs.Message], chat_map: dict[int, Peer]) -> dict[int, Message]:
-    return {msg.id: msg for msg in (Message._from_raw(client, m, chat_map) for m in messages)}
+def build_msg_map(
+    client: Client, messages: Sequence[abcs.Message], chat_map: dict[int, Peer]
+) -> dict[int, Message]:
+    return {
+        msg.id: msg
+        for msg in (Message._from_raw(client, m, chat_map) for m in messages)
+    }
 
 
 def parse_message(

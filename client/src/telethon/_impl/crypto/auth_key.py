@@ -20,4 +20,8 @@ class AuthKey:
         return self.data
 
     def calc_new_nonce_hash(self, new_nonce: int, number: int) -> int:
-        return int.from_bytes(sha1(new_nonce.to_bytes(32) + number.to_bytes(1) + self.aux_hash).digest()[4:])
+        return int.from_bytes(
+            sha1(new_nonce.to_bytes(32) + number.to_bytes(1) + self.aux_hash).digest()[
+                4:
+            ]
+        )

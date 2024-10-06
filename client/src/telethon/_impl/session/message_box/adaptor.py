@@ -27,7 +27,9 @@ def update_short(short: types.UpdateShort) -> types.UpdatesCombined:
     )
 
 
-def update_short_message(short: types.UpdateShortMessage, self_id: int) -> types.UpdatesCombined:
+def update_short_message(
+    short: types.UpdateShortMessage, self_id: int
+) -> types.UpdatesCombined:
     return update_short(
         types.UpdateShort(
             update=types.UpdateNewMessage(
@@ -44,7 +46,9 @@ def update_short_message(short: types.UpdateShortMessage, self_id: int) -> types
                     noforwards=False,
                     reactions=None,
                     id=short.id,
-                    from_id=types.PeerUser(user_id=self_id if short.out else short.user_id),
+                    from_id=types.PeerUser(
+                        user_id=self_id if short.out else short.user_id
+                    ),
                     peer_id=types.PeerChat(
                         chat_id=short.user_id,
                     ),

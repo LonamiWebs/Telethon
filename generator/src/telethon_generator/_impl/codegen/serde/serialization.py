@@ -15,11 +15,15 @@ def param_value_expr(param: Parameter) -> str:
     return f"{pre}{mid}{suf}"
 
 
-def generate_buffer_append(writer: SourceWriter, buffer: str, name: str, ty: Type) -> None:
+def generate_buffer_append(
+    writer: SourceWriter, buffer: str, name: str, ty: Type
+) -> None:
     if is_trivial(NormalParameter(ty=ty, flag=None)):
         fmt = trivial_struct_fmt(NormalParameter(ty=ty, flag=None))
         if ty.name == "Bool":
-            writer.write(f"{buffer} += struct.pack(f'<{fmt}', (0x997275b5 if {name} else 0xbc799737))")
+            writer.write(
+                f"{buffer} += struct.pack(f'<{fmt}', (0x997275b5 if {name} else 0xbc799737))"
+            )
         else:
             writer.write(f"{buffer} += struct.pack(f'<{fmt}', {name})")
     elif ty.generic_ref or ty.name == "Object":
@@ -54,7 +58,9 @@ def generate_normal_param_write(
 
     if param.ty.generic_arg:
         if param.ty.name not in ("Vector", "vector"):
-            raise ValueError("generic_arg deserialization for non-vectors is not supported")
+            raise ValueError(
+                "generic_arg deserialization for non-vectors is not supported"
+            )
 
         if param.ty.bare:
             writer.write(f"{buffer} += struct.pack('<i', len({name}))")
@@ -70,7 +76,9 @@ def generate_normal_param_write(
                     f"{buffer} += struct.pack(f'<{{len({name})}}{fmt}', *(0x997275b5 if {tmp} else 0xbc799737 for {tmp} in {name}))"
                 )
             else:
-                writer.write(f"{buffer} += struct.pack(f'<{{len({name})}}{fmt}', *{name})")
+                writer.write(
+                    f"{buffer} += struct.pack(f'<{{len({name})}}{fmt}', *{name})"
+                )
         else:
             tmp = next(tmp_names)
             writer.write(f"for {tmp} in {name}:")
@@ -102,7 +110,9 @@ def generate_write(writer: SourceWriter, defn: Definition) -> None:
                             else f"(0 if self.{p.name} is None else {1 << p.ty.flag.index})"
                         )
                         for p in defn.params
-                        if isinstance(p.ty, NormalParameter) and p.ty.flag and p.ty.flag.name == param.name
+                        if isinstance(p.ty, NormalParameter)
+                        and p.ty.flag
+                        and p.ty.flag.name == param.name
                     )
                     writer.write(f"_{param.name} = {flags or 0}")
 
@@ -113,7 +123,9 @@ def generate_write(writer: SourceWriter, defn: Definition) -> None:
             for param in iter:
                 if not isinstance(param.ty, NormalParameter):
                     raise RuntimeError("FlagsParameter should be considered trivial")
-                generate_normal_param_write(writer, tmp_names, "buffer", f"self.{param.name}", param.ty)
+                generate_normal_param_write(
+                    writer, tmp_names, "buffer", f"self.{param.name}", param.ty
+                )
 
 
 def generate_function(writer: SourceWriter, defn: Definition) -> None:
@@ -136,7 +148,9 @@ def generate_function(writer: SourceWriter, defn: Definition) -> None:
                             else f"(0 if {p.name} is None else {1 << p.ty.flag.index})"
                         )
                         for p in defn.params
-                        if isinstance(p.ty, NormalParameter) and p.ty.flag and p.ty.flag.name == param.name
+                        if isinstance(p.ty, NormalParameter)
+                        and p.ty.flag
+                        and p.ty.flag.name == param.name
                     )
                     writer.write(f"{param.name} = {flags or 0}")
 
@@ -147,5 +161,7 @@ def generate_function(writer: SourceWriter, defn: Definition) -> None:
             for param in iter:
                 if not isinstance(param.ty, NormalParameter):
                     raise RuntimeError("FlagsParameter should be considered trivial")
-                generate_normal_param_write(writer, tmp_names, "_buffer", param.name, param.ty)
+                generate_normal_param_write(
+                    writer, tmp_names, "_buffer", param.name, param.ty
+                )
     writer.write("return Request(b'' + _buffer)")

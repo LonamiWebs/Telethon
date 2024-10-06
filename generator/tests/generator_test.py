@@ -14,7 +14,9 @@ def gen_py_code(
     functiondefs: Optional[list[Definition]] = None,
 ) -> str:
     fs = FakeFs()
-    generate(fs, ParsedTl(layer=0, typedefs=typedefs or [], functiondefs=functiondefs or []))
+    generate(
+        fs, ParsedTl(layer=0, typedefs=typedefs or [], functiondefs=functiondefs or [])
+    )
     generated = bytearray()
     for path, data in fs._files.items():
         if path.stem not in ("__init__", "layer"):
@@ -25,7 +27,9 @@ def gen_py_code(
 
 
 def test_generic_functions_use_bytes_parameters() -> None:
-    definitions = get_definitions("invokeWithLayer#da9b0d0d {X:Type} layer:int query:!X = X;")
+    definitions = get_definitions(
+        "invokeWithLayer#da9b0d0d {X:Type} layer:int query:!X = X;"
+    )
     result = gen_py_code(functiondefs=definitions)
     assert "invoke_with_layer" in result
     assert "query: _bytes" in result

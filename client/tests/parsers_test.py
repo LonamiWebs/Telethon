@@ -32,7 +32,10 @@ def test_parse_all_entities_markdown() -> None:
     markdown = "Some **bold** (__strong__), *italics* (_cursive_), inline `code`, a\n```rust\npre\n```\nblock, a [link](https://example.com), and [mentions](tg://user?id=12345678)"
     text, entities = parse_markdown_message(markdown)
 
-    assert text == "Some bold (strong), italics (cursive), inline code, a\npre\nblock, a link, and mentions"
+    assert (
+        text
+        == "Some bold (strong), italics (cursive), inline code, a\npre\nblock, a link, and mentions"
+    )
     assert entities == [
         types.MessageEntityBold(offset=5, length=4),
         types.MessageEntityBold(offset=11, length=6),
@@ -89,7 +92,10 @@ def test_parse_emoji_html() -> None:
 def test_parse_all_entities_html() -> None:
     html = 'Some <b>bold</b> (<strong>strong</strong>), <i>italics</i> (<em>cursive</em>), inline <code>code</code>, a <pre>pre</pre> block, a <a href="https://example.com">link</a>, <details>spoilers</details> and <a href="tg://user?id=12345678">mentions</a>'
     text, entities = parse_html_message(html)
-    assert text == "Some bold (strong), italics (cursive), inline code, a pre block, a link, spoilers and mentions"
+    assert (
+        text
+        == "Some bold (strong), italics (cursive), inline code, a pre block, a link, spoilers and mentions"
+    )
     assert entities == [
         types.MessageEntityBold(offset=5, length=4),
         types.MessageEntityBold(offset=11, length=6),

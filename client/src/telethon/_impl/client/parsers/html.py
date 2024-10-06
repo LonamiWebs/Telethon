@@ -133,7 +133,9 @@ def parse(html: str) -> tuple[str, list[MessageEntity]]:
     return del_surrogate(parser.text), parser.entities
 
 
-ENTITY_TO_FORMATTER: dict[Type[MessageEntity], tuple[str, str] | Callable[[Any, str], tuple[str, str]]] = {
+ENTITY_TO_FORMATTER: dict[
+    Type[MessageEntity], tuple[str, str] | Callable[[Any, str], tuple[str, str]]
+] = {
     MessageEntityBold: ("<strong>", "</strong>"),
     MessageEntityItalic: ("<em>", "</em>"),
     MessageEntityCode: ("<code>", "</code>"),
@@ -194,7 +196,12 @@ def unparse(text: str, entities: Iterable[MessageEntity]) -> str:
         while within_surrogate(text, at):
             at += 1
 
-        text = text[:at] + what + escape(text[at:next_escape_bound]) + text[next_escape_bound:]
+        text = (
+            text[:at]
+            + what
+            + escape(text[at:next_escape_bound])
+            + text[next_escape_bound:]
+        )
         next_escape_bound = at
 
     text = escape(text[:next_escape_bound]) + text[next_escape_bound:]

@@ -52,12 +52,20 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
         input_media: abcs.InputMedia
         if try_get_url_path(file) is not None:
             assert isinstance(file, str)
-            input_media = types.InputMediaPhotoExternal(spoiler=False, url=file, ttl_seconds=None)
+            input_media = types.InputMediaPhotoExternal(
+                spoiler=False, url=file, ttl_seconds=None
+            )
         else:
             input_file, _ = await self._client._upload(file, size, "a.jpg")
-            input_media = types.InputMediaUploadedPhoto(spoiler=False, file=input_file, stickers=None, ttl_seconds=None)
+            input_media = types.InputMediaUploadedPhoto(
+                spoiler=False, file=input_file, stickers=None, ttl_seconds=None
+            )
 
-        media = await self._client(functions.messages.upload_media(peer=types.InputPeerSelf(), media=input_media))
+        media = await self._client(
+            functions.messages.upload_media(
+                peer=types.InputPeerSelf(), media=input_media
+            )
+        )
         assert isinstance(media, types.MessageMediaPhoto)
         assert isinstance(media.photo, types.Photo)
         input_media = types.InputMediaPhoto(
@@ -69,7 +77,9 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
             ),
             ttl_seconds=media.ttl_seconds,
         )
-        message, entities = parse_message(text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True)
+        message, entities = parse_message(
+            text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
+        )
         self._medias.append(
             types.InputSingleMedia(
                 media=input_media,
@@ -122,7 +132,9 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
         input_media: abcs.InputMedia
         if try_get_url_path(file) is not None:
             assert isinstance(file, str)
-            input_media = types.InputMediaDocumentExternal(spoiler=False, url=file, ttl_seconds=None)
+            input_media = types.InputMediaDocumentExternal(
+                spoiler=False, url=file, ttl_seconds=None
+            )
         else:
             input_file, name = await self._client._upload(file, size, name)
             if mime_type is None:
@@ -156,7 +168,11 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
                 ttl_seconds=None,
             )
 
-        media = await self._client(functions.messages.upload_media(peer=types.InputPeerEmpty(), media=input_media))
+        media = await self._client(
+            functions.messages.upload_media(
+                peer=types.InputPeerEmpty(), media=input_media
+            )
+        )
         assert isinstance(media, types.MessageMediaDocument)
         assert isinstance(media.document, types.Document)
         input_media = types.InputMediaDocument(
@@ -169,7 +185,9 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
             ttl_seconds=media.ttl_seconds,
             query=None,
         )
-        message, entities = parse_message(text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True)
+        message, entities = parse_message(
+            text=caption, markdown=caption_markdown, html=caption_html, allow_empty=True
+        )
         self._medias.append(
             types.InputSingleMedia(
                 media=input_media,
@@ -179,7 +197,9 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
             )
         )
 
-    async def send(self, peer: Peer | PeerRef, *, reply_to: Optional[int] = None) -> list[Message]:
+    async def send(
+        self, peer: Peer | PeerRef, *, reply_to: Optional[int] = None
+    ) -> list[Message]:
         """
         Send the album.
 
@@ -205,7 +225,11 @@ class AlbumBuilder(metaclass=NoPublicConstructor):
                     update_stickersets_order=False,
                     peer=peer._ref._to_input_peer(),
                     reply_to=(
-                        types.InputReplyToMessage(reply_to_msg_id=reply_to, top_msg_id=None) if reply_to else None
+                        types.InputReplyToMessage(
+                            reply_to_msg_id=reply_to, top_msg_id=None
+                        )
+                        if reply_to
+                        else None
                     ),
                     multi_media=self._medias,
                     schedule_date=None,

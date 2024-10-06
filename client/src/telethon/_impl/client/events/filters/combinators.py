@@ -65,7 +65,9 @@ class Any(Combinable):
 
     __slots__ = ("_filters",)
 
-    def __init__(self, filter1: FilterType, filter2: FilterType, *filters: FilterType) -> None:
+    def __init__(
+        self, filter1: FilterType, filter2: FilterType, *filters: FilterType
+    ) -> None:
         self._filters = (filter1, filter2, *filters)
 
     @property
@@ -109,7 +111,9 @@ class All(Combinable):
 
     __slots__ = ("_filters",)
 
-    def __init__(self, filter1: FilterType, filter2: FilterType, *filters: FilterType) -> None:
+    def __init__(
+        self, filter1: FilterType, filter2: FilterType, *filters: FilterType
+    ) -> None:
         self._filters = (filter1, filter2, *filters)
 
     @property

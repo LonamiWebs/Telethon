@@ -37,9 +37,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = {attr = "telethon_generator.version.__version__"}
 
-[tool.ruff]
-line-length = 120
-
 [tool.ruff.lint]
 select = ["F", "E", "W", "I"]
 ignore = [

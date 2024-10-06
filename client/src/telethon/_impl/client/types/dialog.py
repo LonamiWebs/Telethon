@@ -90,6 +90,9 @@ class Dialog(metaclass=NoPublicConstructor):
         if isinstance(self._raw, types.Dialog):
             return self._raw.unread_count
         elif isinstance(self._raw, types.DialogPeerFolder):
-            return self._raw.unread_unmuted_messages_count + self._raw.unread_muted_messages_count
+            return (
+                self._raw.unread_unmuted_messages_count
+                + self._raw.unread_muted_messages_count
+            )
         else:
             raise RuntimeError("unexpected case")

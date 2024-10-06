@@ -34,13 +34,17 @@ def encrypt_hashed(data: bytes, key: PublicKey, random_bytes: bytes) -> bytes:
         temp_key = random_bytes[192 + 32 * attempt : 192 + 32 * attempt + 32]
 
         # data_with_hash := data_pad_reversed + SHA256(temp_key + data_with_padding); -- after this assignment, data_with_hash is exactly 224 bytes long.
-        data_with_hash = data_pad_reversed + sha256(temp_key + data_with_padding).digest()
+        data_with_hash = (
+            data_pad_reversed + sha256(temp_key + data_with_padding).digest()
+        )
 
         # aes_encrypted := AES256_IGE(data_with_hash, temp_key, 0); -- AES256-IGE encryption with zero IV.
         aes_encrypted = ige_encrypt(data_with_hash, temp_key, bytes(32))
 
         # temp_key_xor := temp_key XOR SHA256(aes_encrypted); -- adjusted key, 32 bytes
-        temp_key_xor = bytes(a ^ b for a, b in zip(temp_key, sha256(aes_encrypted).digest()))
+        temp_key_xor = bytes(
+            a ^ b for a, b in zip(temp_key, sha256(aes_encrypted).digest())
+        )
 
         # key_aes_encrypted := temp_key_xor + aes_encrypted; -- exactly 256 bytes (2048 bits) long
         key_aes_encrypted = temp_key_xor + aes_encrypted
@@ -83,4 +87,6 @@ j4WcDuXc2CTHgH8gFTNhp/Y8/SpDOhvn9QIDAQAB
 )
 
 
-RSA_KEYS = {compute_fingerprint(key): key for key in (PRODUCTION_RSA_KEY, TESTMODE_RSA_KEY)}
+RSA_KEYS = {
+    compute_fingerprint(key): key for key in (PRODUCTION_RSA_KEY, TESTMODE_RSA_KEY)
+}

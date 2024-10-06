@@ -116,7 +116,11 @@ class RpcError(ValueError):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self._code == other._code and self._name == other._name and self._value == other._value
+        return (
+            self._code == other._code
+            and self._name == other._name
+            and self._value == other._value
+        )
 
 
 # https://core.telegram.org/mtproto/service_messages_about_messages
@@ -152,7 +156,9 @@ class BadMessage(ValueError):
         self.msg_id = msg_id
         self._code = code
         self._caused_by = caused_by
-        self.severity = logging.WARNING if self._code in NON_FATAL_MSG_IDS else logging.ERROR
+        self.severity = (
+            logging.WARNING if self._code in NON_FATAL_MSG_IDS else logging.ERROR
+        )
 
     @property
     def code(self) -> int:
@@ -195,7 +201,9 @@ class Mtp(ABC):
         """
 
     @abstractmethod
-    def deserialize(self, payload: bytes | bytearray | memoryview) -> list[Deserialization]:
+    def deserialize(
+        self, payload: bytes | bytearray | memoryview
+    ) -> list[Deserialization]:
         """
         Deserialize incoming buffer payload.
         """

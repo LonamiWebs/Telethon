@@ -91,9 +91,13 @@ class MessageBox:
             self.map[ENTRY_ACCOUNT] = State(pts=state.pts, deadline=deadline)
         if state.qts != NO_SEQ:
             self.map[ENTRY_SECRET] = State(pts=state.qts, deadline=deadline)
-        self.map.update((s.id, State(pts=s.pts, deadline=deadline)) for s in state.channels)
+        self.map.update(
+            (s.id, State(pts=s.pts, deadline=deadline)) for s in state.channels
+        )
 
-        self.date = datetime.datetime.fromtimestamp(state.date, tz=datetime.timezone.utc)
+        self.date = datetime.datetime.fromtimestamp(
+            state.date, tz=datetime.timezone.utc
+        )
         self.seq = state.seq
         self.possible_gaps.clear()
         self.getting_diff_for.clear()
@@ -132,18 +136,28 @@ class MessageBox:
         default_deadline = next_updates_deadline()
 
         if self.possible_gaps:
-            deadline = min(default_deadline, *(gap.deadline for gap in self.possible_gaps.values()))
+            deadline = min(
+                default_deadline, *(gap.deadline for gap in self.possible_gaps.values())
+            )
         elif self.next_deadline in self.map:
             deadline = min(default_deadline, self.map[self.next_deadline].deadline)
         else:
             deadline = default_deadline
 
         if now >= deadline:
-            self.getting_diff_for.update(entry for entry, gap in self.possible_gaps.items() if now >= gap.deadline)
-            self.getting_diff_for.update(entry for entry, state in self.map.items() if now >= state.deadline)
+            self.getting_diff_for.update(
+                entry
+                for entry, gap in self.possible_gaps.items()
+                if now >= gap.deadline
+            )
+            self.getting_diff_for.update(
+                entry for entry, state in self.map.items() if now >= state.deadline
+            )
 
             if __debug__:
-                self._trace("deadlines met, now getting diff for: %r", self.getting_diff_for)
+                self._trace(
+                    "deadlines met, now getting diff for: %r", self.getting_diff_for
+                )
 
             for entry in self.getting_diff_for:
                 self.possible_gaps.pop(entry, None)
@@ -157,12 +171,19 @@ class MessageBox:
         entry: Entry = ENTRY_ACCOUNT  # for pyright to know it's not unbound
         for entry in entries:
             if entry not in self.map:
-                raise RuntimeError("Called reset_deadline on an entry for which we do not have state")
+                raise RuntimeError(
+                    "Called reset_deadline on an entry for which we do not have state"
+                )
             self.map[entry].deadline = deadline
 
         if self.next_deadline in entries:
-            self.next_deadline = min(self.map.items(), key=lambda entry_state: entry_state[1].deadline)[0]
-        elif self.next_deadline in self.map and deadline < self.map[self.next_deadline].deadline:
+            self.next_deadline = min(
+                self.map.items(), key=lambda entry_state: entry_state[1].deadline
+            )[0]
+        elif (
+            self.next_deadline in self.map
+            and deadline < self.map[self.next_deadline].deadline
+        ):
             self.next_deadline = entry
 
     def reset_channel_deadline(self, channel_id: int, timeout: Optional[float]) -> None:
@@ -179,7 +200,9 @@ class MessageBox:
         assert isinstance(state, types.updates.State)
         self.map[ENTRY_ACCOUNT] = State(state.pts, deadline)
         self.map[ENTRY_SECRET] = State(state.qts, deadline)
-        self.date = datetime.datetime.fromtimestamp(state.date, tz=datetime.timezone.utc)
+        self.date = datetime.datetime.fromtimestamp(
+            state.date, tz=datetime.timezone.utc
+        )
         self.seq = state.seq
 
     def try_set_channel_state(self, id: int, pts: int) -> None:
@@ -192,11 +215,15 @@ class MessageBox:
     def try_begin_get_diff(self, entry: Entry, reason: str) -> None:
         if entry not in self.map:
             if entry in self.possible_gaps:
-                raise RuntimeError("Should not have a possible_gap for an entry not in the state map")
+                raise RuntimeError(
+                    "Should not have a possible_gap for an entry not in the state map"
+                )
             return
 
         if __debug__:
-            self._trace("marking entry=%r as needing difference because: %s", entry, reason)
+            self._trace(
+                "marking entry=%r as needing difference because: %s", entry, reason
+            )
         self.getting_diff_for.add(entry)
         self.possible_gaps.pop(entry, None)
 
@@ -204,10 +231,14 @@ class MessageBox:
         try:
             self.getting_diff_for.remove(entry)
         except KeyError:
-            raise RuntimeError("Called end_get_diff on an entry which was not getting diff for")
+            raise RuntimeError(
+                "Called end_get_diff on an entry which was not getting diff for"
+            )
 
         self.reset_deadlines({entry}, next_updates_deadline())
-        assert entry not in self.possible_gaps, "gaps shouldn't be created while getting difference"
+        assert (
+            entry not in self.possible_gaps
+        ), "gaps shouldn't be created while getting difference"
 
     def ensure_known_peer_hashes(
         self,
@@ -215,7 +246,10 @@ class MessageBox:
         chat_hashes: ChatHashCache,
     ) -> None:
         if not chat_hashes.extend_from_updates(updates):
-            can_recover = not isinstance(updates, types.UpdateShort) or pts_info_from_update(updates.update) is not None
+            can_recover = (
+                not isinstance(updates, types.UpdateShort)
+                or pts_info_from_update(updates.update) is not None
+            )
             if can_recover:
                 self.try_begin_get_diff(ENTRY_ACCOUNT, "missing hash")
                 raise Gap
@@ -241,7 +275,9 @@ class MessageBox:
         if combined.seq_start != NO_SEQ:
             if self.seq + 1 > combined.seq_start:
                 if __debug__:
-                    self._trace("skipping updates as they should have already been handled")
+                    self._trace(
+                        "skipping updates as they should have already been handled"
+                    )
                 return result, combined.users, combined.chats
             elif self.seq + 1 < combined.seq_start:
                 self.try_begin_get_diff(ENTRY_ACCOUNT, "detected gap")
@@ -269,13 +305,17 @@ class MessageBox:
             if __debug__:
                 self._trace("updating seq as local pts was updated too")
             if combined.date != NO_DATE:
-                self.date = datetime.datetime.fromtimestamp(combined.date, tz=datetime.timezone.utc)
+                self.date = datetime.datetime.fromtimestamp(
+                    combined.date, tz=datetime.timezone.utc
+                )
             if combined.seq != NO_SEQ:
                 self.seq = combined.seq
 
         if self.possible_gaps:
             if __debug__:
-                self._trace("trying to re-apply count=%r possible gaps", len(self.possible_gaps))
+                self._trace(
+                    "trying to re-apply count=%r possible gaps", len(self.possible_gaps)
+                )
 
             for key in list(self.possible_gaps.keys()):
                 self.possible_gaps[key].updates.sort(key=update_sort_key)
@@ -292,7 +332,9 @@ class MessageBox:
                                 applied,
                             )
 
-            self.possible_gaps = {entry: gap for entry, gap in self.possible_gaps.items() if gap.updates}
+            self.possible_gaps = {
+                entry: gap for entry, gap in self.possible_gaps.items() if gap.updates
+            }
 
         return result, combined.users, combined.chats
 
@@ -342,7 +384,8 @@ class MessageBox:
                     )
                 if pts.entry not in self.possible_gaps:
                     self.possible_gaps[pts.entry] = PossibleGap(
-                        deadline=asyncio.get_running_loop().time() + POSSIBLE_GAP_TIMEOUT,
+                        deadline=asyncio.get_running_loop().time()
+                        + POSSIBLE_GAP_TIMEOUT,
                         updates=[],
                     )
 
@@ -370,14 +413,20 @@ class MessageBox:
         for entry in (ENTRY_ACCOUNT, ENTRY_SECRET):
             if entry in self.getting_diff_for:
                 if entry not in self.map:
-                    raise RuntimeError("Should not try to get difference for an entry without known state")
+                    raise RuntimeError(
+                        "Should not try to get difference for an entry without known state"
+                    )
 
                 gd = functions.updates.get_difference(
                     pts=self.map[ENTRY_ACCOUNT].pts,
                     pts_limit=None,
                     pts_total_limit=None,
                     date=int(self.date.timestamp()),
-                    qts=(self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ),
+                    qts=(
+                        self.map[ENTRY_SECRET].pts
+                        if ENTRY_SECRET in self.map
+                        else NO_SEQ
+                    ),
                     qts_limit=None,
                 )
                 if __debug__:
@@ -398,7 +447,9 @@ class MessageBox:
         result: tuple[list[abcs.Update], Sequence[abcs.User], Sequence[abcs.Chat]]
         if isinstance(diff, types.updates.DifferenceEmpty):
             finish = True
-            self.date = datetime.datetime.fromtimestamp(diff.date, tz=datetime.timezone.utc)
+            self.date = datetime.datetime.fromtimestamp(
+                diff.date, tz=datetime.timezone.utc
+            )
             self.seq = diff.seq
             result = [], [], []
         elif isinstance(diff, types.updates.Difference):
@@ -451,7 +502,9 @@ class MessageBox:
         assert isinstance(state, types.updates.State)
         self.map[ENTRY_ACCOUNT].pts = state.pts
         self.map[ENTRY_SECRET].pts = state.qts
-        self.date = datetime.datetime.fromtimestamp(state.date, tz=datetime.timezone.utc)
+        self.date = datetime.datetime.fromtimestamp(
+            state.date, tz=datetime.timezone.utc
+        )
         self.seq = state.seq
 
         updates, users, chats = self.process_updates(
@@ -507,13 +560,19 @@ class MessageBox:
                     channel=channel,
                     filter=types.ChannelMessagesFilterEmpty(),
                     pts=state.pts,
-                    limit=(BOT_CHANNEL_DIFF_LIMIT if chat_hashes.is_self_bot else USER_CHANNEL_DIFF_LIMIT),
+                    limit=(
+                        BOT_CHANNEL_DIFF_LIMIT
+                        if chat_hashes.is_self_bot
+                        else USER_CHANNEL_DIFF_LIMIT
+                    ),
                 )
                 if __debug__:
                     self._trace("requesting channel difference: %s", gd)
                 return gd
             else:
-                raise RuntimeError("should not try to get difference for an entry without known state")
+                raise RuntimeError(
+                    "should not try to get difference for an entry without known state"
+                )
         else:
             self.end_get_diff(entry)
             self.map.pop(entry, None)
@@ -579,7 +638,9 @@ class MessageBox:
         else:
             raise RuntimeError("unexpected case")
 
-    def end_channel_difference(self, channel_id: int, reason: PrematureEndReason) -> None:
+    def end_channel_difference(
+        self, channel_id: int, reason: PrematureEndReason
+    ) -> None:
         entry: Entry = channel_id
         if __debug__:
             self._trace("ending channel=%r difference: %s", entry, reason)

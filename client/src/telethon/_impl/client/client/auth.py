@@ -31,7 +31,9 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
     assert isinstance(auth, types.auth.Authorization)
     assert isinstance(auth.user, types.User)
     user = User._from_raw(auth.user)
-    client._session.user = SessionUser(id=user.id, dc=client._sender.dc_id, bot=user.bot, username=user.username)
+    client._session.user = SessionUser(
+        id=user.id, dc=client._sender.dc_id, bot=user.bot, username=user.username
+    )
 
     client._chat_hashes.set_self_user(user.id, user.bot)
 
@@ -54,7 +56,9 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
 
 async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
     assert dc_id is not None
-    sender, client._session.dcs = await connect_sender(client._config, client._session.dcs, DataCenter(id=dc_id))
+    sender, client._session.dcs = await connect_sender(
+        client._config, client._session.dcs, DataCenter(id=dc_id)
+    )
     async with client._sender_lock:
         client._sender = sender
 
@@ -173,7 +177,9 @@ async def interactive_login(
             user = await self.check_password(user_or_token, password)
         else:
             while True:
-                print("Please enter your password (prompt is hidden; type and press enter)")
+                print(
+                    "Please enter your password (prompt is hidden; type and press enter)"
+                )
                 password = getpass.getpass(": ")
                 try:
                     user = await self.check_password(user_or_token, password)
@@ -202,9 +208,13 @@ async def get_password_information(client: Client) -> PasswordToken:
     return PasswordToken._new(result)
 
 
-async def check_password(self: Client, token: PasswordToken, password: str | bytes) -> User:
+async def check_password(
+    self: Client, token: PasswordToken, password: str | bytes
+) -> User:
     algo = token._password.current_algo
-    if not isinstance(algo, types.PasswordKdfAlgoSha256Sha256Pbkdf2HmacshA512Iter100000Sha256ModPow):
+    if not isinstance(
+        algo, types.PasswordKdfAlgoSha256Sha256Pbkdf2HmacshA512Iter100000Sha256ModPow
+    ):
         raise RuntimeError("unrecognised 2FA algorithm")
 
     if not two_factor_auth.check_p_and_g(algo.p, algo.g):

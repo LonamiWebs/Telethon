@@ -43,8 +43,12 @@ class PeerRef(abc.ABC):
 
     __slots__ = ("identifier", "authorization")
 
-    def __init__(self, identifier: PeerIdentifier, authorization: PeerAuth = None) -> None:
-        assert identifier >= 0, "PeerRef identifiers must be positive; see the documentation for Peers"
+    def __init__(
+        self, identifier: PeerIdentifier, authorization: PeerAuth = None
+    ) -> None:
+        assert (
+            identifier >= 0
+        ), "PeerRef identifiers must be positive; see the documentation for Peers"
         self.identifier = identifier
         self.authorization = authorization
 
@@ -79,7 +83,9 @@ class PeerRef(abc.ABC):
                 authorization: Optional[int] = None
             else:
                 try:
-                    (authorization,) = struct.unpack("!q", base64.urlsafe_b64decode(auth.encode("ascii") + b"="))
+                    (authorization,) = struct.unpack(
+                        "!q", base64.urlsafe_b64decode(auth.encode("ascii") + b"=")
+                    )
                 except Exception:
                     raise ValueError(f"invalid PeerRef string: {string!r}")
 
@@ -131,14 +137,21 @@ class PeerRef(abc.ABC):
         if self.authorization is None:
             auth = "0"
         else:
-            auth = base64.urlsafe_b64encode(struct.pack("!q", self.authorization)).decode("ascii").rstrip("=")
+            auth = (
+                base64.urlsafe_b64encode(struct.pack("!q", self.authorization))
+                .decode("ascii")
+                .rstrip("=")
+            )
 
         return f"{self.identifier}.{auth}"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.identifier == other.identifier and self.authorization == other.authorization
+        return (
+            self.identifier == other.identifier
+            and self.authorization == other.authorization
+        )
 
     @property
     def _ref(self) -> UserRef | GroupRef | ChannelRef:
@@ -169,12 +182,16 @@ class UserRef(PeerRef):
     def _to_input_peer(self) -> abcs.InputPeer:
         if self.identifier == SELF_USER_SENTINEL_ID:
             return types.InputPeerSelf()
-        return types.InputPeerUser(user_id=self.identifier, access_hash=self.authorization or 0)
+        return types.InputPeerUser(
+            user_id=self.identifier, access_hash=self.authorization or 0
+        )
 
     def _to_input_user(self) -> abcs.InputUser:
         if self.identifier == SELF_USER_SENTINEL_ID:
             return types.InputUserSelf()
-        return types.InputUser(user_id=self.identifier, access_hash=self.authorization or 0)
+        return types.InputUser(
+            user_id=self.identifier, access_hash=self.authorization or 0
+        )
 
     def __str__(self) -> str:
         return f"{USER_PREFIX}{self._encode_str()}"
@@ -235,10 +252,14 @@ class ChannelRef(PeerRef):
         return types.PeerChannel(channel_id=self.identifier)
 
     def _to_input_peer(self) -> abcs.InputPeer:
-        return types.InputPeerChannel(channel_id=self.identifier, access_hash=self.authorization or 0)
+        return types.InputPeerChannel(
+            channel_id=self.identifier, access_hash=self.authorization or 0
+        )
 
     def _to_input_channel(self) -> types.InputChannel:
-        return types.InputChannel(channel_id=self.identifier, access_hash=self.authorization or 0)
+        return types.InputChannel(
+            channel_id=self.identifier, access_hash=self.authorization or 0
+        )
 
     def __str__(self) -> str:
         return f"{CHANNEL_PREFIX}{self._encode_str()}"

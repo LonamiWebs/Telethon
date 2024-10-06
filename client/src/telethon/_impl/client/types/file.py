@@ -29,7 +29,11 @@ def photo_size_byte_count(size: abcs.PhotoSize) -> int:
     elif isinstance(size, types.PhotoSizeProgressive):
         return max(size.sizes)
     elif isinstance(size, types.PhotoStrippedSize):
-        return len(stripped_size_header) + (len(size.bytes) - 3) + len(stripped_size_footer)
+        return (
+            len(stripped_size_header)
+            + (len(size.bytes) - 3)
+            + len(stripped_size_footer)
+        )
     else:
         raise RuntimeError("unexpected case")
 
@@ -176,7 +180,9 @@ class File(metaclass=NoPublicConstructor):
         self._client = client
 
     @classmethod
-    def _try_from_raw_message_media(cls, client: Client, raw: abcs.MessageMedia) -> Optional[Self]:
+    def _try_from_raw_message_media(
+        cls, client: Client, raw: abcs.MessageMedia
+    ) -> Optional[Self]:
         if isinstance(raw, types.MessageMediaDocument):
             if raw.document:
                 return cls._try_from_raw_document(
@@ -198,9 +204,13 @@ class File(metaclass=NoPublicConstructor):
         elif isinstance(raw, types.MessageMediaWebPage):
             if isinstance(raw.webpage, types.WebPage):
                 if raw.webpage.document:
-                    return cls._try_from_raw_document(client, raw.webpage.document, orig_raw=raw)
+                    return cls._try_from_raw_document(
+                        client, raw.webpage.document, orig_raw=raw
+                    )
                 if raw.webpage.photo:
-                    return cls._try_from_raw_photo(client, raw.webpage.photo, orig_raw=raw)
+                    return cls._try_from_raw_photo(
+                        client, raw.webpage.photo, orig_raw=raw
+                    )
 
         return None
 
@@ -219,13 +229,21 @@ class File(metaclass=NoPublicConstructor):
                 attributes=raw.attributes,
                 size=raw.size,
                 name=next(
-                    (a.file_name for a in raw.attributes if isinstance(a, types.DocumentAttributeFilename)),
+                    (
+                        a.file_name
+                        for a in raw.attributes
+                        if isinstance(a, types.DocumentAttributeFilename)
+                    ),
                     "",
                 ),
                 mime=raw.mime_type,
                 photo=False,
                 muted=next(
-                    (a.nosound for a in raw.attributes if isinstance(a, types.DocumentAttributeVideo)),
+                    (
+                        a.nosound
+                        for a in raw.attributes
+                        if isinstance(a, types.DocumentAttributeVideo)
+                    ),
                     False,
                 ),
                 input_media=types.InputMediaDocument(
@@ -343,7 +361,9 @@ class File(metaclass=NoPublicConstructor):
             return dim.w
 
         for attr in self._attributes:
-            if isinstance(attr, (types.DocumentAttributeImageSize, types.DocumentAttributeVideo)):
+            if isinstance(
+                attr, (types.DocumentAttributeImageSize, types.DocumentAttributeVideo)
+            ):
                 return attr.w
 
         return None
@@ -357,7 +377,9 @@ class File(metaclass=NoPublicConstructor):
             return dim.h
 
         for attr in self._attributes:
-            if isinstance(attr, (types.DocumentAttributeImageSize, types.DocumentAttributeVideo)):
+            if isinstance(
+                attr, (types.DocumentAttributeImageSize, types.DocumentAttributeVideo)
+            ):
                 return attr.h
 
         return None
@@ -388,7 +410,9 @@ class File(metaclass=NoPublicConstructor):
                 id=self._input_media.id.id,
                 access_hash=self._input_media.id.access_hash,
                 file_reference=self._input_media.id.file_reference,
-                thumb_size=(self._thumb.type if isinstance(self._thumb, thumb_types) else ""),
+                thumb_size=(
+                    self._thumb.type if isinstance(self._thumb, thumb_types) else ""
+                ),
             )
         elif isinstance(self._input_media, types.InputMediaPhoto):
             assert isinstance(self._input_media.id, types.InputPhoto)

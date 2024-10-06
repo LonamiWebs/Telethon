@@ -38,7 +38,9 @@ class PtsInfo:
         self.entry = entry
 
     def __repr__(self) -> str:
-        return f"PtsInfo(pts={self.pts}, pts_count={self.pts_count}, entry={self.entry})"
+        return (
+            f"PtsInfo(pts={self.pts}, pts_count={self.pts_count}, entry={self.entry})"
+        )
 
 
 class State:
@@ -68,7 +70,9 @@ class PossibleGap:
         self.updates = updates
 
     def __repr__(self) -> str:
-        return f"PossibleGap(deadline={self.deadline}, update_count={len(self.updates)})"
+        return (
+            f"PossibleGap(deadline={self.deadline}, update_count={len(self.updates)})"
+        )
 
 
 class PrematureEndReason(Enum):

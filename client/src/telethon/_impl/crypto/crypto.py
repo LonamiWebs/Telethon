@@ -19,7 +19,9 @@ class CalcKey(NamedTuple):
 
 
 # https://core.telegram.org/mtproto/description#defining-aes-key-and-initialization-vector
-def calc_key(auth_key: AuthKey, msg_key: bytes | bytearray | memoryview, side: Side) -> CalcKey:
+def calc_key(
+    auth_key: AuthKey, msg_key: bytes | bytearray | memoryview, side: Side
+) -> CalcKey:
     x = int(side)
 
     # sha256_a = SHA256 (msg_key + substr (auth_key, x, 36))
@@ -41,8 +43,12 @@ def determine_padding_v2_length(length: int) -> int:
     return 16 + (16 - (length % 16))
 
 
-def _do_encrypt_data_v2(plaintext: bytes, auth_key: AuthKey, random_padding: bytes) -> bytes:
-    padded_plaintext = plaintext + random_padding[: determine_padding_v2_length(len(plaintext))]
+def _do_encrypt_data_v2(
+    plaintext: bytes, auth_key: AuthKey, random_padding: bytes
+) -> bytes:
+    padded_plaintext = (
+        plaintext + random_padding[: determine_padding_v2_length(len(plaintext))]
+    )
 
     side = Side.CLIENT
     x = int(side)
@@ -64,7 +70,9 @@ def encrypt_data_v2(plaintext: bytes, auth_key: AuthKey) -> bytes:
     return _do_encrypt_data_v2(plaintext, auth_key, random_padding)
 
 
-def decrypt_data_v2(ciphertext: bytes | bytearray | memoryview, auth_key: AuthKey) -> bytes:
+def decrypt_data_v2(
+    ciphertext: bytes | bytearray | memoryview, auth_key: AuthKey
+) -> bytes:
     side = Side.SERVER
     x = int(side)
 

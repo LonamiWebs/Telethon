@@ -12,11 +12,16 @@ def _build_keyboard_rows(
 ) -> list[abcs.KeyboardButtonRow]:
     # list[button] -> list[list[button]]
     # This does allow for "invalid" inputs (mixing lists and non-lists), but that's acceptable.
-    buttons_lists_iter = [button if isinstance(button, list) else [button] for button in (btns or [])]
+    buttons_lists_iter = [
+        button if isinstance(button, list) else [button] for button in (btns or [])
+    ]
     # Remove empty rows (also making it easy to check if all-empty).
     buttons_lists = [bs for bs in buttons_lists_iter if bs]
 
-    return [types.KeyboardButtonRow(buttons=[btn._raw for btn in btns]) for btns in buttons_lists]
+    return [
+        types.KeyboardButtonRow(buttons=[btn._raw for btn in btns])
+        for btns in buttons_lists
+    ]
 
 
 class Keyboard:
@@ -44,7 +49,9 @@ class Keyboard:
 class InlineKeyboard:
     __slots__ = ("_raw",)
 
-    def __init__(self, buttons: list[AnyInlineButton] | list[list[AnyInlineButton]]) -> None:
+    def __init__(
+        self, buttons: list[AnyInlineButton] | list[list[AnyInlineButton]]
+    ) -> None:
         self._raw = types.ReplyInlineMarkup(rows=_build_keyboard_rows(buttons))
 
 

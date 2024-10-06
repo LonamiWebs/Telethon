@@ -52,9 +52,6 @@ backend-path = ["build_backend"]
 [tool.setuptools.dynamic]
 version = {attr = "telethon.version.__version__"}
 
-[tool.ruff]
-line-length = 120
-
 [tool.ruff.lint]
 select = ["F", "E", "W", "I"]
 ignore = [

@@ -237,7 +237,9 @@ class Client:
             lang_code=lang_code or "en",
             catch_up=catch_up or False,
             datacenter=datacenter,
-            flood_sleep_threshold=(60 if flood_sleep_threshold is None else flood_sleep_threshold),
+            flood_sleep_threshold=(
+                60 if flood_sleep_threshold is None else flood_sleep_threshold
+            ),
             update_queue_limit=update_queue_limit,
             base_logger=base_logger,
             connector=connector or (lambda ip, port: asyncio.open_connection(ip, port)),
@@ -248,8 +250,8 @@ class Client:
         self._message_box = MessageBox(base_logger=base_logger)
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
-        self._updates: asyncio.Queue[tuple[abcs.Update, dict[int, Peer]]] = asyncio.Queue(
-            maxsize=self._config.update_queue_limit or 0
+        self._updates: asyncio.Queue[tuple[abcs.Update, dict[int, Peer]]] = (
+            asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
         )
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._handlers: dict[
@@ -409,7 +411,9 @@ class Client:
         """
         await delete_dialog(self, dialog)
 
-    async def delete_messages(self, chat: Peer | PeerRef, /, message_ids: list[int], *, revoke: bool = True) -> int:
+    async def delete_messages(
+        self, chat: Peer | PeerRef, /, message_ids: list[int], *, revoke: bool = True
+    ) -> int:
         """
         Delete messages.
 
@@ -649,7 +653,9 @@ class Client:
         """
         return await forward_messages(self, target, message_ids, source)
 
-    def get_admin_log(self, chat: Group | Channel | GroupRef | ChannelRef, /) -> AsyncList[RecentAction]:
+    def get_admin_log(
+        self, chat: Group | Channel | GroupRef | ChannelRef, /
+    ) -> AsyncList[RecentAction]:
         """
         Get the recent actions from the administrator's log.
 
@@ -751,7 +757,9 @@ class Client:
         """
         return get_file_bytes(self, media)
 
-    def get_handler_filter(self, handler: Callable[[Event], Awaitable[Any]], /) -> Optional[FilterType]:
+    def get_handler_filter(
+        self, handler: Callable[[Event], Awaitable[Any]], /
+    ) -> Optional[FilterType]:
         """
         Get the filter associated to the given event handler.
 
@@ -853,9 +861,13 @@ class Client:
             async for message in reversed(client.get_messages(chat)):
                 print(message.sender.name, ':', message.markdown_text)
         """
-        return get_messages(self, chat, limit, offset_id=offset_id, offset_date=offset_date)
+        return get_messages(
+            self, chat, limit, offset_id=offset_id, offset_date=offset_date
+        )
 
-    def get_messages_with_ids(self, chat: Peer | PeerRef, /, message_ids: list[int]) -> AsyncList[Message]:
+    def get_messages_with_ids(
+        self, chat: Peer | PeerRef, /, message_ids: list[int]
+    ) -> AsyncList[Message]:
         """
         Get the full message objects from the corresponding message identifiers.
 
@@ -879,7 +891,9 @@ class Client:
         """
         return get_messages_with_ids(self, chat, message_ids)
 
-    def get_participants(self, chat: Group | Channel | GroupRef | ChannelRef, /) -> AsyncList[Participant]:
+    def get_participants(
+        self, chat: Group | Channel | GroupRef | ChannelRef, /
+    ) -> AsyncList[Participant]:
         """
         Get the participants in a group or channel, along with their permissions.
 
@@ -967,7 +981,9 @@ class Client:
         """
         return await inline_query(self, bot, query, peer=peer)
 
-    async def interactive_login(self, phone_or_token: Optional[str] = None, *, password: Optional[str] = None) -> User:
+    async def interactive_login(
+        self, phone_or_token: Optional[str] = None, *, password: Optional[str] = None
+    ) -> User:
         """
         Begin an interactive login if needed.
         If the account was already logged-in, this method simply returns :term:`yourself`.
@@ -1019,7 +1035,9 @@ class Client:
 
     def on(
         self, event_cls: Type[Event], /, filter: Optional[FilterType] = None
-    ) -> Callable[[Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]]:
+    ) -> Callable[
+        [Callable[[Event], Awaitable[Any]]], Callable[[Event], Awaitable[Any]]
+    ]:
         """
         Register the decorated function to be invoked when the provided event type occurs.
 
@@ -1107,7 +1125,9 @@ class Client:
         """
         return prepare_album(self)
 
-    async def read_message(self, chat: Peer | PeerRef, /, message_id: int | Literal["all"]) -> None:
+    async def read_message(
+        self, chat: Peer | PeerRef, /, message_id: int | Literal["all"]
+    ) -> None:
         """
         Mark messages as read.
 
@@ -1138,7 +1158,9 @@ class Client:
         """
         await read_message(self, chat, message_id)
 
-    def remove_event_handler(self, handler: Callable[[Event], Awaitable[Any]], /) -> None:
+    def remove_event_handler(
+        self, handler: Callable[[Event], Awaitable[Any]], /
+    ) -> None:
         """
         Remove the handler as a function to be called when events occur.
         This is simply the opposite of :meth:`add_event_handler`.
@@ -1302,7 +1324,9 @@ class Client:
             async for message in client.search_all_messages(query='hello'):
                 print(message.text)
         """
-        return search_all_messages(self, limit, query=query, offset_id=offset_id, offset_date=offset_date)
+        return search_all_messages(
+            self, limit, query=query, offset_id=offset_id, offset_date=offset_date
+        )
 
     def search_messages(
         self,
@@ -1348,7 +1372,9 @@ class Client:
             async for message in client.search_messages(chat, query='hello'):
                 print(message.text)
         """
-        return search_messages(self, chat, limit, query=query, offset_id=offset_id, offset_date=offset_date)
+        return search_messages(
+            self, chat, limit, query=query, offset_id=offset_id, offset_date=offset_date
+        )
 
     async def send_audio(
         self,
@@ -1949,7 +1975,9 @@ class Client:
 
             :meth:`telethon.types.Participant.set_restrictions`
         """
-        await set_participant_restrictions(self, chat, participant, restrictions, until=until)
+        await set_participant_restrictions(
+            self, chat, participant, restrictions, until=until
+        )
 
     async def sign_in(self, token: LoginToken, code: str) -> User | PasswordToken:
         """
@@ -1996,7 +2024,9 @@ class Client:
         """
         await sign_out(self)
 
-    async def unpin_message(self, chat: Peer | PeerRef, /, message_id: int | Literal["all"]) -> None:
+    async def unpin_message(
+        self, chat: Peer | PeerRef, /, message_id: int | Literal["all"]
+    ) -> None:
         """
         Unpin one or all messages from the top.
 

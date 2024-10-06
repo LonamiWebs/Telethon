@@ -38,7 +38,9 @@ class SqliteSession(Storage):
                 if version == 7:
                     session = self._load_v7(c)
                 else:
-                    raise ValueError("only migration from sqlite session format 7 supported")
+                    raise ValueError(
+                        "only migration from sqlite session format 7 supported"
+                    )
 
                 self._reset(c)
                 self._get_or_init_version(c)
@@ -103,7 +105,11 @@ class SqliteSession(Storage):
                 DataCenter(id=id, ipv4_addr=ipv4_addr, ipv6_addr=ipv6_addr, auth=auth)
                 for (id, ipv4_addr, ipv6_addr, auth) in datacenter
             ],
-            user=(User(id=user[0], dc=user[1], bot=bool(user[2]), username=user[3]) if user else None),
+            user=(
+                User(id=user[0], dc=user[1], bot=bool(user[2]), username=user[3])
+                if user
+                else None
+            ),
             state=(
                 UpdateState(
                     pts=state[0],
@@ -160,7 +166,9 @@ class SqliteSession(Storage):
 
     @staticmethod
     def _get_or_init_version(c: sqlite3.Cursor) -> int:
-        c.execute("select name from sqlite_master where type='table' and name='version'")
+        c.execute(
+            "select name from sqlite_master where type='table' and name='version'"
+        )
         if c.fetchone():
             c.execute("select version from version")
             tup = c.fetchone()

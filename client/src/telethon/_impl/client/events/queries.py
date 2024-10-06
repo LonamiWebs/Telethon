@@ -31,7 +31,9 @@ class ButtonCallback(Event):
         self._chat_map = chat_map
 
     @classmethod
-    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
+    def _try_from_update(
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
+    ) -> Optional[Self]:
         if isinstance(update, types.UpdateBotCallbackQuery) and update.data is not None:
             return cls._create(client, update, chat_map)
         else:
@@ -81,7 +83,11 @@ class ButtonCallback(Event):
         chat = self._chat_map.get(pid) or PeerRef._empty_from_peer(self._raw.peer)
 
         lst = CherryPickedList(self._client, chat._ref, [])
-        lst._ids.append(types.InputMessageCallbackQuery(id=self._raw.msg_id, query_id=self._raw.query_id))
+        lst._ids.append(
+            types.InputMessageCallbackQuery(
+                id=self._raw.msg_id, query_id=self._raw.query_id
+            )
+        )
 
         message = (await lst)[0]
 
@@ -99,7 +105,9 @@ class InlineQuery(Event):
         self._raw = update
 
     @classmethod
-    def _try_from_update(cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]) -> Optional[Self]:
+    def _try_from_update(
+        cls, client: Client, update: abcs.Update, chat_map: dict[int, Peer]
+    ) -> Optional[Self]:
         if isinstance(update, types.UpdateBotInlineQuery):
             return cls._create(update)
         else:

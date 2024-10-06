@@ -38,7 +38,11 @@ class InlineResults(metaclass=NoPublicConstructor):
             result = await self._client(
                 functions.messages.get_inline_bot_results(
                     bot=self._bot,
-                    peer=(self._peer._to_input_peer() if self._peer else types.InputPeerEmpty()),
+                    peer=(
+                        self._peer._to_input_peer()
+                        if self._peer
+                        else types.InputPeerEmpty()
+                    ),
                     geo_point=None,
                     query=self._query,
                     offset=self._offset,
@@ -47,8 +51,12 @@ class InlineResults(metaclass=NoPublicConstructor):
             assert isinstance(result, types.messages.BotResults)
             self._offset = result.next_offset
             for r in reversed(result.results):
-                assert isinstance(r, (types.BotInlineMediaResult, types.BotInlineResult))
-                self._buffer.append(InlineResult._create(self._client, result, r, self._peer))
+                assert isinstance(
+                    r, (types.BotInlineMediaResult, types.BotInlineResult)
+                )
+                self._buffer.append(
+                    InlineResult._create(self._client, result, r, self._peer)
+                )
 
         if not self._buffer:
             self._offset = None
