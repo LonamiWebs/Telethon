@@ -85,8 +85,8 @@ class HTMLToTelegramParser(HTMLParser):
             self._open_tags_meta.appendleft(url)
 
         if entity_type and tag not in self._building_entities:
-            any_entity_type_ = cast(Any, entity_type)
-            self._building_entities[tag] = any_entity_type_(
+            any_entity_type = cast(Any, entity_type)
+            self._building_entities[tag] = any_entity_type(
                 offset=len(self.text),
                 # The length will be determined when closing the tag.
                 length=0,
