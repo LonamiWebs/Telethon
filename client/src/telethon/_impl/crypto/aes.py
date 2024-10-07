@@ -3,14 +3,14 @@ try:
 
     def ige_encrypt(
         plaintext: bytes | bytearray | memoryview, key: bytes, iv: bytes
-    ) -> bytes:  # noqa: F811
+    ) -> bytes:
         return cryptg.encrypt_ige(
             bytes(plaintext) if not isinstance(plaintext, bytes) else plaintext, key, iv
         )
 
     def ige_decrypt(
         ciphertext: bytes | bytearray | memoryview, key: bytes, iv: bytes
-    ) -> bytes:  # noqa: F811
+    ) -> bytes:
         return cryptg.decrypt_ige(
             bytes(ciphertext) if not isinstance(ciphertext, bytes) else ciphertext,
             key,
