@@ -30,6 +30,7 @@ class Keyboard:
     def __init__(
         self,
         buttons: list[AnyButton] | list[list[AnyButton]],
+        *,
         resize: bool,
         single_use: bool,
         selective: bool,
@@ -58,7 +59,7 @@ class InlineKeyboard:
 class HiddenKeyboard:
     __slots__ = ("_raw",)
 
-    def __init__(self, selective: bool) -> None:
+    def __init__(self, *, selective: bool) -> None:
         self._raw = types.ReplyKeyboardHide(selective=selective)
 
 
@@ -66,7 +67,7 @@ class ForcedReplyKeyboard:
     __slots__ = ("_raw",)
 
     def __init__(
-        self, single_use: bool, selective: bool, placeholder: Optional[str]
+        self, *, single_use: bool, selective: bool, placeholder: Optional[str]
     ) -> None:
         self._raw = types.ReplyKeyboardForceReply(
             single_use=single_use, selective=selective, placeholder=placeholder
