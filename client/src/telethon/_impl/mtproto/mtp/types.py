@@ -1,7 +1,9 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import NewType, Optional, Self
+from typing import NewType, Optional
+
+from typing_extensions import Self
 
 from ...tl.mtproto.types import RpcError as GeneratedRpcError
 

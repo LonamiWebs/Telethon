@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Self
+
+from typing_extensions import Self
 
 from ..utils import infer_id
 from .parameter import Parameter, TypeDefNotImplementedError

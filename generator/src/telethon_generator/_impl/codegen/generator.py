@@ -97,7 +97,8 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
                 "# pyright: reportUnusedImport=false, reportConstantRedefinition=false"
             )
             writer.write("import struct")
-            writer.write("from typing import Optional, Self, Sequence")
+            writer.write("from typing import Optional, Sequence")
+            writer.write("from typing_extensions import Self")
             writer.write("from .. import abcs")
             writer.write("from ..core import Reader, Serializable, serialize_bytes_to")
             writer.write("_bytes = bytes | bytearray | memoryview")
@@ -163,7 +164,8 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         if function_path not in fs:
             writer.write("# pyright: reportUnusedImport=false")
             writer.write("import struct")
-            writer.write("from typing import Optional, Self, Sequence")
+            writer.write("from typing import Optional, Sequence")
+            writer.write("from typing_extensions import Self")
             writer.write("from .. import abcs")
             writer.write("from ..core import Request, serialize_bytes_to")
             writer.write("_bytes = bytes | bytearray | memoryview")
@@ -192,14 +194,14 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
     writer.write(
         "from .core import Serializable, Reader, deserialize_bool, deserialize_i32_list, deserialize_i64_list, deserialize_identity, single_deserializer, list_deserializer"
     )
-    writer.write("from typing import cast, Type")
+    writer.write("from typing import Final, Type")
     writer.write(f"LAYER = {tl.layer!r}")
     writer.write(
-        "TYPE_MAPPING = {t.constructor_id(): t for t in cast(tuple[Type[Serializable]], ("
+        "TYPE_MAPPING: Final[dict[int, Type[Serializable]]] = {t.constructor_id(): t for t in ("
     )
     for name in sorted(generated_type_names):
         writer.write(f"  types.{name},")
-    writer.write("))}")
+    writer.write(")}")
     writer.write("RESPONSE_MAPPING = {")
     for functiondef in tl.functiondefs:
         writer.write(

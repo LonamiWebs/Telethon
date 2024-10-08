@@ -22,6 +22,7 @@ dependencies = [
   "pyaes~=1.6",
   "rsa~=4.9",
   "markdown-it-py~=3.0",
+  "typing-extensions~=4.12.2",
 ]
 dynamic = ["version"]
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Self
+from typing import TYPE_CHECKING, Optional
+
+from typing_extensions import Self
 
 from ...session import PeerRef
 from ...tl import abcs, functions, types

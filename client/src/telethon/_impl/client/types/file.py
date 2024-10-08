@@ -6,7 +6,9 @@ from collections.abc import Coroutine
 from inspect import isawaitable
 from io import BufferedWriter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Protocol, Self, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence
+
+from typing_extensions import Self
 
 from ...tl import abcs, types
 from .meta import NoPublicConstructor

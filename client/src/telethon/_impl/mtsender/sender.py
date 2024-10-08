@@ -6,7 +6,9 @@ from abc import ABC
 from asyncio import FIRST_COMPLETED, Event, Future
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Generic, Optional, Protocol, Self, Type, TypeVar
+from typing import Generic, Optional, Protocol, Type, TypeVar
+
+from typing_extensions import Self
 
 from ..crypto import AuthKey
 from ..mtproto import (

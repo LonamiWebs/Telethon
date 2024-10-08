@@ -1,6 +1,8 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Optional, Self
+from typing import Optional
+
+from typing_extensions import Self
 
 
 @dataclass
