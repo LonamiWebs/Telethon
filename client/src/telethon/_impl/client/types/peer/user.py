@@ -1,4 +1,6 @@
-from typing import Optional, Self
+from typing import Optional
+
+from typing_extensions import Self
 
 from ....session import UserRef
 from ....tl import abcs, types

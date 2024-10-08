@@ -4,7 +4,9 @@ import abc
 import base64
 import re
 import struct
-from typing import Optional, Self, TypeAlias
+from typing import Optional, TypeAlias
+
+from typing_extensions import Self
 
 from ...tl import abcs, types
 

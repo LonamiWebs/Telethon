@@ -1,4 +1,4 @@
-from typing import Self
+from typing_extensions import Self
 
 from ...tl import types
 from .meta import NoPublicConstructor

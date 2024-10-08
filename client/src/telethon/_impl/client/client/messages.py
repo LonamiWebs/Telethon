@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import datetime
 import sys
-from typing import TYPE_CHECKING, Literal, Optional, Self
+from typing import TYPE_CHECKING, Literal, Optional
+
+from typing_extensions import Self
 
 from ...session import ChannelRef, PeerRef
 from ...tl import abcs, functions, types

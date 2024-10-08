@@ -4,7 +4,9 @@ import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Literal, Optional, Self, Sequence, Type, TypeVar
+from typing import Any, Literal, Optional, Sequence, Type, TypeVar
+
+from typing_extensions import Self
 
 from ....version import __version__ as default_version
 from ...mtsender import Connector, Sender

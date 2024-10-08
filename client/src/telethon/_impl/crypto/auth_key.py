@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from hashlib import sha1
-from typing import Self
+
+from typing_extensions import Self
 
 
 @dataclass

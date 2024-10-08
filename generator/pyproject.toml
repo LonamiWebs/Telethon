@@ -20,7 +20,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dynamic = ["version"]
-
+dependencies = ["typing-extensions~=4.12.2"]
 [project.optional-dependencies]
 dev = ["pytest~=7.3"]
 

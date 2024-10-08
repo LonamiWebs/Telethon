@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Self, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
+
+from typing_extensions import Self
 
 from ....session import ChannelRef, GroupRef
 from ....tl import abcs, types

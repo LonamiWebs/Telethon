@@ -97,7 +97,8 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
                 "# pyright: reportUnusedImport=false, reportConstantRedefinition=false"
             )
             writer.write("import struct")
-            writer.write("from typing import Optional, Self, Sequence")
+            writer.write("from typing import Optional, Sequence")
+            writer.write("from typing_extensions import Self")
             writer.write("from .. import abcs")
             writer.write("from ..core import Reader, Serializable, serialize_bytes_to")
             writer.write("_bytes = bytes | bytearray | memoryview")
@@ -163,7 +164,8 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         if function_path not in fs:
             writer.write("# pyright: reportUnusedImport=false")
             writer.write("import struct")
-            writer.write("from typing import Optional, Self, Sequence")
+            writer.write("from typing import Optional, Sequence")
+            writer.write("from typing_extensions import Self")
             writer.write("from .. import abcs")
             writer.write("from ..core import Request, serialize_bytes_to")
             writer.write("_bytes = bytes | bytearray | memoryview")
