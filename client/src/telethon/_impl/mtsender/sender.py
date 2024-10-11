@@ -3,7 +3,7 @@ import logging
 import struct
 import time
 from abc import ABC
-from asyncio import FIRST_COMPLETED, Event, Future
+from asyncio import FIRST_COMPLETED, Event, Future, Lock
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Generic, Optional, Protocol, Type, TypeVar
@@ -162,6 +162,7 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
+    lock: Lock
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -191,6 +192,7 @@ class Sender:
         return cls(
             dc_id=dc_id,
             addr=addr,
+            lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
             _reader=reader,
             _writer=writer,
@@ -233,6 +235,10 @@ class Sender:
                 return rx.result()
 
     async def step(self) -> list[Updates]:
+        async with self.lock:
+            return await self._step()
+
+    async def _step(self) -> list[Updates]:
         self._try_fill_write()
 
         recv_req = asyncio.create_task(self._request_event.wait())

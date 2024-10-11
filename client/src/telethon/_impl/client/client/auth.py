@@ -55,12 +55,16 @@ async def complete_login(client: Client, auth: abcs.auth.Authorization) -> User:
 
 
 async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
+    assert client._sender
     assert dc_id is not None
     sender, client._session.dcs = await connect_sender(
         client._config, client._session.dcs, DataCenter(id=dc_id)
     )
-    async with client._sender_lock:
+
+    async with client._sender.lock:
+        old_sender = client._sender
         client._sender = sender
+        await old_sender.disconnect()
 
 
 async def bot_sign_in(self: Client, token: str) -> User:

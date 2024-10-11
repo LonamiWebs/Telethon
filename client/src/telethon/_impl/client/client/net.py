@@ -238,15 +238,16 @@ async def disconnect(self: Client) -> None:
 
 async def invoke_request(
     client: Client,
-    sender: Sender,
-    lock: asyncio.Lock,
     request: Request[Return],
 ) -> Return:
+    if not client._sender:
+        raise ConnectionError("not connected")
+
     sleep_thresh = client._config.flood_sleep_threshold
-    rx = sender.enqueue(request)
+    rx = client._sender.enqueue(request)
     while True:
         while not rx.done():
-            await step_sender(client, sender, lock)
+            await step_sender(client)
         try:
             response = rx.result()
             break
@@ -254,43 +255,31 @@ async def invoke_request(
             if e.code == 420 and e.value is not None and e.value < sleep_thresh:
                 await asyncio.sleep(e.value)
                 sleep_thresh -= e.value
-                rx = sender.enqueue(request)
+                rx = client._sender.enqueue(request)
                 continue
             else:
                 raise adapt_rpc(e) from None
     return request.deserialize_response(response)
 
 
-async def step(client: Client) -> None:
-    if client._sender:
-        await step_sender(client, client._sender, client._sender_lock)
-
-
-async def step_sender(client: Client, sender: Sender, lock: asyncio.Lock) -> None:
-    flag = client._sender_lock_flag
-    async with lock:
-        if client._sender_lock_flag != flag:
-            # different task already received an item from the network
+async def step_sender(client: Client) -> None:
+    try:
+        assert client._sender
+        updates = await client._sender.step()
+    except ConnectionError:
+        if client.connected:
+            raise
+        else:
+            # disconnect was called, so the socket returning 0 bytes is expected
             return
-        # current task is responsible for receiving
-        # toggle the flag so any other task that comes after does not run again
-        client._sender_lock_flag = not client._sender_lock_flag
 
-        try:
-            updates = await sender.step()
-        except ConnectionError:
-            if client.connected:
-                raise
-            else:
-                # disconnect was called, so the socket returning 0 bytes is expected
-                return
-
-        process_socket_updates(client, updates)
+    process_socket_updates(client, updates)
 
 
 async def run_until_disconnected(self: Client) -> None:
     while self.connected:
-        await step(self)
+        if self._sender:
+            await step_sender(self)
 
 
 def connected(client: Client) -> bool:
