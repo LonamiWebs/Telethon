@@ -220,14 +220,15 @@ class Client:
         base_logger = logger or logging.getLogger(__package__[: __package__.index(".")])
 
         self._sender: Optional[Sender] = None
-        self._sender_lock = asyncio.Lock()
-        self._sender_lock_flag = False
+
         if isinstance(session, Storage):
-            self._storage = session
+            storage = session
         elif session is None:
-            self._storage = MemorySession()
+            storage = MemorySession()
         else:
-            self._storage = SqliteSession(session)
+            storage = SqliteSession(session)
+
+        self._storage = storage
 
         self._config = Config(
             api_id=api_id,
@@ -2074,10 +2075,7 @@ class Client:
         return await upload(self, fd, size, name)
 
     async def __call__(self, request: Request[Return]) -> Return:
-        if not self._sender:
-            raise ConnectionError("not connected")
-
-        return await invoke_request(self, self._sender, self._sender_lock, request)
+        return await invoke_request(self, request)
 
     async def __aenter__(self) -> Self:
         await connect(self)
