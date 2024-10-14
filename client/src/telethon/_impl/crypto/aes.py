@@ -1,5 +1,5 @@
 try:
-    import cryptg  # type: ignore [import-untyped]
+    import cryptg
 
     def ige_encrypt(
         plaintext: bytes | bytearray | memoryview, key: bytes, iv: bytes
