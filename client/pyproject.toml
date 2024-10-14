@@ -27,7 +27,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-cryptg = ["cryptg~=0.4"]
+cryptg = ["cryptg~=0.5"]
 dev = [
   "mypy~=1.11.2",
   "ruff~=0.6.8",
