@@ -162,8 +162,8 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
-    lock: Lock
     _logger: logging.Logger
+    _lock: Lock
     _reader: AsyncReader
     _writer: AsyncWriter
     _transport: Transport
@@ -192,8 +192,8 @@ class Sender:
         return cls(
             dc_id=dc_id,
             addr=addr,
-            lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
+            _lock=Lock(),
             _reader=reader,
             _writer=writer,
             _transport=transport,
@@ -235,7 +235,7 @@ class Sender:
                 return rx.result()
 
     async def step(self) -> list[Updates]:
-        async with self.lock:
+        async with self._lock:
             return await self._step()
 
     async def _step(self) -> list[Updates]:
