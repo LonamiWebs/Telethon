@@ -188,7 +188,6 @@ class Sender:
     _updates: list[Updates]
     _requests: list[Request[object]]
     _request_event: Event
-    _next_ping: float
     _read_buffer: bytearray
     _step_lock: Lock
     _step_event: Event
@@ -220,7 +219,6 @@ class Sender:
             _updates=[],
             _requests=[],
             _request_event=Event(),
-            _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
             _step_lock=Lock(),
             _step_event=Event(),
@@ -293,9 +291,7 @@ class Sender:
         try:
             while True:
                 _, pending = await asyncio.wait(
-                    (recv_data, send_data),
-                    timeout=self._next_ping - asyncio.get_running_loop().time(),
-                    return_when=FIRST_COMPLETED,
+                    (recv_data, send_data), return_when=FIRST_COMPLETED
                 )  # pyright: ignore [reportAssignmentType]
 
                 yield
@@ -381,7 +377,6 @@ class Sender:
                 )
             )
         )
-        self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
     def _process_mtp_buffer(self, updates: list[Updates]) -> None:
         results = self._mtp.deserialize(self._mtp_buffer)
@@ -558,5 +553,4 @@ async def generate_auth_key(sender: Sender) -> Sender:
     first_salt = finished.first_salt
 
     sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
-    sender._next_ping = asyncio.get_running_loop().time() + PING_DELAY
     return sender
