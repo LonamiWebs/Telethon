@@ -271,8 +271,6 @@ class Sender:
         return self._step_generator
 
     async def _step(self) -> AsyncGenerator[None, None]:
-        self._try_fill_write()
-
         recv_req = asyncio.create_task(self._request_event.wait())
         recv_data = asyncio.create_task(self._step_recv())
         send_data = asyncio.create_task(self._step_send())
