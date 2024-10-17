@@ -3,7 +3,7 @@ import logging
 import struct
 import time
 from abc import ABC
-from asyncio import FIRST_COMPLETED, Event, Future, Lock
+from asyncio import FIRST_COMPLETED, Event, Future, Lock, Task
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Generic, Optional, Protocol, Type, TypeVar
@@ -162,18 +162,20 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
-    lock: Lock
     _logger: logging.Logger
+    _lock: Lock
     _reader: AsyncReader
     _writer: AsyncWriter
     _transport: Transport
     _mtp: Mtp
     _mtp_buffer: bytearray
+    _updates: list[Updates]
     _requests: list[Request[object]]
     _request_event: Event
-    _next_ping: float
     _read_buffer: bytearray
-    _write_drain_pending: bool
+    _step_counter: int
+    _recv_task: Optional[Task[bytes]] = None
+    _send_task: Optional[Task[None]] = None
 
     @classmethod
     async def connect(
@@ -192,27 +194,37 @@ class Sender:
         return cls(
             dc_id=dc_id,
             addr=addr,
-            lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
+            _lock=Lock(),
             _reader=reader,
             _writer=writer,
             _transport=transport,
             _mtp=mtp,
             _mtp_buffer=bytearray(),
+            _updates=[],
             _requests=[],
             _request_event=Event(),
-            _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
-            _write_drain_pending=False,
+            _step_counter=0,
         )
 
     async def disconnect(self) -> None:
+        assert self._recv_task
+        assert self._send_task
+        recv_task, send_task = self._recv_task, self._send_task
+
+        async with self._lock:
+            self._recv_task, self._send_task = None, None
+
+        recv_task.cancel()
+        send_task.cancel()
+        await asyncio.wait((recv_task, send_task))
+
         self._writer.close()
         await self._writer.wait_closed()
 
     def enqueue(self, request: RemoteCall[Return]) -> Future[bytes]:
         rx = self._enqueue_body(bytes(request))
-        self._request_event.set()
         return rx
 
     async def invoke(self, request: RemoteCall[Return]) -> bytes:
@@ -226,56 +238,69 @@ class Sender:
     def _enqueue_body(self, body: bytes) -> Future[bytes]:
         oneshot = asyncio.get_running_loop().create_future()
         self._requests.append(Request(body=body, state=NotSerialized(), result=oneshot))
+        self._request_event.set()
         return oneshot
 
     async def _step_until_receive(self, rx: Future[bytes]) -> bytes:
-        while True:
+        while not rx.done():
             await self.step()
-            if rx.done():
-                return rx.result()
+        return rx.result()
 
-    async def step(self) -> list[Updates]:
-        async with self.lock:
-            return await self._step()
+    async def step_updates(self) -> list[Updates]:
+        await self.step()
+        updates, self._updates = self._updates, []
+        return updates
 
-    async def _step(self) -> list[Updates]:
-        self._try_fill_write()
+    async def step(self) -> None:
+        ticket_number = self._step_counter
+        async with self._lock:
+            if self._step_counter == ticket_number:
+                # We're the one to drive IO.
+                await self._step()
+                self._step_counter += 1
 
-        recv_req = asyncio.create_task(self._request_event.wait())
-        recv_data = asyncio.create_task(self._reader.read(MAXIMUM_DATA))
-        send_data = asyncio.create_task(self._do_send())
-        done, pending = await asyncio.wait(
-            (recv_req, recv_data, send_data),
-            timeout=self._next_ping - asyncio.get_running_loop().time(),
-            return_when=FIRST_COMPLETED,
+    async def _step(self) -> None:
+        if self._step_counter == 0:
+            self._try_fill_write()
+            self._recv_task = asyncio.create_task(self._do_recv())
+            self._send_task = asyncio.create_task(self._do_send())
+
+        if self._recv_task is None or self._send_task is None:
+            # Disconnected
+            return
+
+        await asyncio.wait(
+            (self._recv_task, self._send_task), return_when=FIRST_COMPLETED
         )
 
-        if pending:
-            for task in pending:
-                task.cancel()
-            await asyncio.wait(pending)
+        if self._recv_task.done():
+            try:
+                buff = self._recv_task.result()
+            except TimeoutError:
+                self._on_ping_timeout()
+            else:
+                self._on_net_read(buff)
 
-        result = []
-        if recv_req in done:
-            self._request_event.clear()
-        if recv_data in done:
-            result = self._on_net_read(recv_data.result())
-        if send_data in done:
+            self._recv_task = asyncio.create_task(self._do_recv())
+        if self._send_task.done():
+            self._send_task.result()
             self._on_net_write()
-        if not done:
-            self._on_ping_timeout()
-        return result
+
+            self._try_fill_write()
+            self._send_task = asyncio.create_task(self._do_send())
+
+    async def _do_recv(self) -> bytes:
+        async with asyncio.timeout(PING_DELAY):
+            return await self._reader.read(MAXIMUM_DATA)
 
     async def _do_send(self) -> None:
-        if self._write_drain_pending:
-            await self._writer.drain()
-            self._write_drain_pending = False
-        else:
-            # Never return
-            await asyncio.get_running_loop().create_future()
+        await self._request_event.wait()
+        await self._writer.drain()
+        if not self._requests:
+            self._request_event.clear()
 
     def _try_fill_write(self) -> None:
-        if self._write_drain_pending:
+        if not self._requests:
             return
 
         for request in self._requests:
@@ -293,15 +318,13 @@ class Sender:
                     request.state.container_msg_id = container_msg_id
 
             self._transport.pack(mtp_buffer, self._writer.write)
-            self._write_drain_pending = True
 
-    def _on_net_read(self, read_buffer: bytes) -> list[Updates]:
+    def _on_net_read(self, read_buffer: bytes) -> None:
         if not read_buffer:
             raise ConnectionResetError("read 0 bytes")
 
         self._read_buffer += read_buffer
 
-        updates: list[Updates] = []
         while self._read_buffer:
             self._mtp_buffer.clear()
             try:
@@ -310,9 +333,7 @@ class Sender:
                 break
             else:
                 del self._read_buffer[:n]
-                self._process_mtp_buffer(updates)
-
-        return updates
+                self._process_mtp_buffer()
 
     def _on_net_write(self) -> None:
         for req in self._requests:
@@ -328,14 +349,13 @@ class Sender:
                 )
             )
         )
-        self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
-    def _process_mtp_buffer(self, updates: list[Updates]) -> None:
+    def _process_mtp_buffer(self) -> None:
         results = self._mtp.deserialize(self._mtp_buffer)
 
         for result in results:
             if isinstance(result, Update):
-                self._process_update(updates, result.body)
+                self._process_update(result.body)
             elif isinstance(result, RpcResult):
                 self._process_result(result)
             elif isinstance(result, RpcError):
@@ -343,11 +363,9 @@ class Sender:
             else:
                 self._process_bad_message(result)
 
-    def _process_update(
-        self, updates: list[Updates], update: bytes | bytearray | memoryview
-    ) -> None:
+    def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
-            updates.append(Updates.from_bytes(update))
+            self._updates.append(Updates.from_bytes(update))
         except ValueError:
             cid = struct.unpack_from("I", update)[0]
             alt_classes: tuple[Type[Serializable], ...] = (
@@ -367,7 +385,7 @@ class Sender:
                             AffectedMessages,
                         ),
                     )
-                    updates.append(
+                    self._updates.append(
                         UpdateShort(
                             update=UpdateDeleteMessages(
                                 messages=[],
@@ -505,5 +523,4 @@ async def generate_auth_key(sender: Sender) -> Sender:
     first_salt = finished.first_salt
 
     sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
-    sender._next_ping = asyncio.get_running_loop().time() + PING_DELAY
     return sender
