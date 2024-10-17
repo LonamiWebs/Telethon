@@ -171,6 +171,10 @@ async def connect(self: Client, reconnect: bool = False) -> None:
     if self._sender and not reconnect:
         return
 
+    if reconnect:
+        assert self._sender
+        await self._sender.disconnect()
+
     if session := await self._storage.load():
         self._session = session
 
