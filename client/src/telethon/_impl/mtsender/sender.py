@@ -173,6 +173,7 @@ class Sender:
     _request_event: Event
     _read_buffer: bytearray
     _write_drain_pending: bool
+    _step_event: Event
     _recv_task: Optional[Task[bytes]] = None
     _send_task: Optional[Task[None]] = None
 
@@ -204,6 +205,7 @@ class Sender:
             _request_event=Event(),
             _read_buffer=bytearray(),
             _write_drain_pending=False,
+            _step_event=Event(),
         )
 
         sender._recv_task = asyncio.create_task(sender._do_recv())
@@ -265,6 +267,7 @@ class Sender:
         if self._recv_task is None or self._send_task is None:
             return
 
+        self._step_event.clear()
         self._try_fill_write()
 
         await asyncio.wait(
@@ -285,16 +288,24 @@ class Sender:
             self._on_net_write()
             self._send_task = asyncio.create_task(self._do_send())
 
+        await self._step_event.wait()
+
     async def _do_recv(self) -> bytes:
-        async with asyncio.timeout(PING_DELAY):
-            return await self._reader.read(MAXIMUM_DATA)
+        try:
+            async with asyncio.timeout(PING_DELAY):
+                return await self._reader.read(MAXIMUM_DATA)
+        finally:
+            self._step_event.set()
 
     async def _do_send(self) -> None:
-        if self._write_drain_pending:
-            await self._writer.drain()
-            self._write_drain_pending = False
-        else:
-            await self._request_event.wait()
+        try:
+            if self._write_drain_pending:
+                await self._writer.drain()
+                self._write_drain_pending = False
+            else:
+                await self._request_event.wait()
+        finally:
+            self._step_event.set()
 
     def _try_fill_write(self) -> None:
         if self._write_drain_pending:
