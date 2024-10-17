@@ -278,6 +278,7 @@ class Sender:
 
     async def _do_send(self) -> None:
         if self._write_drain_pending:
+            self._on_net_write()
             await self._writer.drain()
             self._write_drain_pending = False
         else:
