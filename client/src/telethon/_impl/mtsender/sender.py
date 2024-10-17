@@ -174,6 +174,7 @@ class Sender:
     _next_ping: float
     _read_buffer: bytearray
     _write_drain_pending: bool
+    _step_counter: int
 
     @classmethod
     async def connect(
@@ -204,6 +205,7 @@ class Sender:
             _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
             _write_drain_pending=False,
+            _step_counter=0,
         )
 
     async def disconnect(self) -> None:
@@ -235,8 +237,16 @@ class Sender:
                 return rx.result()
 
     async def step(self) -> list[Updates]:
+        ticket_number = self._step_counter
+
         async with self.lock:
-            return await self._step()
+            if self._step_counter == ticket_number:
+                # We're the one to drive IO.
+                self._step_counter += 1
+                return await self._step()
+            else:
+                # A different task drove IO.
+                return []
 
     async def _step(self) -> list[Updates]:
         self._try_fill_write()
