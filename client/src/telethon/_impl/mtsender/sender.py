@@ -163,6 +163,7 @@ class Sender:
     dc_id: int
     addr: str
     _logger: logging.Logger
+    _lock: Lock
     _reader: AsyncReader
     _writer: AsyncWriter
     _transport: Transport
@@ -172,7 +173,6 @@ class Sender:
     _requests: list[Request[object]]
     _request_event: Event
     _read_buffer: bytearray
-    _step_lock: Lock
     _step_counter: int
     _recv_task: Optional[Task[bytes]] = None
     _send_task: Optional[Task[None]] = None
@@ -195,6 +195,7 @@ class Sender:
             dc_id=dc_id,
             addr=addr,
             _logger=base_logger.getChild("mtsender"),
+            _lock=Lock(),
             _reader=reader,
             _writer=writer,
             _transport=transport,
@@ -204,7 +205,6 @@ class Sender:
             _requests=[],
             _request_event=Event(),
             _read_buffer=bytearray(),
-            _step_lock=Lock(),
             _step_counter=0,
         )
 
@@ -212,7 +212,9 @@ class Sender:
         assert self._recv_task
         assert self._send_task
         recv_task, send_task = self._recv_task, self._send_task
-        self._recv_task, self._send_task = None, None
+
+        async with self._lock:
+            self._recv_task, self._send_task = None, None
 
         recv_task.cancel()
         send_task.cancel()
@@ -251,7 +253,7 @@ class Sender:
 
     async def step(self) -> None:
         ticket_number = self._step_counter
-        async with self._step_lock:
+        async with self._lock:
             if self._step_counter == ticket_number:
                 # We're the one to drive IO.
                 await self._step()
