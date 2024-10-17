@@ -167,8 +167,8 @@ async def connect_sender(
     return sender, session_dcs
 
 
-async def connect(self: Client) -> None:
-    if self._sender:
+async def connect(self: Client, reconnect: bool = False) -> None:
+    if self._sender and not reconnect:
         return
 
     if session := await self._storage.load():
@@ -181,7 +181,7 @@ async def connect(self: Client) -> None:
         self._config, self._session.dcs, datacenter
     )
 
-    if self._message_box.is_empty() and self._session.user:
+    if reconnect or (self._message_box.is_empty() and self._session.user):
         try:
             await self(functions.updates.get_state())
         except RpcError as e:
@@ -197,7 +197,8 @@ async def connect(self: Client) -> None:
                 id=me.id, dc=self._sender.dc_id, bot=me.bot, username=me.username
             )
 
-    self._dispatcher = asyncio.create_task(dispatcher(self))
+    if not self._dispatcher or self._dispatcher.done():
+        self._dispatcher = asyncio.create_task(dispatcher(self))
 
 
 async def disconnect(self: Client) -> None:
@@ -265,7 +266,10 @@ async def invoke_request(
 async def step_sender(client: Client) -> None:
     try:
         assert client._sender
-        updates = await client._sender.get_updates()
+        updates = await client._sender.step_updates()
+    except ConnectionResetError:
+        await connect(client, reconnect=True)
+        return
     except ConnectionError:
         if client.connected:
             raise
