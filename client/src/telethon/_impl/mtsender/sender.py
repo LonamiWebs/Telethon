@@ -3,7 +3,7 @@ import logging
 import struct
 import time
 from abc import ABC
-from asyncio import FIRST_COMPLETED, Event, Future, Lock, Task
+from asyncio import FIRST_COMPLETED, Event, Future, Task
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Generic, Optional, Protocol, Type, TypeVar
@@ -162,7 +162,6 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
-    lock: Lock
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -194,7 +193,6 @@ class Sender:
         sender = cls(
             dc_id=dc_id,
             addr=addr,
-            lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
             _reader=reader,
             _writer=writer,
