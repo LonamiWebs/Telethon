@@ -1,5 +1,4 @@
 from .sender import (
-    MAXIMUM_DATA,
     NO_PING_DISCONNECT,
     PING_DELAY,
     AsyncReader,
@@ -10,7 +9,6 @@ from .sender import (
 )
 
 __all__ = [
-    "MAXIMUM_DATA",
     "NO_PING_DISCONNECT",
     "PING_DELAY",
     "AsyncReader",
