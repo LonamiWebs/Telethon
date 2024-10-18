@@ -19,7 +19,7 @@ class NewMessage(EventBuilder):
             If set to `True`, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-        from_users (`entity`, optional):
+        from_users (`entity`, `callable`, optional):
             Unlike `chats`, this parameter filters the *senders* of the
             message. That is, only messages *sent by these users* will be
             handled. Use `chats` if you want private messages with this/these
@@ -74,6 +74,7 @@ class NewMessage(EventBuilder):
         self.outgoing = outgoing
         self.from_users = from_users
         self.forwards = forwards
+
         if isinstance(pattern, str):
             self.pattern = re.compile(pattern).match
         elif not pattern or callable(pattern):
@@ -82,6 +83,9 @@ class NewMessage(EventBuilder):
             self.pattern = pattern.match
         else:
             raise TypeError('Invalid pattern type given')
+
+        if callable(from_users):
+            self.from_users = from_users()
 
         # Should we short-circuit? E.g. perform no check at all
         self._no_check = all(x is None for x in (
