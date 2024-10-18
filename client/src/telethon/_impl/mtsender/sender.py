@@ -232,26 +232,26 @@ class Sender:
 
     async def _step_until_receive(self, rx: Future[bytes]) -> bytes:
         while True:
-            await self._step()
+            await self.step()
             if rx.done():
                 return rx.result()
 
     async def get_updates(self) -> list[Updates]:
-        await self._step()
+        await self.step()
         updates, self._updates = self._updates, []
         return updates
 
-    async def _step(self) -> None:
+    async def step(self) -> None:
         ticket_number = self._step_counter
 
         async with self._lock:
             if self._step_counter == ticket_number:
                 # We're the one to drive IO.
                 self._step_counter += 1
-                await self._do_step()
+                await self._step()
             # else:  # A different task drive IO.
 
-    async def _do_step(self) -> list[Updates]:
+    async def _step(self) -> list[Updates]:
         self._try_fill_write()
 
         recv_req = asyncio.create_task(self._request_event.wait())
