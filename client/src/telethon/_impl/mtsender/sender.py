@@ -209,8 +209,9 @@ class Sender:
         )
 
     async def disconnect(self) -> None:
-        assert self._recv_task
-        assert self._send_task
+        if not self._recv_task or not self._send_task:
+            return
+
         recv_task, send_task = self._recv_task, self._send_task
 
         async with self._lock:
@@ -261,11 +262,10 @@ class Sender:
 
     async def _step(self) -> None:
         if self._step_counter == 0:
-            self._try_fill_write()
             self._recv_task = asyncio.create_task(self._do_recv())
             self._send_task = asyncio.create_task(self._do_send())
 
-        if self._recv_task is None or self._send_task is None:
+        if not self._recv_task or not self._send_task:
             # Disconnected
             return
 
@@ -300,9 +300,6 @@ class Sender:
             self._request_event.clear()
 
     def _try_fill_write(self) -> None:
-        if not self._requests:
-            return
-
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
                 if (msg_id := self._mtp.push(request.body)) is not None:

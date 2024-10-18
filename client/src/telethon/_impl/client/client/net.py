@@ -5,6 +5,7 @@ import itertools
 import logging
 import platform
 import re
+from asyncio import CancelledError
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, TypeVar
 
@@ -272,6 +273,9 @@ async def step_sender(client: Client) -> None:
         else:
             # disconnect was called, so the socket returning 0 bytes is expected
             return
+    except CancelledError:
+        await disconnect(client)
+        return
 
     process_socket_updates(client, updates)
 
