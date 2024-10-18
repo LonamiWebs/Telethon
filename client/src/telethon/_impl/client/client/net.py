@@ -265,7 +265,7 @@ async def invoke_request(
 async def step_sender(client: Client) -> None:
     try:
         assert client._sender
-        updates = await client._sender.step()
+        updates = await client._sender.get_updates()
     except ConnectionError:
         if client.connected:
             raise
