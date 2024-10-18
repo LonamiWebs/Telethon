@@ -172,7 +172,6 @@ class Sender:
     _updates: list[Updates]
     _requests: list[Request[object]]
     _request_event: Event
-    _next_ping: float
     _read_buffer: bytearray
     _write_drain_pending: bool
     _step_counter: int
@@ -204,7 +203,6 @@ class Sender:
             _updates=[],
             _requests=[],
             _request_event=Event(),
-            _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
             _write_drain_pending=False,
             _step_counter=0,
@@ -260,9 +258,7 @@ class Sender:
         recv_data = asyncio.create_task(self._reader.read(MAXIMUM_DATA))
         send_data = asyncio.create_task(self._do_send())
         done, pending = await asyncio.wait(
-            (recv_req, recv_data, send_data),
-            timeout=self._next_ping - asyncio.get_running_loop().time(),
-            return_when=FIRST_COMPLETED,
+            (recv_req, recv_data, send_data), return_when=FIRST_COMPLETED
         )
 
         if pending:
@@ -274,12 +270,17 @@ class Sender:
         if recv_req in done:
             self._request_event.clear()
         if recv_data in done:
-            result = self._on_net_read(recv_data.result())
+            try:
+                result = self._on_net_read(recv_data.result())
+            except TimeoutError:
+                self._on_ping_timeout()
         if send_data in done:
             self._on_net_write()
-        if not done:
-            self._on_ping_timeout()
         return result
+
+    async def _do_recv(self) -> bytes:
+        async with asyncio.timeout(PING_DELAY):
+            return await self._reader.read(MAXIMUM_DATA)
 
     async def _do_send(self) -> None:
         if self._write_drain_pending:
@@ -344,7 +345,6 @@ class Sender:
                 )
             )
         )
-        self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
     def _process_mtp_buffer(self) -> None:
         results = self._mtp.deserialize(self._mtp_buffer)
@@ -519,5 +519,4 @@ async def generate_auth_key(sender: Sender) -> Sender:
     first_salt = finished.first_salt
 
     sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
-    sender._next_ping = asyncio.get_running_loop().time() + PING_DELAY
     return sender
