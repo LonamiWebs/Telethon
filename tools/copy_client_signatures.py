@@ -123,7 +123,12 @@ def main() -> None:
 
     generated = ast.unparse(
         ast.ClassDef(
-            name="Client", bases=[], keywords=[], body=class_body, decorator_list=[]
+            name="Client",
+            bases=[],
+            keywords=[],
+            body=class_body,
+            decorator_list=[],
+            type_params=[],
         )
     )[len("class Client:") :].strip()
 

@@ -102,6 +102,16 @@ Private definitions
 
     Generic parameter used by :class:`AsyncList`.
 
+.. currentmodule:: telethon._impl.client.types.keyboard
+
+.. class:: AnyButton
+
+    Generic parameter used by :class:`Keyboard`.
+
+.. class:: AnyInlineButton
+
+    Generic parameter used by :class:`InlineKeyboard`.
+
 .. currentmodule:: telethon._impl.client.events.filters.combinators
 
 .. autoclass:: Combinable
