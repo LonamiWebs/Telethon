@@ -169,6 +169,7 @@ class Sender:
     _transport: Transport
     _mtp: Mtp
     _mtp_buffer: bytearray
+    _updates: list[Updates]
     _requests: list[Request[object]]
     _request_event: Event
     _next_ping: float
@@ -200,6 +201,7 @@ class Sender:
             _transport=transport,
             _mtp=mtp,
             _mtp_buffer=bytearray(),
+            _updates=[],
             _requests=[],
             _request_event=Event(),
             _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
@@ -236,19 +238,22 @@ class Sender:
             if rx.done():
                 return rx.result()
 
-    async def step(self) -> list[Updates]:
+    async def step(self) -> None:
         ticket_number = self._step_counter
 
         async with self.lock:
             if self._step_counter == ticket_number:
                 # We're the one to drive IO.
                 self._step_counter += 1
-                return await self._step()
-            else:
-                # A different task drove IO.
-                return []
+                await self._step()
+            # else: different task drove IO.
 
-    async def _step(self) -> list[Updates]:
+    def pop_updates(self) -> list[Updates]:
+        updates = self._updates[:]
+        self._updates.clear()
+        return updates
+
+    async def _step(self) -> None:
         self._try_fill_write()
 
         recv_req = asyncio.create_task(self._request_event.wait())
@@ -265,16 +270,14 @@ class Sender:
                 task.cancel()
             await asyncio.wait(pending)
 
-        result = []
         if recv_req in done:
             self._request_event.clear()
         if recv_data in done:
-            result = self._on_net_read(recv_data.result())
+            self._on_net_read(recv_data.result())
         if send_data in done:
             self._on_net_write()
         if not done:
             self._on_ping_timeout()
-        return result
 
     async def _do_send(self) -> None:
         if self._write_drain_pending:
@@ -305,13 +308,12 @@ class Sender:
             self._transport.pack(mtp_buffer, self._writer.write)
             self._write_drain_pending = True
 
-    def _on_net_read(self, read_buffer: bytes) -> list[Updates]:
+    def _on_net_read(self, read_buffer: bytes) -> None:
         if not read_buffer:
             raise ConnectionResetError("read 0 bytes")
 
         self._read_buffer += read_buffer
 
-        updates: list[Updates] = []
         while self._read_buffer:
             self._mtp_buffer.clear()
             try:
@@ -320,9 +322,7 @@ class Sender:
                 break
             else:
                 del self._read_buffer[:n]
-                self._process_mtp_buffer(updates)
-
-        return updates
+                self._process_mtp_buffer()
 
     def _on_net_write(self) -> None:
         for req in self._requests:
@@ -340,12 +340,12 @@ class Sender:
         )
         self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
-    def _process_mtp_buffer(self, updates: list[Updates]) -> None:
+    def _process_mtp_buffer(self) -> None:
         results = self._mtp.deserialize(self._mtp_buffer)
 
         for result in results:
             if isinstance(result, Update):
-                self._process_update(updates, result.body)
+                self._process_update(result.body)
             elif isinstance(result, RpcResult):
                 self._process_result(result)
             elif isinstance(result, RpcError):
@@ -353,11 +353,9 @@ class Sender:
             else:
                 self._process_bad_message(result)
 
-    def _process_update(
-        self, updates: list[Updates], update: bytes | bytearray | memoryview
-    ) -> None:
+    def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
-            updates.append(Updates.from_bytes(update))
+            self._updates.append(Updates.from_bytes(update))
         except ValueError:
             cid = struct.unpack_from("I", update)[0]
             alt_classes: tuple[Type[Serializable], ...] = (
@@ -377,7 +375,7 @@ class Sender:
                             AffectedMessages,
                         ),
                     )
-                    updates.append(
+                    self._updates.append(
                         UpdateShort(
                             update=UpdateDeleteMessages(
                                 messages=[],
