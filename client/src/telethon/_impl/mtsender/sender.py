@@ -10,7 +10,6 @@ from typing import Generic, Optional, Protocol, Type, TypeVar
 
 from typing_extensions import Self
 
-from .protocol import BufferedTransportProtocol
 from ..crypto import AuthKey
 from ..mtproto import (
     BadMessageError,
@@ -30,7 +29,7 @@ from ..tl.core import Serializable
 from ..tl.mtproto.functions import ping_delay_disconnect
 from ..tl.types import UpdateDeleteMessages, UpdateShort
 from ..tl.types.messages import AffectedFoundMessages, AffectedHistory, AffectedMessages
-
+from .protocol import BufferedTransportProtocol
 
 PING_DELAY = 60
 

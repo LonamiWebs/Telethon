@@ -1,4 +1,8 @@
 import asyncio
+from typing import Coroutine, Literal
+
+from typing_extensions import Buffer
+
 from ..mtproto import (
     MissingBytesError,
     Transport,
@@ -17,7 +21,7 @@ class BufferedTransportProtocol(asyncio.BufferedProtocol):
         "_closed",
     )
 
-    def __init__(self, transport: Transport):
+    def __init__(self, transport: Transport) -> None:
         self._transport = transport
         self._buffer = bytearray(MAXIMUM_DATA)
         self._buffer_head = 0
@@ -27,10 +31,10 @@ class BufferedTransportProtocol(asyncio.BufferedProtocol):
 
     # Method overrides
 
-    def get_buffer(self, sizehint):
+    def get_buffer(self, sizehint: int) -> Buffer:
         return self._buffer
 
-    def buffer_updated(self, nbytes):
+    def buffer_updated(self, nbytes: int) -> None:
         self._buffer_head += nbytes
         while self._buffer_head:
             self._output.clear()
@@ -38,8 +42,7 @@ class BufferedTransportProtocol(asyncio.BufferedProtocol):
                 n = self._transport.unpack(
                     memoryview(self._buffer)[: self._buffer_head], self._output
                 )
-            except MissingBytesError as e:
-                print(e)
+            except MissingBytesError:
                 return
             else:
                 del self._buffer[:n]
@@ -47,13 +50,13 @@ class BufferedTransportProtocol(asyncio.BufferedProtocol):
                 self._buffer_head -= n
                 self._packets.put_nowait(bytes(self._output))
 
-    def connection_lost(self, exc):
+    def connection_lost(self, exc: Exception | None) -> None:
         self._closed.set()
 
     # Custom methods
 
-    def wait_closed(self):
+    def wait_closed(self) -> Coroutine[None, None, Literal[True]]:
         return self._closed.wait()
 
-    def wait_packet(self):
+    def wait_packet(self) -> Coroutine[None, None, bytes]:
         return self._packets.get()
