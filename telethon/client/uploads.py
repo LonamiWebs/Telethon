@@ -422,7 +422,7 @@ class UploadMethods:
 
             return result
 
-        if formatting_entities is not None:
+        if formatting_entities:
             msg_entities = formatting_entities
         else:
             caption, msg_entities =\
