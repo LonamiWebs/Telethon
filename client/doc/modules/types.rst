@@ -130,8 +130,4 @@ Private definitions
 
 .. currentmodule:: telethon._impl.mtsender.sender
 
-.. autoclass:: AsyncReader
-
-.. autoclass:: AsyncWriter
-
 .. autoclass:: Connector

@@ -6,7 +6,7 @@ from telethon_generator.tl_parser import (
     NormalParameter,
     Parameter,
     Type,
-    TypeDefNotImplemented,
+    TypeDefNotImplementedError,
 )
 
 
@@ -39,7 +39,7 @@ def test_bad_generics(param: str) -> None:
 
 
 def test_type_def_param() -> None:
-    with raises(TypeDefNotImplemented) as e:
+    with raises(TypeDefNotImplementedError) as e:
         Parameter.from_str("{a:Type}")
     e.match("typedef not implemented: a")
 

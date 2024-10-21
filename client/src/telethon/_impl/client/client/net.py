@@ -246,10 +246,9 @@ async def invoke_request(
     sleep_thresh = client._config.flood_sleep_threshold
     rx = client._sender.enqueue(request)
     while True:
-        while not rx.done():
-            await step_sender(client)
+        await step_sender(client)
         try:
-            response = rx.result()
+            response = await rx
             break
         except RpcError as e:
             if e.code == 420 and e.value is not None and e.value < sleep_thresh:
@@ -265,7 +264,7 @@ async def invoke_request(
 async def step_sender(client: Client) -> None:
     try:
         assert client._sender
-        updates = await client._sender.step()
+        await client._sender.step()
     except ConnectionError:
         if client.connected:
             raise
@@ -273,13 +272,19 @@ async def step_sender(client: Client) -> None:
             # disconnect was called, so the socket returning 0 bytes is expected
             return
 
+    step_updates(client)
+
+
+def step_updates(client: Client) -> None:
+    assert client._sender
+    updates = client._sender.pop_updates()
     process_socket_updates(client, updates)
 
 
 async def run_until_disconnected(self: Client) -> None:
     while self.connected:
         if self._sender:
-            await step_sender(self)
+            step_updates(self)
 
 
 def connected(client: Client) -> bool:

@@ -3,7 +3,7 @@ import logging
 import struct
 import time
 from abc import ABC
-from asyncio import FIRST_COMPLETED, Event, Future, Lock
+from asyncio import Future, Lock, StreamReader, StreamWriter
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Generic, Optional, Protocol, Type, TypeVar
@@ -14,6 +14,7 @@ from ..crypto import AuthKey
 from ..mtproto import (
     BadMessageError,
     Encrypted,
+    MissingBytesError,
     MsgId,
     Mtp,
     Plain,
@@ -29,7 +30,9 @@ from ..tl.core import Serializable
 from ..tl.mtproto.functions import ping_delay_disconnect
 from ..tl.types import UpdateDeleteMessages, UpdateShort
 from ..tl.types.messages import AffectedFoundMessages, AffectedHistory, AffectedMessages
-from .protocol import BufferedTransportProtocol
+from .protocol import BufferedStreamingProtocol
+
+MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)
 
 PING_DELAY = 60
 
@@ -49,50 +52,6 @@ def generate_random_id() -> int:
     return _last_id
 
 
-class AsyncReader(Protocol):
-    """
-    A :class:`asyncio.StreamReader`-like class.
-    """
-
-    async def read(self, n: int) -> bytes:
-        """
-        Must behave like :meth:`asyncio.StreamReader.read`.
-
-        :param n:
-            Amount of bytes to read at most.
-        """
-        raise NotImplementedError
-
-
-class AsyncWriter(Protocol):
-    """
-    A :class:`asyncio.StreamWriter`-like class.
-    """
-
-    def write(self, data: bytes | bytearray | memoryview) -> None:
-        """
-        Must behave like :meth:`asyncio.StreamWriter.write`.
-
-        :param data:
-            Data that must be entirely written or buffered until :meth:`drain` is called.
-        """
-
-    async def drain(self) -> None:
-        """
-        Must behave like :meth:`asyncio.StreamWriter.drain`.
-        """
-
-    def close(self) -> None:
-        """
-        Must behave like :meth:`asyncio.StreamWriter.close`.
-        """
-
-    async def wait_closed(self) -> None:
-        """
-        Must behave like :meth:`asyncio.StreamWriter.wait_closed`.
-        """
-
-
 class Connector(Protocol):
     """
     A *Connector* is any function that takes in the following two positional parameters as input:
@@ -100,7 +59,7 @@ class Connector(Protocol):
     * The ``ip`` address as a :class:`str`. This might be either a IPv4 or IPv6.
     * The ``port`` as a :class:`int`. This will be a number below 2¹⁶, often 443.
 
-    and returns a :class:`tuple`\\ [:class:`AsyncReader`, :class:`AsyncWriter`].
+    and returns a :class:`tuple`\\ [:class:`StreamReader`, :class:`StreamWriter`].
 
     You can use a custom connector to connect to Telegram through proxies.
     The library will only ever open remote connections through this function.
@@ -118,7 +77,7 @@ class Connector(Protocol):
         The :doc:`/concepts/datacenters` concept has examples on how to combine proxy libraries with Telethon.
     """
 
-    async def __call__(self, ip: str, port: int) -> tuple[AsyncReader, AsyncWriter]:
+    async def __call__(self, ip: str, port: int) -> tuple[StreamReader, StreamWriter]:
         raise NotImplementedError
 
 
@@ -162,13 +121,15 @@ class Sender:
     addr: str
     lock: Lock
     _logger: logging.Logger
-    _connection: asyncio.Transport
+    _reader: StreamReader
+    _writer: StreamWriter
     _transport: Transport
-    _protocol: BufferedTransportProtocol
     _mtp: Mtp
+    _mtp_buffer: bytearray
+    _updates: list[Updates]
     _requests: list[Request[object]]
-    _request_event: Event
-    _next_ping: float
+    _read_buffer_head: int
+    _read_buffer: bytearray
     _step_counter: int
 
     @classmethod
@@ -183,33 +144,35 @@ class Sender:
         base_logger: logging.Logger,
     ) -> Self:
         ip, port = addr.split(":")
-        # TODO BRING BACK SUPPORT FOR connector
-        connection, protocol = await asyncio.get_running_loop().create_connection(
-            lambda: BufferedTransportProtocol(transport), ip, int(port)
-        )
+        reader, writer = await connector(ip, int(port))
 
-        return cls(
+        sender = cls(
             dc_id=dc_id,
             addr=addr,
             lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
-            _connection=connection,
+            _reader=reader,
+            _writer=writer,
             _transport=transport,
-            _protocol=protocol,
             _mtp=mtp,
+            _mtp_buffer=bytearray(),
+            _updates=[],
             _requests=[],
-            _request_event=Event(),
-            _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
+            _read_buffer_head=0,
+            _read_buffer=bytearray(MAXIMUM_DATA),
             _step_counter=0,
         )
 
+        sender._writer.transport.set_protocol(BufferedStreamingProtocol(sender))
+
+        return sender
+
     async def disconnect(self) -> None:
-        self._connection.close()
-        await self._protocol.wait_closed()
+        self._writer.close()
+        await self._writer.wait_closed()
 
     def enqueue(self, request: RemoteCall[Return]) -> Future[bytes]:
         rx = self._enqueue_body(bytes(request))
-        self._request_event.set()
         return rx
 
     async def invoke(self, request: RemoteCall[Return]) -> bytes:
@@ -223,61 +186,32 @@ class Sender:
     def _enqueue_body(self, body: bytes) -> Future[bytes]:
         oneshot = asyncio.get_running_loop().create_future()
         self._requests.append(Request(body=body, state=NotSerialized(), result=oneshot))
+        print("REQUESTS", len(body))
         return oneshot
 
     async def _step_until_receive(self, rx: Future[bytes]) -> bytes:
-        while True:
-            await self.step()
-            if rx.done():
-                return rx.result()
+        await self.step()
+        return await rx
 
-    async def step(self) -> list[Updates]:
+    async def step(self) -> None:
         ticket_number = self._step_counter
 
         async with self.lock:
             if self._step_counter == ticket_number:
                 # We're the one to drive IO.
                 self._step_counter += 1
-                return await self._step()
-            else:
-                # A different task drove IO.
-                return []
+                await self._step()
+            # else: different task drove IO.
 
-    async def _step(self) -> list[Updates]:
-        self._try_fill_write()
+    def pop_updates(self) -> list[Updates]:
+        updates = self._updates[:]
+        self._updates.clear()
+        return updates
 
-        self._connection.resume_reading()
-        recv_req = asyncio.create_task(self._request_event.wait())
-        recv_data = asyncio.create_task(self._protocol.wait_packet())
-        conn_lost = asyncio.create_task(self._protocol.wait_closed())
-        done, pending = await asyncio.wait(
-            (
-                recv_req,
-                recv_data,
-                conn_lost,
-            ),
-            timeout=self._next_ping - asyncio.get_running_loop().time(),
-            return_when=FIRST_COMPLETED,
-        )
-        self._connection.pause_reading()
+    async def _step(self) -> None:
+        await self._try_fill_write()
 
-        if pending:
-            for task in pending:
-                task.cancel()
-            await asyncio.wait(pending)
-
-        result = []
-        if recv_req in done:
-            self._request_event.clear()
-        if recv_data in done:
-            result = self._on_net_read(recv_data.result())
-        if conn_lost in done:
-            raise ConnectionResetError
-        if not done:
-            self._on_ping_timeout()
-        return result
-
-    def _try_fill_write(self) -> None:
+    async def _try_fill_write(self) -> None:
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
                 if (msg_id := self._mtp.push(request.body)) is not None:
@@ -289,15 +223,28 @@ class Sender:
         if result:
             container_msg_id, mtp_buffer = result
 
-            self._transport.pack(mtp_buffer, self._connection.write)
+            self._transport.pack(mtp_buffer, self._writer.transport.write)
             for request in self._requests:
                 if isinstance(request.state, Serialized):
                     request.state = Sent(request.state.msg_id, container_msg_id)
 
-    def _on_net_read(self, mtp_buffer: bytes) -> list[Updates]:
-        updates: list[Updates] = []
-        self._process_mtp_buffer(mtp_buffer, updates)
-        return updates
+    def _on_buffer_updated(self, nbytes: int) -> None:
+        self._read_buffer_head += nbytes
+        while self._read_buffer_head:
+            self._mtp_buffer.clear()
+            try:
+                n = self._transport.unpack(
+                    memoryview(self._read_buffer)[: self._read_buffer_head],
+                    self._mtp_buffer,
+                )
+            except MissingBytesError as e:
+                print("MissingBytesError", e)
+                return
+            else:
+                del self._read_buffer[:n]
+                self._read_buffer += bytes(n)
+                self._read_buffer_head -= n
+                self._process_mtp_buffer()
 
     def _on_ping_timeout(self) -> None:
         ping_id = generate_random_id()
@@ -308,14 +255,17 @@ class Sender:
                 )
             )
         )
-        self._next_ping = asyncio.get_running_loop().time() + PING_DELAY
 
-    def _process_mtp_buffer(self, mtp_buffer: bytes, updates: list[Updates]) -> None:
-        results = self._mtp.deserialize(mtp_buffer)
+    def _process_mtp_buffer(self) -> None:
+        print("PACKED", len(self._mtp_buffer))
+        print(self._mtp)
+        results = self._mtp.deserialize(bytes(self._mtp_buffer))
+        print("DESERIALIZED", len(results))
+        print("Requests", len(self._requests))
 
         for result in results:
             if isinstance(result, Update):
-                self._process_update(updates, result.body)
+                self._process_update(result.body)
             elif isinstance(result, RpcResult):
                 self._process_result(result)
             elif isinstance(result, RpcError):
@@ -323,11 +273,9 @@ class Sender:
             else:
                 self._process_bad_message(result)
 
-    def _process_update(
-        self, updates: list[Updates], update: bytes | bytearray | memoryview
-    ) -> None:
+    def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
-            updates.append(Updates.from_bytes(update))
+            self._updates.append(Updates.from_bytes(update))
         except ValueError:
             cid = struct.unpack_from("I", update)[0]
             alt_classes: tuple[Type[Serializable], ...] = (
@@ -347,7 +295,7 @@ class Sender:
                             AffectedMessages,
                         ),
                     )
-                    updates.append(
+                    self._updates.append(
                         UpdateShort(
                             update=UpdateDeleteMessages(
                                 messages=[],
@@ -485,5 +433,4 @@ async def generate_auth_key(sender: Sender) -> Sender:
     first_salt = finished.first_salt
 
     sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
-    sender._next_ping = asyncio.get_running_loop().time() + PING_DELAY
     return sender

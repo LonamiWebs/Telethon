@@ -1,62 +1,31 @@
-import asyncio
-from typing import Coroutine, Literal
+from asyncio import BufferedProtocol, Event
+from typing import TYPE_CHECKING, Literal
 
 from typing_extensions import Buffer
 
-from ..mtproto import (
-    MissingBytesError,
-    Transport,
-)
-
-MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)
+if TYPE_CHECKING:
+    from .sender import Sender
 
 
-class BufferedTransportProtocol(asyncio.BufferedProtocol):
-    __slots__ = (
-        "_transport",
-        "_buffer",
-        "_buffer_head",
-        "_packets",
-        "_output",
-        "_closed",
-    )
+class BufferedStreamingProtocol(BufferedProtocol):
+    __slots__ = ("_sender", "_closed")
 
-    def __init__(self, transport: Transport) -> None:
-        self._transport = transport
-        self._buffer = bytearray(MAXIMUM_DATA)
-        self._buffer_head = 0
-        self._packets: asyncio.Queue[bytes] = asyncio.Queue()
-        self._output = bytearray()
-        self._closed = asyncio.Event()
+    def __init__(self, sender: "Sender") -> None:
+        self._sender = sender
+        self._closed = Event()
 
     # Method overrides
 
     def get_buffer(self, sizehint: int) -> Buffer:
-        return self._buffer
+        return self._sender._read_buffer
 
     def buffer_updated(self, nbytes: int) -> None:
-        self._buffer_head += nbytes
-        while self._buffer_head:
-            self._output.clear()
-            try:
-                n = self._transport.unpack(
-                    memoryview(self._buffer)[: self._buffer_head], self._output
-                )
-            except MissingBytesError:
-                return
-            else:
-                del self._buffer[:n]
-                self._buffer += bytes(n)
-                self._buffer_head -= n
-                self._packets.put_nowait(bytes(self._output))
+        self._sender._on_buffer_updated(nbytes)
 
     def connection_lost(self, exc: Exception | None) -> None:
         self._closed.set()
 
     # Custom methods
 
-    def wait_closed(self) -> Coroutine[None, None, Literal[True]]:
-        return self._closed.wait()
-
-    def wait_packet(self) -> Coroutine[None, None, bytes]:
-        return self._packets.get()
+    async def wait_closed(self) -> Literal[True]:
+        return await self._closed.wait()
