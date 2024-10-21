@@ -27,5 +27,8 @@ class BufferedStreamingProtocol(BufferedProtocol):
 
     # Custom methods
 
+    def is_closed(self) -> bool:
+        return self._closed.is_set()
+
     async def wait_closed(self) -> Literal[True]:
         return await self._closed.wait()

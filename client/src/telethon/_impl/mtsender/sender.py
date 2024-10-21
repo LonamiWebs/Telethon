@@ -130,7 +130,9 @@ class Sender:
     _requests: list[Request[object]]
     _read_buffer_head: int
     _read_buffer: bytearray
+    _response_state: asyncio.Event
     _step_counter: int
+    _protocol: BufferedStreamingProtocol | None = None
 
     @classmethod
     async def connect(
@@ -160,16 +162,20 @@ class Sender:
             _requests=[],
             _read_buffer_head=0,
             _read_buffer=bytearray(MAXIMUM_DATA),
+            _response_state=asyncio.Event(),
             _step_counter=0,
         )
 
-        sender._writer.transport.set_protocol(BufferedStreamingProtocol(sender))
+        protocol = BufferedStreamingProtocol(sender)
+        sender._writer.transport.set_protocol(protocol)
+        sender._protocol = protocol
 
         return sender
 
     async def disconnect(self) -> None:
+        assert self._protocol
         self._writer.close()
-        await self._writer.wait_closed()
+        await self._protocol.wait_closed()
 
     def enqueue(self, request: RemoteCall[Return]) -> Future[bytes]:
         rx = self._enqueue_body(bytes(request))
@@ -186,12 +192,13 @@ class Sender:
     def _enqueue_body(self, body: bytes) -> Future[bytes]:
         oneshot = asyncio.get_running_loop().create_future()
         self._requests.append(Request(body=body, state=NotSerialized(), result=oneshot))
-        print("REQUESTS", len(body))
         return oneshot
 
     async def _step_until_receive(self, rx: Future[bytes]) -> bytes:
-        await self.step()
-        return await rx
+        while True:
+            await self.step()
+            if rx.done():
+                return rx.result()
 
     async def step(self) -> None:
         ticket_number = self._step_counter
@@ -209,9 +216,15 @@ class Sender:
         return updates
 
     async def _step(self) -> None:
-        await self._try_fill_write()
+        assert self._protocol
+        if self._protocol.is_closed():
+            raise ConnectionResetError
 
-    async def _try_fill_write(self) -> None:
+        self._response_state.clear()
+        self._try_fill_write()
+        await self._wait_response()
+
+    def _try_fill_write(self) -> None:
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
                 if (msg_id := self._mtp.push(request.body)) is not None:
@@ -228,6 +241,13 @@ class Sender:
                 if isinstance(request.state, Serialized):
                     request.state = Sent(request.state.msg_id, container_msg_id)
 
+    async def _wait_response(self) -> None:
+        try:
+            async with asyncio.timeout(PING_DELAY):
+                await self._response_state.wait()
+        except TimeoutError:
+            self._on_ping_timeout()
+
     def _on_buffer_updated(self, nbytes: int) -> None:
         self._read_buffer_head += nbytes
         while self._read_buffer_head:
@@ -237,14 +257,18 @@ class Sender:
                     memoryview(self._read_buffer)[: self._read_buffer_head],
                     self._mtp_buffer,
                 )
-            except MissingBytesError as e:
-                print("MissingBytesError", e)
+            except MissingBytesError:
                 return
             else:
                 del self._read_buffer[:n]
                 self._read_buffer += bytes(n)
                 self._read_buffer_head -= n
                 self._process_mtp_buffer()
+
+        self._response_state.set()
+
+    def _on_conn_closed(self) -> None:
+        self._response_state.set()
 
     def _on_ping_timeout(self) -> None:
         ping_id = generate_random_id()
@@ -257,11 +281,7 @@ class Sender:
         )
 
     def _process_mtp_buffer(self) -> None:
-        print("PACKED", len(self._mtp_buffer))
-        print(self._mtp)
         results = self._mtp.deserialize(bytes(self._mtp_buffer))
-        print("DESERIALIZED", len(results))
-        print("Requests", len(self._requests))
 
         for result in results:
             if isinstance(result, Update):
