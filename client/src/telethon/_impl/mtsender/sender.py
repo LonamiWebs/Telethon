@@ -3,7 +3,7 @@ import logging
 import struct
 import time
 from abc import ABC
-from asyncio import Event, Future, Lock
+from asyncio import Event, Future
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Generic, Optional, Protocol, Type, TypeVar
@@ -162,7 +162,6 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
-    lock: Lock
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -193,7 +192,6 @@ class Sender:
         return cls(
             dc_id=dc_id,
             addr=addr,
-            lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
             _reading=False,
             _writing=False,
@@ -211,6 +209,7 @@ class Sender:
     async def disconnect(self) -> None:
         self._writer.close()
         await self._writer.wait_closed()
+        self._response_event.set()
 
     def enqueue(self, request: RemoteCall[Return]) -> Future[bytes]:
         rx = self._enqueue_body(bytes(request))

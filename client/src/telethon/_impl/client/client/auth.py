@@ -61,10 +61,9 @@ async def handle_migrate(client: Client, dc_id: Optional[int]) -> None:
         client._config, client._session.dcs, DataCenter(id=dc_id)
     )
 
-    async with client._sender.lock:
-        old_sender = client._sender
-        client._sender = sender
-        await old_sender.disconnect()
+    old_sender = client._sender
+    client._sender = sender
+    await old_sender.disconnect()
 
 
 async def bot_sign_in(self: Client, token: str) -> User:
