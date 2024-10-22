@@ -175,7 +175,6 @@ class Sender:
     _requests: list[Request[object]]
     _response_event: Event
     _read_buffer: bytearray
-    _step_counter: int
 
     @classmethod
     async def connect(
@@ -207,7 +206,6 @@ class Sender:
             _requests=[],
             _response_event=Event(),
             _read_buffer=bytearray(),
-            _step_counter=0,
         )
 
     async def disconnect(self) -> None:
