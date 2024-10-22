@@ -102,6 +102,16 @@ Private definitions
 
     Generic parameter used by :class:`AsyncList`.
 
+.. currentmodule:: telethon._impl.client.types.keyboard
+
+.. class:: AnyButton
+
+    Generic parameter used by :class:`Keyboard`.
+
+.. class:: AnyInlineButton
+
+    Generic parameter used by :class:`InlineKeyboard`.
+
 .. currentmodule:: telethon._impl.client.events.filters.combinators
 
 .. autoclass:: Combinable
@@ -129,9 +139,5 @@ Private definitions
     New-type wrapper around :class:`int` used as a message identifier.
 
 .. currentmodule:: telethon._impl.mtsender.sender
-
-.. autoclass:: AsyncReader
-
-.. autoclass:: AsyncWriter
 
 .. autoclass:: Connector

@@ -18,7 +18,7 @@ try:
         )
 
 except ImportError:
-    import pyaes  # type: ignore [import-untyped]
+    import pyaes
 
     def ige_encrypt(
         plaintext: bytes | bytearray | memoryview, key: bytes, iv: bytes

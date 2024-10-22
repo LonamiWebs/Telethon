@@ -14,7 +14,13 @@ from .file import (
     try_get_url_path,
 )
 from .inline_result import InlineResult
-from .keyboard import InlineKeyboard, Keyboard, KeyboardType
+from .keyboard import (
+    ForcedReplyKeyboard,
+    HiddenKeyboard,
+    InlineKeyboard,
+    Keyboard,
+    KeyboardType,
+)
 from .login_token import LoginToken
 from .message import (
     Message,
@@ -61,7 +67,9 @@ __all__ = [
     "Participant",
     "PasswordToken",
     "RecentAction",
-    "Keyboard",
+    "ForcedReplyKeyboard",
+    "HiddenKeyboard",
     "InlineKeyboard",
+    "Keyboard",
     "KeyboardType",
 ]
