@@ -204,25 +204,17 @@ class Sender:
         ticket_number = self._step_counter
 
         async with self.lock:
+            self._try_fill_write()
             if self._step_counter == ticket_number:
                 # We're the one to drive IO.
                 self._step_counter += 1
-                await self._step()
+                await self._wait_response()
             # else: different task drove IO.
 
     def pop_updates(self) -> list[Updates]:
         updates = self._updates[:]
         self._updates.clear()
         return updates
-
-    async def _step(self) -> None:
-        assert self._protocol
-        if self._protocol.is_closed():
-            raise ConnectionResetError
-
-        self._response_state.clear()
-        self._try_fill_write()
-        await self._wait_response()
 
     def _try_fill_write(self) -> None:
         for request in self._requests:
@@ -242,6 +234,12 @@ class Sender:
                     request.state = Sent(request.state.msg_id, container_msg_id)
 
     async def _wait_response(self) -> None:
+        assert self._protocol
+        if self._protocol.is_closed():
+            raise ConnectionResetError
+
+        self._response_state.clear()
+
         try:
             async with asyncio.timeout(PING_DELAY):
                 await self._response_state.wait()
@@ -264,7 +262,6 @@ class Sender:
                 self._read_buffer += bytes(n)
                 self._read_buffer_head -= n
                 self._process_mtp_buffer()
-            finally:
                 self._response_state.set()
 
     def _on_conn_closed(self) -> None:
