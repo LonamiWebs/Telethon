@@ -10,11 +10,11 @@ from typing import Generic, Optional, Protocol, Type, TypeVar
 
 from typing_extensions import Self
 
-from .protocol import BufferedTransportProtocol
 from ..crypto import AuthKey
 from ..mtproto import (
     BadMessageError,
     Encrypted,
+    MissingBytesError,
     MsgId,
     Mtp,
     Plain,
@@ -32,6 +32,7 @@ from ..tl.types import UpdateDeleteMessages, UpdateShort
 from ..tl.types.messages import AffectedFoundMessages, AffectedHistory, AffectedMessages
 from .protocol import BufferedStreamingProtocol
 
+MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)
 
 PING_DELAY = 60
 
@@ -123,7 +124,6 @@ class Sender:
     _reader: StreamReader
     _writer: StreamWriter
     _transport: Transport
-    _protocol: BufferedTransportProtocol
     _mtp: Mtp
     _mtp_buffer: bytearray
     _updates: list[Updates]
@@ -146,19 +146,16 @@ class Sender:
         base_logger: logging.Logger,
     ) -> Self:
         ip, port = addr.split(":")
-        # TODO BRING BACK SUPPORT FOR connector
-        connection, protocol = await asyncio.get_running_loop().create_connection(
-            lambda: BufferedTransportProtocol(transport), ip, int(port)
-        )
+        reader, writer = await connector(ip, int(port))
 
         sender = cls(
             dc_id=dc_id,
             addr=addr,
             lock=Lock(),
             _logger=base_logger.getChild("mtsender"),
-            _connection=connection,
+            _reader=reader,
+            _writer=writer,
             _transport=transport,
-            _protocol=protocol,
             _mtp=mtp,
             _mtp_buffer=bytearray(),
             _updates=[],
@@ -226,7 +223,6 @@ class Sender:
         self._response_state.clear()
         self._try_fill_write()
         await self._wait_response()
-
 
     def _try_fill_write(self) -> None:
         for request in self._requests:
