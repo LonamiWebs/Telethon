@@ -264,8 +264,8 @@ class Sender:
                 self._read_buffer += bytes(n)
                 self._read_buffer_head -= n
                 self._process_mtp_buffer()
-
-        self._response_state.set()
+            finally:
+                self._response_state.set()
 
     def _on_conn_closed(self) -> None:
         self._response_state.set()
