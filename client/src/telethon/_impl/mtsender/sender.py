@@ -173,6 +173,7 @@ class Sender:
     _updates: list[Updates]
     _requests: list[Request[object]]
     _response_event: Event
+    _next_ping: float
     _read_buffer: bytearray
 
     @classmethod
@@ -203,6 +204,7 @@ class Sender:
             _updates=[],
             _requests=[],
             _response_event=Event(),
+            _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
         )
 
@@ -244,7 +246,7 @@ class Sender:
             self._reading = True
             self._response_event.clear()
             await self._try_read()
-            self._response_event.set()
+            self._try_timeout_ping()
             self._reading = False
         else:
             await self._response_event.wait()
@@ -259,7 +261,7 @@ class Sender:
             async with asyncio.timeout(PING_DELAY):
                 recv_data = await self._reader.read(MAXIMUM_DATA)
         except TimeoutError:
-            self._on_ping_timeout()
+            pass
         else:
             self._on_net_read(recv_data)
 
@@ -280,6 +282,22 @@ class Sender:
                 if isinstance(request.state, Serialized):
                     request.state = Sent(request.state.msg_id, container_msg_id)
 
+            self._response_event.set()
+
+    def _try_timeout_ping(self) -> None:
+        current_time = asyncio.get_running_loop().time()
+
+        if current_time >= self._next_ping:
+            ping_id = generate_random_id()
+            self._enqueue_body(
+                bytes(
+                    ping_delay_disconnect(
+                        ping_id=ping_id, disconnect_delay=NO_PING_DISCONNECT
+                    )
+                )
+            )
+            self._next_ping = current_time + PING_DELAY
+
     def _on_net_read(self, read_buffer: bytes) -> None:
         if not read_buffer:
             raise ConnectionResetError("read 0 bytes")
@@ -295,16 +313,6 @@ class Sender:
             else:
                 del self._read_buffer[:n]
                 self._process_mtp_buffer()
-
-    def _on_ping_timeout(self) -> None:
-        ping_id = generate_random_id()
-        self._enqueue_body(
-            bytes(
-                ping_delay_disconnect(
-                    ping_id=ping_id, disconnect_delay=NO_PING_DISCONNECT
-                )
-            )
-        )
 
     def _process_mtp_buffer(self) -> None:
         results = self._mtp.deserialize(self._mtp_buffer)
