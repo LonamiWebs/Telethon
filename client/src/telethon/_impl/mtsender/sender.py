@@ -247,6 +247,7 @@ class Sender:
             self._response_event.clear()
             await self._try_read()
             self._try_timeout_ping()
+            self._response_event.set()
             self._reading = False
         else:
             await self._response_event.wait()
@@ -281,8 +282,6 @@ class Sender:
             for request in self._requests:
                 if isinstance(request.state, Serialized):
                     request.state = Sent(request.state.msg_id, container_msg_id)
-
-            self._response_event.set()
 
     def _try_timeout_ping(self) -> None:
         current_time = asyncio.get_running_loop().time()
