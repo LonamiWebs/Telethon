@@ -167,12 +167,12 @@ class Sender:
     _writer: AsyncWriter
     _reading: bool
     _writing: bool
+    _read_done: Event
     _transport: Transport
     _mtp: Mtp
     _mtp_buffer: bytearray
     _updates: list[Updates]
     _requests: list[Request[object]]
-    _response_event: Event
     _next_ping: float
     _read_buffer: bytearray
 
@@ -194,16 +194,16 @@ class Sender:
             dc_id=dc_id,
             addr=addr,
             _logger=base_logger.getChild("mtsender"),
-            _reading=False,
-            _writing=False,
             _reader=reader,
             _writer=writer,
+            _reading=False,
+            _writing=False,
+            _read_done=Event(),
             _transport=transport,
             _mtp=mtp,
             _mtp_buffer=bytearray(),
             _updates=[],
             _requests=[],
-            _response_event=Event(),
             _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
         )
@@ -211,7 +211,7 @@ class Sender:
     async def disconnect(self) -> None:
         self._writer.close()
         await self._writer.wait_closed()
-        self._response_event.set()
+        self._read_done.set()
 
     def enqueue(self, request: RemoteCall[Return]) -> Future[bytes]:
         rx = self._enqueue_body(bytes(request))
@@ -247,7 +247,7 @@ class Sender:
             await self._try_read()
             self._reading = False
         else:
-            await self._response_event.wait()
+            await self._read_done.wait()
 
     def pop_updates(self) -> list[Updates]:
         updates = self._updates[:]
@@ -255,7 +255,7 @@ class Sender:
         return updates
 
     async def _try_read(self) -> None:
-        self._response_event.clear()
+        self._read_done.clear()
 
         try:
             async with asyncio.timeout(PING_DELAY):
@@ -266,7 +266,7 @@ class Sender:
             self._on_net_read(recv_data)
         finally:
             self._try_timeout_ping()
-            self._response_event.set()
+            self._read_done.set()
 
     def _try_fill_write(self) -> None:
         for request in self._requests:
