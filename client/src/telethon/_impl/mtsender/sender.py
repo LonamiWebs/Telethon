@@ -244,6 +244,7 @@ class Sender:
             self._reading = True
             self._response_event.clear()
             await self._try_read()
+            self._response_event.set()
             self._reading = False
         else:
             await self._response_event.wait()
@@ -294,7 +295,6 @@ class Sender:
             else:
                 del self._read_buffer[:n]
                 self._process_mtp_buffer()
-                self._response_event.set()
 
     def _on_ping_timeout(self) -> None:
         ping_id = generate_random_id()
