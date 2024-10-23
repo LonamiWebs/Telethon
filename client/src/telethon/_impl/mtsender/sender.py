@@ -244,10 +244,7 @@ class Sender:
 
         if not self._reading:
             self._reading = True
-            self._response_event.clear()
             await self._try_read()
-            self._try_timeout_ping()
-            self._response_event.set()
             self._reading = False
         else:
             await self._response_event.wait()
@@ -258,6 +255,8 @@ class Sender:
         return updates
 
     async def _try_read(self) -> None:
+        self._response_event.clear()
+
         try:
             async with asyncio.timeout(PING_DELAY):
                 recv_data = await self._reader.read(MAXIMUM_DATA)
@@ -265,6 +264,9 @@ class Sender:
             pass
         else:
             self._on_net_read(recv_data)
+        finally:
+            self._try_timeout_ping()
+            self._response_event.set()
 
     def _try_fill_write(self) -> None:
         for request in self._requests:
