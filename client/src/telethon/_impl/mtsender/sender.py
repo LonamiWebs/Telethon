@@ -237,7 +237,7 @@ class Sender:
     async def step(self) -> None:
         if not self._writing:
             self._writing = True
-            await self._try_fill_write()
+            self._try_fill_write()
             self._writing = False
 
         if not self._reading:
@@ -262,7 +262,7 @@ class Sender:
         else:
             self._on_net_read(recv_data)
 
-    async def _try_fill_write(self) -> None:
+    def _try_fill_write(self) -> None:
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
                 if (msg_id := self._mtp.push(request.body)) is not None:
@@ -278,8 +278,6 @@ class Sender:
             for request in self._requests:
                 if isinstance(request.state, Serialized):
                     request.state = Sent(request.state.msg_id, container_msg_id)
-
-            await self._writer.drain()
 
     def _on_net_read(self, read_buffer: bytes) -> None:
         if not read_buffer:
