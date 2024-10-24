@@ -20,7 +20,7 @@ To enable logging, at the following code to the top of your main file:
 .. code-block:: python
 
     import logging
-    logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
+    logging.basicConfig(format='[%(levelname) %(asctime)s] %(name)s: %(message)s',
                         level=logging.WARNING)
 
 You can change the logging level to be something different, from less to more information:
@@ -272,7 +272,7 @@ connects to Telegram, both agree on the layer to use. If the layers don't
 match, Telegram may send certain objects which Telethon no longer understands.
 
 When this message is reported as a "bug", the most common patterns seem to be
-that he Telethon session is being used or has been used from somewhere else.
+that the Telethon session is being used or has been used from somewhere else.
 Make sure that you created the session from Telethon, and are not using the
 same session anywhere else. If you need to use the same account from
 multiple places, login and use a different session for each place you need.
