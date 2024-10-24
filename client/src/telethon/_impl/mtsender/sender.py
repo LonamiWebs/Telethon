@@ -257,8 +257,9 @@ class Sender:
     async def _try_read(self) -> None:
         self._read_done.clear()
 
+        timeout = self._next_ping - asyncio.get_running_loop().time()
         try:
-            async with asyncio.timeout(PING_DELAY):
+            async with asyncio.timeout(timeout):
                 recv_data = await self._reader.read(MAXIMUM_DATA)
         except TimeoutError:
             pass
@@ -269,6 +270,9 @@ class Sender:
             self._read_done.set()
 
     def _try_fill_write(self) -> None:
+        if not self._requests:
+            return
+
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
                 if (msg_id := self._mtp.push(request.body)) is not None:
