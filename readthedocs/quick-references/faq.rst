@@ -20,7 +20,7 @@ To enable logging, at the following code to the top of your main file:
 .. code-block:: python
 
     import logging
-    logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
+    logging.basicConfig(format='[%(levelname) %(asctime)s] %(name)s: %(message)s',
                         level=logging.WARNING)
 
 You can change the logging level to be something different, from less to more information:
