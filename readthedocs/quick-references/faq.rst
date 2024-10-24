@@ -272,7 +272,7 @@ connects to Telegram, both agree on the layer to use. If the layers don't
 match, Telegram may send certain objects which Telethon no longer understands.
 
 When this message is reported as a "bug", the most common patterns seem to be
-that he Telethon session is being used or has been used from somewhere else.
+that the Telethon session is being used or has been used from somewhere else.
 Make sure that you created the session from Telethon, and are not using the
 same session anywhere else. If you need to use the same account from
 multiple places, login and use a different session for each place you need.
