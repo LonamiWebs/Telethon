@@ -827,6 +827,7 @@ class MessageMethods:
         """
         if file is not None:
             if isinstance(message, types.Message):
+                formatting_entities = formatting_entities or message.entities
                 message = message.message
             return await self.send_file(
                 entity, file, caption=message, reply_to=reply_to,

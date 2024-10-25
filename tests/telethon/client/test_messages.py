@@ -6,7 +6,7 @@ import pytest
 
 from telethon import TelegramClient
 from telethon.client import MessageMethods
-from telethon.tl.types import PeerChat, MessageMediaDocument, Message
+from telethon.tl.types import PeerChat, MessageMediaDocument, Message, MessageEntityBold
 
 
 @pytest.mark.asyncio
@@ -46,7 +46,11 @@ async def test_send_message_with_file_forwards_args():
 
 class TestMessageMethods:
     @pytest.mark.asyncio
-    async def test_send_msg_and_file(self):
+    @pytest.mark.parametrize(
+        'formatting_entities',
+        ([MessageEntityBold(offset=0, length=0)], None)
+    )
+    async def test_send_msg_and_file(self, formatting_entities):
         async def async_func(result): # AsyncMock was added only in 3.8
             return result
         msg_methods = MessageMethods()
@@ -56,6 +60,7 @@ class TestMessageMethods:
         entity = 'test_entity'
         message = Message(
             id=1, peer_id=PeerChat(chat_id=0), message='expected_caption', date=None,
+            entities=[MessageEntityBold(offset=9, length=9)],
         )
         media_file = MessageMediaDocument()
 
@@ -65,13 +70,14 @@ class TestMessageMethods:
         ) as mock_obj:
             result = await msg_methods.send_message(
                 entity=entity, message=message, file=media_file,
+                formatting_entities=formatting_entities,
             )
             mock_obj.assert_called_once_with(
                 entity, media_file, caption=message.message,
-                reply_to=None, attributes=None, parse_mode=(),
+                formatting_entities=formatting_entities or message.entities,
+                reply_to=None, silent=None, attributes=None, parse_mode=(),
                 force_document=False, thumb=None, buttons=None,
-                clear_draft=False, silent=None, schedule=None,
-                supports_streaming=False, formatting_entities=None,
+                clear_draft=False, schedule=None, supports_streaming=False,
                 comment_to=None, background=None, nosound_video=None,
             )
             assert result == expected_result
