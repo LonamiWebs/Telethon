@@ -313,6 +313,7 @@ class TelegramBaseClient(abc.ABC):
                 DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
                 DEFAULT_PORT
             )
+            session.save()
 
         self.flood_sleep_threshold = flood_sleep_threshold
 
