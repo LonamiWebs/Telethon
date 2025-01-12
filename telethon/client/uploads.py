@@ -67,24 +67,31 @@ def _resize_photo_if_needed(
         except KeyError:
             kwargs = {}
 
-        # Check if image is within acceptable bounds, if so, check if the image is at or below 10 MB, or assume it isn't if size is None or 0
-        if image.width <= width and image.height <= height and (before <= 10000000 if before else False):
-            return file
+        if image.mode == 'RGB':
+            # Check if image is within acceptable bounds, if so, check if the image is at or below 10 MB, or assume it isn't if size is None or 0
+            if image.width <= width and image.height <= height and (before <= 10000000 if before else False):
+                return file
 
-        image.thumbnail((width, height), PIL.Image.LANCZOS)
-
-        alpha_index = image.mode.find('A')
-        if alpha_index == -1:
-            # If the image mode doesn't have alpha
-            # channel then don't bother masking it away.
+            # If the image is already RGB, don't convert it
+            # certain modes such as 'P' have no alpha index but can't be saved as JPEG directly
+            image.thumbnail((width, height), PIL.Image.LANCZOS)
             result = image
         else:
             # We could save the resized image with the original format, but
             # JPEG often compresses better -> smaller size -> faster upload
             # We need to mask away the alpha channel ([3]), since otherwise
             # IOError is raised when trying to save alpha channels in JPEG.
+            image.thumbnail((width, height), PIL.Image.LANCZOS)
             result = PIL.Image.new('RGB', image.size, background)
-            result.paste(image, mask=image.split()[alpha_index])
+            mask = None
+
+            if image.has_transparency_data:
+                if image.mode == 'RGBA':
+                    mask = image.getchannel('A')
+                else:
+                    mask = image.convert('RGBA').getchannel('A')
+
+            result.paste(image, mask=mask)
 
         buffer = io.BytesIO()
         result.save(buffer, 'JPEG', progressive=True, **kwargs)
