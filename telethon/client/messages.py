@@ -936,6 +936,7 @@ class MessageMethods:
             as_album: bool = None,
             schedule: 'hints.DateLike' = None,
             drop_author: bool = None,
+            drop_media_captions: bool = None,
     ) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.
@@ -978,6 +979,12 @@ class MessageMethods:
                 If set, the message(s) won't forward immediately, and
                 instead they will be scheduled to be automatically sent
                 at a later time.
+
+            drop_author (`bool`, optional):
+                Whether to forward messages without quoting the original author.
+
+            drop_media_captions (`bool`, optional):
+                Whether to strip captions from media. Setting this to `True` requires that `drop_author` also be set to `True`.
 
         Returns
             The list of forwarded `Message <telethon.tl.custom.message.Message>`,
@@ -1048,7 +1055,8 @@ class MessageMethods:
                 background=background,
                 with_my_score=with_my_score,
                 schedule_date=schedule,
-                drop_author=drop_author
+                drop_author=drop_author,
+                drop_media_captions=drop_media_captions
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
