@@ -36,8 +36,9 @@ class UserMethods:
 
         if flood_sleep_threshold is None:
             flood_sleep_threshold = self.flood_sleep_threshold
-        requests = (request if utils.is_list_like(request) else (request,))
-        for r in requests:
+        requests = list(request) if utils.is_list_like(request) else [request]
+        request = list(request) if utils.is_list_like(request) else request
+        for i, r in enumerate(requests):
             if not isinstance(r, TLRequest):
                 raise _NOT_A_REQUEST()
             await r.resolve(self, utils)
@@ -56,7 +57,11 @@ class UserMethods:
                     raise errors.FloodWaitError(request=r, capture=diff)
 
             if self._no_updates:
-                r = functions.InvokeWithoutUpdatesRequest(r)
+                if utils.is_list_like(request):
+                    request[i] = functions.InvokeWithoutUpdatesRequest(r)
+                else:
+                    # This should only run once as requests should be a list of 1 item
+                    request = functions.InvokeWithoutUpdatesRequest(r)
 
         request_index = 0
         last_error = None
