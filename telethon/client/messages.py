@@ -1066,7 +1066,7 @@ class MessageMethods:
     async def edit_message(
             self: 'TelegramClient',
             entity: 'typing.Union[hints.EntityLike, types.Message]',
-            message: 'hints.MessageLike' = None,
+            message: 'typing.Union[int, types.Message, types.InputMessageID, str]' = None,
             text: str = None,
             *,
             parse_mode: str = (),
@@ -1096,7 +1096,7 @@ class MessageMethods:
                 which is the only way to edit messages that were sent
                 after the user selects an inline query result.
 
-            message (`int` | `Message <telethon.tl.custom.message.Message>` | `str`):
+            message (`int` | `Message <telethon.tl.custom.message.Message>` | :tl:`InputMessageID` | `str`):
                 The ID of the message (or `Message
                 <telethon.tl.custom.message.Message>` itself) to be edited.
                 If the `entity` was a `Message

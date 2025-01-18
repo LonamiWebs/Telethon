@@ -600,6 +600,9 @@ def get_message_id(message):
     if isinstance(message, int):
         return message
 
+    if isinstance(message, types.InputMessageID):
+        return message.id
+
     try:
         if message.SUBCLASS_OF_ID == 0x790009e3:
             # hex(crc32(b'Message')) = 0x790009e3
