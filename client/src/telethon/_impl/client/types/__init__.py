@@ -1,6 +1,7 @@
 from .admin_right import AdminRight
 from .album_builder import AlbumBuilder
 from .async_list import AsyncList
+from .authorizations import Authorizations, Authorization
 from .callback_answer import CallbackAnswer
 from .chat_restriction import ChatRestriction
 from .dialog import Dialog

@@ -30,6 +30,7 @@ from ..types import (
     AdminRight,
     AlbumBuilder,
     AsyncList,
+    Authorizations,
     Channel,
     ChatRestriction,
     Dialog,
@@ -51,6 +52,7 @@ from ..types import (
 from .auth import (
     bot_sign_in,
     check_password,
+    get_authorizations,
     interactive_login,
     is_authorized,
     request_login_code,
@@ -680,6 +682,25 @@ class Client:
                     print('Deleted:', message.text)
         """
         return get_admin_log(self, chat)
+
+    async def get_authorizations(self) -> Optional[Authorizations]:
+        """
+        Gets all current authorizations (sessions) of the logged in user.
+
+        :return:
+            The authorizations (sessions) associated with the logged-in account, or :data:`None` if the client is not authorized.
+
+        .. rubric:: Example
+
+        .. code-block:: python
+
+            authorizations = await client.get_authorizations()
+            assert authorizations is not None, "not logged in!"
+
+            for auth in authorizations.sessions:
+                print(auth.device_model, auth.platform, auth.app_name)
+        """
+        return await get_authorizations(self)
 
     def get_contacts(self) -> AsyncList[User]:
         """

@@ -9,7 +9,7 @@ from ...mtproto import RpcError
 from ...session import DataCenter
 from ...session import User as SessionUser
 from ...tl import abcs, functions, types
-from ..types import LoginToken, PasswordToken, User
+from ..types import Authorizations, LoginToken, PasswordToken, User
 from .net import connect_sender
 
 if TYPE_CHECKING:
@@ -266,3 +266,15 @@ async def sign_out(self: Client) -> None:
     self._session.user = None
     self._session.state = None
     await self._storage.save(self._session)
+
+
+async def get_authorizations(self: Client) -> Optional[Authorizations]:
+    try:
+        result = await self(functions.account.get_authorizations())
+    except RpcError as e:
+        if e.code == 401:
+            return None
+        else:
+            raise
+
+    return Authorizations._from_raw(self, result)
