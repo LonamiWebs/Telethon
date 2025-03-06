@@ -392,6 +392,17 @@ class AuthMethods:
         self._authorized = True
 
         state = await self(functions.updates.GetStateRequest())
+        session_state = self.session.get_update_state(0)
+
+        if session_state and session_state.qts > state.qts:
+            if __debug__:
+                self._message_box._trace(
+                    'Local session qts higher than getState qts, using local, local qts = %r, getState qts = %r',
+                    session_state.qts, state.qts
+                )
+
+            state.qts = session_state.qts
+
         self._message_box.load(SessionState(0, 0, 0, state.pts, state.qts, int(state.date.timestamp()), state.seq, 0), [])
 
         return user
