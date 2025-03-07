@@ -392,6 +392,16 @@ class AuthMethods:
         self._authorized = True
 
         state = await self(functions.updates.GetStateRequest())
+        # the server may send an old qts in getState
+        difference = await self(functions.updates.GetDifferenceRequest(pts=state.pts, date=state.date, qts=state.qts))
+
+        if isinstance(difference, types.updates.Difference):
+            state = difference.state
+        elif isinstance(difference, types.updates.DifferenceSlice):
+            state = difference.intermediate_state
+        elif isinstance(difference, types.updates.DifferenceTooLong):
+            state.pts = difference.pts
+
         self._message_box.load(SessionState(0, 0, 0, state.pts, state.qts, int(state.date.timestamp()), state.seq, 0), [])
 
         return user
