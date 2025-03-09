@@ -13,6 +13,37 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer (v1.39)
+=================
+
++------------------------+
+| Scheme layer used: 199 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=193&to=199>`__.
+
+Additions
+~~~~~~~~~
+
+* ``drop_media_captions`` added to ``forward_messages``, and documented together with ``drop_author``.
+* :tl:`InputMediaDocumentExternal` is now recognized when sending albums.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``receive_updates=False`` now covers more cases, however, Telegram is still free to ignore it.
+* Better type-hints in several methods.
+* Markdown parsing of inline links should cover more cases.
+* ``range`` is now considered "list-like" and can be used on e.g. ``ids`` parameters.
+
+Bug fixes
+~~~~~~~~~
+
+* Session is now saved after setting the DC.
+* Fixed rare crash in entity cache handling when iterating through dialogs.
+* Fixed IOError that could occur during automatic resizing of some photos.
+
+
 New layer (v1.38)
 =================
 
