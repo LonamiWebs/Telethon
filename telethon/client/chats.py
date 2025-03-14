@@ -218,8 +218,10 @@ class _ParticipantsIter(RequestIter):
         self.requests.offset += len(participants.participants)
         users = {user.id: user for user in participants.users}
         for participant in participants.participants:
-
-            if isinstance(participant, types.ChannelParticipantBanned):
+            if isinstance(participant, types.ChannelParticipantLeft):
+                # See issue #3231 to learn why this is ignored.
+                continue
+            elif isinstance(participant, types.ChannelParticipantBanned):
                 if not isinstance(participant.peer, types.PeerUser):
                     # May have the entire channel banned. See #3105.
                     continue
