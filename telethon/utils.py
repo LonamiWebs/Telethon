@@ -499,6 +499,14 @@ def get_input_media(
     if isinstance(media, types.MessageMediaGeo):
         return types.InputMediaGeoPoint(geo_point=get_input_geo(media.geo))
 
+    if isinstance(media, types.MessageMediaGeoLive):
+        return types.InputMediaGeoLive(
+            geo_point=get_input_geo(media.geo),
+            period=media.period,
+            heading=media.heading,
+            proximity_notification_radius=media.proximity_notification_radius,
+        )
+
     if isinstance(media, types.MessageMediaVenue):
         return types.InputMediaVenue(
             geo_point=get_input_geo(media.geo),
