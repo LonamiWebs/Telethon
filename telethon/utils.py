@@ -445,6 +445,7 @@ def get_input_media(
     if isinstance(media, types.MessageMediaPhoto):
         return types.InputMediaPhoto(
             id=get_input_photo(media.photo),
+            spoiler=media.spoiler,
             ttl_seconds=ttl or media.ttl_seconds
         )
 
