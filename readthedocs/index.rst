@@ -103,7 +103,6 @@ You can also use the menu on the left to quickly skip over sections.
     :caption: Miscellaneous
 
     misc/changelog
-    misc/wall-of-shame.rst
     misc/compatibility-and-convenience
 
 .. toctree::
