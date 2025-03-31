@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 from enum import IntEnum
 from ..tl.types import InputPeerUser, InputPeerChat, InputPeerChannel
-
+import struct
 
 class SessionState:
     """
@@ -173,7 +173,7 @@ class Entity:
         try:
             ty, id, hash = struct.unpack('<Bqq', blob)
         except struct.error:
-            raise ValueError(f'malformed entity data, got {string!r}') from None
+            raise ValueError(f'malformed entity data, got {blob!r}') from None
 
         return cls(EntityType(ty), id, hash)
 
