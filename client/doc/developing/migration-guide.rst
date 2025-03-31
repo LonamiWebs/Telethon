@@ -453,7 +453,7 @@ This means v2 no longer supports the ``-`` or ``-100`` prefixes on identifiers.
 Using the raw :tl:`Peer` to wrap the identifiers is gone, too.
 Instead, you're strongly encouraged to use :class:`types.PeerRef` instances.
 
-The concepts of of "entity" or "peer" are unified to :term:`peer`.
+The concepts of "entity" or "peer" are unified to :term:`peer`.
 Overall, dealing with users, groups and channels should feel a lot more natural.
 
 .. seealso::
