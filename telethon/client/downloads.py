@@ -992,8 +992,8 @@ class DownloadMethods:
             )
 
         # TODO Better way to get opened handles of files and auto-close
-        kind, possible_names = self._get_kind_and_names(web.attributes)
-        file = self._get_proper_filename(
+        kind, possible_names = cls._get_kind_and_names(web.attributes)
+        file = cls._get_proper_filename(
             file, kind, utils.get_extension(web),
             possible_names=possible_names
         )
