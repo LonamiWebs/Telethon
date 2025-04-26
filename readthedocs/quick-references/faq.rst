@@ -103,6 +103,21 @@ when sending a message to some accounts but not others.
 
 For more discussion, please see `issue 297`_.
 
+Or you can just use official Telegram Desktop session params
+
+.. code-block:: python
+
+    client = TelegramClient(
+        session='session',
+        api_id = 2040,
+        api_hash = "b18441a1ff607e10a989891a5462e627",
+        device_model = "Desktop",
+        system_version = "Windows 11",
+        app_version = "5.13.1 x64", # use latest version if possible
+        lang_code = "en",
+        system_lang_code = "en-US",
+        lang_pack = "tdesktop",
+    )
 
 How can I use a proxy?
 ======================
