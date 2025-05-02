@@ -871,7 +871,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
     async def click(self, i=None, j=None,
                     *, text=None, filter=None, data=None, share_phone=None,
-                    share_geo=None, password=None):
+                    share_geo=None, password=None, open_url=None):
         """
         Calls :tl:`SendVote` with the specified poll option
         or `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
@@ -985,7 +985,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
             but = types.KeyboardButtonCallback('', data)
             return await MessageButton(self._client, but, chat, None, self.id).click(
-                share_phone=share_phone, share_geo=share_geo, password=password)
+                share_phone=share_phone, share_geo=share_geo, password=password, open_url=open_url)
 
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
@@ -1058,7 +1058,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         button = find_button()
         if button:
             return await button.click(
-                share_phone=share_phone, share_geo=share_geo, password=password)
+                share_phone=share_phone, share_geo=share_geo, password=password, open_url=open_url)
 
     async def mark_read(self):
         """
