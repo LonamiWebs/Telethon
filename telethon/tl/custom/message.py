@@ -955,7 +955,13 @@ class Message(ChatGetter, SenderGetter, TLObject):
                 button to transfer ownership), if your account has 2FA enabled,
                 you need to provide your account's password. Otherwise,
                 `teltehon.errors.PasswordHashInvalidError` is raised.
-
+            
+            open_url (`bool`):
+                When clicking on an inline keyboard URL button :tl:`KeyboardButtonUrl`
+                By default it will return URL of the button, passing ``click(open_url=True)``
+                will lunch the default browser with given URL of the button and 
+                return `True` on success.
+                
             Example:
 
                 .. code-block:: python
