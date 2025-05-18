@@ -49,6 +49,7 @@ class Button:
         Returns `True` if the button belongs to an inline keyboard.
         """
         return isinstance(button, (
+            types.KeyboardButtonCopy,
             types.KeyboardButtonBuy,
             types.KeyboardButtonCallback,
             types.KeyboardButtonGame,

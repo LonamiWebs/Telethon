@@ -472,6 +472,7 @@ class UpdateMethods:
 
     def _preprocess_updates(self, updates, users, chats):
         self._mb_entity_cache.extend(users, chats)
+        self.session.process_entities(types.contacts.ResolvedPeer(None, users, chats))
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(users, chats)}
         for u in updates:

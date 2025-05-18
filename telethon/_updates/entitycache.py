@@ -49,9 +49,6 @@ class EntityCache:
             if getattr(c, 'access_hash', None) and not getattr(c, 'min', None)
         )
 
-    def get_all_entities(self):
-        return [Entity(ty, id, hash) for id, (hash, ty) in self.hash_map.items()]
-
     def put(self, entity):
         self.hash_map[entity.id] = (entity.hash, entity.ty)
 

@@ -687,14 +687,10 @@ class TelegramBaseClient(abc.ABC):
                 connection._proxy = proxy
 
     def _save_states_and_entities(self: 'TelegramClient'):
-        entities = self._mb_entity_cache.get_all_entities()
-
-        # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
-        # It doesn't matter if we put users in the list of chats.
-        self.session.process_entities(types.contacts.ResolvedPeer(None, [e._as_input_peer() for e in entities], []))
-
         # As a hack to not need to change the session files, save ourselves with ``id=0`` and ``access_hash`` of our ``id``.
         # This way it is possible to determine our own ID by querying for 0. However, whether we're a bot is not saved.
+        # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
+        # It doesn't matter if we put users in the list of chats.
         if self._mb_entity_cache.self_id:
             self.session.process_entities(types.contacts.ResolvedPeer(None, [types.InputPeerUser(0, self._mb_entity_cache.self_id)], []))
 
