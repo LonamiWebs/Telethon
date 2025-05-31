@@ -56,7 +56,7 @@ version = {attr = "telethon.version.__version__"}
 [tool.ruff]
 exclude = ["doc"]
 
-[tool.ruff.lint]
+[tool.lint]
 select = ["F", "E", "W", "I", "N", "ANN"]
 ignore = [
   "E501",  # formatter takes care of lines that are too long besides documentation

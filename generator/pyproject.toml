@@ -37,7 +37,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = {attr = "telethon_generator.version.__version__"}
 
-[tool.ruff.lint]
+[tool.lint]
 select = ["F", "E", "W", "I", "N", "ANN"]
 ignore = [
   "E501",  # formatter takes care of lines that are too long besides documentation
