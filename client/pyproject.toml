@@ -60,7 +60,5 @@ exclude = ["doc"]
 select = ["F", "E", "W", "I", "N", "ANN"]
 ignore = [
   "E501",  # formatter takes care of lines that are too long besides documentation
-  "ANN101",  # Missing type annotation for `self` in method
-  "ANN102",  # Missing type annotation for `cls` in classmethod
   "ANN401",  # Dynamically typed expressions (typing.Any) are not type checked
 ]
