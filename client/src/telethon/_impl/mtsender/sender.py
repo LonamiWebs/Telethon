@@ -157,6 +157,9 @@ class Request(Generic[Return]):
     state: RequestState
     result: Future[Return]
 
+    def __eq__(self, value: object) -> bool:
+        return self is value
+
 
 @dataclass
 class Sender:
@@ -422,18 +425,17 @@ class Sender:
                 req.result.set_exception(result)
 
     def _pop_request(self, msg_id: MsgId) -> Optional[Request[object]]:
-        for i, req in enumerate(self._requests):
+        for req in self._requests:
             if isinstance(req.state, Serialized) and req.state.msg_id == msg_id:
                 raise RuntimeError("got response for unsent request")
             elif isinstance(req.state, Sent) and req.state.msg_id == msg_id:
-                del self._requests[i]
+                self._requests.remove(req)
                 return req
 
         return None
 
     def _drain_requests(self, msg_id: MsgId) -> Iterator[Request[object]]:
-        for i in reversed(range(len(self._requests))):
-            req = self._requests[i]
+        for req in self._requests:
             if isinstance(req.state, Serialized) and (
                 req.state.msg_id == msg_id or req.state.container_msg_id == msg_id
             ):
@@ -441,7 +443,8 @@ class Sender:
             elif isinstance(req.state, Sent) and (
                 req.state.msg_id == msg_id or req.state.container_msg_id == msg_id
             ):
-                yield self._requests.pop(i)
+                self._requests.remove(req)
+                yield req
 
     @property
     def auth_key(self) -> Optional[bytes]:
