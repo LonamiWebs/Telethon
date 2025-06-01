@@ -62,11 +62,15 @@ from ..utils import (
 )
 from .types import (
     BadMessageError,
+    DecompressionFailed,
     Deserialization,
+    DeserializationFailure,
+    MsgBufferTooSmall,
     MsgId,
     Mtp,
     RpcError,
     RpcResult,
+    UnexpectedConstructor,
     Update,
 )
 
@@ -85,6 +89,7 @@ UPDATE_IDS = {
     AffectedFoundMessages.constructor_id(),
     AffectedHistory.constructor_id(),
     AffectedMessages.constructor_id(),
+    # TODO InvitedUsers
 }
 
 HEADER_LEN = 8 + 8  # salt, client_id
@@ -151,7 +156,7 @@ class Encrypted(Mtp):
         self._last_msg_id: int
         self._in_pending_ack: list[int] = []
         self._msg_count: int
-        self._reset_session()
+        self.reset()
 
     @property
     def auth_key(self) -> bytes:
@@ -165,13 +170,6 @@ class Encrypted(Mtp):
 
     def _adjusted_now(self) -> float:
         return time.time() + self._time_offset
-
-    def _reset_session(self) -> None:
-        self._client_id = struct.unpack("<q", os.urandom(8))[0]
-        self._sequence = 0
-        self._last_msg_id = 0
-        self._in_pending_ack.clear()
-        self._msg_count = 0
 
     def _get_new_msg_id(self) -> int:
         new_msg_id = int(self._adjusted_now() * 0x100000000)
@@ -245,12 +243,38 @@ class Encrypted(Mtp):
         result = rpc_result.result
 
         msg_id = MsgId(req_msg_id)
-        inner_constructor = struct.unpack_from("<I", result)[0]
+
+        try:
+            inner_constructor = struct.unpack_from("<I", result)[0]
+        except struct.error as e:
+            # If the result is empty, we can't unpack it.
+            # This can happen if the server returns an empty response.
+            logging.exception(e)
+            self._deserialization.append(
+                DeserializationFailure(
+                    msg_id=msg_id,
+                    error=MsgBufferTooSmall(),
+                )
+            )
+            return
 
         if inner_constructor == GeneratedRpcError.constructor_id():
-            error = RpcError._from_mtproto_error(GeneratedRpcError.from_bytes(result))
-            error.msg_id = msg_id
-            self._deserialization.append(error)
+            try:
+                error = RpcError._from_mtproto_error(
+                    GeneratedRpcError.from_bytes(result)
+                )
+                error.msg_id = msg_id
+                self._deserialization.append(error)
+            except Exception as e:
+                logging.exception(e)
+                self._deserialization.append(
+                    DeserializationFailure(
+                        msg_id=msg_id,
+                        error=UnexpectedConstructor(
+                            id=inner_constructor,
+                        ),
+                    )
+                )
         elif inner_constructor == RpcAnswerUnknown.constructor_id():
             pass  # msg_id = rpc_drop_answer.msg_id
         elif inner_constructor == RpcAnswerDroppedRunning.constructor_id():
@@ -258,9 +282,15 @@ class Encrypted(Mtp):
         elif inner_constructor == RpcAnswerDropped.constructor_id():
             pass  # dropped
         elif inner_constructor == GzipPacked.constructor_id():
-            body = gzip_decompress(GzipPacked.from_bytes(result))
-            self._store_own_updates(body)
-            self._deserialization.append(RpcResult(msg_id, body))
+            try:
+                body = gzip_decompress(GzipPacked.from_bytes(result))
+                self._store_own_updates(body)
+                self._deserialization.append(RpcResult(msg_id, body))
+            except Exception as e:
+                logging.exception(e)
+                self._deserialization.append(
+                    DeserializationFailure(msg_id=msg_id, error=DecompressionFailed())
+                )
         else:
             self._store_own_updates(result)
             self._deserialization.append(RpcResult(msg_id, result))
@@ -300,7 +330,7 @@ class Encrypted(Mtp):
         elif bad_msg.error_code in (16, 17):
             self._correct_time_offset(message.msg_id)
         elif bad_msg.error_code in (32, 33):
-            self._reset_session()
+            self.reset()
         else:
             raise exc
 
@@ -364,6 +394,9 @@ class Encrypted(Mtp):
         container = MsgContainer.from_bytes(message.body)
         for inner_message in container.messages:
             self._process_message(inner_message)
+
+    def _handle_msg_copy(self, message: Message) -> None:
+        raise RuntimeError("msg_copy should not be used")
 
     def _handle_gzip_packed(self, message: Message) -> None:
         container = GzipPacked.from_bytes(message.body)
@@ -459,3 +492,11 @@ class Encrypted(Mtp):
         result = self._deserialization[:]
         self._deserialization.clear()
         return result
+
+    def reset(self) -> None:
+        self._client_id = struct.unpack("<q", os.urandom(8))[0]
+        self._sequence = 0
+        self._last_msg_id = 0
+        self._in_pending_ack.clear()
+        self._msg_count = 0
+        self._salt_request_msg_id = None

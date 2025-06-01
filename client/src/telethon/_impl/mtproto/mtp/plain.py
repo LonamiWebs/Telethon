@@ -47,9 +47,10 @@ class Plain(Mtp):
         if length < 0:
             raise ValueError(f"bad length: expected >= 0, got: {length}")
 
-        if 20 + length > len(payload):
-            raise ValueError(
-                f"message too short, expected: {20 + length}, got {len(payload)}"
-            )
+        if 20 + length > (lp := len(payload)):
+            raise ValueError(f"message too short, expected: {20 + length}, got {lp}")
 
         return [RpcResult(MsgId(0), bytes(payload[20 : 20 + length]))]
+
+    def reset(self) -> None:
+        self._buffer.clear()

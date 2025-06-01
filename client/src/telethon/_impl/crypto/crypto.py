@@ -7,6 +7,24 @@ from .aes import ige_decrypt, ige_encrypt
 from .auth_key import AuthKey
 
 
+class InvalidBufferError(ValueError):
+    def __init__(self) -> None:
+        super().__init__("Invalid ciphertext buffer length")
+
+
+class AuthKeyMismatchError(ValueError):
+    def __init__(self) -> None:
+        super().__init__("Server authkey mismatches with ours")
+
+
+class MsgKeyMismatchError(ValueError):
+    def __init__(self) -> None:
+        super().__init__("Server msgkey mismatches with ours")
+
+
+CryptoError = InvalidBufferError | AuthKeyMismatchError | MsgKeyMismatchError
+
+
 # "where x = 0 for messages from client to server and x = 8 for those from server to client"
 class Side(IntEnum):
     CLIENT = 0
@@ -77,14 +95,14 @@ def decrypt_data_v2(
     x = int(side)
 
     if len(ciphertext) < 24 or (len(ciphertext) - 24) % 16 != 0:
-        raise ValueError("invalid ciphertext buffer length")
+        raise InvalidBufferError()
 
     # salt, session_id and sequence_number should also be checked.
     # However, not doing so has worked fine for years.
 
     key_id = ciphertext[:8]
     if auth_key.key_id != key_id:
-        raise ValueError("server authkey mismatches with ours")
+        raise AuthKeyMismatchError()
 
     msg_key = ciphertext[8:24]
     key, iv = calc_key(auth_key, msg_key, side)
@@ -93,7 +111,7 @@ def decrypt_data_v2(
     # https://core.telegram.org/mtproto/security_guidelines#mtproto-encrypted-messages
     our_key = sha256(auth_key.data[x + 88 : x + 120] + plaintext).digest()
     if msg_key != our_key[8:24]:
-        raise ValueError("server msgkey mismatches with ours")
+        raise MsgKeyMismatchError()
 
     return plaintext
 

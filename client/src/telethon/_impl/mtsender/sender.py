@@ -24,6 +24,7 @@ from ..mtproto import (
     Update,
     authentication,
 )
+from ..mtproto.mtp.types import DeserializationFailure
 from ..tl import Request as RemoteCall
 from ..tl.abcs import Updates
 from ..tl.core import Serializable
@@ -334,8 +335,12 @@ class Sender:
                 self._process_result(result)
             elif isinstance(result, RpcError):
                 self._process_error(result)
-            else:
+            elif isinstance(result, BadMessageError):
                 self._process_bad_message(result)
+            elif isinstance(result, DeserializationFailure):
+                self._process_deserialize_error(result)
+            else:
+                raise RuntimeError(f"Unexpected result: {result}")
 
     def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
@@ -423,6 +428,17 @@ class Sender:
                 )
                 result._caused_by = struct.unpack_from("<I", req.body)[0]
                 req.result.set_exception(result)
+
+    def _process_deserialize_error(self, failure: DeserializationFailure):
+        req = self._pop_request(failure.msg_id)
+
+        if req:
+            logging.debug(f"Got deserialization failure {failure.error}")
+            req.result.set_exception(failure.error)
+        else:
+            logging.info(
+                f"Got deserialization failure {failure.error} but no such request is saved"
+            )
 
     def _pop_request(self, msg_id: MsgId) -> Optional[Request[object]]:
         for req in self._requests:

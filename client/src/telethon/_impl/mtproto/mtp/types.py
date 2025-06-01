@@ -5,6 +5,7 @@ from typing import NewType, Optional
 
 from typing_extensions import Self
 
+from ...crypto.crypto import CryptoError
 from ...tl.mtproto.types import RpcError as GeneratedRpcError
 
 MsgId = NewType("MsgId", int)
@@ -180,7 +181,105 @@ class BadMessageError(ValueError):
         return self._code == other._code
 
 
-Deserialization = Update | RpcResult | RpcError | BadMessageError
+DeserializationError = ValueError
+
+
+class DeserializationFailure:
+    __slots__ = ("msg_id", "error")
+
+    def __init__(self, msg_id: MsgId, error: DeserializationError) -> None:
+        self.msg_id = msg_id
+        self.error = error
+
+
+Deserialization = (
+    Update | RpcResult | RpcError | BadMessageError | DeserializationFailure
+)
+
+
+# Deserialization errors are not fatal, so we don't subclass RpcError.
+class BadAuthKeyError(DeserializationError):
+    def __init__(self, *args: object, got: int, expected: int) -> None:
+        super().__init__(f"Bad server auth key (got {got}, expected {expected})", *args)
+        self._got = got
+        self._expected = expected
+
+    @property
+    def got(self):
+        return self._got
+
+    @property
+    def expected(self):
+        return self._expected
+
+
+class BadMsgIdError(DeserializationError):
+    def __init__(self, *args: object, got: int) -> None:
+        super().__init__(f"Bad server message id (got {got})", *args)
+        self._got = got
+
+    @property
+    def got(self):
+        return self._got
+
+
+class NegativeLengthError(DeserializationError):
+    def __init__(self, *args: object, got: int) -> None:
+        super().__init__(f"Bad server message length (got {got})", *args)
+        self._got = got
+
+    @property
+    def got(self):
+        return self._got
+
+
+class TooLongMsgError(DeserializationError):
+    __slots__ = ("expected", "got")
+
+    def __init__(self, *args: object, got: int, max_length: int) -> None:
+        super().__init__(
+            f"Bad server message length (got {got}, when at most it should be {max_length})",
+            *args,
+        )
+        self._got = got
+        self._expected = max_length
+
+    @property
+    def got(self):
+        return self._got
+
+    @property
+    def expected(self):
+        return self._expected
+
+
+class MsgBufferTooSmall(DeserializationError):
+    def __init__(self, *args: object) -> None:
+        super().__init__(
+            "Server responded with a payload that's too small to fit a valid message",
+            *args,
+        )
+
+
+class DecompressionFailed(DeserializationError):
+    def __init__(self, *args: object) -> None:
+        super().__init__("Failed to decompress server's data", *args)
+
+
+class UnexpectedConstructor(DeserializationError):
+    def __init__(self, *args: object, id: int) -> None:
+        super().__init__(f"Unexpected constructor: {id:08x}", *args)
+
+
+class DecryptionError(DeserializationError):
+    def __init__(self, *args: object, error: CryptoError) -> None:
+        super().__init__(f"failed to decrypt message: {error}", *args)
+
+        self._error = error
+
+    @property
+    def error(self):
+        return self._error
 
 
 # https://core.telegram.org/mtproto/description
@@ -208,4 +307,10 @@ class Mtp(ABC):
     ) -> list[Deserialization]:
         """
         Deserialize incoming buffer payload.
+        """
+
+    @abstractmethod
+    def reset(self) -> None:
+        """
+        Reset the internal buffer.
         """
