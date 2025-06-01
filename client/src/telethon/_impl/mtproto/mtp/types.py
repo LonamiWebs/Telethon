@@ -234,8 +234,6 @@ class NegativeLengthError(DeserializationError):
 
 
 class TooLongMsgError(DeserializationError):
-    __slots__ = ("expected", "got")
-
     def __init__(self, *args: object, got: int, max_length: int) -> None:
         super().__init__(
             f"Bad server message length (got {got}, when at most it should be {max_length})",
