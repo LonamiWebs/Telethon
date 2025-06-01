@@ -250,8 +250,8 @@ class Sender:
                 self._reading = False
             else:
                 await self._step_done.wait()
-        except Exception:
-            self._
+        except Exception as e:
+            self._on_error(e)
 
     def pop_updates(self) -> list[Updates]:
         updates = self._updates[:]
