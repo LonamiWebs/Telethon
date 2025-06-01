@@ -246,10 +246,10 @@ class Encrypted(Mtp):
 
         try:
             inner_constructor = struct.unpack_from("<I", result)[0]
-        except struct.error as e:
+        except struct.error:
             # If the result is empty, we can't unpack it.
             # This can happen if the server returns an empty response.
-            logging.exception(e)
+            logging.exception("Failed to unpack inner_constructor")
             self._deserialization.append(
                 DeserializationFailure(
                     msg_id=msg_id,
@@ -265,8 +265,8 @@ class Encrypted(Mtp):
                 )
                 error.msg_id = msg_id
                 self._deserialization.append(error)
-            except Exception as e:
-                logging.exception(e)
+            except Exception:
+                logging.exception("Failed to deserialize error")
                 self._deserialization.append(
                     DeserializationFailure(
                         msg_id=msg_id,
@@ -286,8 +286,8 @@ class Encrypted(Mtp):
                 body = gzip_decompress(GzipPacked.from_bytes(result))
                 self._store_own_updates(body)
                 self._deserialization.append(RpcResult(msg_id, body))
-            except Exception as e:
-                logging.exception(e)
+            except Exception:
+                logging.exception("Failed to decompress response")
                 self._deserialization.append(
                     DeserializationFailure(msg_id=msg_id, error=DecompressionFailed())
                 )
