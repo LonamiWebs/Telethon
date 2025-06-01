@@ -15,6 +15,10 @@ class Transport(ABC):
     def unpack(self, input: bytes | bytearray | memoryview, output: bytearray) -> int:
         pass
 
+    @abstractmethod
+    def reset(self):
+        pass
+
 
 class MissingBytesError(ValueError):
     def __init__(self, *, expected: int, got: int) -> None:
