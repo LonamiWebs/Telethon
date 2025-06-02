@@ -1,3 +1,4 @@
+from .reconnection import ReconnectionPolicy
 from .sender import (
     MAXIMUM_DATA,
     NO_PING_DISCONNECT,
@@ -18,4 +19,5 @@ __all__ = [
     "Connector",
     "Sender",
     "connect",
+    "ReconnectionPolicy",
 ]

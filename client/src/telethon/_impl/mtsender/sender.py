@@ -31,6 +31,7 @@ from ..tl.core import Serializable
 from ..tl.mtproto.functions import ping_delay_disconnect
 from ..tl.types import UpdateDeleteMessages, UpdateShort
 from ..tl.types.messages import AffectedFoundMessages, AffectedHistory, AffectedMessages
+from .reconnection import ReconnectionPolicy
 
 MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)
 
@@ -164,6 +165,7 @@ class Sender:
     dc_id: int
     addr: str
     _connector: Connector
+    _reconnection_policy: Optional[ReconnectionPolicy]
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -188,6 +190,7 @@ class Sender:
         addr: str,
         *,
         connector: Connector,
+        reconnection_policy: Optional[ReconnectionPolicy],
         base_logger: logging.Logger,
     ) -> Self:
         ip, port = addr.split(":")
@@ -197,6 +200,7 @@ class Sender:
             dc_id=dc_id,
             addr=addr,
             _connector=connector,
+            _reconnection_policy=reconnection_policy,
             _logger=base_logger.getChild("mtsender"),
             _reader=reader,
             _writer=writer,
@@ -536,6 +540,7 @@ async def connect(
     auth_key: Optional[bytes],
     base_logger: logging.Logger,
     connector: Connector,
+    reconnection_policy: Optional[ReconnectionPolicy] = None,
 ) -> Sender:
     if auth_key is None:
         sender = await Sender.connect(
@@ -544,6 +549,7 @@ async def connect(
             dc_id,
             addr,
             connector=connector,
+            reconnection_policy=reconnection_policy,
             base_logger=base_logger,
         )
         return await generate_auth_key(sender)
@@ -554,6 +560,7 @@ async def connect(
             dc_id,
             addr,
             connector=connector,
+            reconnection_policy=reconnection_policy,
             base_logger=base_logger,
         )
 

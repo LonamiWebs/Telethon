@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Optional, TypeVar
 
 from ....version import __version__
 from ...mtproto import BadStatusError, Full, RpcError
-from ...mtsender import Connector, Sender
+from ...mtsender import Connector, ReconnectionPolicy, Sender
 from ...mtsender import connect as do_connect_sender
 from ...session import DataCenter
 from ...session import User as SessionUser
@@ -55,6 +55,7 @@ class Config:
     datacenter: Optional[DataCenter] = None
     flood_sleep_threshold: int = 60
     update_queue_limit: Optional[int] = None
+    reconnection_policy: Optional[ReconnectionPolicy] = None
 
 
 KNOWN_DCS = [
@@ -100,6 +101,7 @@ async def connect_sender(
         auth_key=auth,
         base_logger=config.base_logger,
         connector=config.connector,
+        reconnection_policy=config.reconnection_policy,
     )
 
     try:

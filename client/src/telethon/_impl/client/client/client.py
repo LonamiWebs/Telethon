@@ -246,6 +246,7 @@ class Client:
             update_queue_limit=update_queue_limit,
             base_logger=base_logger,
             connector=connector or (lambda ip, port: asyncio.open_connection(ip, port)),
+            reconnection_policy=None,
         )
 
         self._session = Session()
@@ -253,9 +254,9 @@ class Client:
         self._message_box = MessageBox(base_logger=base_logger)
         self._chat_hashes = ChatHashCache(None)
         self._last_update_limit_warn: Optional[float] = None
-        self._updates: asyncio.Queue[
-            tuple[abcs.Update, dict[int, Peer]]
-        ] = asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
+        self._updates: asyncio.Queue[tuple[abcs.Update, dict[int, Peer]]] = (
+            asyncio.Queue(maxsize=self._config.update_queue_limit or 0)
+        )
         self._dispatcher: Optional[asyncio.Task[None]] = None
         self._handlers: dict[
             Type[Event],
