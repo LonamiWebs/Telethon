@@ -64,6 +64,6 @@ class Full(Transport):
         return length
 
     def reset(self):
-        logging.info("Resetting recv and send seqs in full transport")
+        logging.info("resetting recv and send seqs in full transport")
         self._send_seq = 0
         self._recv_seq = 0

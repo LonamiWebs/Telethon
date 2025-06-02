@@ -1,4 +1,3 @@
-import time
 from abc import ABC, abstractmethod
 
 
@@ -11,7 +10,7 @@ class ReconnectionPolicy(ABC):
     """
 
     @abstractmethod
-    def should_retry(self, attempts: int) -> bool:
+    def should_retry(self, attempts: int) -> bool | float:
         """
         Determines whether the client should retry the connection attempt.
         """
@@ -30,9 +29,8 @@ class FixedReconnect(ReconnectionPolicy):
         self.max_attempts = attempts
         self.delay = delay
 
-    def should_retry(self, attempts: int) -> bool:
+    def should_retry(self, attempts: int) -> bool | float:
         if attempts < self.max_attempts:
-            time.sleep(self.delay)
-            return True
+            return self.delay
 
         return False

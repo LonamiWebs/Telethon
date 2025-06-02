@@ -55,5 +55,5 @@ class Intermediate(Transport):
         return length + 4
 
     def reset(self):
-        logging.info("Resetting sending of header in intermediate transport")
+        logging.info("resetting sending of header in intermediate transport")
         self._init = False

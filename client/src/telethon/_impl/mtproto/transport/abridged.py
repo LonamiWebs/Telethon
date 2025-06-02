@@ -63,5 +63,5 @@ class Abridged(Transport):
         return header_len + length
 
     def reset(self):
-        logging.info("Resetting sending of header in abridged transport")
+        logging.info("resetting sending of header in abridged transport")
         self._init = False

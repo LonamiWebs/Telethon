@@ -181,26 +181,10 @@ class BadMessageError(ValueError):
         return self._code == other._code
 
 
-DeserializationError = ValueError
-
-
-class DeserializationFailure:
-    __slots__ = ("msg_id", "error")
-
-    def __init__(self, msg_id: MsgId, error: DeserializationError) -> None:
-        self.msg_id = msg_id
-        self.error = error
-
-
-Deserialization = (
-    Update | RpcResult | RpcError | BadMessageError | DeserializationFailure
-)
-
-
 # Deserialization errors are not fatal, so we don't subclass RpcError.
-class BadAuthKeyError(DeserializationError):
+class BadAuthKeyError(ValueError):
     def __init__(self, *args: object, got: int, expected: int) -> None:
-        super().__init__(f"Bad server auth key (got {got}, expected {expected})", *args)
+        super().__init__(f"bad server auth key (got {got}, expected {expected})", *args)
         self._got = got
         self._expected = expected
 
@@ -213,9 +197,9 @@ class BadAuthKeyError(DeserializationError):
         return self._expected
 
 
-class BadMsgIdError(DeserializationError):
+class BadMsgIdError(ValueError):
     def __init__(self, *args: object, got: int) -> None:
-        super().__init__(f"Bad server message id (got {got})", *args)
+        super().__init__(f"bad server message id (got {got})", *args)
         self._got = got
 
     @property
@@ -223,9 +207,9 @@ class BadMsgIdError(DeserializationError):
         return self._got
 
 
-class NegativeLengthError(DeserializationError):
+class NegativeLengthError(ValueError):
     def __init__(self, *args: object, got: int) -> None:
-        super().__init__(f"Bad server message length (got {got})", *args)
+        super().__init__(f"bad server message length (got {got})", *args)
         self._got = got
 
     @property
@@ -233,10 +217,10 @@ class NegativeLengthError(DeserializationError):
         return self._got
 
 
-class TooLongMsgError(DeserializationError):
+class TooLongMsgError(ValueError):
     def __init__(self, *args: object, got: int, max_length: int) -> None:
         super().__init__(
-            f"Bad server message length (got {got}, when at most it should be {max_length})",
+            f"bad server message length (got {got}, when at most it should be {max_length})",
             *args,
         )
         self._got = got
@@ -251,25 +235,25 @@ class TooLongMsgError(DeserializationError):
         return self._expected
 
 
-class MsgBufferTooSmall(DeserializationError):
+class MsgBufferTooSmall(ValueError):
     def __init__(self, *args: object) -> None:
         super().__init__(
-            "Server responded with a payload that's too small to fit a valid message",
+            "server responded with a payload that's too small to fit a valid message",
             *args,
         )
 
 
-class DecompressionFailed(DeserializationError):
+class DecompressionFailed(ValueError):
     def __init__(self, *args: object) -> None:
-        super().__init__("Failed to decompress server's data", *args)
+        super().__init__("failed to decompress server's data", *args)
 
 
-class UnexpectedConstructor(DeserializationError):
+class UnexpectedConstructor(ValueError):
     def __init__(self, *args: object, id: int) -> None:
-        super().__init__(f"Unexpected constructor: {id:08x}", *args)
+        super().__init__(f"unexpected constructor: {id:08x}", *args)
 
 
-class DecryptionError(DeserializationError):
+class DecryptionError(ValueError):
     def __init__(self, *args: object, error: CryptoError) -> None:
         super().__init__(f"failed to decrypt message: {error}", *args)
 
@@ -278,6 +262,31 @@ class DecryptionError(DeserializationError):
     @property
     def error(self):
         return self._error
+
+
+DeserializationError = (
+    BadAuthKeyError
+    | BadMsgIdError
+    | NegativeLengthError
+    | TooLongMsgError
+    | MsgBufferTooSmall
+    | DecompressionFailed
+    | UnexpectedConstructor
+    | DecryptionError
+)
+
+
+class DeserializationFailure:
+    __slots__ = ("msg_id", "error")
+
+    def __init__(self, msg_id: MsgId, error: DeserializationError) -> None:
+        self.msg_id = msg_id
+        self.error = error
+
+
+Deserialization = (
+    Update | RpcResult | RpcError | BadMessageError | DeserializationFailure
+)
 
 
 # https://core.telegram.org/mtproto/description

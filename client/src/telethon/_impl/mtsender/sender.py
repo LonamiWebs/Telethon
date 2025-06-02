@@ -291,19 +291,37 @@ class Sender:
             await self._writer.drain()
             self._on_net_write()
 
-    async def try_connect(self):
-        # attempts = 0
+    async def _try_connect(self):
+        attempts = 0
 
         ip, port = self.addr.split(":")
 
         while True:
             try:
                 self._reader, self._writer = await self._connector(ip, int(port))
-                break
+                self._logger.info(
+                    f"auto-reconnect success after {attempts} failed attempt(s)"
+                )
+                return
             except Exception as e:
-                logging.exception(e)
-                # TODO: reconnection_policy
-                break
+                attempts += 1
+                self._logger.warning(f"auto-reconnect failed {attempts} time(s): {e!r}")
+                await asyncio.sleep(1)
+
+                delay = False
+
+                if self._reconnection_policy is not None:
+                    delay = self._reconnection_policy.should_retry(attempts)
+
+                if delay:
+                    if delay is not True:
+                        await asyncio.sleep(delay)
+                    continue
+                elif delay is not None:
+                    self._logger.info(
+                        f"waiting {delay} seconds before next reconnection attempt"
+                    )
+                    await asyncio.sleep(delay)
 
     def _try_fill_write(self) -> None:
         if not self._requests:
@@ -362,11 +380,11 @@ class Sender:
                 req.state = Sent(req.state.msg_id, req.state.container_msg_id)
 
     def _on_error(self, error: Exception):
-        logging.info(f"Handling error: {error}")
+        self._logger.info(f"handling error: {error}")
         self._transport.reset()
         self._mtp.reset()
-        logging.info(
-            "Resetting sender state from read_buffer {}, mtp_buffer {}".format(
+        self._logger.info(
+            "resetting sender state from read_buffer {}, mtp_buffer {}".format(
                 len(self._read_buffer),
                 len(self._mtp_buffer),
             )
@@ -374,9 +392,12 @@ class Sender:
         self._read_buffer.clear()
         self._mtp_buffer.clear()
 
-        # TODO: reset
+        match error:
+            # TODO
+            case DeserializationFailure():
+                pass
 
-        logging.warning(
+        self._logger.warning(
             f"marking all {len(self._requests)} request(s) as failed: {error}"
         )
 
@@ -495,11 +516,11 @@ class Sender:
         req = self._pop_request(failure.msg_id)
 
         if req:
-            logging.debug(f"Got deserialization failure {failure.error}")
+            self._logger.debug(f"got deserialization failure {failure.error}")
             req.result.set_exception(failure.error)
         else:
-            logging.info(
-                f"Got deserialization failure {failure.error} but no such request is saved"
+            self._logger.info(
+                f"got deserialization failure {failure.error} but no such request is saved"
             )
 
     def _pop_request(self, msg_id: MsgId) -> Optional[Request[object]]:

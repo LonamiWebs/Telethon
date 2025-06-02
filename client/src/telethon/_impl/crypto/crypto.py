@@ -9,17 +9,17 @@ from .auth_key import AuthKey
 
 class InvalidBufferError(ValueError):
     def __init__(self) -> None:
-        super().__init__("Invalid ciphertext buffer length")
+        super().__init__("invalid ciphertext buffer length")
 
 
 class AuthKeyMismatchError(ValueError):
     def __init__(self) -> None:
-        super().__init__("Server authkey mismatches with ours")
+        super().__init__("server authkey mismatches with ours")
 
 
 class MsgKeyMismatchError(ValueError):
     def __init__(self) -> None:
-        super().__init__("Server msgkey mismatches with ours")
+        super().__init__("server msgkey mismatches with ours")
 
 
 CryptoError = InvalidBufferError | AuthKeyMismatchError | MsgKeyMismatchError
