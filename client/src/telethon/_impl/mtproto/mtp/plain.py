@@ -2,7 +2,16 @@ import struct
 from typing import Optional
 
 from ..utils import check_message_buffer
-from .types import Deserialization, MsgId, Mtp, RpcResult
+from .types import (
+    BadAuthKeyError,
+    BadMsgIdError,
+    Deserialization,
+    MsgId,
+    Mtp,
+    NegativeLengthError,
+    RpcResult,
+    TooLongMsgError,
+)
 
 
 class Plain(Mtp):
@@ -38,17 +47,17 @@ class Plain(Mtp):
 
         auth_key_id, msg_id, length = struct.unpack_from("<qqi", payload)
         if auth_key_id != 0:
-            raise ValueError(f"bad auth key, expected: 0, got: {auth_key_id}")
+            raise BadAuthKeyError(got=auth_key_id, expected=0)
 
         # https://core.telegram.org/mtproto/description#message-identifier-msg-id
         if msg_id <= 0 or (msg_id % 4) != 1:
-            raise ValueError(f"bad msg id, got: {msg_id}")
+            raise BadMsgIdError(got=msg_id)
 
         if length < 0:
-            raise ValueError(f"bad length: expected >= 0, got: {length}")
+            raise NegativeLengthError(got=length)
 
         if 20 + length > (lp := len(payload)):
-            raise ValueError(f"message too short, expected: {20 + length}, got {lp}")
+            raise TooLongMsgError(got=length, max_length=lp - 20)
 
         return [RpcResult(MsgId(0), bytes(payload[20 : 20 + length]))]
 
