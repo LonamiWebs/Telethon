@@ -317,11 +317,11 @@ class Sender:
                     if delay is not True:
                         await asyncio.sleep(delay)
                     continue
-                elif delay is not None:
-                    self._logger.info(
-                        f"waiting {delay} seconds before next reconnection attempt"
+                else:
+                    self._logger.error(
+                        f"auto-reconnect failed {attempts} time(s); giving up"
                     )
-                    await asyncio.sleep(delay)
+                    raise
 
     def _try_fill_write(self) -> None:
         if not self._requests:
