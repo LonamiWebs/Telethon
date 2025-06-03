@@ -422,7 +422,7 @@ class Sender:
                 self._process_deserialize_error(result)
             else:
                 raise RuntimeError(
-                    f"Unexpected result type {type(result).__name__!r}: {result}"
+                    f"unexpected result type {type(result).__name__}: {result}"
                 )
 
     def _process_update(self, update: bytes | bytearray | memoryview) -> None:
