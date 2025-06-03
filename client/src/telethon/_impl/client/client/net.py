@@ -46,6 +46,7 @@ class Config:
     api_hash: str
     base_logger: logging.Logger
     connector: Connector
+    reconnection_policy: ReconnectionPolicy
     device_model: str = field(default_factory=default_device_model)
     system_version: str = field(default_factory=default_system_version)
     app_version: str = __version__
@@ -55,7 +56,6 @@ class Config:
     datacenter: Optional[DataCenter] = None
     flood_sleep_threshold: int = 60
     update_queue_limit: Optional[int] = None
-    reconnection_policy: Optional[ReconnectionPolicy] = None
 
 
 KNOWN_DCS = [

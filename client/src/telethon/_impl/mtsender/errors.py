@@ -1,11 +1,6 @@
-import io
+from struct import error as struct_error
 
 from ..mtproto.mtp.types import DeserializationError
 from ..mtproto.transport.abcs import TransportError
 
-ReadError = io.BlockingIOError | TransportError | DeserializationError
-
-
-class IOError(io.BlockingIOError):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+ReadError = struct_error | TransportError | DeserializationError
