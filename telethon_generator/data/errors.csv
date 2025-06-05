@@ -525,3 +525,5 @@ WEBPUSH_KEY_INVALID,400,The specified web push elliptic curve Diffie-Hellman pub
 WEBPUSH_TOKEN_INVALID,400,The specified web push token is invalid
 WORKER_BUSY_TOO_LONG_RETRY,500,Telegram workers are too busy to respond immediately
 YOU_BLOCKED_USER,400,You blocked this user
+FROZEN_METHOD_INVALID,420,You tried to use a method that is not available for frozen accounts
+FROZEN_PARTICIPANT_MISSING,400,Your account is frozen and can't access the chat

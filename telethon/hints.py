@@ -44,7 +44,12 @@ FileLike = typing.Union[
     typing.BinaryIO,
     types.TypeMessageMedia,
     types.TypeInputFile,
-    types.TypeInputFileLocation
+    types.TypeInputFileLocation,
+    types.TypeInputMedia,
+    types.TypePhoto,
+    types.TypeInputPhoto,
+    types.TypeDocument,
+    types.TypeInputDocument
 ]
 
 # Can't use `typing.Type` in Python 3.5.2

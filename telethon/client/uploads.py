@@ -117,6 +117,7 @@ class UploadMethods:
             *,
             caption: typing.Union[str, typing.Sequence[str]] = None,
             force_document: bool = False,
+            mime_type: str = None,
             file_size: int = None,
             clear_draft: bool = False,
             progress_callback: 'hints.ProgressCallback' = None,
@@ -208,6 +209,13 @@ class UploadMethods:
                 If left to `False` and the file is a path that ends with
                 the extension of an image file or a video file, it will be
                 sent as such. Otherwise always as a document.
+
+            mime_type (`str`, optional):
+                Custom mime type to use for the file to be sent (for example,
+                ``audio/mpeg``, ``audio/x-vorbis+ogg``, etc.).
+                It can change the type of files displayed.
+                If not set to any value, the mime type will be determined
+                automatically based on the file's extension.
 
             file_size (`int`, optional):
                 The size of the file to be uploaded if it needs to be uploaded,
@@ -450,6 +458,7 @@ class UploadMethods:
 
         file_handle, media, image = await self._file_to_media(
             file, force_document=force_document,
+            mime_type=mime_type,
             file_size=file_size,
             progress_callback=progress_callback,
             attributes=attributes, allow_cache=allow_cache, thumb=thumb,
