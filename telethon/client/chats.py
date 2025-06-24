@@ -7,6 +7,7 @@ import typing
 from .. import helpers, utils, hints, errors
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
+from ..password import compute_check
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -970,6 +971,54 @@ class ChatMethods:
         else:
             raise ValueError(
                 'You can only edit permissions in groups and channels')
+
+    async def edit_creator(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'hints.EntityLike',
+            password: 'typing.Union[str, types.InputCheckPasswordSRP]',
+            ) -> types.Updates:
+        """
+        Transfer ownership to someone in a chat.
+
+        Raises an error if a wrong password was given
+        (e.g. you aren't the chat owner or the password is incorrect).
+
+        Unless otherwise stated, transferring will work in channels and megagroups.
+
+        Arguments
+            entity (`entity`):
+                The channel, megagroup or chat we own.
+
+            user (`entity`):
+                The new owner.
+
+            password (str or InputCheckPasswordSRP):
+                The 2FA password of the account.
+
+        Returns
+            The resulting :tl:`Updates` object.
+
+        Example
+            .. code-block:: python
+
+                await client.edit_creator(chat, user, password)
+        """
+        entity = await self.get_input_entity(entity)
+        user = await self.get_input_entity(user)
+
+        if not isinstance(password, types.InputCheckPasswordSRP):
+            pass_srp = await self(functions.account.GetPasswordRequest())
+            password = compute_check(pass_srp, password)
+
+        ty = helpers._entity_type(entity)
+
+        if ty == helpers._EntityType.CHANNEL:
+            return await self(functions.channels.EditCreatorRequest(
+                entity, user, password))
+
+        raise ValueError(
+            'You can only transfer ownership in groups and channels')
 
     async def edit_permissions(
             self: 'TelegramClient',
