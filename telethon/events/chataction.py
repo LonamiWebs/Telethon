@@ -15,6 +15,7 @@ class ChatAction(EventBuilder):
     * Whenever a user joins or is added to the group.
     * Whenever a user is removed or leaves a group if it has
       less than 50 members or the removed user was a bot.
+    * Whenever a StarGift is sent or received.
 
     Note that "chat" refers to "small group, megagroup and broadcast
     channel", whereas "group" refers to "small group and megagroup" only.
@@ -29,6 +30,10 @@ class ChatAction(EventBuilder):
                 # Welcome every new user
                 if event.user_joined:
                     await event.reply('Welcome to the group!')
+                
+                # Handle StarGift events
+                if event.star_gift:
+                    await event.reply(f'A StarGift was sent!')
     """
 
     @classmethod
@@ -107,6 +112,38 @@ class ChatAction(EventBuilder):
             elif isinstance(action, types.MessageActionGameScore):
                 return cls.Event(msg,
                                  new_score=action.score)
+            # StarGift related actions
+            elif isinstance(action, types.MessageActionGiftStars):
+                return cls.Event(msg,
+                                 users=msg.from_id,
+                                 star_gift_action='gift_stars',
+                                 stars_amount=action.stars,
+                                 star_gift_crypto_currency=getattr(action, 'crypto_currency', None),
+                                 star_gift_crypto_amount=getattr(action, 'crypto_amount', None))
+            elif isinstance(action, types.MessageActionPrizeStars):
+                return cls.Event(msg,
+                                 users=msg.from_id,
+                                 star_gift_action='prize_stars',
+                                 stars_amount=action.stars,
+                                 star_gift_unclaimed=getattr(action, 'unclaimed', False),
+                                 star_gift_boost_peer=getattr(action, 'boost_peer', None))
+            elif isinstance(action, types.MessageActionStarGift):
+                return cls.Event(msg,
+                                 users=msg.from_id,
+                                 star_gift_action='star_gift',
+                                 star_gift_object=action.gift,
+                                 star_gift_saved=getattr(action, 'saved', False),
+                                 star_gift_message=getattr(action, 'message', None),
+                                 star_gift_convert_stars=getattr(action, 'convert_stars', None))
+            elif isinstance(action, types.MessageActionStarGiftUnique):
+                return cls.Event(msg,
+                                 users=msg.from_id,
+                                 star_gift_action='star_gift_unique',
+                                 star_gift_object=action.gift,
+                                 star_gift_saved=getattr(action, 'saved', False),
+                                 star_gift_message=getattr(action, 'message', None),
+                                 star_gift_convert_stars=getattr(action, 'convert_stars', None),
+                                 star_gift_upgrade_stars=getattr(action, 'upgrade_stars', None))
 
         elif isinstance(update, types.UpdateChannelParticipant) \
                 and bool(update.new_participant) != bool(update.prev_participant):
@@ -159,11 +196,51 @@ class ChatAction(EventBuilder):
 
             unpin (`bool`):
                 `True` if the existing pin gets unpinned.
+
+            star_gift (`bool`):
+                `True` if this is a StarGift related action.
+
+            star_gift_action (`str`, optional):
+                The type of StarGift action: 'gift_stars', 'prize_stars', 'star_gift', or 'star_gift_unique'.
+
+            stars_amount (`int`, optional):
+                The amount of stars involved in the gift (for gift_stars and prize_stars).
+
+            star_gift_object (optional):
+                The StarGift object (for star_gift and star_gift_unique actions).
+
+            star_gift_saved (`bool`, optional):
+                Whether the StarGift was saved (for star_gift and star_gift_unique actions).
+
+            star_gift_message (optional):
+                Message accompanying the StarGift (for star_gift and star_gift_unique actions).
+
+            star_gift_convert_stars (`int`, optional):
+                Amount of stars the gift can be converted to.
+
+            star_gift_upgrade_stars (`int`, optional):
+                Amount of stars needed to upgrade (for star_gift_unique only).
+
+            star_gift_crypto_currency (`str`, optional):
+                Cryptocurrency used (for gift_stars only).
+
+            star_gift_crypto_amount (`int`, optional):
+                Amount of cryptocurrency (for gift_stars only).
+
+            star_gift_unclaimed (`bool`, optional):
+                Whether the prize is unclaimed (for prize_stars only).
+
+            star_gift_boost_peer (optional):
+                Boost peer information (for prize_stars only).
         """
 
         def __init__(self, where, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None, pin_ids=None, pin=None, new_score=None):
+                     users=None, new_title=None, pin_ids=None, pin=None, new_score=None,
+                     star_gift_action=None, stars_amount=None, star_gift_object=None,
+                     star_gift_saved=None, star_gift_message=None, star_gift_convert_stars=None,
+                     star_gift_upgrade_stars=None, star_gift_crypto_currency=None,
+                     star_gift_crypto_amount=None, star_gift_unclaimed=None, star_gift_boost_peer=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.peer_id
@@ -215,6 +292,20 @@ class ChatAction(EventBuilder):
             self.new_title = new_title
             self.new_score = new_score
             self.unpin = not pin
+
+            # StarGift related attributes
+            self.star_gift = star_gift_action is not None
+            self.star_gift_action = star_gift_action
+            self.stars_amount = stars_amount
+            self.star_gift_object = star_gift_object
+            self.star_gift_saved = star_gift_saved
+            self.star_gift_message = star_gift_message
+            self.star_gift_convert_stars = star_gift_convert_stars
+            self.star_gift_upgrade_stars = star_gift_upgrade_stars
+            self.star_gift_crypto_currency = star_gift_crypto_currency
+            self.star_gift_crypto_amount = star_gift_crypto_amount
+            self.star_gift_unclaimed = star_gift_unclaimed
+            self.star_gift_boost_peer = star_gift_boost_peer
 
         def _set_client(self, client):
             super()._set_client(client)
