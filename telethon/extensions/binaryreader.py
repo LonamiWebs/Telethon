@@ -19,7 +19,7 @@ class BinaryReader:
     """
 
     def __init__(self, data):
-        self.stream = data if data else bytes()
+        self.stream = data or b''
         self.position = 0
         self._last = None  # Should come in handy to spot -404 errors
 
@@ -169,8 +169,7 @@ class BinaryReader:
 
     def close(self):
         """Closes the reader, freeing the BytesIO stream."""
-        # self.stream.close()
-        pass
+        self.stream = b''
 
     # region Position related
 
