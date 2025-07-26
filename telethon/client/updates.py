@@ -343,9 +343,7 @@ class UpdateMethods:
                     if updates:
                         self._log[__name__].info('Got difference for account updates')
 
-                    _preprocess_updates = self._preprocess_updates(updates, users, chats)
-                    if inspect.isawaitable(_preprocess_updates):
-                        _preprocess_updates = await _preprocess_updates
+                    _preprocess_updates = await utils.maybe_async(self._preprocess_updates(updates, users, chats))
                     updates_to_dispatch.extend(_preprocess_updates)
                     continue
 
@@ -444,9 +442,7 @@ class UpdateMethods:
                     if updates:
                         self._log[__name__].info('Got difference for channel %d updates', get_diff.channel.channel_id)
 
-                    _preprocess_updates = self._preprocess_updates(updates, users, chats)
-                    if inspect.isawaitable(_preprocess_updates):
-                        _preprocess_updates = await _preprocess_updates
+                    _preprocess_updates = await utils.maybe_async(self._preprocess_updates(updates, users, chats))
                     updates_to_dispatch.extend(_preprocess_updates)
                     continue
 
@@ -468,9 +464,7 @@ class UpdateMethods:
                 except GapError:
                     continue  # get(_channel)_difference will start returning requests
 
-                _preprocess_updates = self._preprocess_updates(processed, users, chats)
-                if inspect.isawaitable(_preprocess_updates):
-                    _preprocess_updates = await _preprocess_updates
+                _preprocess_updates = await utils.maybe_async(self._preprocess_updates(processed, users, chats))
                 updates_to_dispatch.extend(_preprocess_updates)
         except asyncio.CancelledError:
             pass
@@ -481,9 +475,7 @@ class UpdateMethods:
 
     async def _preprocess_updates(self, updates, users, chats):
         self._mb_entity_cache.extend(users, chats)
-        process_entities = self.session.process_entities(types.contacts.ResolvedPeer(None, users, chats))
-        if inspect.isawaitable(process_entities):
-            await process_entities
+        await utils.maybe_async(self.session.process_entities(types.contacts.ResolvedPeer(None, users, chats)))
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(users, chats)}
         for u in updates:
@@ -528,9 +520,7 @@ class UpdateMethods:
             # it every minute instead. No-op if there's nothing new.
             await self._save_states_and_entities()
 
-            save = self.session.save()
-            if inspect.isawaitable(save):
-                await save
+            await utils.maybe_async(self.session.save())
 
     async def _dispatch_update(self: 'TelegramClient', update):
         # TODO only used for AlbumHack, and MessageBox is not really designed for this

@@ -1557,3 +1557,10 @@ def _photo_size_byte_count(size):
         return max(size.sizes)
     else:
         return None
+
+
+async def maybe_async(coro):
+    result = coro
+    if inspect.isawaitable(result):
+        result = await result
+    return result
