@@ -321,7 +321,7 @@ class TelegramBaseClient(abc.ABC):
         self.api_hash = api_hash
 
         if inspect.iscoroutinefunction(self.session.process_entities):
-            self._log[__name__].warning('Using async sessions support is a experimental feature')
+            self._log[__name__].warning('Using async sessions support is an experimental feature')
 
         # Current proxy implementation requires `sock_connect`, and some
         # event loops lack this method. If the current loop is missing it,
