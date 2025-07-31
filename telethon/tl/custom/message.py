@@ -11,7 +11,9 @@ from ... import utils, errors
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(ChatGetter, SenderGetter, TLObject):
+class Message(ChatGetter,
+SenderGetter,
+TLObject):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -29,7 +31,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
             Note that messages in your own chat are always incoming,
             but this member will be `True` if you send a message
             to your own chat. Messages you forward to your chat are
-            *not* considered outgoing, just like official clients
+            *not* considered outgoing,
+just like official clients
             display them.
 
         mentioned (`bool`):
@@ -39,11 +42,14 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         media_unread (`bool`):
             Whether you have read the media in this message
-            or not, e.g. listened to the voice note media.
+            or not,
+e.g. listened to the voice note media.
 
         silent (`bool`):
             Whether the message should notify people with sound or not.
-            Previously used in channels, but since 9 August 2019, it can
+            Previously used in channels,
+but since 9 August 2019,
+it can
             also be `used in private chats
             <https://telegram.org/blog/silent-messages-slow-mode>`_.
 
@@ -72,20 +78,27 @@ class Message(ChatGetter, SenderGetter, TLObject):
             Whether the media in this message should be inverted.
             
         offline (`bool`):
-            Whether the message was sent by an implicit action, for example, as an away or a greeting business message, or as a scheduled message.
+            Whether the message was sent by an implicit action,
+for example,
+as an away or a greeting business message,
+or as a scheduled message.
 
         id (`int`):
             The ID of this message. This field is *always* present.
             Any other member is optional and may be `None`.
 
         from_id (:tl:`Peer`):
-            The peer who sent this message, which is either
-            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
+            The peer who sent this message,
+which is either
+            :tl:`PeerUser`,
+:tl:`PeerChat` or :tl:`PeerChannel`.
             This value will be `None` for anonymous messages.
 
         peer_id (:tl:`Peer`):
-            The peer to which this message was sent, which is either
-            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`. This
+            The peer to which this message was sent,
+which is either
+            :tl:`PeerUser`,
+:tl:`PeerChat` or :tl:`PeerChannel`. This
             will always be present except for empty messages.
 
         fwd_from (:tl:`MessageFwdHeader`):
@@ -111,9 +124,15 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         media (:tl:`MessageMedia`):
             The media sent with this message if any (such as
-            photos, videos, documents, gifs, stickers, etc.).
+            photos,
+videos,
+documents,
+gifs,
+stickers,
+etc.).
 
-            You may want to access the `photo`, `document`
+            You may want to access the `photo`,
+`document`
             etc. properties instead.
 
             If the media was not present or it was :tl:`MessageMediaEmpty`,
@@ -126,7 +145,11 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         entities (List[:tl:`MessageEntity`]):
             The list of markup entities in this message,
-            such as bold, italics, code, hyperlinks, etc.
+            such as bold,
+italics,
+code,
+hyperlinks,
+etc.
 
         views (`int`):
             The number of views this message from a broadcast
@@ -147,7 +170,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         grouped_id (`int`):
             If this message belongs to a group of messages
-            (photo albums or video albums), all of them will
+            (photo albums or video albums),
+all of them will
             have the same value here.
 
         reactions (:tl:`MessageReactions`)
@@ -155,17 +179,21 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         restriction_reason (List[:tl:`RestrictionReason`])
             An optional list of reasons why this message was restricted.
-            If the list is `None`, this message has not been restricted.
+            If the list is `None`,
+this message has not been restricted.
 
         ttl_period (`int`):
             The Time To Live period configured for this message.
-            The message should be erased from wherever it's stored (memory, a
-            local database, etc.) when
+            The message should be erased from wherever it's stored (memory,
+a
+            local database,
+etc.) when
             ``datetime.now() > message.date + timedelta(seconds=message.ttl_period)``.
 
         action (:tl:`MessageAction`):
             The message action object of the message for :tl:`MessageService`
-            instances, which will be `None` for other types of messages.
+            instances,
+which will be `None` for other types of messages.
 
         saved_peer_id (:tl:`Peer`)
     """
@@ -179,46 +207,46 @@ class Message(ChatGetter, SenderGetter, TLObject):
         date: Optional[datetime] = None,
         message: Optional[str] = None,
         # Copied from Message.__init__ signature
-        out: Optional[bool] = None,
-        mentioned: Optional[bool] = None,
-        media_unread: Optional[bool] = None,
-        silent: Optional[bool] = None,
-        post: Optional[bool] = None,
-        from_scheduled: Optional[bool] = None,
-        legacy: Optional[bool] = None,
-        edit_hide: Optional[bool] = None,
-        pinned: Optional[bool] = None,
-        noforwards: Optional[bool] = None,
-        invert_media: Optional[bool] = None,
-        offline: Optional[bool] = None,
-        video_processing_pending: Optional[bool] = None,
-        paid_suggested_post_stars: Optional[bool] = None,
-        paid_suggested_post_ton: Optional[bool] = None,
-        from_id: Optional[types.TypePeer] = None,
-        from_boosts_applied: Optional[int] = None,
-        saved_peer_id: Optional[types.TypePeer] = None,
-        fwd_from: Optional[types.TypeMessageFwdHeader] = None,
-        via_bot_id: Optional[int] = None,
-        via_business_bot_id: Optional[int] = None,
-        reply_to: Optional[types.TypeMessageReplyHeader] = None,
-        media: Optional[types.TypeMessageMedia] = None,
-        reply_markup: Optional[types.TypeReplyMarkup] = None,
-        entities: Optional[List[types.TypeMessageEntity]] = None,
-        views: Optional[int] = None,
-        forwards: Optional[int] = None,
-        replies: Optional[types.TypeMessageReplies] = None,
-        edit_date: Optional[datetime] = None,
-        post_author: Optional[str] = None,
-        grouped_id: Optional[int] = None,
-        reactions: Optional[types.TypeMessageReactions] = None,
-        restriction_reason: Optional[List[types.TypeRestrictionReason]] = None,
-        ttl_period: Optional[int] = None,
-        quick_reply_shortcut_id: Optional[int] = None,
-        effect: Optional[int] = None,
-        factcheck: Optional[types.TypeFactCheck] = None,
-        report_delivery_until_date: Optional[datetime] = None,
-        paid_message_stars: Optional[int] = None,
-        suggested_post: Optional[types.TypeSuggestedPost] = None,
+        out: Optional[bool]=None,
+        mentioned: Optional[bool]=None,
+        media_unread: Optional[bool]=None,
+        silent: Optional[bool]=None,
+        post: Optional[bool]=None,
+        from_scheduled: Optional[bool]=None,
+        legacy: Optional[bool]=None,
+        edit_hide: Optional[bool]=None,
+        pinned: Optional[bool]=None,
+        noforwards: Optional[bool]=None,
+        invert_media: Optional[bool]=None,
+        offline: Optional[bool]=None,
+        video_processing_pending: Optional[bool]=None,
+        paid_suggested_post_stars: Optional[bool]=None,
+        paid_suggested_post_ton: Optional[bool]=None,
+        from_id: Optional['TypePeer']=None,
+        from_boosts_applied: Optional[int]=None,
+        saved_peer_id: Optional['TypePeer']=None,
+        fwd_from: Optional['TypeMessageFwdHeader']=None,
+        via_bot_id: Optional[int]=None,
+        via_business_bot_id: Optional[int]=None,
+        reply_to: Optional['TypeMessageReplyHeader']=None,
+        media: Optional['TypeMessageMedia']=None,
+        reply_markup: Optional['TypeReplyMarkup']=None,
+        entities: Optional[List['TypeMessageEntity']]=None,
+        views: Optional[int]=None,
+        forwards: Optional[int]=None,
+        replies: Optional['TypeMessageReplies']=None,
+        edit_date: Optional[datetime]=None,
+        post_author: Optional[str]=None,
+        grouped_id: Optional[int]=None,
+        reactions: Optional['TypeMessageReactions']=None,
+        restriction_reason: Optional[List['TypeRestrictionReason']]=None,
+        ttl_period: Optional[int]=None,
+        quick_reply_shortcut_id: Optional[int]=None,
+        effect: Optional[int]=None,
+        factcheck: Optional['TypeFactCheck']=None,
+        report_delivery_until_date: Optional[datetime]=None,
+        paid_message_stars: Optional[int]=None,
+        suggested_post: Optional['TypeSuggestedPost']=None,
         # Copied from MessageService.__init__ signature
         action: Optional[types.TypeMessageAction] = None,
         reactions_are_possible: Optional[bool] = None,
@@ -250,7 +278,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.via_bot_id = via_bot_id
         self.via_business_bot_id = via_business_bot_id
         self.reply_to = reply_to
-        self.media = None if isinstance(media, types.MessageMediaEmpty) else media
+        self.media = None if isinstance(media,
+types.MessageMediaEmpty) else media
         self.reply_markup = reply_markup
         self.entities = entities
         self.views = views
@@ -290,22 +319,31 @@ class Message(ChatGetter, SenderGetter, TLObject):
         if from_id is not None:
             sender_id = utils.get_peer_id(from_id)
         elif peer_id:
-            # If the message comes from a Channel, let the sender be it
+            # If the message comes from a Channel,
+let the sender be it
             # ...or...
             # incoming messages in private conversations no longer have from_id
-            # (layer 119+), but the sender can only be the chat we're in.
-            if post or (not out and isinstance(peer_id, types.PeerUser)):
+            # (layer 119+),
+but the sender can only be the chat we're in.
+            if post or (not out and isinstance(peer_id,
+types.PeerUser)):
                 sender_id = utils.get_peer_id(peer_id)
 
         # Note that these calls would reset the client
-        ChatGetter.__init__(self, peer_id, broadcast=post)
-        SenderGetter.__init__(self, sender_id)
+        ChatGetter.__init__(self,
+peer_id,
+broadcast=post)
+        SenderGetter.__init__(self,
+sender_id)
 
         self._forward = None
         self._reply_to_chat = None
         self._reply_to_sender = None
 
-    def _finish_init(self, client, entities, input_chat):
+    def _finish_init(self,
+client,
+entities,
+input_chat):
         """
         Finishes the initialization of this message by setting
         the client that sent the message and making use of the
@@ -320,36 +358,52 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         cache = client._mb_entity_cache
 
-        self._sender, self._input_sender = utils._get_entity_pair(
-            self.sender_id, entities, cache)
+        self._sender,
+self._input_sender = utils._get_entity_pair(
+            self.sender_id,
+entities,
+cache)
 
-        self._chat, self._input_chat = utils._get_entity_pair(
-            self.chat_id, entities, cache)
+        self._chat,
+self._input_chat = utils._get_entity_pair(
+            self.chat_id,
+entities,
+cache)
 
         if input_chat:  # This has priority
             self._input_chat = input_chat
 
         if self.via_bot_id:
-            self._via_bot, self._via_input_bot = utils._get_entity_pair(
-                self.via_bot_id, entities, cache)
+            self._via_bot,
+self._via_input_bot = utils._get_entity_pair(
+                self.via_bot_id,
+entities,
+cache)
 
         if self.fwd_from:
-            self._forward = Forward(self._client, self.fwd_from, entities)
+            self._forward = Forward(self._client,
+self.fwd_from,
+entities)
 
         if self.action:
-            if isinstance(self.action, (types.MessageActionChatAddUser,
+            if isinstance(self.action,
+(types.MessageActionChatAddUser,
                                         types.MessageActionChatCreate)):
                 self._action_entities = [entities.get(i)
                                          for i in self.action.users]
-            elif isinstance(self.action, types.MessageActionChatDeleteUser):
+            elif isinstance(self.action,
+types.MessageActionChatDeleteUser):
                 self._action_entities = [entities.get(self.action.user_id)]
-            elif isinstance(self.action, types.MessageActionChatJoinedByLink):
+            elif isinstance(self.action,
+types.MessageActionChatJoinedByLink):
                 self._action_entities = [entities.get(self.action.inviter_id)]
-            elif isinstance(self.action, types.MessageActionChatMigrateTo):
+            elif isinstance(self.action,
+types.MessageActionChatMigrateTo):
                 self._action_entities = [entities.get(utils.get_peer_id(
                     types.PeerChannel(self.action.channel_id)))]
             elif isinstance(
-                    self.action, types.MessageActionChannelMigrateFrom):
+                    self.action,
+types.MessageActionChannelMigrateFrom):
                 self._action_entities = [entities.get(utils.get_peer_id(
                     types.PeerChat(self.action.chat_id)))]
 
@@ -357,7 +411,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
             self._linked_chat = entities.get(utils.get_peer_id(
                     types.PeerChannel(self.replies.channel_id)))
         
-        if isinstance(self.reply_to, types.MessageReplyHeader):
+        if isinstance(self.reply_to,
+types.MessageReplyHeader):
             if self.reply_to.reply_to_peer_id:
                 self._reply_to_chat = entities.get(utils.get_peer_id(self.reply_to.reply_to_peer_id))
             if self.reply_to.reply_from:
@@ -375,16 +430,20 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         Returns the `TelegramClient <telethon.client.telegramclient.TelegramClient>`
         that *patched* this message. This will only be present if you
-        **use the friendly methods**, it won't be there if you invoke
-        raw API methods manually, in which case you should only access
-        members, not properties.
+        **use the friendly methods**,
+it won't be there if you invoke
+        raw API methods manually,
+in which case you should only access
+        members,
+not properties.
         """
         return self._client
 
     @property
     def text(self):
         """
-        The message text, formatted using the client's default
+        The message text,
+formatted using the client's default
         parse mode. Will be `None` for :tl:`MessageService`.
         """
         if self._text is None and self._client:
@@ -392,31 +451,39 @@ class Message(ChatGetter, SenderGetter, TLObject):
                 self._text = self.message
             else:
                 self._text = self._client.parse_mode.unparse(
-                    self.message, self.entities)
+                    self.message,
+self.entities)
 
         return self._text
 
     @text.setter
-    def text(self, value):
+    def text(self,
+value):
         self._text = value
         if self._client and self._client.parse_mode:
-            self.message, self.entities = self._client.parse_mode.parse(value)
+            self.message,
+self.entities = self._client.parse_mode.parse(value)
         else:
-            self.message, self.entities = value, []
+            self.message,
+self.entities = value,
+[]
 
     @property
     def raw_text(self):
         """
-        The raw message text, ignoring any formatting.
+        The raw message text,
+ignoring any formatting.
         Will be `None` for :tl:`MessageService`.
 
         Setting a value to this field will erase the
-        `entities`, unlike changing the `message` member.
+        `entities`,
+unlike changing the `message` member.
         """
         return self.message
 
     @raw_text.setter
-    def raw_text(self, value):
+    def raw_text(self,
+value):
         self.message = value
         self.entities = []
         self._text = None
@@ -426,7 +493,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         `True` if the message is a reply to some other message or story.
 
-        Remember that if the replied-to is a message, 
+        Remember that if the replied-to is a message,
+
         you can access the ID of the message this one is 
         replying to through `reply_to.reply_to_msg_id`,
         and the `Message` object with `get_reply_message()`.
@@ -452,8 +520,11 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def reply_to_sender(self):
         """
-        The :tl:`User`, :tl:`Channel`, or whatever other entity that
-        sent the replied-to message, if this message is a reply in another chat.
+        The :tl:`User`,
+:tl:`Channel`,
+or whatever other entity that
+        sent the replied-to message,
+if this message is a reply in another chat.
         """
         return self._reply_to_sender
 
@@ -464,7 +535,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         <telethon.tl.custom.messagebutton.MessageButton>`,
         if any.
 
-        Otherwise, it returns `None`.
+        Otherwise,
+it returns `None`.
         """
         if self._buttons is None and self.reply_markup:
             if not self.input_chat:
@@ -474,7 +546,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
             except ValueError:
                 return
             else:
-                self._set_buttons(self._input_chat, bot)
+                self._set_buttons(self._input_chat,
+bot)
 
         return self._buttons
 
@@ -492,7 +565,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
                 await self._reload_message()
                 bot = self._needed_markup_bot()  # TODO use via_input_bot
 
-            self._set_buttons(chat, bot)
+            self._set_buttons(chat,
+bot)
 
         return self._buttons
 
@@ -502,8 +576,10 @@ class Message(ChatGetter, SenderGetter, TLObject):
         Returns the total button count (sum of all `buttons` rows).
         """
         if self._buttons_count is None:
-            if isinstance(self.reply_markup, (
-                    types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+            if isinstance(self.reply_markup,
+(
+                    types.ReplyInlineMarkup,
+types.ReplyKeyboardMarkup)):
                 self._buttons_count = sum(
                     len(row.buttons) for row in self.reply_markup.rows)
             else:
@@ -516,12 +592,18 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         Returns a `File <telethon.tl.custom.file.File>` wrapping the
         `photo` or `document` in this message. If the media type is different
-        (polls, games, none, etc.), this property will be `None`.
+        (polls,
+games,
+none,
+etc.),
+this property will be `None`.
 
-        This instance lets you easily access other properties, such as
+        This instance lets you easily access other properties,
+such as
         `file.id <telethon.tl.custom.file.File.id>`,
         `file.name <telethon.tl.custom.file.File.name>`,
-        etc., without having to manually inspect the ``document.attributes``.
+        etc.,
+without having to manually inspect the ``document.attributes``.
         """
         if not self._file:
             media = self.photo or self.document
@@ -533,48 +615,62 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def photo(self):
         """
-        The :tl:`Photo` media in this message, if any.
+        The :tl:`Photo` media in this message,
+if any.
 
         This will also return the photo for :tl:`MessageService` if its
-        action is :tl:`MessageActionChatEditPhoto`, or if the message has
+        action is :tl:`MessageActionChatEditPhoto`,
+or if the message has
         a web preview with a photo.
         """
-        if isinstance(self.media, types.MessageMediaPhoto):
-            if isinstance(self.media.photo, types.Photo):
+        if isinstance(self.media,
+types.MessageMediaPhoto):
+            if isinstance(self.media.photo,
+types.Photo):
                 return self.media.photo
-        elif isinstance(self.action, types.MessageActionChatEditPhoto):
+        elif isinstance(self.action,
+types.MessageActionChatEditPhoto):
             return self.action.photo
         else:
             web = self.web_preview
-            if web and isinstance(web.photo, types.Photo):
+            if web and isinstance(web.photo,
+types.Photo):
                 return web.photo
 
     @property
     def document(self):
         """
-        The :tl:`Document` media in this message, if any.
+        The :tl:`Document` media in this message,
+if any.
         """
-        if isinstance(self.media, types.MessageMediaDocument):
-            if isinstance(self.media.document, types.Document):
+        if isinstance(self.media,
+types.MessageMediaDocument):
+            if isinstance(self.media.document,
+types.Document):
                 return self.media.document
         else:
             web = self.web_preview
-            if web and isinstance(web.document, types.Document):
+            if web and isinstance(web.document,
+types.Document):
                 return web.document
 
     @property
     def web_preview(self):
         """
-        The :tl:`WebPage` media in this message, if any.
+        The :tl:`WebPage` media in this message,
+if any.
         """
-        if isinstance(self.media, types.MessageMediaWebPage):
-            if isinstance(self.media.webpage, types.WebPage):
+        if isinstance(self.media,
+types.MessageMediaWebPage):
+            if isinstance(self.media.webpage,
+types.WebPage):
                 return self.media.webpage
 
     @property
     def audio(self):
         """
-        The :tl:`Document` media in this message, if it's an audio file.
+        The :tl:`Document` media in this message,
+if it's an audio file.
         """
         return self._document_by_attribute(types.DocumentAttributeAudio,
                                            lambda attr: not attr.voice)
@@ -582,7 +678,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def voice(self):
         """
-        The :tl:`Document` media in this message, if it's a voice note.
+        The :tl:`Document` media in this message,
+if it's a voice note.
         """
         return self._document_by_attribute(types.DocumentAttributeAudio,
                                            lambda attr: attr.voice)
@@ -590,14 +687,16 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def video(self):
         """
-        The :tl:`Document` media in this message, if it's a video.
+        The :tl:`Document` media in this message,
+if it's a video.
         """
         return self._document_by_attribute(types.DocumentAttributeVideo)
 
     @property
     def video_note(self):
         """
-        The :tl:`Document` media in this message, if it's a video note.
+        The :tl:`Document` media in this message,
+if it's a video note.
         """
         return self._document_by_attribute(types.DocumentAttributeVideo,
                                            lambda attr: attr.round_message)
@@ -605,10 +704,13 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def gif(self):
         """
-        The :tl:`Document` media in this message, if it's a "gif".
+        The :tl:`Document` media in this message,
+if it's a "gif".
 
         "Gif" files by Telegram are normally ``.mp4`` video files without
-        sound, the so called "animated" media. However, it may be the actual
+        sound,
+the so called "animated" media. However,
+it may be the actual
         gif format if the file is too large.
         """
         return self._document_by_attribute(types.DocumentAttributeAnimated)
@@ -616,32 +718,39 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def sticker(self):
         """
-        The :tl:`Document` media in this message, if it's a sticker.
+        The :tl:`Document` media in this message,
+if it's a sticker.
         """
         return self._document_by_attribute(types.DocumentAttributeSticker)
 
     @property
     def contact(self):
         """
-        The :tl:`MessageMediaContact` in this message, if it's a contact.
+        The :tl:`MessageMediaContact` in this message,
+if it's a contact.
         """
-        if isinstance(self.media, types.MessageMediaContact):
+        if isinstance(self.media,
+types.MessageMediaContact):
             return self.media
 
     @property
     def game(self):
         """
-        The :tl:`Game` media in this message, if it's a game.
+        The :tl:`Game` media in this message,
+if it's a game.
         """
-        if isinstance(self.media, types.MessageMediaGame):
+        if isinstance(self.media,
+types.MessageMediaGame):
             return self.media.game
 
     @property
     def geo(self):
         """
-        The :tl:`GeoPoint` media in this message, if it has a location.
+        The :tl:`GeoPoint` media in this message,
+if it has a location.
         """
-        if isinstance(self.media, (types.MessageMediaGeo,
+        if isinstance(self.media,
+(types.MessageMediaGeo,
                                    types.MessageMediaGeoLive,
                                    types.MessageMediaVenue)):
             return self.media.geo
@@ -649,33 +758,41 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def invoice(self):
         """
-        The :tl:`MessageMediaInvoice` in this message, if it's an invoice.
+        The :tl:`MessageMediaInvoice` in this message,
+if it's an invoice.
         """
-        if isinstance(self.media, types.MessageMediaInvoice):
+        if isinstance(self.media,
+types.MessageMediaInvoice):
             return self.media
 
     @property
     def poll(self):
         """
-        The :tl:`MessageMediaPoll` in this message, if it's a poll.
+        The :tl:`MessageMediaPoll` in this message,
+if it's a poll.
         """
-        if isinstance(self.media, types.MessageMediaPoll):
+        if isinstance(self.media,
+types.MessageMediaPoll):
             return self.media
 
     @property
     def venue(self):
         """
-        The :tl:`MessageMediaVenue` in this message, if it's a venue.
+        The :tl:`MessageMediaVenue` in this message,
+if it's a venue.
         """
-        if isinstance(self.media, types.MessageMediaVenue):
+        if isinstance(self.media,
+types.MessageMediaVenue):
             return self.media
 
     @property
     def dice(self):
         """
-        The :tl:`MessageMediaDice` in this message, if it's a dice roll.
+        The :tl:`MessageMediaDice` in this message,
+if it's a dice roll.
         """
-        if isinstance(self.media, types.MessageMediaDice):
+        if isinstance(self.media,
+types.MessageMediaDice):
             return self.media
 
     @property
@@ -684,12 +801,15 @@ class Message(ChatGetter, SenderGetter, TLObject):
         Returns a list of entities that took part in this action.
 
         Possible cases for this are :tl:`MessageActionChatAddUser`,
-        :tl:`types.MessageActionChatCreate`, :tl:`MessageActionChatDeleteUser`,
+        :tl:`types.MessageActionChatCreate`,
+:tl:`MessageActionChatDeleteUser`,
         :tl:`MessageActionChatJoinedByLink` :tl:`MessageActionChatMigrateTo`
         and :tl:`MessageActionChannelMigrateFrom`.
 
-        If the action is neither of those, the result will be `None`.
-        If some entities could not be retrieved, the list may contain
+        If the action is neither of those,
+the result will be `None`.
+        If some entities could not be retrieved,
+the list may contain
         some `None` items in it.
         """
         return self._action_entities
@@ -714,12 +834,14 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def reply_to_msg_id(self):
         """
-        Returns the message ID this message is replying to, if any.
+        Returns the message ID this message is replying to,
+if any.
         This is equivalent to accessing ``.reply_to.reply_to_msg_id``.
         """
         return (
             self.reply_to.reply_to_msg_id
-            if isinstance(self.reply_to, types.MessageReplyHeader)
+            if isinstance(self.reply_to,
+types.MessageReplyHeader)
             else None
         )
 
@@ -740,13 +862,17 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
     # region Public Methods
 
-    def get_entities_text(self, cls=None):
+    def get_entities_text(self,
+cls=None):
         """
-        Returns a list of ``(markup entity, inner text)``
+        Returns a list of ``(markup entity,
+inner text)``
         (like bold or italics).
 
         The markup entity is a :tl:`MessageEntity` that represents bold,
-        italics, etc., and the inner text is the `str` inside that markup
+        italics,
+etc.,
+and the inner text is the `str` inside that markup
         entity.
 
         For example:
@@ -755,8 +881,10 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
             print(repr(message.text))  # shows: 'Hello **world**!'
 
-            for ent, txt in message.get_entities_text():
-                print(ent)  # shows: MessageEntityBold(offset=6, length=5)
+            for ent,
+txt in message.get_entities_text():
+                print(ent)  # shows: MessageEntityBold(offset=6,
+length=5)
                 print(txt)  # shows: world
 
         Args:
@@ -767,7 +895,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
                 >>> from telethon.tl.types import MessageEntityCode
                 >>>
                 >>> m = ...  # get the message
-                >>> for _, inner_text in m.get_entities_text(MessageEntityCode):
+                >>> for _,
+inner_text in m.get_entities_text(MessageEntityCode):
                 >>>     print(inner_text)
         """
         ent = self.entities
@@ -775,19 +904,24 @@ class Message(ChatGetter, SenderGetter, TLObject):
             return []
 
         if cls:
-            ent = [c for c in ent if isinstance(c, cls)]
+            ent = [c for c in ent if isinstance(c,
+cls)]
 
-        texts = utils.get_inner_text(self.message, ent)
-        return list(zip(ent, texts))
+        texts = utils.get_inner_text(self.message,
+ent)
+        return list(zip(ent,
+texts))
 
     async def get_reply_message(self):
         """
-        The `Message` that this message is replying to, or `None`.
+        The `Message` that this message is replying to,
+or `None`.
 
         The result will be cached after its first use.
         """
         if self._reply_message is None and self._client:
-            if not isinstance(self.reply_to, types.MessageReplyHeader):
+            if not isinstance(self.reply_to,
+types.MessageReplyHeader):
                 return None
 
             # Bots cannot access other bots' messages by their ID.
@@ -799,7 +933,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
             if not self._reply_message:
                 # ...unless the current message got deleted.
                 #
-                # If that's the case, give it a second chance accessing
+                # If that's the case,
+give it a second chance accessing
                 # directly by its ID.
                 self._reply_message = await self._client.get_messages(
                     self._input_chat if self.is_channel else None,
@@ -808,7 +943,9 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         return self._reply_message
 
-    async def respond(self, *args, **kwargs):
+    async def respond(self,
+*args,
+**kwargs):
         """
         Responds to the message (not as a reply). Shorthand for
         `telethon.client.messages.MessageMethods.send_message`
@@ -816,9 +953,13 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         if self._client:
             return await self._client.send_message(
-                await self.get_input_chat(), *args, **kwargs)
+                await self.get_input_chat(),
+*args,
+**kwargs)
 
-    async def reply(self, *args, **kwargs):
+    async def reply(self,
+*args,
+**kwargs):
         """
         Replies to the message (as a reply). Shorthand for
         `telethon.client.messages.MessageMethods.send_message`
@@ -827,24 +968,32 @@ class Message(ChatGetter, SenderGetter, TLObject):
         if self._client:
             kwargs['reply_to'] = self.id
             return await self._client.send_message(
-                await self.get_input_chat(), *args, **kwargs)
+                await self.get_input_chat(),
+*args,
+**kwargs)
 
-    async def forward_to(self, *args, **kwargs):
+    async def forward_to(self,
+*args,
+**kwargs):
         """
         Forwards the message. Shorthand for
         `telethon.client.messages.MessageMethods.forward_messages`
         with both ``messages`` and ``from_peer`` already set.
 
-        If you need to forward more than one message at once, don't use
+        If you need to forward more than one message at once,
+don't use
         this `forward_to` method. Use a
         `telethon.client.telegramclient.TelegramClient` instance directly.
         """
         if self._client:
             kwargs['messages'] = self.id
             kwargs['from_peer'] = await self.get_input_chat()
-            return await self._client.forward_messages(*args, **kwargs)
+            return await self._client.forward_messages(*args,
+**kwargs)
 
-    async def edit(self, *args, **kwargs):
+    async def edit(self,
+*args,
+**kwargs):
         """
         Edits the message if it's outgoing. Shorthand for
         `telethon.client.messages.MessageMethods.edit_message`
@@ -863,8 +1012,10 @@ class Message(ChatGetter, SenderGetter, TLObject):
             not modified at all.
 
             ``MessageIdInvalidError`` if the ID of the message is invalid
-            (the ID itself may be correct, but the message with that ID
-            cannot be edited). For example, when trying to edit messages
+            (the ID itself may be correct,
+but the message with that ID
+            cannot be edited). For example,
+when trying to edit messages
             with a reply markup (or clear markup) this error will be raised.
 
         .. note::
@@ -872,8 +1023,10 @@ class Message(ChatGetter, SenderGetter, TLObject):
             This is different from `client.edit_message
             <telethon.client.messages.MessageMethods.edit_message>`
             and **will respect** the previous state of the message.
-            For example, if the message didn't have a link preview,
-            the edit won't add one by default, and you should force
+            For example,
+if the message didn't have a link preview,
+            the edit won't add one by default,
+and you should force
             it by setting it to `True` if you want it.
 
             This is generally the most desired and convenient behaviour,
@@ -886,42 +1039,64 @@ class Message(ChatGetter, SenderGetter, TLObject):
             kwargs['buttons'] = self.reply_markup
 
         return await self._client.edit_message(
-            await self.get_input_chat(), self.id,
-            *args, **kwargs
+            await self.get_input_chat(),
+self.id,
+            *args,
+**kwargs
         )
 
-    async def delete(self, *args, **kwargs):
+    async def delete(self,
+*args,
+**kwargs):
         """
         Deletes the message. You're responsible for checking whether you
-        have the permission to do so, or to except the error otherwise.
+        have the permission to do so,
+or to except the error otherwise.
         Shorthand for
         `telethon.client.messages.MessageMethods.delete_messages` with
         ``entity`` and ``message_ids`` already set.
 
-        If you need to delete more than one message at once, don't use
+        If you need to delete more than one message at once,
+don't use
         this `delete` method. Use a
         `telethon.client.telegramclient.TelegramClient` instance directly.
         """
         if self._client:
             return await self._client.delete_messages(
-                await self.get_input_chat(), [self.id],
-                *args, **kwargs
+                await self.get_input_chat(),
+[self.id],
+                *args,
+**kwargs
             )
 
-    async def download_media(self, *args, **kwargs):
+    async def download_media(self,
+*args,
+**kwargs):
         """
-        Downloads the media contained in the message, if any. Shorthand
+        Downloads the media contained in the message,
+if any. Shorthand
         for `telethon.client.downloads.DownloadMethods.download_media`
         with the ``message`` already set.
         """
         if self._client:
-            # Passing the entire message is important, in case it has to be
+            # Passing the entire message is important,
+in case it has to be
             # refetched for a fresh file reference.
-            return await self._client.download_media(self, *args, **kwargs)
+            return await self._client.download_media(self,
+*args,
+**kwargs)
 
-    async def click(self, i=None, j=None,
-                    *, text=None, filter=None, data=None, share_phone=None,
-                    share_geo=None, password=None, open_url=None):
+    async def click(self,
+i=None,
+j=None,
+                    *,
+text=None,
+filter=None,
+data=None,
+share_phone=None,
+                    share_geo=None,
+password=None,
+open_url=None):
         """
         Calls :tl:`SendVote` with the specified poll option
         or `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
@@ -932,7 +1107,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         Args:
             i (`int` | `list`):
                 Clicks the i'th button or poll option (starting from the index 0).
-                For multiple-choice polls, a list with the indices should be used.
+                For multiple-choice polls,
+a list with the indices should be used.
                 Will ``raise IndexError`` if out of bounds. Example:
 
                 >>> message = ...  # get the message somehow
@@ -943,20 +1119,26 @@ class Message(ChatGetter, SenderGetter, TLObject):
                 >>> await message.click(2)  # index
 
             j (`int`):
-                Clicks the button at position (i, j), these being the
-                indices for the (row, column) respectively. Example:
+                Clicks the button at position (i,
+j),
+these being the
+                indices for the (row,
+column) respectively. Example:
 
                 >>> # Clicking the 2nd button on the 1st row.
                 >>> # [button1] [button2]
                 >>> # [     button3     ]
                 >>> # [button4] [button5]
-                >>> await message.click(0, 1)  # (row, column)
+                >>> await message.click(0,
+1)  # (row,
+column)
 
                 This is equivalent to ``message.buttons[0][1].click()``.
 
             text (`str` | `callable`):
                 Clicks the first button or poll option with the text "text". This may
-                also be a callable, like a ``re.compile(...).match``,
+                also be a callable,
+like a ``re.compile(...).match``,
                 and the text will be passed to it.
 
                 If you need to select multiple options in a poll,
@@ -973,42 +1155,53 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
             data (`bytes`):
                 This argument overrides the rest and will not search any
-                buttons. Instead, it will directly send the request to
+                buttons. Instead,
+it will directly send the request to
                 behave as if it clicked a button with said data. Note
-                that if the message does not have this data, it will
+                that if the message does not have this data,
+it will
                 ``raise DataInvalidError``.
 
             share_phone (`bool` | `str` | tl:`InputMediaContact`):
                 When clicking on a keyboard button requesting a phone number
-                (:tl:`KeyboardButtonRequestPhone`), this argument must be
+                (:tl:`KeyboardButtonRequestPhone`),
+this argument must be
                 explicitly set to avoid accidentally sharing the number.
 
                 It can be `True` to automatically share the current user's
-                phone, a string to share a specific phone number, or a contact
+                phone,
+a string to share a specific phone number,
+or a contact
                 media to specify all details.
 
-                If the button is pressed without this, `ValueError` is raised.
+                If the button is pressed without this,
+`ValueError` is raised.
 
             share_geo (`tuple` | `list` | tl:`InputMediaGeoPoint`):
                 When clicking on a keyboard button requesting a geo location
-                (:tl:`KeyboardButtonRequestGeoLocation`), this argument must
+                (:tl:`KeyboardButtonRequestGeoLocation`),
+this argument must
                 be explicitly set to avoid accidentally sharing the location.
 
-                It must be a `tuple` of `float` as ``(longitude, latitude)``,
+                It must be a `tuple` of `float` as ``(longitude,
+latitude)``,
                 or a :tl:`InputGeoPoint` instance to avoid accidentally using
                 the wrong roder.
 
-                If the button is pressed without this, `ValueError` is raised.
+                If the button is pressed without this,
+`ValueError` is raised.
 
             password (`str`):
                 When clicking certain buttons (such as BotFather's confirmation
-                button to transfer ownership), if your account has 2FA enabled,
+                button to transfer ownership),
+if your account has 2FA enabled,
                 you need to provide your account's password. Otherwise,
                 `teltehon.errors.PasswordHashInvalidError` is raised.
             
             open_url (`bool`):
                 When clicking on an inline keyboard URL button :tl:`KeyboardButtonUrl`
-                By default it will return URL of the button, passing ``click(open_url=True)``
+                By default it will return URL of the button,
+passing ``click(open_url=True)``
                 will lunch the default browser with given URL of the button and 
                 return `True` on success.
                 
@@ -1020,7 +1213,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
                     await message.click(0)
 
                     # Click some row/column
-                    await message.click(row, column)
+                    await message.click(row,
+column)
 
                     # Click by text
                     await message.click(text='👍')
@@ -1029,7 +1223,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
                     await message.click(data=b'payload')
 
                     # Click on a button requesting a phone
-                    await message.click(0, share_phone=True)
+                    await message.click(0,
+share_phone=True)
         """
         if not self._client:
             return
@@ -1039,12 +1234,23 @@ class Message(ChatGetter, SenderGetter, TLObject):
             if not chat:
                 return None
 
-            but = types.KeyboardButtonCallback('', data)
-            return await MessageButton(self._client, but, chat, None, self.id).click(
-                share_phone=share_phone, share_geo=share_geo, password=password, open_url=open_url)
+            but = types.KeyboardButtonCallback('',
+data)
+            return await MessageButton(self._client,
+but,
+chat,
+None,
+self.id).click(
+                share_phone=share_phone,
+share_geo=share_geo,
+password=password,
+open_url=open_url)
 
-        if sum(int(x is not None) for x in (i, text, filter)) >= 2:
-            raise ValueError('You can only set either of i, text or filter')
+        if sum(int(x is not None) for x in (i,
+text,
+filter)) >= 2:
+            raise ValueError('You can only set either of i,
+text or filter')
 
         # Finding the desired poll options and sending them
         if self.poll is not None:
@@ -1114,7 +1320,10 @@ class Message(ChatGetter, SenderGetter, TLObject):
         button = find_button()
         if button:
             return await button.click(
-                share_phone=share_phone, share_geo=share_geo, password=password, open_url=open_url)
+                share_phone=share_phone,
+share_geo=share_geo,
+password=password,
+open_url=open_url)
 
     async def mark_read(self):
         """
@@ -1125,9 +1334,13 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         if self._client:
             await self._client.send_read_acknowledge(
-                await self.get_input_chat(), max_id=self.id)
+                await self.get_input_chat(),
+max_id=self.id)
 
-    async def pin(self, *, notify=False, pm_oneside=False):
+    async def pin(self,
+*,
+notify=False,
+pm_oneside=False):
         """
         Pins the message. Shorthand for
         `telethon.client.messages.MessageMethods.pin_message`
@@ -1138,7 +1351,10 @@ class Message(ChatGetter, SenderGetter, TLObject):
         #      That or figure out a way to always set it directly.
         if self._client:
             return await self._client.pin_message(
-                await self.get_input_chat(), self.id, notify=notify, pm_oneside=pm_oneside)
+                await self.get_input_chat(),
+self.id,
+notify=notify,
+pm_oneside=pm_oneside)
 
     async def unpin(self):
         """
@@ -1148,7 +1364,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         if self._client:
             return await self._client.unpin_message(
-                await self.get_input_chat(), self.id)
+                await self.get_input_chat(),
+self.id)
 
     # endregion Public Methods
 
@@ -1164,7 +1381,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         try:
             chat = await self.get_input_chat() if self.is_channel else None
-            msg = await self._client.get_messages(chat, ids=self.id)
+            msg = await self._client.get_messages(chat,
+ids=self.id)
         except ValueError:
             return  # We may not have the input chat/get message failed
         if not msg:
@@ -1182,14 +1400,22 @@ class Message(ChatGetter, SenderGetter, TLObject):
     async def _refetch_sender(self):
         await self._reload_message()
 
-    def _set_buttons(self, chat, bot):
+    def _set_buttons(self,
+chat,
+bot):
         """
         Helper methods to set the buttons given the input sender and chat.
         """
-        if self._client and isinstance(self.reply_markup, (
-                types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+        if self._client and isinstance(self.reply_markup,
+(
+                types.ReplyInlineMarkup,
+types.ReplyKeyboardMarkup)):
             self._buttons = [[
-                MessageButton(self._client, button, chat, bot, self.id)
+                MessageButton(self._client,
+button,
+chat,
+bot,
+self.id)
                 for button in row.buttons
             ] for row in self.reply_markup.rows]
             self._buttons_flat = [x for row in self._buttons for x in row]
@@ -1202,13 +1428,16 @@ class Message(ChatGetter, SenderGetter, TLObject):
         to know what bot we want to start. Raises ``ValueError`` if the bot
         cannot be found but is needed. Returns `None` if it's not needed.
         """
-        if self._client and not isinstance(self.reply_markup, (
-                types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+        if self._client and not isinstance(self.reply_markup,
+(
+                types.ReplyInlineMarkup,
+types.ReplyKeyboardMarkup)):
             return None
 
         for row in self.reply_markup.rows:
             for button in row.buttons:
-                if isinstance(button, types.KeyboardButtonSwitchInline):
+                if isinstance(button,
+types.KeyboardButtonSwitchInline):
                     # no via_bot_id means the bot sent the message itself (#1619)
                     if button.same_peer or not self.via_bot_id:
                         bot = self.input_sender
@@ -1222,15 +1451,19 @@ class Message(ChatGetter, SenderGetter, TLObject):
                         except AttributeError:
                             raise ValueError('No input sender') from None
 
-    def _document_by_attribute(self, kind, condition=None):
+    def _document_by_attribute(self,
+kind,
+condition=None):
         """
         Helper method to return the document only if it has an attribute
-        that's an instance of the given kind, and passes the condition.
+        that's an instance of the given kind,
+and passes the condition.
         """
         doc = self.document
         if doc:
             for attr in doc.attributes:
-                if isinstance(attr, kind):
+                if isinstance(attr,
+kind):
                     if not condition or condition(attr):
                         return doc
                     return None
