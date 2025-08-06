@@ -96,7 +96,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             The ID of the bot used to send this message
             through its inline mode (e.g. "via @like").
 
-        reply_to (:tl:`MessageReplyHeader`):
+        reply_to (:tl:`MessageReplyHeader` | :tl:`MessageReplyStoryHeader`):
             The original reply header if this message is replying to another.
 
         date (`datetime`):
@@ -171,15 +171,56 @@ class Message(ChatGetter, SenderGetter, TLObject):
     """
 
     # region Initialization
-
-    def __init__(
-            self,
-            id: int, peer_id: types.TypePeer,
-            date: Optional[datetime]=None, message: Optional[str]=None,
-            out: Optional[bool]=None, mentioned: Optional[bool]=None, media_unread: Optional[bool]=None, silent: Optional[bool]=None, post: Optional[bool]=None, from_scheduled: Optional[bool]=None, legacy: Optional[bool]=None, edit_hide: Optional[bool]=None, pinned: Optional[bool]=None, noforwards: Optional[bool]=None, invert_media: Optional[bool]=None, offline: Optional[bool]=None, video_processing_pending: Optional[bool]=None, from_id: Optional[types.TypePeer]=None, from_boosts_applied: Optional[int]=None, saved_peer_id: Optional[types.TypePeer]=None, fwd_from: Optional[types.TypeMessageFwdHeader]=None, via_bot_id: Optional[int]=None, via_business_bot_id: Optional[int]=None, reply_to: Optional[types.TypeMessageReplyHeader]=None, media: Optional[types.TypeMessageMedia]=None, reply_markup: Optional[types.TypeReplyMarkup]=None, entities: Optional[List[types.TypeMessageEntity]]=None, views: Optional[int]=None, forwards: Optional[int]=None, replies: Optional[types.TypeMessageReplies]=None, edit_date: Optional[datetime]=None, post_author: Optional[str]=None, grouped_id: Optional[int]=None, reactions: Optional[types.TypeMessageReactions]=None, restriction_reason: Optional[List[types.TypeRestrictionReason]]=None, ttl_period: Optional[int]=None, quick_reply_shortcut_id: Optional[int]=None, effect: Optional[int]=None, factcheck: Optional[types.TypeFactCheck]=None, report_delivery_until_date: Optional[datetime]=None, paid_message_stars: Optional[int]=None,
-            # Copied from MessageService.__init__ signature
-            action: Optional[types.TypeMessageAction]=None, reactions_are_possible: Optional[bool]=None
-    ):
+      
+  def __init__(
+          self,
+          id: int,
+          peer_id: types.TypePeer,
+          date: Optional[datetime] = None,
+          message: Optional[str] = None,
+          out: Optional[bool] = None,
+          mentioned: Optional[bool] = None,
+          media_unread: Optional[bool] = None,
+          silent: Optional[bool] = None,
+          post: Optional[bool] = None,
+          from_scheduled: Optional[bool] = None,
+          legacy: Optional[bool] = None,
+          edit_hide: Optional[bool] = None,
+          pinned: Optional[bool] = None,
+          noforwards: Optional[bool] = None,
+          invert_media: Optional[bool] = None,
+          offline: Optional[bool] = None,
+          video_processing_pending: Optional[bool] = None,
+          paid_suggested_post_stars: Optional[bool] = None,
+          paid_suggested_post_ton: Optional[bool] = None,
+          from_id: Optional[types.TypePeer] = None,
+          from_boosts_applied: Optional[int] = None,
+          saved_peer_id: Optional[types.TypePeer] = None,
+          fwd_from: Optional[types.TypeMessageFwdHeader] = None,
+          via_bot_id: Optional[int] = None,
+          via_business_bot_id: Optional[int] = None,
+          reply_to: Optional[types.TypeMessageReplyHeader] = None,
+          media: Optional[types.TypeMessageMedia] = None,
+          reply_markup: Optional[types.TypeReplyMarkup] = None,
+          entities: Optional[List[types.TypeMessageEntity]] = None,
+          views: Optional[int] = None,
+          forwards: Optional[int] = None,
+          replies: Optional[types.TypeMessageReplies] = None,
+          edit_date: Optional[datetime] = None,
+          post_author: Optional[str] = None,
+          grouped_id: Optional[int] = None,
+          reactions: Optional[types.TypeMessageReactions] = None,
+          restriction_reason: Optional[List[types.TypeRestrictionReason]] = None,
+          ttl_period: Optional[int] = None,
+          quick_reply_shortcut_id: Optional[int] = None,
+          effect: Optional[int] = None,
+          factcheck: Optional[types.TypeFactCheck] = None,
+          report_delivery_until_date: Optional[datetime] = None,
+          paid_message_stars: Optional[int] = None,
+          suggested_post: Optional[types.TypeSuggestedPost] = None,
+          action: Optional[types.TypeMessageAction] = None,
+          reactions_are_possible: Optional[bool] = None
+  ):
         # Copied from Message.__init__ body
         self.id = id
         self.peer_id = peer_id
@@ -198,6 +239,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.invert_media = invert_media
         self.offline = offline
         self.video_processing_pending = video_processing_pending
+        self.paid_suggested_post_stars = paid_suggested_post_stars
+        self.paid_suggested_post_ton = paid_suggested_post_ton
         self.from_id = from_id
         self.from_boosts_applied = from_boosts_applied
         self.saved_peer_id = saved_peer_id
@@ -222,6 +265,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.factcheck = factcheck
         self.report_delivery_until_date = report_delivery_until_date
         self.paid_message_stars = paid_message_stars
+        self.suggested_post = suggested_post
         # Copied from MessageService.__init__ body
         self.action = action
         self.reactions_are_possible = reactions_are_possible
@@ -378,10 +422,11 @@ class Message(ChatGetter, SenderGetter, TLObject):
     @property
     def is_reply(self):
         """
-        `True` if the message is a reply to some other message.
+        `True` if the message is a reply to some other message or story.
 
-        Remember that you can access the ID of the message
-        this one is replying to through `reply_to.reply_to_msg_id`,
+        Remember that if the replied-to is a message, 
+        you can access the ID of the message this one is 
+        replying to through `reply_to.reply_to_msg_id`,
         and the `Message` object with `get_reply_message()`.
         """
         return self.reply_to is not None
@@ -670,7 +715,11 @@ class Message(ChatGetter, SenderGetter, TLObject):
         Returns the message ID this message is replying to, if any.
         This is equivalent to accessing ``.reply_to.reply_to_msg_id``.
         """
-        return self.reply_to.reply_to_msg_id if self.reply_to else None
+        return (
+            self.reply_to.reply_to_msg_id
+            if isinstance(self.reply_to, types.MessageReplyHeader)
+            else None
+        )
 
     @property
     def to_id(self):
@@ -736,7 +785,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         The result will be cached after its first use.
         """
         if self._reply_message is None and self._client:
-            if not self.reply_to:
+            if not isinstance(self.reply_to, types.MessageReplyHeader):
                 return None
 
             # Bots cannot access other bots' messages by their ID.

@@ -1,4 +1,5 @@
 import abc
+import inspect
 import re
 import asyncio
 import collections
@@ -9,7 +10,7 @@ import typing
 import datetime
 import pathlib
 
-from .. import version, helpers, __name__ as __base_name__
+from .. import utils, version, helpers, __name__ as __base_name__
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
@@ -305,16 +306,6 @@ class TelegramBaseClient(abc.ABC):
                 'The given session must be a str or a Session instance.'
             )
 
-        # ':' in session.server_address is True if it's an IPv6 address
-        if (not session.server_address or
-                (':' in session.server_address) != use_ipv6):
-            session.set_dc(
-                DEFAULT_DC_ID,
-                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
-                DEFAULT_PORT
-            )
-            session.save()
-
         self.flood_sleep_threshold = flood_sleep_threshold
 
         # TODO Use AsyncClassWrapper(session)
@@ -546,6 +537,18 @@ class TelegramBaseClient(abc.ABC):
         elif self._loop != helpers.get_running_loop():
             raise RuntimeError('The asyncio event loop must not change after connection (see the FAQ for details)')
 
+        # ':' in session.server_address is True if it's an IPv6 address
+        if (not self.session.server_address or
+                (':' in self.session.server_address) != self._use_ipv6):
+            await utils.maybe_async(
+                self.session.set_dc(
+                    DEFAULT_DC_ID,
+                    DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
+                    DEFAULT_PORT
+                )
+            )
+            await utils.maybe_async(self.session.save())
+
         if not await self._sender.connect(self._connection(
             self.session.server_address,
             self.session.port,
@@ -558,12 +561,13 @@ class TelegramBaseClient(abc.ABC):
             return
 
         self.session.auth_key = self._sender.auth_key
-        self.session.save()
+        await utils.maybe_async(self.session.save())
 
         try:
             # See comment when saving entities to understand this hack
-            self_id = self.session.get_input_entity(0).access_hash
-            self_user = self.session.get_input_entity(self_id)
+            self_entity = await utils.maybe_async(self.session.get_input_entity(0))
+            self_id = self_entity.access_hash
+            self_user = await utils.maybe_async(self.session.get_input_entity(self_id))
             self._mb_entity_cache.set_self_user(self_id, None, self_user.access_hash)
         except ValueError:
             pass
@@ -572,7 +576,8 @@ class TelegramBaseClient(abc.ABC):
             ss = SessionState(0, 0, False, 0, 0, 0, 0, None)
             cs = []
 
-            for entity_id, state in self.session.get_update_states():
+            update_states = await utils.maybe_async(self.session.get_update_states())
+            for entity_id, state in update_states:
                 if entity_id == 0:
                     # TODO current session doesn't store self-user info but adding that is breaking on downstream session impls
                     ss = SessionState(0, 0, False, state.pts, state.qts, int(state.date.timestamp()), state.seq, None)
@@ -582,7 +587,7 @@ class TelegramBaseClient(abc.ABC):
             self._message_box.load(ss, cs)
             for state in cs:
                 try:
-                    entity = self.session.get_input_entity(state.channel_id)
+                    entity = await utils.maybe_async(self.session.get_input_entity(state.channel_id))
                 except ValueError:
                     self._log[__name__].warning(
                         'No access_hash in cache for channel %s, will not catch up', state.channel_id)
@@ -686,19 +691,27 @@ class TelegramBaseClient(abc.ABC):
             else:
                 connection._proxy = proxy
 
-    def _save_states_and_entities(self: 'TelegramClient'):
+    async def _save_states_and_entities(self: 'TelegramClient'):
         # As a hack to not need to change the session files, save ourselves with ``id=0`` and ``access_hash`` of our ``id``.
         # This way it is possible to determine our own ID by querying for 0. However, whether we're a bot is not saved.
         # Piggy-back on an arbitrary TL type with users and chats so the session can understand to read the entities.
         # It doesn't matter if we put users in the list of chats.
         if self._mb_entity_cache.self_id:
-            self.session.process_entities(types.contacts.ResolvedPeer(None, [types.InputPeerUser(0, self._mb_entity_cache.self_id)], []))
+            await utils.maybe_async(
+                self.session.process_entities(
+                    types.contacts.ResolvedPeer(None, [types.InputPeerUser(0, self._mb_entity_cache.self_id)], [])
+                )
+            )
 
         ss, cs = self._message_box.session_state()
-        self.session.set_update_state(0, types.updates.State(**ss, unread_count=0))
+        await utils.maybe_async(self.session.set_update_state(0, types.updates.State(**ss, unread_count=0)))
         now = datetime.datetime.now()  # any datetime works; channels don't need it
         for channel_id, pts in cs.items():
-            self.session.set_update_state(channel_id, types.updates.State(pts, 0, now, 0, unread_count=0))
+            await utils.maybe_async(
+                self.session.set_update_state(
+                    channel_id, types.updates.State(pts, 0, now, 0, unread_count=0)
+                )
+            )
 
     async def _disconnect_coro(self: 'TelegramClient'):
         if self.session is None:
@@ -730,9 +743,9 @@ class TelegramBaseClient(abc.ABC):
             await asyncio.wait(self._event_handler_tasks)
             self._event_handler_tasks.clear()
 
-        self._save_states_and_entities()
+        await self._save_states_and_entities()
 
-        self.session.close()
+        await utils.maybe_async(self.session.close())
 
     async def _disconnect(self: 'TelegramClient'):
         """
@@ -753,22 +766,22 @@ class TelegramBaseClient(abc.ABC):
         self._log[__name__].info('Reconnecting to new data center %s', new_dc)
         dc = await self._get_dc(new_dc)
 
-        self.session.set_dc(dc.id, dc.ip_address, dc.port)
+        await utils.maybe_async(self.session.set_dc(dc.id, dc.ip_address, dc.port))
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
         self._sender.auth_key.key = None
         self.session.auth_key = None
-        self.session.save()
+        await utils.maybe_async(self.session.save())
         await self._disconnect()
         return await self.connect()
 
-    def _auth_key_callback(self: 'TelegramClient', auth_key):
+    async def _auth_key_callback(self: 'TelegramClient', auth_key):
         """
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
         """
         self.session.auth_key = auth_key
-        self.session.save()
+        await utils.maybe_async(self.session.save())
 
     # endregion
 
@@ -894,8 +907,8 @@ class TelegramBaseClient(abc.ABC):
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = self.session.clone()
-            session.set_dc(dc.id, dc.ip_address, dc.port)
+            session = await utils.maybe_async(self.session.clone())
+            await utils.maybe_async(session.set_dc(dc.id, dc.ip_address, dc.port))
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')
