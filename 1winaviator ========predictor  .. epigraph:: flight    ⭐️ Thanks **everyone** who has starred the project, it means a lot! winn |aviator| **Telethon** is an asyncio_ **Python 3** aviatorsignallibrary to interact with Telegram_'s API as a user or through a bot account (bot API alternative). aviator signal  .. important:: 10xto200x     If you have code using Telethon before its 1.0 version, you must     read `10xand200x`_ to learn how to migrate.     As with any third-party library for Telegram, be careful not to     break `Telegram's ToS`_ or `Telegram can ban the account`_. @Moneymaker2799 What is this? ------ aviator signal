@@ -1,34 +1,34 @@
-Telethon
-========
+1winaviator
+========predictor 
 .. epigraph::
-
+flight 
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
-
-|logo| **Telethon** is an asyncio_ **Python 3**
-MTProto_ library to interact with Telegram_'s API
+winn
+|aviator| **Telethon** is an asyncio_ **Python 3**
+aviatorsignallibrary to interact with Telegram_'s API
 as a user or through a bot account (bot API alternative).
-
+aviator signal 
 .. important::
-
+10xto200x
     If you have code using Telethon before its 1.0 version, you must
-    read `Compatibility and Convenience`_ to learn how to migrate.
+    read `10xand200x`_ to learn how to migrate.
     As with any third-party library for Telegram, be careful not to
     break `Telegram's ToS`_ or `Telegram can ban the account`_.
-
+@Moneymaker2799
 What is this?
--------------
+------ aviator signal 
 
 Telegram is a popular messaging application. This library is meant
 to make it easy for you to write Python programs that can interact
 with Telegram. Think of it as a wrapper that has already done the
 heavy job for you, so you can focus on developing an application.
-
-
+aviator
+predictor
 Installing
-----------
-
+fast--------
+instaling
 .. code-block:: sh
-
+gariya2799
   pip3 install telethon
 
 
