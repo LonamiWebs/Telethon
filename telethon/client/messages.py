@@ -346,7 +346,7 @@ class MessageMethods:
     def iter_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            limit: float = None,
+            limit: int = None,
             *,
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
