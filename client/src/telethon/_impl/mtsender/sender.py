@@ -310,10 +310,8 @@ class Sender:
 
                 delay = self._reconnection_policy.should_retry(attempts)
 
-                if delay:
-                    if delay is not True:
-                        await asyncio.sleep(delay)
-                    continue
+                if delay is not None:
+                    await asyncio.sleep(delay)
                 else:
                     self._logger.error(
                         f"auto-reconnect failed {attempts} time(s); giving up"

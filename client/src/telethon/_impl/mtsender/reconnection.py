@@ -10,16 +10,15 @@ class ReconnectionPolicy(ABC):
     """
 
     @abstractmethod
-    def should_retry(self, attempts: int) -> bool | float:
+    def should_retry(self, attempts: int) -> float | None:
         """
         Determines whether the client should retry the connection attempt.
         """
-        pass
 
 
 class NoReconnect(ReconnectionPolicy):
-    def should_retry(self, attempts: int) -> bool:
-        return False
+    def should_retry(self, attempts: int) -> float | None:
+        return None
 
 
 class FixedReconnect(ReconnectionPolicy):
@@ -29,8 +28,8 @@ class FixedReconnect(ReconnectionPolicy):
         self.max_attempts = attempts
         self.delay = delay
 
-    def should_retry(self, attempts: int) -> bool | float:
+    def should_retry(self, attempts: int) -> float | None:
         if attempts < self.max_attempts:
             return self.delay
 
-        return False
+        return None
