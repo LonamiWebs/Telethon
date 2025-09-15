@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 
 class ReconnectionPolicy(ABC):
@@ -10,14 +11,14 @@ class ReconnectionPolicy(ABC):
     """
 
     @abstractmethod
-    def should_retry(self, attempts: int) -> float | None:
+    def should_retry(self, attempts: int) -> Optional[float]:
         """
         Determines whether the client should retry the connection attempt.
         """
 
 
 class NoReconnect(ReconnectionPolicy):
-    def should_retry(self, attempts: int) -> float | None:
+    def should_retry(self, attempts: int) -> Optional[float]:
         return None
 
 
@@ -28,7 +29,7 @@ class FixedReconnect(ReconnectionPolicy):
         self.max_attempts = attempts
         self.delay = delay
 
-    def should_retry(self, attempts: int) -> float | None:
+    def should_retry(self, attempts: int) -> Optional[float]:
         if attempts < self.max_attempts:
             return self.delay
 

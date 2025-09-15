@@ -166,7 +166,7 @@ class Sender:
     addr: str
     mtp: Mtp
     _connector: Connector
-    _reconnection_policy: ReconnectionPolicy | None
+    _reconnection_policy: Optional[ReconnectionPolicy]
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -190,7 +190,7 @@ class Sender:
         addr: str,
         *,
         connector: Connector,
-        reconnection_policy: ReconnectionPolicy | None = None,
+        reconnection_policy: Optional[ReconnectionPolicy] = None,
         base_logger: logging.Logger,
     ) -> Self:
         ip, port = addr.split(":")
@@ -570,7 +570,7 @@ async def connect(
     auth_key: Optional[bytes],
     base_logger: logging.Logger,
     connector: Connector,
-    reconnection_policy: ReconnectionPolicy | None = None,
+    reconnection_policy: Optional[ReconnectionPolicy] = None,
 ) -> Sender:
     if auth_key is None:
         sender = await Sender.connect(
