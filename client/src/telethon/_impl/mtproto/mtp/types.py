@@ -96,6 +96,20 @@ class RpcError(ValueError):
         """
         return self._value
 
+    @property
+    def caused_by(self) -> Optional[int]:
+        """
+        Constructor identifier of the request that caused the error, if known.
+        """
+        return self._caused_by
+
+    @caused_by.setter
+    def caused_by(self, value: int) -> None:
+        """
+        Constructor identifier of the request that caused the error, if known.
+        """
+        self._caused_by = value
+
     @classmethod
     def _from_mtproto_error(cls, error: GeneratedRpcError) -> Self:
         if m := re.search(r"-?\d+", error.error_message):
@@ -174,6 +188,14 @@ class BadMessageError(ValueError):
     @property
     def fatal(self) -> bool:
         return self._code not in NON_FATAL_MSG_IDS
+
+    @property
+    def caused_by(self) -> Optional[int]:
+        return self._caused_by
+
+    @caused_by.setter
+    def caused_by(self, value: int) -> None:
+        self._caused_by = value
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):

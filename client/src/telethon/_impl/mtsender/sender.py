@@ -181,6 +181,14 @@ class Sender:
     _read_buffer: bytearray
     _write_drain_pending: bool
 
+    @property
+    def mtp(self) -> Mtp:
+        return self._mtp
+
+    @mtp.setter
+    def mtp(self, value: Mtp) -> None:
+        self._mtp = value
+
     @classmethod
     async def connect(
         cls,
@@ -412,20 +420,21 @@ class Sender:
         results = self._mtp.deserialize(self._mtp_buffer)
 
         for result in results:
-            if isinstance(result, Update):
-                self._process_update(result.body)
-            elif isinstance(result, RpcResult):
-                self._process_result(result)
-            elif isinstance(result, RpcError):
-                self._process_error(result)
-            elif isinstance(result, BadMessageError):
-                self._process_bad_message(result)
-            elif isinstance(result, DeserializationFailure):
-                self._process_deserialize_error(result)
-            else:
-                raise RuntimeError(
-                    f"unexpected result type {type(result).__name__}: {result}"
-                )
+            match result:
+                case Update(body=body):
+                    self._process_update(body)
+                case RpcResult():
+                    self._process_result(result)
+                case RpcError():
+                    self._process_error(result)
+                case BadMessageError():
+                    self._process_bad_message(result)
+                case DeserializationFailure():
+                    self._process_deserialize_error(result)
+                case _:
+                    raise RuntimeError(
+                        f"unexpected result type {type(result).__name__}: {result}"
+                    )
 
     def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
@@ -484,7 +493,7 @@ class Sender:
         req = self._pop_request(result.msg_id)
 
         if req:
-            result._caused_by = struct.unpack_from("<I", req.body)[0]
+            result.caused_by = struct.unpack_from("<I", req.body)[0]
             req.result.set_exception(result)
         else:
             self._logger.warning(
@@ -511,7 +520,7 @@ class Sender:
                     result.msg_id,
                     result,
                 )
-                result._caused_by = struct.unpack_from("<I", req.body)[0]
+                result.caused_by = struct.unpack_from("<I", req.body)[0]
                 req.result.set_exception(result)
 
     def _process_deserialize_error(self, failure: DeserializationFailure):
@@ -600,5 +609,5 @@ async def generate_auth_key(sender: Sender) -> Sender:
     time_offset = finished.time_offset
     first_salt = finished.first_salt
 
-    sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
+    sender.mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
     return sender
