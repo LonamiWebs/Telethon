@@ -166,7 +166,7 @@ class Sender:
     addr: str
     mtp: Mtp
     _connector: Connector
-    _reconnection_policy: ReconnectionPolicy
+    _reconnection_policy: ReconnectionPolicy | None
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -190,7 +190,7 @@ class Sender:
         addr: str,
         *,
         connector: Connector,
-        reconnection_policy: ReconnectionPolicy,
+        reconnection_policy: ReconnectionPolicy | None = None,
         base_logger: logging.Logger,
     ) -> Self:
         ip, port = addr.split(":")
@@ -304,6 +304,10 @@ class Sender:
                 )
                 return
             except Exception as e:
+                if self._reconnection_policy is None:
+                    self._logger.info("auto-reconnect disabled, not retrying")
+                    raise
+
                 attempts += 1
                 self._logger.warning(f"auto-reconnect failed {attempts} time(s): {e!r}")
                 await asyncio.sleep(1)
@@ -387,7 +391,9 @@ class Sender:
         self._read_buffer.clear()
         self._mtp_buffer.clear()
 
-        if isinstance(error, struct.error) and self._reconnection_policy.should_retry(
+        if self._reconnection_policy is None:
+            self._logger.info("auto-reconnect disabled, not retrying")
+        elif isinstance(error, struct.error) and self._reconnection_policy.should_retry(
             0
         ):
             self._logger.info(f"read error occurred: {error}")
@@ -564,7 +570,7 @@ async def connect(
     auth_key: Optional[bytes],
     base_logger: logging.Logger,
     connector: Connector,
-    reconnection_policy: ReconnectionPolicy,
+    reconnection_policy: ReconnectionPolicy | None = None,
 ) -> Sender:
     if auth_key is None:
         sender = await Sender.connect(

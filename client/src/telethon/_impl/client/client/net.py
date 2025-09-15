@@ -46,7 +46,7 @@ class Config:
     api_hash: str
     base_logger: logging.Logger
     connector: Connector
-    reconnection_policy: ReconnectionPolicy
+    reconnection_policy: Optional[ReconnectionPolicy] = None
     device_model: str = field(default_factory=default_device_model)
     system_version: str = field(default_factory=default_system_version)
     app_version: str = __version__

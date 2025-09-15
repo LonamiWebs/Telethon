@@ -10,7 +10,7 @@ from typing_extensions import Self
 
 from ....version import __version__ as default_version
 from ...mtsender import Connector, Sender
-from ...mtsender.reconnection import NoReconnect, ReconnectionPolicy
+from ...mtsender.reconnection import ReconnectionPolicy
 from ...session import (
     ChannelRef,
     ChatHashCache,
@@ -248,7 +248,7 @@ class Client:
             update_queue_limit=update_queue_limit,
             base_logger=base_logger,
             connector=connector or (lambda ip, port: asyncio.open_connection(ip, port)),
-            reconnection_policy=reconnection_policy or NoReconnect(),
+            reconnection_policy=reconnection_policy,
         )
 
         self._session = Session()
