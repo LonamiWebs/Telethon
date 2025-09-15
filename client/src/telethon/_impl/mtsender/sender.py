@@ -164,6 +164,7 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
+    mtp: Mtp
     _connector: Connector
     _reconnection_policy: ReconnectionPolicy
     _logger: logging.Logger
@@ -173,21 +174,12 @@ class Sender:
     _writing: bool
     _step_done: Event
     _transport: Transport
-    _mtp: Mtp
     _mtp_buffer: bytearray
     _updates: list[Updates]
     _requests: list[Request[object]]
     _next_ping: float
     _read_buffer: bytearray
     _write_drain_pending: bool
-
-    @property
-    def mtp(self) -> Mtp:
-        return self._mtp
-
-    @mtp.setter
-    def mtp(self, value: Mtp) -> None:
-        self._mtp = value
 
     @classmethod
     async def connect(
@@ -207,6 +199,7 @@ class Sender:
         return cls(
             dc_id=dc_id,
             addr=addr,
+            mtp=mtp,
             _connector=connector,
             _reconnection_policy=reconnection_policy,
             _logger=base_logger.getChild("mtsender"),
@@ -216,7 +209,6 @@ class Sender:
             _writing=False,
             _step_done=Event(),
             _transport=transport,
-            _mtp=mtp,
             _mtp_buffer=bytearray(),
             _updates=[],
             _requests=[],
@@ -332,12 +324,12 @@ class Sender:
 
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
-                if (msg_id := self._mtp.push(request.body)) is not None:
+                if (msg_id := self.mtp.push(request.body)) is not None:
                     request.state = Serialized(msg_id)
                 else:
                     break
 
-        result = self._mtp.finalize()
+        result = self.mtp.finalize()
         if result:
             container_msg_id, mtp_buffer = result
             for request in self._requests:
@@ -385,7 +377,7 @@ class Sender:
     async def _on_error(self, error: Exception) -> None:
         self._logger.info(f"handling error: {error}")
         self._transport.reset()
-        self._mtp.reset()
+        self.mtp.reset()
         self._logger.info(
             "resetting sender state from read_buffer {}, mtp_buffer {}".format(
                 len(self._read_buffer),
@@ -417,7 +409,7 @@ class Sender:
         raise error
 
     def _process_mtp_buffer(self) -> None:
-        results = self._mtp.deserialize(self._mtp_buffer)
+        results = self.mtp.deserialize(self._mtp_buffer)
 
         for result in results:
             match result:
@@ -558,8 +550,8 @@ class Sender:
 
     @property
     def auth_key(self) -> Optional[bytes]:
-        if isinstance(self._mtp, Encrypted):
-            return self._mtp.auth_key
+        if isinstance(self.mtp, Encrypted):
+            return self.mtp.auth_key
         else:
             return None
 
