@@ -418,21 +418,20 @@ class Sender:
         results = self.mtp.deserialize(self._mtp_buffer)
 
         for result in results:
-            match result:
-                case Update(body=body):
-                    self._process_update(body)
-                case RpcResult():
-                    self._process_result(result)
-                case RpcError():
-                    self._process_error(result)
-                case BadMessageError():
-                    self._process_bad_message(result)
-                case DeserializationFailure():
-                    self._process_deserialize_error(result)
-                case _:
-                    raise RuntimeError(
-                        f"unexpected result type {type(result).__name__}: {result}"
-                    )
+            if isinstance(result, Update):
+                self._process_update(result.body)
+            elif isinstance(result, RpcResult):
+                self._process_result(result)
+            elif isinstance(result, RpcError):
+                self._process_error(result)
+            elif isinstance(result, BadMessageError):
+                self._process_bad_message(result)
+            elif isinstance(result, DeserializationFailure):
+                self._process_deserialize_error(result)
+            else:
+                raise RuntimeError(
+                    f"unexpected result type {type(result).__name__}: {result}"
+                )
 
     def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
