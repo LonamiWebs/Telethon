@@ -15,13 +15,37 @@ class Transport(ABC):
     def unpack(self, input: bytes | bytearray | memoryview, output: bytearray) -> int:
         pass
 
+    @abstractmethod
+    def reset(self):
+        pass
+
 
 class MissingBytesError(ValueError):
     def __init__(self, *, expected: int, got: int) -> None:
         super().__init__(f"missing bytes, expected: {expected}, got: {got}")
 
 
+class BadLenError(ValueError):
+    def __init__(self, *, got: int) -> None:
+        super().__init__(f"bad len (got {got})")
+
+
+class BadSeqError(ValueError):
+    def __init__(self, *, expected: int, got: int) -> None:
+        super().__init__(f"bad seq (expected {expected}, got {got})")
+
+
+class BadCrcError(ValueError):
+    def __init__(self, *, expected: int, got: int) -> None:
+        super().__init__(f"bad crc (expected {expected}, got {got})")
+
+
 class BadStatusError(ValueError):
     def __init__(self, *, status: int) -> None:
-        super().__init__(f"transport reported bad status: {status}")
+        super().__init__(f"bad status (negative length -{status})")
         self.status = status
+
+
+TransportError = (
+    MissingBytesError | BadLenError | BadSeqError | BadCrcError | BadStatusError
+)

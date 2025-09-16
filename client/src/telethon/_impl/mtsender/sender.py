@@ -24,12 +24,14 @@ from ..mtproto import (
     Update,
     authentication,
 )
+from ..mtproto.mtp.types import DeserializationFailure
 from ..tl import Request as RemoteCall
 from ..tl.abcs import Updates
 from ..tl.core import Serializable
 from ..tl.mtproto.functions import ping_delay_disconnect
-from ..tl.types import UpdateDeleteMessages, UpdateShort
+from ..tl.types import UpdateDeleteMessages, UpdateShort, UpdatesTooLong
 from ..tl.types.messages import AffectedFoundMessages, AffectedHistory, AffectedMessages
+from .reconnection import ReconnectionPolicy
 
 MAXIMUM_DATA = (1024 * 1024) + (8 * 1024)
 
@@ -162,6 +164,9 @@ class Request(Generic[Return]):
 class Sender:
     dc_id: int
     addr: str
+    mtp: Mtp
+    _connector: Connector
+    _reconnection_policy: Optional[ReconnectionPolicy]
     _logger: logging.Logger
     _reader: AsyncReader
     _writer: AsyncWriter
@@ -169,12 +174,12 @@ class Sender:
     _writing: bool
     _step_done: Event
     _transport: Transport
-    _mtp: Mtp
     _mtp_buffer: bytearray
     _updates: list[Updates]
     _requests: list[Request[object]]
     _next_ping: float
     _read_buffer: bytearray
+    _write_drain_pending: bool
 
     @classmethod
     async def connect(
@@ -185,6 +190,7 @@ class Sender:
         addr: str,
         *,
         connector: Connector,
+        reconnection_policy: Optional[ReconnectionPolicy] = None,
         base_logger: logging.Logger,
     ) -> Self:
         ip, port = addr.split(":")
@@ -193,6 +199,9 @@ class Sender:
         return cls(
             dc_id=dc_id,
             addr=addr,
+            mtp=mtp,
+            _connector=connector,
+            _reconnection_policy=reconnection_policy,
             _logger=base_logger.getChild("mtsender"),
             _reader=reader,
             _writer=writer,
@@ -200,12 +209,12 @@ class Sender:
             _writing=False,
             _step_done=Event(),
             _transport=transport,
-            _mtp=mtp,
             _mtp_buffer=bytearray(),
             _updates=[],
             _requests=[],
             _next_ping=asyncio.get_running_loop().time() + PING_DELAY,
             _read_buffer=bytearray(),
+            _write_drain_pending=False,
         )
 
     async def disconnect(self) -> None:
@@ -236,15 +245,21 @@ class Sender:
             if rx.done():
                 return rx.result()
 
-    async def step(self) -> None:
+    async def step(self):
+        try:
+            await self._step()
+        except Exception as error:
+            await self._on_error(error)
+
+    async def _step(self) -> None:
         if not self._writing:
             self._writing = True
-            await self._do_write()
+            await self._do_send()
             self._writing = False
 
         if not self._reading:
             self._reading = True
-            await self._do_read()
+            await self._do_recv()
             self._reading = False
         else:
             await self._step_done.wait()
@@ -254,7 +269,7 @@ class Sender:
         self._updates.clear()
         return updates
 
-    async def _do_read(self) -> None:
+    async def _do_recv(self) -> None:
         self._step_done.clear()
 
         timeout = self._next_ping - asyncio.get_running_loop().time()
@@ -266,32 +281,69 @@ class Sender:
         else:
             self._on_net_read(recv_data)
         finally:
-            self._try_timeout_ping()
+            self._try_ping_timeout()
             self._step_done.set()
 
-    async def _do_write(self) -> None:
+    async def _do_send(self) -> None:
+        self._try_fill_write()
+
+        if self._write_drain_pending:
+            await self._writer.drain()
+            self._on_net_write()
+
+    async def _try_connect(self):
+        attempts = 0
+
+        ip, port = self.addr.split(":")
+
+        while True:
+            try:
+                self._reader, self._writer = await self._connector(ip, int(port))
+                self._logger.info(
+                    f"auto-reconnect success after {attempts} failed attempt(s)"
+                )
+                return
+            except Exception as e:
+                if self._reconnection_policy is None:
+                    self._logger.info("auto-reconnect disabled, not retrying")
+                    raise
+
+                attempts += 1
+                self._logger.warning(f"auto-reconnect failed {attempts} time(s): {e!r}")
+                await asyncio.sleep(1)
+
+                delay = self._reconnection_policy.should_retry(attempts)
+
+                if delay is not None:
+                    await asyncio.sleep(delay)
+                else:
+                    self._logger.error(
+                        f"auto-reconnect failed {attempts} time(s); giving up"
+                    )
+                    raise
+
+    def _try_fill_write(self) -> None:
         if not self._requests:
             return
 
         for request in self._requests:
             if isinstance(request.state, NotSerialized):
-                if (msg_id := self._mtp.push(request.body)) is not None:
+                if (msg_id := self.mtp.push(request.body)) is not None:
                     request.state = Serialized(msg_id)
                 else:
                     break
 
-        result = self._mtp.finalize()
+        result = self.mtp.finalize()
         if result:
             container_msg_id, mtp_buffer = result
-
-            self._transport.pack(mtp_buffer, self._writer.write)
-            await self._writer.drain()
-
             for request in self._requests:
                 if isinstance(request.state, Serialized):
-                    request.state = Sent(request.state.msg_id, container_msg_id)
+                    request.state.container_msg_id = container_msg_id
 
-    def _try_timeout_ping(self) -> None:
+            self._transport.pack(mtp_buffer, self._writer.write)
+            self._write_drain_pending = True
+
+    def _try_ping_timeout(self) -> None:
         current_time = asyncio.get_running_loop().time()
 
         if current_time >= self._next_ping:
@@ -321,8 +373,49 @@ class Sender:
                 del self._read_buffer[:n]
                 self._process_mtp_buffer()
 
+    def _on_net_write(self) -> None:
+        for req in self._requests:
+            if isinstance(req.state, Serialized):
+                req.state = Sent(req.state.msg_id, req.state.container_msg_id)
+
+    async def _on_error(self, error: Exception) -> None:
+        self._logger.info(f"handling error: {error}")
+        self._transport.reset()
+        self.mtp.reset()
+        self._logger.info(
+            "resetting sender state from read_buffer {}, mtp_buffer {}".format(
+                len(self._read_buffer),
+                len(self._mtp_buffer),
+            )
+        )
+        self._read_buffer.clear()
+        self._mtp_buffer.clear()
+
+        if self._reconnection_policy is None:
+            self._logger.info("auto-reconnect disabled, not retrying")
+        elif isinstance(error, struct.error) and self._reconnection_policy.should_retry(
+            0
+        ):
+            self._logger.info(f"read error occurred: {error}")
+            await self._try_connect()
+
+            for req in self._requests:
+                req.state = NotSerialized()
+
+            self._updates.append(UpdatesTooLong())
+            return
+
+        self._logger.warning(
+            f"marking all {len(self._requests)} request(s) as failed: {error}"
+        )
+
+        for req in self._requests:
+            req.result.set_exception(error)
+
+        raise error
+
     def _process_mtp_buffer(self) -> None:
-        results = self._mtp.deserialize(self._mtp_buffer)
+        results = self.mtp.deserialize(self._mtp_buffer)
 
         for result in results:
             if isinstance(result, Update):
@@ -331,8 +424,14 @@ class Sender:
                 self._process_result(result)
             elif isinstance(result, RpcError):
                 self._process_error(result)
-            else:
+            elif isinstance(result, BadMessageError):
                 self._process_bad_message(result)
+            elif isinstance(result, DeserializationFailure):
+                self._process_deserialize_error(result)
+            else:
+                raise RuntimeError(
+                    f"unexpected result type {type(result).__name__}: {result}"
+                )
 
     def _process_update(self, update: bytes | bytearray | memoryview) -> None:
         try:
@@ -391,7 +490,7 @@ class Sender:
         req = self._pop_request(result.msg_id)
 
         if req:
-            result._caused_by = struct.unpack_from("<I", req.body)[0]
+            result.caused_by = struct.unpack_from("<I", req.body)[0]
             req.result.set_exception(result)
         else:
             self._logger.warning(
@@ -418,8 +517,19 @@ class Sender:
                     result.msg_id,
                     result,
                 )
-                result._caused_by = struct.unpack_from("<I", req.body)[0]
+                result.caused_by = struct.unpack_from("<I", req.body)[0]
                 req.result.set_exception(result)
+
+    def _process_deserialize_error(self, failure: DeserializationFailure):
+        req = self._pop_request(failure.msg_id)
+
+        if req:
+            self._logger.debug(f"got deserialization failure {failure.error}")
+            req.result.set_exception(failure.error)
+        else:
+            self._logger.info(
+                f"got deserialization failure {failure.error} but no such request is saved"
+            )
 
     def _pop_request(self, msg_id: MsgId) -> Optional[Request[object]]:
         for i, req in enumerate(self._requests):
@@ -445,8 +555,8 @@ class Sender:
 
     @property
     def auth_key(self) -> Optional[bytes]:
-        if isinstance(self._mtp, Encrypted):
-            return self._mtp.auth_key
+        if isinstance(self.mtp, Encrypted):
+            return self.mtp.auth_key
         else:
             return None
 
@@ -459,6 +569,7 @@ async def connect(
     auth_key: Optional[bytes],
     base_logger: logging.Logger,
     connector: Connector,
+    reconnection_policy: Optional[ReconnectionPolicy] = None,
 ) -> Sender:
     if auth_key is None:
         sender = await Sender.connect(
@@ -467,6 +578,7 @@ async def connect(
             dc_id,
             addr,
             connector=connector,
+            reconnection_policy=reconnection_policy,
             base_logger=base_logger,
         )
         return await generate_auth_key(sender)
@@ -477,6 +589,7 @@ async def connect(
             dc_id,
             addr,
             connector=connector,
+            reconnection_policy=reconnection_policy,
             base_logger=base_logger,
         )
 
@@ -493,5 +606,5 @@ async def generate_auth_key(sender: Sender) -> Sender:
     time_offset = finished.time_offset
     first_salt = finished.first_salt
 
-    sender._mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
+    sender.mtp = Encrypted(auth_key, time_offset=time_offset, first_salt=first_salt)
     return sender

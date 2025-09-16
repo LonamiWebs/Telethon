@@ -1,3 +1,4 @@
+import logging
 import struct
 
 from .abcs import BadStatusError, MissingBytesError, OutFn, Transport
@@ -60,3 +61,7 @@ class Abridged(Transport):
 
         output += memoryview(input)[header_len : header_len + length]
         return header_len + length
+
+    def reset(self):
+        logging.info("resetting sending of header in abridged transport")
+        self._init = False

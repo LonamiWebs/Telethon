@@ -5,6 +5,7 @@ from pytest import LogCaptureFixture, mark
 
 from telethon._impl.mtproto import Full
 from telethon._impl.mtsender import connect
+from telethon._impl.mtsender.reconnection import NoReconnect
 from telethon._impl.tl import LAYER, abcs, functions, types
 
 TELEGRAM_TEST_DC = 2, "149.154.167.40:443"
@@ -21,6 +22,8 @@ async def test_invoke_encrypted_method(caplog: LogCaptureFixture) -> None:
     def timeout() -> float:
         return deadline - asyncio.get_running_loop().time()
 
+    reconnection_policy = NoReconnect()
+
     sender = await asyncio.wait_for(
         connect(
             Full(),
@@ -28,6 +31,7 @@ async def test_invoke_encrypted_method(caplog: LogCaptureFixture) -> None:
             auth_key=None,
             base_logger=logging.getLogger(__file__),
             connector=lambda ip, port: asyncio.open_connection(ip, port),
+            reconnection_policy=reconnection_policy,
         ),
         timeout(),
     )

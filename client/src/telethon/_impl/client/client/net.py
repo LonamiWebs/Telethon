@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Optional, TypeVar
 
 from ....version import __version__
 from ...mtproto import BadStatusError, Full, RpcError
-from ...mtsender import Connector, Sender
+from ...mtsender import Connector, ReconnectionPolicy, Sender
 from ...mtsender import connect as do_connect_sender
 from ...session import DataCenter
 from ...session import User as SessionUser
@@ -46,6 +46,7 @@ class Config:
     api_hash: str
     base_logger: logging.Logger
     connector: Connector
+    reconnection_policy: Optional[ReconnectionPolicy] = None
     device_model: str = field(default_factory=default_device_model)
     system_version: str = field(default_factory=default_system_version)
     app_version: str = __version__
@@ -100,6 +101,7 @@ async def connect_sender(
         auth_key=auth,
         base_logger=config.base_logger,
         connector=config.connector,
+        reconnection_policy=config.reconnection_policy,
     )
 
     try:

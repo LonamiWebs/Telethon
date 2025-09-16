@@ -1,3 +1,4 @@
+import logging
 import struct
 
 from .abcs import BadStatusError, MissingBytesError, OutFn, Transport
@@ -52,3 +53,7 @@ class Intermediate(Transport):
 
         output += memoryview(input)[4 : 4 + length]
         return length + 4
+
+    def reset(self):
+        logging.info("resetting sending of header in intermediate transport")
+        self._init = False

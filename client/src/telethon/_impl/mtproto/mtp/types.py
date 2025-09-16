@@ -5,6 +5,7 @@ from typing import NewType, Optional
 
 from typing_extensions import Self
 
+from ...crypto.crypto import CryptoError
 from ...tl.mtproto.types import RpcError as GeneratedRpcError
 
 MsgId = NewType("MsgId", int)
@@ -68,7 +69,7 @@ class RpcError(ValueError):
         self._code = code
         self._name = name
         self._value = value
-        self._caused_by = caused_by
+        self.caused_by: int | None = caused_by
 
     @property
     def code(self) -> int:
@@ -157,7 +158,7 @@ class BadMessageError(ValueError):
 
         self.msg_id = msg_id
         self._code = code
-        self._caused_by = caused_by
+        self.caused_by: int | None = caused_by
         self.severity = (
             logging.WARNING if self._code in NON_FATAL_MSG_IDS else logging.ERROR
         )
@@ -180,7 +181,112 @@ class BadMessageError(ValueError):
         return self._code == other._code
 
 
-Deserialization = Update | RpcResult | RpcError | BadMessageError
+# Deserialization errors are not fatal, so we don't subclass RpcError.
+class BadAuthKeyError(ValueError):
+    def __init__(self, *args: object, got: int, expected: int) -> None:
+        super().__init__(f"bad server auth key (got {got}, expected {expected})", *args)
+        self._got = got
+        self._expected = expected
+
+    @property
+    def got(self):
+        return self._got
+
+    @property
+    def expected(self):
+        return self._expected
+
+
+class BadMsgIdError(ValueError):
+    def __init__(self, *args: object, got: int) -> None:
+        super().__init__(f"bad server message id (got {got})", *args)
+        self._got = got
+
+    @property
+    def got(self):
+        return self._got
+
+
+class NegativeLengthError(ValueError):
+    def __init__(self, *args: object, got: int) -> None:
+        super().__init__(f"bad server message length (got {got})", *args)
+        self._got = got
+
+    @property
+    def got(self):
+        return self._got
+
+
+class TooLongMsgError(ValueError):
+    def __init__(self, *args: object, got: int, max_length: int) -> None:
+        super().__init__(
+            f"bad server message length (got {got}, when at most it should be {max_length})",
+            *args,
+        )
+        self._got = got
+        self._expected = max_length
+
+    @property
+    def got(self):
+        return self._got
+
+    @property
+    def expected(self):
+        return self._expected
+
+
+class MsgBufferTooSmall(ValueError):
+    def __init__(self, *args: object) -> None:
+        super().__init__(
+            "server responded with a payload that's too small to fit a valid message",
+            *args,
+        )
+
+
+class DecompressionFailed(ValueError):
+    def __init__(self, *args: object) -> None:
+        super().__init__("failed to decompress server's data", *args)
+
+
+class UnexpectedConstructor(ValueError):
+    def __init__(self, *args: object, id: int) -> None:
+        super().__init__(f"unexpected constructor: {id:08x}", *args)
+
+
+class DecryptionError(ValueError):
+    def __init__(self, *args: object, error: CryptoError) -> None:
+        super().__init__(f"failed to decrypt message: {error}", *args)
+
+        self._error = error
+
+    @property
+    def error(self):
+        return self._error
+
+
+DeserializationError = (
+    BadAuthKeyError
+    | BadMsgIdError
+    | NegativeLengthError
+    | TooLongMsgError
+    | MsgBufferTooSmall
+    | DecompressionFailed
+    | UnexpectedConstructor
+    | DecryptionError
+)
+
+
+class DeserializationFailure:
+    __slots__ = ("msg_id", "error")
+
+    def __init__(self, msg_id: MsgId, error: DeserializationError) -> None:
+        self.msg_id = msg_id
+        self.error = error
+
+
+Deserialization = (
+    Update | RpcResult | RpcError | BadMessageError | DeserializationFailure
+)
 
 
 # https://core.telegram.org/mtproto/description
@@ -208,4 +314,10 @@ class Mtp(ABC):
     ) -> list[Deserialization]:
         """
         Deserialize incoming buffer payload.
+        """
+
+    @abstractmethod
+    def reset(self) -> None:
+        """
+        Reset the internal buffer.
         """
