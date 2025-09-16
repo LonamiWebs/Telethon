@@ -69,7 +69,7 @@ class RpcError(ValueError):
         self._code = code
         self._name = name
         self._value = value
-        self._caused_by = caused_by
+        self.caused_by: int | None = caused_by
 
     @property
     def code(self) -> int:
@@ -95,20 +95,6 @@ class RpcError(ValueError):
         For example, if the :attr:`name` is ``'FLOOD_WAIT'``, this would be the number of seconds.
         """
         return self._value
-
-    @property
-    def caused_by(self) -> Optional[int]:
-        """
-        Constructor identifier of the request that caused the error, if known.
-        """
-        return self._caused_by
-
-    @caused_by.setter
-    def caused_by(self, value: int) -> None:
-        """
-        Constructor identifier of the request that caused the error, if known.
-        """
-        self._caused_by = value
 
     @classmethod
     def _from_mtproto_error(cls, error: GeneratedRpcError) -> Self:
@@ -172,7 +158,7 @@ class BadMessageError(ValueError):
 
         self.msg_id = msg_id
         self._code = code
-        self._caused_by = caused_by
+        self.caused_by: int | None = caused_by
         self.severity = (
             logging.WARNING if self._code in NON_FATAL_MSG_IDS else logging.ERROR
         )
@@ -188,14 +174,6 @@ class BadMessageError(ValueError):
     @property
     def fatal(self) -> bool:
         return self._code not in NON_FATAL_MSG_IDS
-
-    @property
-    def caused_by(self) -> Optional[int]:
-        return self._caused_by
-
-    @caused_by.setter
-    def caused_by(self, value: int) -> None:
-        self._caused_by = value
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
