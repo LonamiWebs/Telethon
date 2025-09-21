@@ -52,3 +52,7 @@ def test_private_get_extension():
     assert utils._get_extension(empty_buffer) == ''
     assert utils._get_extension(empty_buffer) == ''  # make sure it did seek back
     assert utils._get_extension(CustomFd('foo')) == ''
+
+
+def test_rle_encode_trailing_zeros():
+    assert utils._rle_encode(b'\x12\x00\x00\x00\x00') == b'\x12\x00\x04'

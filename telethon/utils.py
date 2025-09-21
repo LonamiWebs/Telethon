@@ -1095,6 +1095,8 @@ def _rle_encode(string):
                 count = 0
 
             new += bytes([cur])
+    if count != 0:
+        new += b'\0' + bytes([count])
     return new
 
 
