@@ -1,0 +1,38 @@
+    
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+TOKEN = 8331720407:AAEKFo_RSrB1ZeA3XWq_c646G8NfDUZGW0k
+CHANNEL_ID = @rampalyceum_bot
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Я бот вашего канала!")
+
+async def announce(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+
+    chat_administrators = await context.bot.get_chat_administrators(CHANNEL_ID)
+    is_admin = any(str(admin.user.id) == str(user_id) for admin in chat_administrators)
+
+    if is_admin:
+        try:
+            message = context.args
+            message_text = " ".join(message)
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=message_text)
+            await context.bot.send_message(chat_id=chat_id, text="Объявление отправлено!")
+        except Exception as e:
+            await context.bot.send_message(chat_id=chat_id, text=f"Ошибка: {e}")
+    else:
+        await context.bot.send_message(chat_id=chat_id, text="У вас нет прав для выполнения этой команды.")
+
+if __name__ == '__main__':
+    application = ApplicationBuilder().token(TOKEN).build()
+
+    start_handler = CommandHandler('start', start)
+    announce_handler = CommandHandler('announce', announce)
+
+    application.add_handler(start_handler)
+    application.add_handler(announce_handler)
+
+    application.run_polling()
