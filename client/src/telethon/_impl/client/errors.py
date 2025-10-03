@@ -43,7 +43,7 @@ def adapt_rpc(
     if tup not in _cache:
         _cache[tup] = type(pretty_name(name), (from_code(code), from_name(name)), {})
     return _cache[tup](
-        code=error.code, name=error.name, value=error.value, caused_by=error._caused_by
+        code=error.code, name=error.name, value=error.value, caused_by=error.caused_by
     )
 
 
