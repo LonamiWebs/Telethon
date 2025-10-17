@@ -15,7 +15,9 @@ def param_value_expr(param: Parameter) -> str:
     return f"{pre}{mid}{suf}"
 
 
-def generate_buffer_append(writer: SourceWriter, buffer: str, name: str, ty: Type) -> None:
+def generate_buffer_append(
+    writer: SourceWriter, buffer: str, name: str, ty: Type
+) -> None:
     sanitized_name = sanitize_name(name)
 
     if is_trivial(NormalParameter(ty=ty, flag=None)):
@@ -60,7 +62,9 @@ def generate_normal_param_write(
 
     if param.ty.generic_arg:
         if param.ty.name not in ("Vector", "vector"):
-            raise ValueError("generic_arg deserialization for non-vectors is not supported")
+            raise ValueError(
+                "generic_arg deserialization for non-vectors is not supported"
+            )
 
         if param.ty.bare:
             writer.write(f"{buffer} += struct.pack('<i', len({sanitized_name}))")
@@ -161,5 +165,7 @@ def generate_function(writer: SourceWriter, defn: Definition) -> None:
             for param in iter:
                 if not isinstance(param.ty, NormalParameter):
                     raise RuntimeError("FlagsParameter should be considered trivial")
-                generate_normal_param_write(writer, tmp_names, "_buffer", param.name, param.ty)
+                generate_normal_param_write(
+                    writer, tmp_names, "_buffer", param.name, param.ty
+                )
     writer.write("return Request(b'' + _buffer)")

@@ -6,8 +6,9 @@ from .serde.common import (
     inner_type_fmt,
     is_computed,
     param_type_fmt,
+    sanitize_name,
     to_class_name,
-    to_method_name, sanitize_name,
+    to_method_name,
 )
 from .serde.deserialization import (
     function_deserializer_fmt,
