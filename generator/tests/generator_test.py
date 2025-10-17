@@ -14,9 +14,7 @@ def gen_py_code(
     functiondefs: Optional[list[Definition]] = None,
 ) -> str:
     fs = FakeFs()
-    generate(
-        fs, ParsedTl(layer=0, typedefs=typedefs or [], functiondefs=functiondefs or [])
-    )
+    generate(fs, ParsedTl(layer=0, typedefs=typedefs or [], functiondefs=functiondefs or []))
     generated = bytearray()
     for path, data in fs._files.items():
         if path.stem not in ("__init__", "layer"):
@@ -27,9 +25,7 @@ def gen_py_code(
 
 
 def test_generic_functions_use_bytes_parameters() -> None:
-    definitions = get_definitions(
-        "invokeWithLayer#da9b0d0d {X:Type} layer:int query:!X = X;"
-    )
+    definitions = get_definitions("invokeWithLayer#da9b0d0d {X:Type} layer:int query:!X = X;")
     result = gen_py_code(functiondefs=definitions)
     assert "invoke_with_layer" in result
     assert "query: _bytes" in result
@@ -112,3 +108,15 @@ def test_bool_mapped_from_int() -> None:
     assert "_mutual in (0x997275b5, 0xbc799737)" in result
     assert "=_mutual == 0x997275b5" in result
     assert "0x997275b5 if self.mutual else 0xbc799737" in result
+
+
+def test_sanitize_keywords() -> None:
+    definitions = get_definitions(
+        """
+        forwardedMessage#deadbeef from:long to:long return:Bool = Message;
+        """
+    )
+    result = gen_py_code(typedefs=definitions)
+    assert "from_" in result
+    assert "to_" not in result and "to" in result
+    assert "return_" in result

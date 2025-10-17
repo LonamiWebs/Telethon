@@ -1,6 +1,7 @@
 from pytest import mark
 
 from telethon_generator._impl.codegen.serde.common import (
+    sanitize_name,
     split_words,
     to_class_name,
     to_method_name,
@@ -50,3 +51,21 @@ def test_to_class_name(name: str, expected: str) -> None:
 )
 def test_to_method_name(name: str, expected: str) -> None:
     assert to_method_name(name) == expected
+
+
+@mark.parametrize(
+    ("name", "expected"),
+    [
+        # Shouldn't be changed
+        # - not keywords
+        ("abc", "abc"),
+        # - soft keywords (https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords)
+        ("type", "type"),
+        # Must be changed
+        # - keywords
+        ("from", "from_"),
+        ("return", "return_"),
+    ],
+)
+def test_sanitize_name(name: str, expected: str) -> None:
+    assert sanitize_name(name) == expected

@@ -1,3 +1,4 @@
+import keyword
 import re
 from collections.abc import Iterator
 
@@ -110,3 +111,9 @@ def param_type_fmt(ty: BaseParameter) -> str:
         res = f"Optional[{res}]"
 
     return res
+
+
+def sanitize_name(name: str) -> str:
+    if keyword.iskeyword(name):
+        name += "_"
+    return name

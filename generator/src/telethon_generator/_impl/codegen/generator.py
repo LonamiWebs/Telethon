@@ -7,7 +7,7 @@ from .serde.common import (
     is_computed,
     param_type_fmt,
     to_class_name,
-    to_method_name,
+    to_method_name, sanitize_name,
 )
 from .serde.deserialization import (
     function_deserializer_fmt,
@@ -112,7 +112,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         )
 
         #   __slots__ = ('params', ...)
-        slots = " ".join(f"'{p.name}'," for p in property_params)
+        slots = " ".join(f"'{sanitize_name(p.name)}'," for p in property_params)
         writer.write(f"  __slots__ = ({slots})")
 
         #   def constructor_id()
@@ -123,18 +123,18 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
         #   def __init__()
         if property_params:
             params = "".join(
-                f", {p.name}: {param_type_fmt(p.ty)}" for p in property_params
+                f", {sanitize_name(p.name)}: {param_type_fmt(p.ty)}" for p in property_params
             )
             writer.write(f"  def __init__(_s, *{params}) -> None:")
             for p in property_params:
-                writer.write(f"    _s.{p.name} = {p.name}")
+                writer.write(f"    _s.{sanitize_name(p.name)} = {sanitize_name(p.name)}")
 
         #   def _read_from()
         writer.write("  @classmethod")
         writer.write("  def _read_from(cls, reader: Reader) -> Self:")
         writer.indent(2)
         generate_read(writer, typedef)
-        params = ", ".join(f"{p.name}={param_value_fmt(p)}" for p in property_params)
+        params = ", ".join(f"{sanitize_name(p.name)}={param_value_fmt(p)}" for p in property_params)
         writer.write(f"return cls({params})")
         writer.dedent(2)
 
@@ -172,7 +172,7 @@ def generate(fs: FakeFs, tl: ParsedTl) -> None:
 
         #   def name(params, ...)
         required_params = [p for p in functiondef.params if not is_computed(p.ty)]
-        params = "".join(f", {p.name}: {param_type_fmt(p.ty)}" for p in required_params)
+        params = "".join(f", {sanitize_name(p.name)}: {param_type_fmt(p.ty)}" for p in required_params)
         star = "*" if params else ""
         return_ty = param_type_fmt(NormalParameter(ty=functiondef.ty, flag=None))
         writer.write(
