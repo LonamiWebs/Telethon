@@ -830,12 +830,11 @@ class MTProtoSender:
                 correct_msg_id=message.msg_id)
             self._log.info('System clock is wrong, set time offset to %ds', to)
         elif bad_msg.error_code == 32:
-            # msg_seqno too low, so just pump it up by some "large" amount
-            # TODO A better fix would be to start with a new fresh session ID
-            self._state._sequence += 64
+            # msg_seqno too low
+            self._state.reset(keep_key=True)
         elif bad_msg.error_code == 33:
-            # msg_seqno too high never seems to happen but just in case
-            self._state._sequence -= 16
+            # msg_seqno too high
+            self._state.reset(keep_key=True)
         else:
             for state in states:
                 state.future.set_exception(
