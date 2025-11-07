@@ -144,7 +144,7 @@ class MTProtoState:
         msg_key = msg_key_large[8:24]
         aes_key, aes_iv = self._calc_key(self.auth_key.key, msg_key, True)
 
-        key_id = struct.pack('<Q', self.auth_key.key_id)
+        key_id = struct.pack('<q', self.auth_key.key_id)
         return (key_id + msg_key +
                 AES.encrypt_ige(data + padding, aes_key, aes_iv))
 
@@ -158,7 +158,7 @@ class MTProtoState:
             raise InvalidBufferError(body)
 
         # TODO Check salt, session_id and sequence_number
-        key_id = struct.unpack('<Q', body[:8])[0]
+        key_id = struct.unpack('<q', body[:8])[0]
         if key_id != self.auth_key.key_id:
             raise SecurityError('Server replied with an invalid auth key')
 

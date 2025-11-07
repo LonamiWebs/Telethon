@@ -39,7 +39,7 @@ class AuthKey:
         with BinaryReader(sha1(self._key).digest()) as reader:
             self.aux_hash = reader.read_long(signed=False)
             reader.read(4)
-            self.key_id = reader.read_long(signed=False)
+            self.key_id = reader.read_long(signed=True)
 
     # TODO This doesn't really fit here, it's only used in authentication
     def calc_new_nonce_hash(self, new_nonce, number):
