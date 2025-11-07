@@ -266,7 +266,7 @@ class MTProtoSender:
                 # establish tmp_auth_key here, but make sure to bind to the auth_key later
                 try:
                     if not await self._try_gen_tmp_auth_key(attempt):
-                            continue  # keep retrying until we have the tmp auth key
+                        continue  # keep retrying until we have the tmp auth key
                 except (IOError, asyncio.TimeoutError) as e:
                     # Sometimes, specially during user-DC migrations,
                     # Telegram may close the connection during auth_key

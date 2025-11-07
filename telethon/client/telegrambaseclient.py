@@ -789,7 +789,7 @@ class TelegramBaseClient(abc.ABC):
     def _tmp_auth_key_callback(self: 'TelegramClient', tmp_auth_key):
         """
         Callback from the sender whenever it needed to generate a
-        new authorization key. This means we are not authorized.
+        new temporary authorization key. This means we are not authorized.
         """
         self.session.tmp_auth_key = tmp_auth_key
         self.session.save()

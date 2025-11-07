@@ -171,7 +171,9 @@ class MTProtoState:
         bind = bytes(bind)
         assert len(bind) == 40
 
-        payload = os.urandom(int(128/8)) + struct.pack('<qii', msg_id, seq_no, len(bind)) + bind
+        # 128 bit random + msg_id + seq_no + len(bind) + bind
+        payload = os.urandom(128//8) + struct.pack('<qii', msg_id, seq_no, len(bind)) + bind
+        # 16-byte alignment
         padding = os.urandom(len(payload) % 16)
 
         msg_key = sha1(payload).digest()[4:20]
