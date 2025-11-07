@@ -12,13 +12,16 @@ class AuthKey:
     Represents an authorization key, used to encrypt and decrypt
     messages sent to Telegram's data centers.
     """
-    def __init__(self, data):
+    def __init__(self, data, expires_at: int = -1):
         """
         Initializes a new authorization key.
 
         :param data: the data in bytes that represent this auth key.
+        :param expires_at: unix timestamp of key expiry
         """
         self.key = data
+        self.expires_at = expires_at
+        self.tmp_key_bound = False
 
     @property
     def key(self):

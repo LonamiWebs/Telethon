@@ -32,6 +32,7 @@ class MemorySession(Session):
         self._server_address = None
         self._port = None
         self._auth_key = None
+        self._tmp_auth_key = None
         self._takeout_id = None
 
         self._files = {}
@@ -59,9 +60,17 @@ class MemorySession(Session):
     def auth_key(self):
         return self._auth_key
 
+    @property
+    def tmp_auth_key(self):
+        return self._tmp_auth_key
+
     @auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
+
+    @auth_key.setter
+    def tmp_auth_key(self, value):
+        self._tmp_auth_key = value
 
     @property
     def takeout_id(self):

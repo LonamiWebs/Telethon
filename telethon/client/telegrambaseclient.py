@@ -262,7 +262,8 @@ class TelegramBaseClient(abc.ABC):
             base_logger: typing.Union[str, logging.Logger] = None,
             receive_updates: bool = True,
             catch_up: bool = False,
-            entity_cache_limit: int = 5000
+            entity_cache_limit: int = 5000,
+            store_tmp_auth_key_on_disk: bool = True
     ):
         if not api_id or not api_hash:
             raise ValueError(
@@ -288,7 +289,7 @@ class TelegramBaseClient(abc.ABC):
         # Determine what session object we have
         if isinstance(session, (str, pathlib.Path)):
             try:
-                session = SQLiteSession(str(session))
+                session = SQLiteSession(str(session), store_tmp_auth_key_on_disk=store_tmp_auth_key_on_disk)
             except ImportError:
                 import warnings
                 warnings.warn(
@@ -432,6 +433,7 @@ class TelegramBaseClient(abc.ABC):
             auto_reconnect=self._auto_reconnect,
             connect_timeout=self._timeout,
             auth_key_callback=self._auth_key_callback,
+            tmp_auth_key_callback=self._tmp_auth_key_callback,
             updates_queue=self._updates_queue,
             auto_reconnect_callback=self._handle_auto_reconnect
         )
@@ -561,6 +563,7 @@ class TelegramBaseClient(abc.ABC):
             return
 
         self.session.auth_key = self._sender.auth_key
+        self.session.tmp_auth_key = self._sender.tmp_auth_key
         await utils.maybe_async(self.session.save())
 
         try:
@@ -782,6 +785,14 @@ class TelegramBaseClient(abc.ABC):
         """
         self.session.auth_key = auth_key
         await utils.maybe_async(self.session.save())
+
+    def _tmp_auth_key_callback(self: 'TelegramClient', tmp_auth_key):
+        """
+        Callback from the sender whenever it needed to generate a
+        new authorization key. This means we are not authorized.
+        """
+        self.session.tmp_auth_key = tmp_auth_key
+        self.session.save()
 
     # endregion
 

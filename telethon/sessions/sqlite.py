@@ -18,7 +18,7 @@ except ImportError as e:
     sqlite3_err = type(e)
 
 EXTENSION = '.session'
-CURRENT_VERSION = 7  # database version
+CURRENT_VERSION = 8  # database version
 
 
 class SQLiteSession(MemorySession):
@@ -30,13 +30,14 @@ class SQLiteSession(MemorySession):
        through an official Telegram client to revoke the authorization.
     """
 
-    def __init__(self, session_id=None):
+    def __init__(self, session_id=None, store_tmp_auth_key_on_disk:bool=False):
         if sqlite3 is None:
             raise sqlite3_err
 
         super().__init__()
         self.filename = ':memory:'
         self.save_entities = True
+        self.store_tmp_auth_key_on_disk = store_tmp_auth_key_on_disk
 
         if session_id:
             self.filename = session_id
@@ -61,9 +62,10 @@ class SQLiteSession(MemorySession):
             c.execute('select * from sessions')
             tuple_ = c.fetchone()
             if tuple_:
-                self._dc_id, self._server_address, self._port, key, \
+                self._dc_id, self._server_address, self._port, key, tmp_key, \
                     self._takeout_id = tuple_
                 self._auth_key = AuthKey(data=key)
+                self._tmp_auth_key = AuthKey(data=tmp_key)
 
             c.close()
         else:
@@ -77,7 +79,8 @@ class SQLiteSession(MemorySession):
                     server_address text,
                     port integer,
                     auth_key blob,
-                    takeout_id integer
+                    takeout_id integer,
+                    tmp_auth_key blob
                 )"""
                 ,
                 """entities (
@@ -153,6 +156,9 @@ class SQLiteSession(MemorySession):
         if old == 6:
             old += 1
             c.execute("alter table entities add column date integer")
+        if old == 7:
+            old += 1
+            c.execute("alter table sessions add column tmp_auth_key blob")
 
         c.close()
 
@@ -168,15 +174,25 @@ class SQLiteSession(MemorySession):
         self._update_session_table()
 
         # Fetch the auth_key corresponding to this data center
-        row = self._execute('select auth_key from sessions')
+        row = self._execute('select auth_key, tmp_auth_key from sessions')
         if row and row[0]:
             self._auth_key = AuthKey(data=row[0])
         else:
             self._auth_key = None
 
+        if row and row[1]:
+            self._tmp_auth_key = AuthKey(data=row[1])
+        else:
+            self._tmp_auth_key = None
+
     @MemorySession.auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
+        self._update_session_table()
+
+    @MemorySession.tmp_auth_key.setter
+    def tmp_auth_key(self, value):
+        self._tmp_auth_key = value
         self._update_session_table()
 
     @MemorySession.takeout_id.setter
@@ -192,12 +208,13 @@ class SQLiteSession(MemorySession):
         # some more work before being able to save auth_key's for
         # multiple DCs. Probably done differently.
         c.execute('delete from sessions')
-        c.execute('insert or replace into sessions values (?,?,?,?,?)', (
+        c.execute('insert or replace into sessions values (?,?,?,?,?,?)', (
             self._dc_id,
             self._server_address,
             self._port,
             self._auth_key.key if self._auth_key else b'',
-            self._takeout_id
+            self._takeout_id,
+            self._tmp_auth_key.key if (self.store_tmp_auth_key_on_disk and self._tmp_auth_key) else b''
         ))
         c.close()
 
