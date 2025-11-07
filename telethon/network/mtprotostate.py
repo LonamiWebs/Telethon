@@ -4,7 +4,7 @@ import time
 from hashlib import sha1, sha256
 from collections import deque
 
-from ..crypto import AES
+from ..crypto import AES, AuthKey
 from ..errors import SecurityError, InvalidBufferError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
@@ -70,10 +70,12 @@ class MTProtoState:
         self._ignore_count = 0
         self.reset()
 
-    def reset(self):
+    def reset(self, keep_key=False):
         """
         Resets the state.
         """
+        self._log.debug('MtProtoState reset')
+
         # Session IDs can be random on every connection
         self.id = struct.unpack('q', os.urandom(8))[0]
         self._sequence = 0
@@ -81,6 +83,10 @@ class MTProtoState:
         self._recent_remote_ids.clear()
         self._highest_remote_id = 0
         self._ignore_count = 0
+
+        if not keep_key:
+            self.auth_key = AuthKey(None)
+            self._log.debug('MtProtoState key reset')
 
     def update_message_id(self, message):
         """
