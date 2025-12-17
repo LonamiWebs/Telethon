@@ -2,6 +2,7 @@
 tests for telethon.helpers
 """
 
+import asyncio
 from base64 import b64decode
 
 import pytest
@@ -39,9 +40,9 @@ def test_strip_text():
 
 class TestSyncifyAsyncContext:
     class NoopContextManager:
-        def __init__(self):
+        def __init__(self, loop=None):
             self.count = 0
-            self.loop = helpers.get_running_loop()
+            self.loop = loop or helpers.get_running_loop()
 
         async def __aenter__(self):
             self.count += 1
@@ -55,7 +56,7 @@ class TestSyncifyAsyncContext:
         __exit__ = helpers._sync_exit
 
     def test_sync_acontext(self):
-        contm = self.NoopContextManager()
+        contm = self.NoopContextManager(loop=asyncio.new_event_loop())
         assert contm.count == 0
 
         with contm:
