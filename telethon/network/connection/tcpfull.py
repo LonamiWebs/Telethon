@@ -1,3 +1,4 @@
+import asyncio
 import struct
 from zlib import crc32
 
@@ -22,7 +23,10 @@ class FullPacketCodec(PacketCodec):
         return data + crc
 
     async def read_packet(self, reader):
-        packet_len_seq = await reader.readexactly(8)  # 4 and 4
+        try:
+            packet_len_seq = await reader.readexactly(8)  # 4 and 4
+        except asyncio.IncompleteReadError as exc:
+            return exc.partial
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
         if packet_len < 0 and seq < 0:
             # It has been observed that the length and seq can be -429,
