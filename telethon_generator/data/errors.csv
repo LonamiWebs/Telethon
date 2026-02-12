@@ -530,4 +530,5 @@ FROZEN_METHOD_INVALID,420,You tried to use a method that is not available for fr
 FROZEN_PARTICIPANT_MISSING,400,Your account is frozen and can't access the chat
 CHAT_SEND_VOICES_FORBIDDEN,403,You cannot send voices results in this chat
 CHAT_SEND_PHOTOS_FORBIDDEN,403,You cannot send photos results in this chat
+CHAT_SEND_VIDEOS_FORBIDDEN,403,You cannot send videos results in this Chat
 CHAT_SEND_PLAIN_FORBIDDEN,403,You cannot send plain results in this chat
